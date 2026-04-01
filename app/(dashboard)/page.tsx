@@ -5,6 +5,7 @@ import { UpcomingShifts } from '@/components/dashboard/upcoming-shifts'
 import { LeaveRequests } from '@/components/dashboard/leave-requests'
 import { PayrollSummary } from '@/components/dashboard/payroll-summary'
 import { LocationAttendance } from '@/components/dashboard/location-attendance'
+import { LateCheckIns } from '@/components/dashboard/late-checkins'
 
 export default function DashboardPage() {
   return (
@@ -26,20 +27,15 @@ export default function DashboardPage() {
           <AttendanceChart />
         </div>
         <div className="lg:col-span-3">
-          <PayrollSummary />
+          <LateCheckIns />
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-1">
-          <UpcomingShifts />
-        </div>
-        <div className="lg:col-span-1">
-          <LeaveRequests />
-        </div>
-        <div className="lg:col-span-1">
-          <RecentActivity />
-        </div>
+      <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
+        <UpcomingShifts />
+        <LeaveRequests />
+        <PayrollSummary />
+        <RecentActivity />
       </div>
     </div>
   )
