@@ -1,7 +1,7 @@
-'use client'
+"use client"
 
-import { AppSidebar } from '@/components/app-sidebar'
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
+import { AppSidebar } from "@/components/app-sidebar"
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,9 +9,9 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
-import { usePathname } from 'next/navigation'
-import { FloatingSidebarToggle } from '@/components/floating-sidebar-toggle'
+} from "@/components/ui/breadcrumb"
+import { usePathname } from "next/navigation"
+import { FloatingSidebarToggle } from "@/components/floating-sidebar-toggle"
 
 const pathNames: Record<string, string> = {
   '/': 'Overview',
