@@ -6,25 +6,25 @@ import { Users, UserCheck, UserX, Clock, MapPin } from 'lucide-react'
 const statusStats = [
   {
     title: 'Total',
-    value: 247,
+    value: 200,
     icon: Users,
     color: 'text-primary',
   },
   {
     title: 'Active',
-    value: 218,
+    value: 168,
     icon: UserCheck,
     color: 'text-success',
   },
   {
     title: 'On Leave',
-    value: 23,
+    value: 18,
     icon: Clock,
     color: 'text-warning',
   },
   {
     title: 'Inactive',
-    value: 6,
+    value: 14,
     icon: UserX,
     color: 'text-muted-foreground',
   },
