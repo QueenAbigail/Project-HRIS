@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge'
 const attendanceRecords = [
   {
     id: 1,
-    employee: 'Michael Chen',
+    employee: 'Michael Cina',
     initials: 'MC',
     department: 'Field Security',
     checkIn: '06:02 AM',

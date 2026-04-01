@@ -29,20 +29,20 @@ const stats = [
     icon: UserX,
   },
   {
+    title: 'Late Check-Ins',
+    value: '10',
+    change: '-3',
+    changeType: 'decrease' as const,
+    description: 'from last week',
+    icon: Clock,
+  },
+  {
     title: 'Active Locations',
     value: '6',
     change: '247 personnel deployed',
     changeType: 'neutral' as const,
     description: 'client sites',
     icon: MapPin,
-  },
-  {
-    title: 'Pending Leaves',
-    value: '23',
-    change: '-5',
-    changeType: 'decrease' as const,
-    description: 'from last week',
-    icon: Clock,
   },
   {
     title: 'Monthly Payroll',
