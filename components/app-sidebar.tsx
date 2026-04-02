@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
   Users,
@@ -91,7 +91,6 @@ const secondaryNavItems = [
 
 export function AppSidebar() {
   const pathname = usePathname()
-  const router = useRouter()
 
   return (
     <Sidebar variant="inset">
@@ -188,7 +187,10 @@ export function AppSidebar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   className="text-destructive cursor-pointer"
-                  onClick={() => router.push('/login')}
+                  onClick={async () => {
+                    const { logout } = await import('@/lib/auth')
+                    await logout()
+                  }}
                 >
                   <LogOut className="mr-2 size-4" />
                   Sign out
