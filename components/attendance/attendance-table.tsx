@@ -1,6 +1,6 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -11,95 +11,16 @@ import {
 } from '@/components/ui/table'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-
-const attendanceRecords = [
-  {
-    id: 1,
-    employee: 'Michael Cina',
-    initials: 'MC',
-    department: 'Field Security',
-    checkIn: '06:02 AM',
-    checkOut: '02:05 PM',
-    status: 'present',
-    hours: '8h 03m',
-  },
-  {
-    id: 2,
-    employee: 'Sarah Williams',
-    initials: 'SW',
-    department: 'Surveillance',
-    checkIn: '05:58 AM',
-    checkOut: '02:00 PM',
-    status: 'present',
-    hours: '8h 02m',
-  },
-  {
-    id: 3,
-    employee: 'David Rodriguez',
-    initials: 'DR',
-    department: 'Patrol',
-    checkIn: '06:45 AM',
-    checkOut: '--:--',
-    status: 'late',
-    hours: '7h 15m',
-  },
-  {
-    id: 4,
-    employee: 'Emily Johnson',
-    initials: 'EJ',
-    department: 'Administration',
-    checkIn: '08:00 AM',
-    checkOut: '04:30 PM',
-    status: 'present',
-    hours: '8h 30m',
-  },
-  {
-    id: 5,
-    employee: 'James Wilson',
-    initials: 'JW',
-    department: 'Field Security',
-    checkIn: '--:--',
-    checkOut: '--:--',
-    status: 'absent',
-    hours: '--',
-  },
-  {
-    id: 6,
-    employee: 'Robert Taylor',
-    initials: 'RT',
-    department: 'Patrol',
-    checkIn: '--:--',
-    checkOut: '--:--',
-    status: 'leave',
-    hours: '--',
-  },
-  {
-    id: 7,
-    employee: 'Jessica Brown',
-    initials: 'JB',
-    department: 'Surveillance',
-    checkIn: '06:00 AM',
-    checkOut: '02:15 PM',
-    status: 'present',
-    hours: '8h 15m',
-  },
-  {
-    id: 8,
-    employee: 'Thomas Anderson',
-    initials: 'TA',
-    department: 'Field Security',
-    checkIn: '05:55 AM',
-    checkOut: '02:00 PM',
-    status: 'present',
-    hours: '8h 05m',
-  },
-]
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { getEmployeesWithAttendance, formatTime, getLateCheckInSeverity } from '@/lib/data'
+import { Clock, AlertTriangle } from 'lucide-react'
 
 const statusStyles: Record<string, string> = {
   'present': 'bg-success/10 text-success border-success/20',
   'late': 'bg-warning/10 text-warning border-warning/20',
   'absent': 'bg-destructive/10 text-destructive border-destructive/20',
   'leave': 'bg-chart-2/10 text-chart-2 border-chart-2/20',
+  'not-checked-in': 'bg-muted text-muted-foreground border-muted',
 }
 
 const statusLabels: Record<string, string> = {
@@ -107,64 +28,173 @@ const statusLabels: Record<string, string> = {
   'late': 'Late',
   'absent': 'Absent',
   'leave': 'On Leave',
+  'not-checked-in': 'Pending',
+}
+
+const severityStyles = {
+  minor: 'text-warning',
+  moderate: 'text-orange-500', 
+  severe: 'text-destructive',
 }
 
 export function AttendanceTable() {
+  const employees = getEmployeesWithAttendance()
+  const allEmployees = employees
+  const lateEmployees = employees.filter(e => e.status === 'late')
+  const presentEmployees = employees.filter(e => e.status === 'present')
+  const absentEmployees = employees.filter(e => e.status === 'absent' || e.status === 'not-checked-in')
+
   return (
     <Card className="bg-card border-border">
       <CardHeader>
-        <CardTitle>Today&apos;s Attendance</CardTitle>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Today&apos;s Attendance</CardTitle>
+            <CardDescription>
+              Attendance records with schedule integration
+            </CardDescription>
+          </div>
+          {lateEmployees.length > 0 && (
+            <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
+              <AlertTriangle className="size-3 mr-1" />
+              {lateEmployees.length} late check-ins
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead className="hidden md:table-cell">Department</TableHead>
-                <TableHead>Check In</TableHead>
-                <TableHead>Check Out</TableHead>
-                <TableHead className="hidden sm:table-cell">Hours</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {attendanceRecords.map((record) => (
-                <TableRow key={record.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="size-8">
-                        <AvatarImage src={`/avatars/${record.id}.jpg`} alt={record.employee} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                          {record.initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium">{record.employee}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell text-muted-foreground">
-                    {record.department}
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {record.checkIn}
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {record.checkOut}
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell text-muted-foreground">
-                    {record.hours}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={statusStyles[record.status]}>
-                      {statusLabels[record.status]}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <Tabs defaultValue="all" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="all">All ({allEmployees.length})</TabsTrigger>
+            <TabsTrigger value="late" className="text-warning">
+              Late ({lateEmployees.length})
+            </TabsTrigger>
+            <TabsTrigger value="present">Present ({presentEmployees.length})</TabsTrigger>
+            <TabsTrigger value="absent">Absent ({absentEmployees.length})</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="all">
+            <AttendanceTableContent records={allEmployees} showSchedule />
+          </TabsContent>
+          
+          <TabsContent value="late">
+            <AttendanceTableContent records={lateEmployees} showSchedule showLateDetails />
+          </TabsContent>
+          
+          <TabsContent value="present">
+            <AttendanceTableContent records={presentEmployees} showSchedule />
+          </TabsContent>
+          
+          <TabsContent value="absent">
+            <AttendanceTableContent records={absentEmployees} showSchedule />
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
+  )
+}
+
+interface AttendanceTableContentProps {
+  records: ReturnType<typeof getEmployeesWithAttendance>
+  showSchedule?: boolean
+  showLateDetails?: boolean
+}
+
+function AttendanceTableContent({ records, showSchedule, showLateDetails }: AttendanceTableContentProps) {
+  if (records.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <Clock className="size-12 text-muted-foreground mb-4" />
+        <p className="text-muted-foreground">No records found</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Employee</TableHead>
+            <TableHead className="hidden md:table-cell">Location</TableHead>
+            {showSchedule && (
+              <TableHead className="hidden lg:table-cell">Scheduled</TableHead>
+            )}
+            <TableHead>Check In</TableHead>
+            <TableHead>Check Out</TableHead>
+            {showLateDetails && (
+              <TableHead className="hidden sm:table-cell">Late By</TableHead>
+            )}
+            <TableHead className="hidden sm:table-cell">Hours</TableHead>
+            <TableHead>Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {records.map((record) => {
+            const severity = record.status === 'late' ? getLateCheckInSeverity(record.lateMinutes) : null
+            return (
+              <TableRow 
+                key={record.employeeId}
+                className={record.status === 'late' ? 'bg-warning/5' : undefined}
+              >
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="size-8">
+                      <AvatarImage src={`/avatars/${record.employeeId}.jpg`} alt={record.employeeName} />
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                        {record.initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <span className="font-medium">{record.employeeName}</span>
+                      <p className="text-xs text-muted-foreground">{record.department}</p>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <div>
+                    <span className="text-sm">{record.locationName}</span>
+                    <p className="text-xs text-muted-foreground font-mono">{record.locationId}</p>
+                  </div>
+                </TableCell>
+                {showSchedule && (
+                  <TableCell className="hidden lg:table-cell">
+                    <div className="text-sm">
+                      <span className="font-mono">{formatTime(record.scheduledStart)}</span>
+                      <p className="text-xs text-muted-foreground">{record.shiftName}</p>
+                    </div>
+                  </TableCell>
+                )}
+                <TableCell>
+                  <span className={`font-mono text-sm ${record.status === 'late' ? 'text-warning font-medium' : ''}`}>
+                    {formatTime(record.actualCheckIn)}
+                  </span>
+                </TableCell>
+                <TableCell className="font-mono text-sm">
+                  {formatTime(record.actualCheckOut)}
+                </TableCell>
+                {showLateDetails && (
+                  <TableCell className="hidden sm:table-cell">
+                    {record.lateMinutes > 0 && severity && (
+                      <span className={`font-medium ${severityStyles[severity]}`}>
+                        +{record.lateMinutes} min
+                      </span>
+                    )}
+                  </TableCell>
+                )}
+                <TableCell className="hidden sm:table-cell text-muted-foreground">
+                  {record.workHours}
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className={statusStyles[record.status]}>
+                    {statusLabels[record.status]}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+    </div>
   )
 }
