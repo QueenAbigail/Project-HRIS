@@ -1,7 +1,7 @@
 'use client'
 
 import { Card, CardContent } from '@/components/ui/card'
-import { UserCheck, UserX, Clock, AlertTriangle } from 'lucide-react'
+import { UserCheck, UserX, Clock, AlertTriangle, CalendarOff } from 'lucide-react'
 import { getOverallAttendanceStats } from '@/lib/data'
 
 export function AttendanceStats() {
@@ -42,10 +42,19 @@ export function AttendanceStats() {
       color: 'text-chart-2',
       bgColor: 'bg-chart-2/10',
     },
+    {
+      title: 'Scheduled Off',
+      value: overallStats.dayOff,
+      percentage: `${Math.round((overallStats.dayOff / overallStats.totalEmployees) * 100)}%`,
+      subtext: `${overallStats.expectedToWork} expected today`,
+      icon: CalendarOff,
+      color: 'text-primary/70',
+      bgColor: 'bg-primary/10',
+    },
   ]
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
       {stats.map((stat) => (
         <Card 
           key={stat.title} 

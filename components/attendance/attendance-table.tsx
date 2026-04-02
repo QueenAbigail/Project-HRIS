@@ -21,6 +21,7 @@ const statusStyles: Record<string, string> = {
   'absent': 'bg-destructive/10 text-destructive border-destructive/20',
   'leave': 'bg-chart-2/10 text-chart-2 border-chart-2/20',
   'not-checked-in': 'bg-muted text-muted-foreground border-muted',
+  'day-off': 'bg-primary/10 text-primary/70 border-primary/20',
 }
 
 const statusLabels: Record<string, string> = {
@@ -29,6 +30,7 @@ const statusLabels: Record<string, string> = {
   'absent': 'Absent',
   'leave': 'On Leave',
   'not-checked-in': 'Pending',
+  'day-off': 'Day Off',
 }
 
 const severityStyles = {
@@ -43,6 +45,7 @@ export function AttendanceTable() {
   const lateEmployees = employees.filter(e => e.status === 'late')
   const presentEmployees = employees.filter(e => e.status === 'present')
   const absentEmployees = employees.filter(e => e.status === 'absent' || e.status === 'not-checked-in')
+  const dayOffEmployees = employees.filter(e => e.status === 'day-off')
 
   return (
     <Card className="bg-card border-border">
@@ -71,6 +74,9 @@ export function AttendanceTable() {
             </TabsTrigger>
             <TabsTrigger value="present">Present ({presentEmployees.length})</TabsTrigger>
             <TabsTrigger value="absent">Absent ({absentEmployees.length})</TabsTrigger>
+            <TabsTrigger value="day-off" className="text-primary/70">
+              Day Off ({dayOffEmployees.length})
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="all">
@@ -88,6 +94,10 @@ export function AttendanceTable() {
           <TabsContent value="absent">
             <AttendanceTableContent records={absentEmployees} showSchedule />
           </TabsContent>
+          
+          <TabsContent value="day-off">
+            <AttendanceTableContent records={dayOffEmployees} showSchedule isDayOffView />
+          </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
@@ -98,9 +108,10 @@ interface AttendanceTableContentProps {
   records: ReturnType<typeof getEmployeesWithAttendance>
   showSchedule?: boolean
   showLateDetails?: boolean
+  isDayOffView?: boolean
 }
 
-function AttendanceTableContent({ records, showSchedule, showLateDetails }: AttendanceTableContentProps) {
+function AttendanceTableContent({ records, showSchedule, showLateDetails, isDayOffView }: AttendanceTableContentProps) {
   if (records.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -135,7 +146,13 @@ function AttendanceTableContent({ records, showSchedule, showLateDetails }: Atte
             return (
               <TableRow 
                 key={record.employeeId}
-                className={record.status === 'late' ? 'bg-warning/5' : undefined}
+                className={
+                  record.status === 'late' 
+                    ? 'bg-warning/5' 
+                    : record.status === 'day-off' 
+                      ? 'bg-primary/5' 
+                      : undefined
+                }
               >
                 <TableCell>
                   <div className="flex items-center gap-3">

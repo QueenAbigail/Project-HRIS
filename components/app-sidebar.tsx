@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
   Users,
@@ -185,7 +185,13 @@ export function AppSidebar() {
                   Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
+                <DropdownMenuItem 
+                  className="text-destructive cursor-pointer"
+                  onClick={async () => {
+                    const { logout } = await import('@/lib/auth')
+                    await logout()
+                  }}
+                >
                   <LogOut className="mr-2 size-4" />
                   Sign out
                 </DropdownMenuItem>

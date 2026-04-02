@@ -29,7 +29,7 @@ export function StatsCards() {
       value: (stats.absentToday + stats.notCheckedIn).toString(),
       change: `${stats.absentToday} absent, ${stats.notCheckedIn} pending`,
       changeType: 'neutral' as const,
-      description: 'across all locations',
+      description: `${stats.dayOff} on scheduled day off`,
       icon: UserX,
     },
     {

@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { MapPin, Users, UserCheck, UserX, Clock, AlertTriangle } from 'lucide-react'
+import { MapPin, Users, UserCheck, UserX, Clock, AlertTriangle, CalendarOff } from 'lucide-react'
 import { getLocationAttendanceStats, getOverallAttendanceStats } from '@/lib/data'
 
 export function LocationAttendance() {
@@ -17,6 +17,8 @@ export function LocationAttendance() {
     late: locationData.reduce((acc, loc) => acc + loc.late, 0),
     notCheckedIn: locationData.reduce((acc, loc) => acc + loc.notCheckedIn, 0),
     onLeave: locationData.reduce((acc, loc) => acc + loc.onLeave, 0),
+    dayOff: locationData.reduce((acc, loc) => acc + loc.dayOff, 0),
+    expectedToWork: locationData.reduce((acc, loc) => acc + loc.expectedToWork, 0),
   }
 
   return (
@@ -47,12 +49,16 @@ export function LocationAttendance() {
               <div className="size-2 rounded-full bg-muted-foreground" />
               <span className="text-muted-foreground">Not Checked In</span>
             </div>
+            <div className="flex items-center gap-1.5">
+              <div className="size-2 rounded-full bg-primary/50" />
+              <span className="text-muted-foreground">Day Off</span>
+            </div>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 rounded-lg bg-muted/30 border border-border">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 p-4 rounded-lg bg-muted/30 border border-border">
           <div className="flex items-center gap-3">
             <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
               <Users className="size-5 text-primary" />
@@ -98,6 +104,15 @@ export function LocationAttendance() {
               <p className="text-xs text-muted-foreground">Not Checked In</p>
             </div>
           </div>
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <CalendarOff className="size-5 text-primary/70" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-primary/70">{totals.dayOff}</p>
+              <p className="text-xs text-muted-foreground">Day Off</p>
+            </div>
+          </div>
         </div>
 
         {/* Avg Late Minutes Alert */}
@@ -120,6 +135,7 @@ export function LocationAttendance() {
           {locationData.map((location) => {
             const attendanceRate = location.attendanceRate
             const hasLateCheckIns = location.late > 0
+            const hasDayOff = location.dayOff > 0
             return (
               <div
                 key={location.locationId}
@@ -138,6 +154,14 @@ export function LocationAttendance() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {hasDayOff && (
+                      <Badge 
+                        variant="outline" 
+                        className="bg-primary/10 text-primary/70 border-primary/20"
+                      >
+                        {location.dayOff} day off
+                      </Badge>
+                    )}
                     {hasLateCheckIns && (
                       <Badge 
                         variant="outline" 
@@ -182,8 +206,14 @@ export function LocationAttendance() {
                         <Clock className="size-3 text-muted-foreground" />
                         {location.notCheckedIn} pending
                       </span>
+                      {hasDayOff && (
+                        <span className="flex items-center gap-1">
+                          <CalendarOff className="size-3 text-primary/70" />
+                          {location.dayOff} off
+                        </span>
+                      )}
                     </div>
-                    <span>{location.totalStaff} total</span>
+                    <span>{location.expectedToWork} expected / {location.totalStaff} total</span>
                   </div>
                 </div>
               </div>

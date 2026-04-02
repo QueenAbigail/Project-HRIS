@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Shield, Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react'
+import { login } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,21 +10,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [remember, setRemember] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     
-    // Simulate login delay
-    await new Promise(resolve => setTimeout(resolve, 800))
+    // Call server action - redirect will happen automatically
+    await login(email, password, remember)
     
-    // Navigate to dashboard
-    router.push('/')
+    // Only reaches here if there was an error (no redirect happened)
+    setIsLoading(false)
   }
 
   return (
@@ -125,7 +125,12 @@ export default function LoginPage() {
 
             {/* Remember Me */}
             <div className="flex items-center gap-2">
-              <Checkbox id="remember" className="border-border/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
+              <Checkbox 
+                id="remember" 
+                checked={remember}
+                onCheckedChange={(checked) => setRemember(checked === true)}
+                className="border-border/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary" 
+              />
               <Label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">
                 Remember me for 30 days
               </Label>

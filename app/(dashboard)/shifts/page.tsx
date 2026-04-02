@@ -24,7 +24,9 @@ import {
   locations, 
   formatTime,
   getLateCheckIns,
-  todayAttendance
+  todayAttendance,
+  dayNamesShort,
+  getEmployeesOnDayOff
 } from '@/lib/data'
 
 const shiftIcons = {
