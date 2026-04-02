@@ -20,12 +20,11 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
     
-    try {
-      await login(email, password, remember)
-    } catch {
-      // Handle error if needed
-      setIsLoading(false)
-    }
+    // Call server action - redirect will happen automatically
+    await login(email, password, remember)
+    
+    // Only reaches here if there was an error (no redirect happened)
+    setIsLoading(false)
   }
 
   return (

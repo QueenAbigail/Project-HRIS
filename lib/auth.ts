@@ -17,7 +17,7 @@ export async function login(email: string, password: string, remember: boolean) 
   // Set session cookie
   // If "remember me" is checked, cookie expires in 30 days, otherwise it's a session cookie
   cookieStore.set('session', 'authenticated', {
-    httpOnly: true,
+    httpOnly: false, // Allow client-side access for auth check
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
