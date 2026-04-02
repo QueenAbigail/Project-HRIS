@@ -91,6 +91,7 @@ const secondaryNavItems = [
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
 
   return (
     <Sidebar variant="inset">
@@ -185,7 +186,10 @@ export function AppSidebar() {
                   Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
+                <DropdownMenuItem 
+                  className="text-destructive cursor-pointer"
+                  onClick={() => router.push('/login')}
+                >
                   <LogOut className="mr-2 size-4" />
                   Sign out
                 </DropdownMenuItem>
