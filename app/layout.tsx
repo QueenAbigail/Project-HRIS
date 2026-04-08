@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -29,9 +28,11 @@ export const metadata: Metadata = {
   },
 }
 
+import { Providers } from '@/components/providers'
+
 export const viewport: Viewport = {
   themeColor: '#1a1b26',
-  colorScheme: 'dark',
+  colorScheme: ['normal', 'dark light'],
 }
 
 export default function RootLayout({
@@ -40,11 +41,13 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="font-sans antialiased">
-        {children}
-        <Analytics />
+    <html lang="en" suppressHydrationWarning>
+      <body className="font-sans antialiased min-h-screen">
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )
 }
+

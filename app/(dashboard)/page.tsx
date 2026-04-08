@@ -7,7 +7,7 @@ import { PayrollSummary } from '@/components/dashboard/payroll-summary'
 import { LocationAttendance } from '@/components/dashboard/location-attendance'
 import { LateCheckIns } from '@/components/dashboard/late-checkins'
 
-export default function DashboardPage() {
+export default function DashboardPage(): React.ReactElement {
   return (
     <div className="space-y-6">
       <div>

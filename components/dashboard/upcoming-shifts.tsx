@@ -5,7 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { AlertTriangle } from 'lucide-react'
-import { employeeSchedules, shifts, locations, todayAttendance, formatTime } from '@/lib/data'
+import { employeeSchedules, shifts, locations, todayAttendance } from '@/lib/constants'
+import { formatTime } from '@/lib/data'
 
 export function UpcomingShifts() {
   // Get upcoming shift assignments with their status

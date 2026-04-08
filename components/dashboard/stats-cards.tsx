@@ -2,7 +2,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, Clock, Wallet, UserCheck, UserX, MapPin, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react'
-import { getOverallAttendanceStats, locations } from '@/lib/data'
+import { getOverallAttendanceStats } from '@/lib/data'
+import { locations } from '@/lib/constants'
 
 export function StatsCards() {
   const stats = getOverallAttendanceStats()
