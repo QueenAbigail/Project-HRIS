@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { FieldGroup, Field, FieldLabel } from '@/components/ui/field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Clock, AlertTriangle, Bell, Settings } from 'lucide-react'
-import { shifts } from '@/lib/data'
+import { shifts } from '@/lib/constants'
 
 export default function SettingsPage() {
   return (
