@@ -1,0 +1,163 @@
+// This is your Prisma schema file for HRIS application,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Compatible with Supabase PostgreSQL via DATABASE_URL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Enums based on requirements and dummy data
+enum Role {
+  SUPER_ADMIN
+  HR_ADMIN
+  SITE_ADMIN
+  MANAGER
+  STAFF
+  CLIENT
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  LEAVE
+  NOT_CHECKED_IN
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  EMERGENCY
+  MATERNITY
+}
+
+// Site model (from locations in constants.ts)
+model Site {
+  id          String                    @id @default(cuid())
+  name        String
+  code        String                    @unique
+  totalStaff  Int? // Optional, from stats
+  users       User[]
+  attendances Attendance[]
+  assignments EmployeeShiftAssignment[]
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+
+  @@map("sites")
+}
+
+// Shift model (from shifts in constants.ts)
+model Shift {
+  id                 String                    @id @default(cuid())
+  name               String
+  startTime          String // HH:MM
+  endTime            String // HH:MM
+  gracePeriodMinutes Int
+  assignments        EmployeeShiftAssignment[]
+  Attendance         Attendance[]
+
+  @@map("shifts")
+}
+
+// User model (employees/admins/clients, with role, site, supervisor)
+model User {
+  id             String                    @id @default(cuid())
+  name           String
+  email          String                    @unique
+  initials       String?
+  department     String?
+  position       String?
+  role           Role                      @default(STAFF)
+  siteId         String
+  site           Site                      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  supervisorId   String? // Self-relation for hierarchy
+  supervisor     User?                     @relation("Supervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
+  supervisees    User[]                    @relation("Supervisor")
+  attendances    Attendance[]
+  leaves         Leave[]                   @relation("LeaveRequester")
+  leavesApproved Leave[]                   @relation("LeaveApprover")
+  assignments    EmployeeShiftAssignment[]
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+
+  @@index([siteId])
+  @@index([supervisorId])
+  @@index([email])
+  @@map("users")
+}
+
+// Junction for Employee Shift Assignment (schedules with workingDays array)
+model EmployeeShiftAssignment {
+  id          String @id @default(cuid())
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shiftId     String
+  shift       Shift  @relation(fields: [shiftId], references: [id])
+  siteId      String
+  site        Site   @relation(fields: [siteId], references: [id])
+  workingDays Json // [0,1,2,3,4,5,6] as array of ints (Sun=0)
+
+  @@unique([userId, shiftId, siteId])
+  @@map("employee_shift_assignments")
+}
+
+// Attendance model (extended with GPS/selfie)
+model Attendance {
+  id             String           @id @default(cuid())
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date           DateTime // Full datetime for date only in queries
+  locationId     String
+  location       Site             @relation(fields: [locationId], references: [id])
+  shiftId        String?
+  shift          Shift?           @relation(fields: [shiftId], references: [id])
+  scheduledStart String? // HH:MM
+  scheduledEnd   String? // HH:MM
+  actualCheckIn  DateTime?
+  actualCheckOut DateTime?
+  status         AttendanceStatus @default(NOT_CHECKED_IN)
+  lateMinutes    Int              @default(0)
+  gpsLat         Float?
+  gpsLng         Float?
+  selfieCheckIn  String? // URL
+  selfieCheckOut String? // URL
+  notes          String?
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([locationId])
+  @@index([date])
+  @@map("attendances")
+}
+
+// Leave model (requests with approval)
+model Leave {
+  id          String      @id @default(cuid())
+  requesterId String
+  requester   User        @relation("LeaveRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  approverId  String?
+  approver    User?       @relation("LeaveApprover", fields: [approverId], references: [id], onDelete: SetNull)
+  type        LeaveType
+  startDate   DateTime
+  endDate     DateTime
+  status      LeaveStatus @default(PENDING)
+  notes       String?
+
+  @@index([requesterId])
+  @@index([approverId])
+  @@index([status])
+  @@map("leaves")
+}

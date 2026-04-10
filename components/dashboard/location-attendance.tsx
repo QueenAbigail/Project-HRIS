@@ -4,11 +4,33 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { MapPin, Users, UserCheck, UserX, Clock, AlertTriangle, CalendarOff } from 'lucide-react'
-import { getLocationAttendanceStats, getOverallAttendanceStats } from '@/lib/data'
+// import { getLocationAttendanceStats, getOverallAttendanceStats } from '@/lib/data'
 
-export function LocationAttendance() {
-  const locationData = getLocationAttendanceStats()
-  const overallStats = getOverallAttendanceStats()
+interface LocationAttendanceProps {
+  locationData?: Array<any>
+}
+
+export function LocationAttendance({ locationData }: LocationAttendanceProps) {
+  if (!locationData || locationData.length === 0) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="size-5" />
+            Attendance by Location
+          </CardTitle>
+          <CardDescription>Real-time status across all client sites</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <MapPin className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-lg font-medium text-muted-foreground mb-2">Belum ada data attendance</p>
+            <p className="text-sm text-muted-foreground">Lokasi akan muncul setelah data tersedia</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const totals = {
     totalStaff: locationData.reduce((acc, loc) => acc + loc.totalStaff, 0),
@@ -116,15 +138,15 @@ export function LocationAttendance() {
         </div>
 
         {/* Avg Late Minutes Alert */}
-        {overallStats.lateCheckIns > 0 && (
+        {totals.late > 0 && (
           <div className="flex items-center gap-3 p-3 rounded-lg bg-warning/10 border border-warning/20">
             <AlertTriangle className="size-5 text-warning" />
             <div className="flex-1">
               <p className="text-sm font-medium">
-                {overallStats.lateCheckIns} late check-ins today
+                {totals.late} late check-ins today
               </p>
               <p className="text-xs text-muted-foreground">
-                Average delay: {overallStats.averageLateMinutes} minutes | Total late time: {overallStats.totalLateMinutes} minutes
+                Average delay: 0 minutes | Total late time: 0 minutes
               </p>
             </div>
           </div>
@@ -132,7 +154,7 @@ export function LocationAttendance() {
 
         {/* Location Breakdown */}
         <div className="space-y-3">
-          {locationData.map((location) => {
+{locationData.map((location) => {
             const attendanceRate = location.attendanceRate
             const hasLateCheckIns = location.late > 0
             const hasDayOff = location.dayOff > 0

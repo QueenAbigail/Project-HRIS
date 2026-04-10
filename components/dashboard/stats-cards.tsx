@@ -3,53 +3,50 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, Clock, Wallet, UserCheck, UserX, MapPin, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react'
 import { getOverallAttendanceStats } from '@/lib/data'
-import { locations } from '@/lib/constants'
 
-export function StatsCards() {
-  const stats = getOverallAttendanceStats()
+interface StatsCardsProps {
+  stats: any
+}
+
+export function StatsCards({ stats }: StatsCardsProps) {
+  if (!stats) {
+    return (
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 h-[200px]">
+        <div className="col-span-full flex flex-col items-center justify-center p-8 text-muted-foreground">
+          <Users className="h-12 w-12 mb-4" />
+          <p className="text-lg font-medium">Belum ada data untuk saat ini</p>
+        </div>
+      </div>
+    );
+  }
 
   const statsData = [
     {
       title: 'Total Employees',
-      value: stats.totalEmployees.toString(),
-      change: '+12',
-      changeType: 'increase' as const,
-      description: 'from last month',
+      value: stats.totalEmployees?.toString() ?? '0',
       icon: Users,
     },
     {
       title: 'Present Today',
-      value: stats.presentToday.toString(),
-      change: `${stats.attendanceRate}%`,
-      changeType: 'increase' as const,
-      description: 'attendance rate',
+      value: stats.presentToday?.toString() ?? '0',
       icon: UserCheck,
     },
     {
       title: 'Absent / Not Checked In',
-      value: (stats.absentToday + stats.notCheckedIn).toString(),
-      change: `${stats.absentToday} absent, ${stats.notCheckedIn} pending`,
+      value: ((stats.absentToday ?? 0) + (stats.notCheckedIn ?? 0)).toString(),
+      change: `${stats.absentToday ?? 0} absent, ${stats.notCheckedIn ?? 0} pending`,
       changeType: 'neutral' as const,
-      description: `${stats.dayOff} on scheduled day off`,
       icon: UserX,
     },
     {
       title: 'Late Check-Ins',
-      value: stats.lateCheckIns.toString(),
-      change: stats.lateChangeFromLastWeek > 0 
-        ? `+${stats.lateChangeFromLastWeek}` 
-        : stats.lateChangeFromLastWeek.toString(),
-      changeType: stats.lateChangeFromLastWeek <= 0 ? 'decrease' as const : 'increase' as const,
-      description: 'from last week',
+      value: (stats.lateCheckIns ?? 0).toString(),
       icon: Clock,
-      highlight: stats.lateCheckIns > 0,
+      highlight: (stats.lateCheckIns ?? 0) > 0,
     },
     {
       title: 'Active Locations',
-      value: locations.length.toString(),
-      change: `${stats.totalEmployees} personnel deployed`,
-      changeType: 'neutral' as const,
-      description: 'client sites',
+      value: (stats.activeLocations ?? 0).toString(),
       icon: MapPin,
     },
     {

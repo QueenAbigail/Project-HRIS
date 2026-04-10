@@ -4,31 +4,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Calendar } from 'lucide-react'
 import { employeeSchedules, shifts, locations, todayAttendance } from '@/lib/constants'
 import { formatTime } from '@/lib/data'
 
-export function UpcomingShifts() {
-  // Get upcoming shift assignments with their status
-  const upcomingShifts = employeeSchedules.slice(0, 6).map(schedule => {
-    const shift = shifts.find(s => s.id === schedule.shiftId)!
-    const location = locations.find(l => l.id === schedule.locationId)!
-    const attendance = todayAttendance.find(a => a.employeeId === schedule.employeeId)
-    
-    return {
-      id: schedule.employeeId,
-      employee: schedule.employeeName,
-      initials: schedule.initials,
-      location: location.name,
-      time: `${formatTime(shift.startTime)} - ${formatTime(shift.endTime)}`,
-      type: shift.name,
-      status: attendance?.status || 'not-checked-in',
-      isLate: attendance?.status === 'late',
-      lateMinutes: attendance?.lateMinutes || 0,
-    }
-  })
+interface UpcomingShiftsProps {
+  data: Array<any>;asd
+}
 
-  const lateCount = upcomingShifts.filter(s => s.isLate).length
+export function UpcomingShifts({ data }: UpcomingShiftsProps) {
+  if (!data || data.length === 0) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Upcoming Shifts</CardTitle>
+              <CardDescription>Today's scheduled assignments</CardDescription>
+            </div>
+            <Badge variant="outline" className="text-xs">No shifts</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-lg font-medium text-muted-foreground mb-2">Belum ada jadwal shift hari ini</p>
+            <p className="text-sm text-muted-foreground">Jadwal akan muncul setelah diassign</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const lateCount = data.filter((s) => s.isLate).length;
 
   return (
     <Card className="bg-card border-border">

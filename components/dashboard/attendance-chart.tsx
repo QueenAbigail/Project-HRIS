@@ -3,17 +3,29 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts'
 
-const data = [
-  { date: 'Mon', present: 185, absent: 12, late: 8 },
-  { date: 'Tue', present: 192, absent: 8, late: 5 },
-  { date: 'Wed', present: 188, absent: 15, late: 10 },
-  { date: 'Thu', present: 195, absent: 5, late: 3 },
-  { date: 'Fri', present: 178, absent: 18, late: 12 },
-  { date: 'Sat', present: 145, absent: 8, late: 6 },
-  { date: 'Sun', present: 120, absent: 5, late: 4 },
-]
+interface AttendanceChartProps {
+  chartData: Array<{ date: string; present: number; absent: number; late: number }>;
+}
 
-export function AttendanceChart() {
+export function AttendanceChart({ chartData }: AttendanceChartProps) {
+  if (!chartData || chartData.length === 0) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle>Attendance Overview</CardTitle>
+          <CardDescription>Weekly attendance trend for all security personnel</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+import { Users } from 'lucide-react'
+            <p className="text-lg font-medium text-muted-foreground mb-2">Belum ada data attendance mingguan</p>
+            <p className="text-sm text-muted-foreground">Grafik akan muncul setelah data tersedia</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
   return (
     <Card className="bg-card border-border">
       <CardHeader>
@@ -23,7 +35,7 @@ export function AttendanceChart() {
       <CardContent>
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+<AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="presentGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="var(--color-chart-1)" stopOpacity={0.4} />
