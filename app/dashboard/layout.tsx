@@ -14,15 +14,16 @@ import {
 import { usePathname } from "next/navigation"
 import { FloatingSidebarToggle } from "@/components/floating-sidebar-toggle"
 
+// 1. UPDATE: Tambahin /dashboard di semua key objek ini
 const pathNames: Record<string, string> = {
-  '/': 'Overview',
-  '/employees': 'Employees',
-  '/attendance': 'Attendance',
-  '/payroll': 'Payroll',
-  '/leave': 'Leave Management',
-  '/shifts': 'Shift Schedule',
-  '/reports': 'Reports',
-  '/settings': 'Settings',
+  '/dashboard': 'Overview',
+  '/dashboard/employees': 'Employees',
+  '/dashboard/attendance': 'Attendance',
+  '/dashboard/payroll': 'Payroll',
+  '/dashboard/leave': 'Leave Management',
+  '/dashboard/shifts': 'Shift Schedule',
+  '/dashboard/reports': 'Reports',
+  '/dashboard/settings': 'Settings',
 }
 
 export default function DashboardLayout({
@@ -31,6 +32,7 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  // 2. UPDATE: Default ke Dashboard kalau nggak ada yang cocok
   const currentPage = pathNames[pathname] || 'Dashboard'
 
   return (
@@ -42,11 +44,13 @@ export default function DashboardLayout({
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/">
+                  {/* 3. UPDATE: Link Home balikin ke /dashboard */}
+                  <BreadcrumbLink href="/dashboard">
                     Dashboard
                   </BreadcrumbLink>
                 </BreadcrumbItem>
-                {pathname !== '/' && (
+                {/* 4. UPDATE: Cek kalau bukan di home dashboard */}
+                {pathname !== '/dashboard' && (
                   <>
                     <BreadcrumbSeparator className="hidden md:block" />
                     <BreadcrumbItem>

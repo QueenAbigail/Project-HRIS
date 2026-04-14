@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Shield, Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react'
+import { Shield, Eye, EyeOff, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react'
 import { login } from '@/lib/auth'
+import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,16 +16,26 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(false)
+  const { toast } = useToast()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     
-    // Call server action - redirect will happen automatically
-    await login(email, password, remember)
+    const mappedEmail = `${email.trim()}@hris.com`
+    const result = await login(mappedEmail, password, remember)
     
-    // Only reaches here if there was an error (no redirect happened)
-    setIsLoading(false)
+    if (result?.error) {
+      toast({
+        title: "Login failed",
+        description: result.error,
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
+    
+    // Success - middleware/redirect handles the rest
   }
 
   return (
@@ -68,17 +79,17 @@ export default function LoginPage() {
 
         <CardContent className="pt-4">
           <form onSubmit={handleLogin} className="space-y-5">
-            {/* Email Field */}
+            {/* Nomor Karyawan Field */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">
-                Email Address
+              <Label htmlFor="employeeId" className="text-sm font-medium">
+                Nomor Karyawan
               </Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="admin@secureguard.com"
+                  id="employeeId"
+                  type="text"
+                  placeholder="12345"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10 h-11 bg-input/50 border-border/50 focus:border-primary/50 transition-colors"

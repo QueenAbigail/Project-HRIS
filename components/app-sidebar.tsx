@@ -42,50 +42,52 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
+// 1. UPDATE: Tambahin /dashboard di semua url Main Menu
 const mainNavItems = [
   {
     title: 'Overview',
-    url: '/',
+    url: '/dashboard', 
     icon: LayoutDashboard,
   },
   {
     title: 'Employees',
-    url: '/employees',
+    url: '/dashboard/employees',
     icon: Users,
   },
   {
     title: 'Attendance',
-    url: '/attendance',
+    url: '/dashboard/attendance',
     icon: Clock,
     badge: 12,
   },
   {
     title: 'Payroll',
-    url: '/payroll',
+    url: '/dashboard/payroll',
     icon: Wallet,
   },
   {
     title: 'Leave Management',
-    url: '/leave',
+    url: '/dashboard/leave',
     icon: CalendarDays,
     badge: 5,
   },
   {
     title: 'Shift Schedule',
-    url: '/shifts',
+    url: '/dashboard/shifts',
     icon: CalendarClock,
   },
 ]
 
+// 2. UPDATE: Tambahin /dashboard di semua url Secondary Menu
 const secondaryNavItems = [
   {
     title: 'Reports',
-    url: '/reports',
+    url: '/dashboard/reports',
     icon: FileBarChart,
   },
   {
     title: 'Settings',
-    url: '/settings',
+    url: '/dashboard/settings',
     icon: Settings,
   },
 ]
@@ -99,7 +101,8 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/">
+              {/* 3. UPDATE: Link Logo diarahkan ke /dashboard */}
+              <Link href="/dashboard">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <Shield className="size-4" />
                 </div>

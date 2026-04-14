@@ -1,34 +1,59 @@
 'use server'
 
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
+// 1. Pindahkan dan ubah createClient jadi async
+export async function createClient() {
+  const cookieStore = await cookies() // Sekarang cookies-nya aman di dalam fungsi dan pakai await
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // Abaikan error saat render Server Component
+          }
+        },
+      },
+    }
+  )
+}
+
 export async function login(email: string, password: string, remember: boolean) {
-  // In a real app, you would validate credentials against a database
-  // For now, we'll just create a session cookie
-  
-  // Simple validation (replace with actual auth logic)
   if (!email || !password) {
     return { error: 'Email and password are required' }
   }
 
-  const cookieStore = await cookies()
-  
-  // Set session cookie
-  // If "remember me" is checked, cookie expires in 30 days, otherwise it's a session cookie
-  cookieStore.set('session', 'authenticated', {
-    httpOnly: false, // Allow client-side access for auth check
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    ...(remember && { maxAge: 60 * 60 * 24 * 30 }), // 30 days if remember is checked
+  // 2. Tambahkan await pas manggil createClient
+  const supabase = await createClient()
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email, // Ingat: ini nerima dari app/page.tsx yang udah di-mapping pakai @hris.com
+    password,
   })
 
-  redirect('/')
+  if (error) {
+    console.error('Login error:', error)
+    return { error: error.message }
+  }
+
+  redirect('/dashboard')
 }
 
 export async function logout() {
-  const cookieStore = await cookies()
-  cookieStore.delete('session')
-  redirect('/login')
+  // 3. Tambahkan await juga di sini
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  redirect('/')
 }
