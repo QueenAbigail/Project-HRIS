@@ -75,8 +75,10 @@ model Shift {
 // User model (employees/admins/clients, with role, site, supervisor)
 model User {
   id             String                    @id @default(cuid())
+  employeeCode   String?                   @unique // NIK/ID Tampilan
   name           String
-  email          String                    @unique
+  email          String                    @unique //Dummy Email for login supabase
+  personalEmail  String? // Contactable Email
   initials       String?
   department     String?
   position       String?
@@ -160,4 +162,14 @@ model Leave {
   @@index([approverId])
   @@index([status])
   @@map("leaves")
+}
+
+// Global system settings for branding
+model SystemSettings {
+  id             String  @id @default(cuid())
+  logoUrl        String?
+  appName        String  @default("SecureGuard")
+  appDescription String  @default("HR Administration")
+
+  @@map("system_settings")
 }

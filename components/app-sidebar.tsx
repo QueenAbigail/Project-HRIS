@@ -1,7 +1,9 @@
-'use client'
+"use client"
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
+
 import {
   LayoutDashboard,
   Users,
@@ -11,6 +13,7 @@ import {
   CalendarClock,
   FileBarChart,
   Settings,
+  ShieldAlert,
   Shield,
   Bell,
   LogOut,
@@ -41,12 +44,50 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import Image from 'next/image'
 
-// 1. UPDATE: Tambahin /dashboard di semua url Main Menu
+import { fetchSystemSettings, fetchUserRole } from '@/lib/client-system'
+
+interface SystemSettings {
+  appName: string
+  appDescription: string
+  logoUrl?: string | null
+}
+
+interface User {
+  name: string | null
+  email: string
+  position: string | null
+  role: string
+}
+
+interface Props {
+  user: User | null
+  systemSettings?: SystemSettings
+}
+
+function LogoIcon({ src, alt, className }: { src: string; alt: string; className: string }) {
+  return (
+    <div className={className}>
+      {src && src !== '/icon.svg' ? (
+        <Image 
+          src={src} 
+          alt={alt} 
+          width={32} 
+          height={32} 
+          className="rounded-lg object-cover"
+        />
+      ) : (
+        <Shield className="size-4" />
+      )}
+    </div>
+  )
+}
+
 const mainNavItems = [
   {
     title: 'Overview',
-    url: '/dashboard', 
+    url: '/dashboard',
     icon: LayoutDashboard,
   },
   {
@@ -78,22 +119,57 @@ const mainNavItems = [
   },
 ]
 
-// 2. UPDATE: Tambahin /dashboard di semua url Secondary Menu
-const secondaryNavItems = [
-  {
-    title: 'Reports',
-    url: '/dashboard/reports',
-    icon: FileBarChart,
-  },
-  {
-    title: 'Settings',
-    url: '/dashboard/settings',
-    icon: Settings,
-  },
-]
-
-export function AppSidebar() {
+export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) {
   const pathname = usePathname()
+  const [localSystemSettings, setLocalSystemSettings] = useState<SystemSettings>({ appName: 'SecureGuard', appDescription: 'HR Administration' })
+  const [loading, setLoading] = useState(!propSystemSettings)
+
+  const systemSettings = propSystemSettings || localSystemSettings
+  const userRole = user?.role || null
+
+  useEffect(() => {
+    if (!propSystemSettings) {
+      const loadData = async () => {
+        const settings = await fetchSystemSettings()
+        if (settings) {
+          setLocalSystemSettings(settings)
+        }
+        setLoading(false)
+      }
+      loadData()
+    } else {
+      setLoading(false)
+    }
+  }, [propSystemSettings])
+
+  if (loading) {
+    return <Sidebar variant="inset" />
+  }
+
+  const secondaryNavItems = [
+    {
+      title: 'Reports',
+      url: '/dashboard/reports',
+      icon: FileBarChart,
+    },
+    {
+      title: 'Settings',
+      url: '/dashboard/settings',
+      icon: Settings,
+    },
+  ]
+
+  if (userRole === 'SUPER_ADMIN') {
+    secondaryNavItems.push({
+      title: 'Superadmin',
+      url: '/dashboard/superadmin',
+      icon: ShieldAlert,
+    })
+  }
+
+  const displayName = user?.name ?? user?.email ?? 'Unknown User'
+  const displayPosition = user?.position ?? 'Staff'
+  const initials = user?.name ? (user.name[0]?.toUpperCase() + (user.name[1]?.toUpperCase() || '')) : 'U?'
 
   return (
     <Sidebar variant="inset">
@@ -101,14 +177,11 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              {/* 3. UPDATE: Link Logo diarahkan ke /dashboard */}
               <Link href="/dashboard">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Shield className="size-4" />
-                </div>
+                <LogoIcon src={systemSettings.logoUrl || '/icon.svg'} alt={systemSettings.appName} className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground" />
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">SecureGuard</span>
-                  <span className="truncate text-xs text-muted-foreground">HR Administration</span>
+                  <span className="truncate font-semibold">{systemSettings.appName}</span>
+                  <span className="truncate text-xs text-muted-foreground">{systemSettings.appDescription}</span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -164,12 +237,12 @@ export function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="lg">
                   <Avatar className="size-8">
-                    <AvatarImage src="/avatars/admin.jpg" alt="Admin" />
-                    <AvatarFallback className="bg-primary/10 text-primary">JD</AvatarFallback>
+                    <AvatarImage src="/placeholder-user.jpg" alt={displayName} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-medium">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">John Doe</span>
-                    <span className="truncate text-xs text-muted-foreground">HR Administrator</span>
+                    <span className="truncate font-semibold">{displayName}</span>
+                    <span className="truncate text-xs text-muted-foreground">{displayPosition}</span>
                   </div>
                   <ChevronDown className="ml-auto size-4" />
                 </SidebarMenuButton>
@@ -179,6 +252,9 @@ export function AppSidebar() {
                 className="w-[--radix-dropdown-menu-trigger-width]"
               >
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel className="px-2 py-1.5 text-xs font-normal text-muted-foreground">
+                  Access Level: {userRole ?? 'Unknown'}
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <Bell className="mr-2 size-4" />
@@ -210,3 +286,4 @@ export function AppSidebar() {
     </Sidebar>
   )
 }
+

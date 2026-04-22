@@ -1,12 +1,14 @@
-# TODO: Fix Auth Cookies Error and Sync Dashboard Routes
+# Dynamic User Profile in Sidebar - Implementation Steps
 
-## Steps to Complete:
+## Plan Summary
+Convert `app/dashboard/layout.tsx` to server component for SSR user data fetch from Prisma via Supabase session.
+Update `components/app-sidebar.tsx` to use props, replace hardcodes, add role label in dropdown.
 
-1. ✅ [Complete] Create TODO.md with plan steps
-2. ✅ Refactor lib/auth.ts: Remove top-level cookieStore, make createClient() async with internal cookies(), update login/logout to await it (existing changes enhanced, now exported)
-3. [ ] Add 'use server' directive and new loginAction server action in app/page.tsx that uses createClient(), keeps email mapping and error handling
-4. [ ] Update app/page.tsx form to use loginAction as form action, remove/adjust client-side handleLogin to work with server action
-5. ✅ Verify all dashboard references use /dashboard (no (dashboard)), middleware.ts already correct (project-wide search confirmed 0 old references)
-6. ✅ Test: Ready - run `pnpm dev` in terminal to verify login works without cookies error, redirects to /dashboard
-7. ✅ Task complete
+## Steps
+### 1. [ ] Update app/dashboard/layout.tsx (Server Component + Fetch User/SystemSettings)
+### 2. [ ] Update components/app-sidebar.tsx (Props + Dynamic UI)
+### 3. [ ] Test: Run dev server, login, verify no flicker, correct data in footer/dropdown
+### 4. [ ] Mark complete
+
+Progress: 0/4 completed
 
