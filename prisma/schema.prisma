@@ -44,6 +44,13 @@ enum LeaveType {
   MATERNITY
 }
 
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+
 // Site model (from locations in constants.ts)
 model Site {
   id          String                    @id @default(cuid())
@@ -94,6 +101,7 @@ model User {
   assignments    EmployeeShiftAssignment[]
   createdAt      DateTime                  @default(now())
   updatedAt      DateTime                  @updatedAt
+  status         EmployeeStatus            @default(ACTIVE)
 
   @@index([siteId])
   @@index([supervisorId])

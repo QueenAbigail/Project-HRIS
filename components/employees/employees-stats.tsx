@@ -3,60 +3,82 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, UserCheck, UserX, Clock, MapPin } from 'lucide-react'
 
-const statusStats = [
-  {
-    title: 'Total',
-    value: 200,
-    icon: Users,
-    color: 'text-primary',
-  },
-  {
-    title: 'Active',
-    value: 168,
-    icon: UserCheck,
-    color: 'text-success',
-  },
-  {
-    title: 'On Leave',
-    value: 18,
-    icon: Clock,
-    color: 'text-warning',
-  },
-  {
-    title: 'Inactive',
-    value: 14,
-    icon: UserX,
-    color: 'text-muted-foreground',
-  },
-]
+interface Counts {
+  total: number
+  active: number
+  onLeave: number
+  inactive: number
+}
 
-const locationStats = [
-  { name: 'Head Office', code: 'HO', count: 35 },
-  { name: 'Plaza Tower - Downtown', code: 'PT-DT', count: 48 },
-  { name: 'Riverside Mall', code: 'RM', count: 52 },
-  { name: 'Metro Bank - Central', code: 'MB-CT', count: 28 },
-  { name: 'Corporate Center - North', code: 'CC-N', count: 44 },
-  { name: 'Industrial Park - West', code: 'IP-W', count: 40 },
-]
+interface LocationStat {
+  name: string
+  code: string
+  count: number
+}
 
-export function EmployeesStats() {
+interface StatusStat {
+  title: string
+  value: number
+  icon: React.ComponentType<{ className?: string }>
+  color: string
+}
+
+interface EmployeesStatsProps {
+  counts: Counts
+  locationStats: LocationStat[]
+}
+
+export function EmployeesStats({ 
+  counts, 
+  locationStats 
+}: EmployeesStatsProps) {
+  const statusStats: StatusStat[] = [
+    {
+      title: 'Total Active User',
+      value: counts.active,
+      icon: UserCheck,
+      color: 'text-success',
+    },
+    {
+      title: 'On Leave',
+      value: counts.onLeave,
+      icon: Clock,
+      color: 'text-warning',
+    },
+    {
+      title: 'Inactive User',
+      value: counts.inactive,
+      icon: UserX,
+      color: 'text-muted-foreground',
+    },
+    {
+      title: 'Total User',
+      value: counts.total,
+      icon: Users,
+      color: 'text-primary',
+    },
+  ]
+
   return (
     <div className="space-y-4">
       {/* Status Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {statusStats.map((stat) => (
-          <Card key={stat.title} className="bg-card border-border">
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className={`${stat.color}`}>
-                <stat.icon className="size-8" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.title}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {statusStats.map((stat) => {
+          const Icon = stat.icon
+          return (
+            <Card key={stat.title} className="bg-card border-border">
+              <CardContent className="flex items-center gap-4 p-4">
+                <div className={`${stat.color}`}>
+                  <Icon className="size-8" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <p className="text-sm text-muted-foreground">{stat.title}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       {/* Location Distribution */}
