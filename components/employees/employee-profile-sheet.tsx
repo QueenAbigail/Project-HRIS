@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { 
   MapPin, 
   Mail, 
@@ -44,6 +45,12 @@ export interface Employee {
   certifications?: string[]
   bankAccount?: string
   taxId?: string
+  personalEmail?: string
+  bpjsNumber?: string
+  npwpNumber?: string
+  bloodType?: string
+  ktaNumber?: string
+  ktaExpiry?: string
 }
 
 interface EmployeeProfileSheetProps {
@@ -126,6 +133,20 @@ export function EmployeeProfileSheet({ employee, open, onOpenChange, onEdit }: E
 
   const details = employeeDetails[employee.id] || defaultDetails
 
+  // Dynamic check for missing administrative fields
+  const fieldChecks: { key: keyof Employee; label: string }[] = [
+    { key: 'personalEmail', label: 'Personal Email' },
+    { key: 'bpjsNumber', label: 'BPJS Number' },
+    { key: 'npwpNumber', label: 'NPWP Number' },
+    { key: 'ktaNumber', label: 'KTA Number' },
+  ]
+
+  const missingFields = fieldChecks
+    .filter((f) => !employee[f.key])
+    .map((f) => f.label)
+
+  const hasMissingFields = missingFields.length > 0
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
@@ -151,6 +172,16 @@ export function EmployeeProfileSheet({ employee, open, onOpenChange, onEdit }: E
         </SheetHeader>
 
         <Separator className="my-4" />
+
+        {hasMissingFields && (
+          <Alert className="mb-4 border-warning/20 bg-warning/10 text-warning">
+            <AlertCircle className="size-4" />
+            <AlertTitle>Perhatian</AlertTitle>
+            <AlertDescription className="text-warning/90">
+              Mohon segera lengkapi data berikut: {missingFields.join(', ')}.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="w-full grid grid-cols-3">
@@ -355,3 +386,4 @@ export function EmployeeProfileSheet({ employee, open, onOpenChange, onEdit }: E
     </Sheet>
   )
 }
+

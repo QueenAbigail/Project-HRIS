@@ -23,6 +23,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Upload, UserPlus, FileSpreadsheet, Download, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
+export interface NewEmployee {
+  name: string;
+  email: string;
+  department: string;
+  position: string;
+  location: string;
+  joinDate: string;
+  status: string;
+}
+
 interface AddEmployeeDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void

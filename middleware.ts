@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
  
-export async function middleware(req) {
+export async function middleware(req: NextRequest) {
   const res = NextResponse.next({
     request: {
       headers: req.headers,

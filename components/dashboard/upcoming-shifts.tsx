@@ -9,7 +9,7 @@ import { employeeSchedules, shifts, locations, todayAttendance } from '@/lib/con
 import { formatTime } from '@/lib/data'
 
 interface UpcomingShiftsProps {
-  data: Array<any>;asd
+  data: Array<any>
 }
 
 export function UpcomingShifts({ data }: UpcomingShiftsProps) {
@@ -57,7 +57,7 @@ export function UpcomingShifts({ data }: UpcomingShiftsProps) {
       <CardContent className="p-0">
         <ScrollArea className="h-[280px]">
           <div className="space-y-4 p-6 pt-0">
-            {upcomingShifts.map((shift) => (
+            {data.map((shift) => (
               <div 
                 key={shift.id} 
                 className={`flex items-center gap-3 ${shift.isLate ? 'bg-warning/5 -mx-2 px-2 py-1 rounded-lg' : ''}`}
