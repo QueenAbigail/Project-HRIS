@@ -81,33 +81,51 @@ model Shift {
 
 // User model (employees/admins/clients, with role, site, supervisor)
 model User {
-  id             String                    @id @default(cuid())
-  employeeCode   String?                   @unique // NIK/ID Tampilan
-  name           String
-  email          String                    @unique //Dummy Email for login supabase
-  personalEmail  String? // Contactable Email
-  initials       String?
-  department     String?
-  position       String?
-  role           Role                      @default(STAFF)
-  siteId         String
-  site           Site                      @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  supervisorId   String? // Self-relation for hierarchy
-  supervisor     User?                     @relation("Supervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
-  supervisees    User[]                    @relation("Supervisor")
-  attendances    Attendance[]
-  leaves         Leave[]                   @relation("LeaveRequester")
-  leavesApproved Leave[]                   @relation("LeaveApprover")
-  assignments    EmployeeShiftAssignment[]
-  createdAt      DateTime                  @default(now())
-  updatedAt      DateTime                  @updatedAt
-  status         EmployeeStatus            @default(ACTIVE)
+  id                    String                    @id @default(cuid())
+  employeeCode          String?                   @unique
+  name                  String
+  email                 String                    @unique
+  personalEmail         String?
+  initials              String?
+  department            String?
+  position              String?
+  role                  Role                      @default(STAFF)
+  siteId                String
+  site                  Site                      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  supervisorId          String?
+  supervisor            User?                     @relation("Supervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
+  supervisees           User[]                    @relation("Supervisor")
+  attendances           Attendance[]
+  leaves                Leave[]                   @relation("LeaveRequester")
+  leavesApproved        Leave[]                   @relation("LeaveApprover")
+  assignments           EmployeeShiftAssignment[]
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+  status                EmployeeStatus            @default(ACTIVE)
+  joinDate              DateTime?
+  phoneNumber           String?
+  ktpNumber             String?                   @unique
+  address               String?
+  birthCity             String?
+  birthDate             DateTime?
+  bpjsNumber            String?
+  gender                String?
+  religion              String?
+  maritalStatus         String?
+  employmentStatus      String?
+  bloodType             String?
+  npwpNumber            String?
+  ktaNumber             String?
+  ktaExpiry             DateTime?
+  allowMobileAttendance Boolean                   @default(false)
+  allowWebAppAccess     Boolean                   @default(false)
 
   @@index([siteId])
   @@index([supervisorId])
   @@index([email])
   @@map("users")
 }
+
 
 // Junction for Employee Shift Assignment (schedules with workingDays array)
 model EmployeeShiftAssignment {

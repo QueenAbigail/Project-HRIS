@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma'
 import { EmployeesTable } from '@/components/employees/employees-table'
 import { EmployeesHeader } from '@/components/employees/employees-header'
 import { EmployeesStats } from '@/components/employees/employees-stats'
+import { format } from 'date-fns'
+import type { Employee } from '@/components/employees/employee-profile-sheet'
 
 interface LocationStat {
   name: string
@@ -15,14 +17,17 @@ export default async function EmployeesPage({
   searchParams: { search?: string }
 }) {
   const searchQuery = searchParams.search || ''
+  const today = new Date()
 
-  // Fetch all stats in parallel
+  // Fetch all stats and data in parallel
   const [
     totalUsers,
     activeUsers,
     inactiveUsers,
     onLeaveCount,
-    sites
+    sites,
+    activeLeaves,
+    users
   ] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({ where: { status: 'ACTIVE' } }),
@@ -40,12 +45,12 @@ export default async function EmployeesPage({
         AND: [
           {
             startDate: {
-              lte: new Date()
+              lte: today
             }
           },
           {
             endDate: {
-              gte: new Date()
+              gte: today
             }
           }
         ]
@@ -66,8 +71,61 @@ export default async function EmployeesPage({
       orderBy: {
         name: 'asc'
       }
+    }),
+    prisma.leave.findMany({
+      where: {
+        status: 'APPROVED',
+        AND: [
+          {
+            startDate: {
+              lte: today
+            }
+          },
+          {
+            endDate: {
+              gte: today
+            }
+          }
+        ]
+      },
+      select: {
+        requesterId: true
+      }
+    }),
+    prisma.user.findMany({
+      include: {
+        site: true
+      }
     })
   ])
+
+  const onLeaveIds = new Set(activeLeaves.map((leave) => leave.requesterId))
+
+  const employees: Employee[] = users.map((user) => {
+    const nameParts = user.name.trim().split(/\s+/)
+    const initials = nameParts.slice(0, 2).map((part) => part[0]?.toUpperCase() || '').join('')
+    
+    const status = onLeaveIds.has(user.id) && user.status === 'ACTIVE' 
+      ? 'on-leave' 
+      : user.status.toLowerCase() as 'active' | 'inactive' | 'on-leave'
+    
+    const joinDate = (user as any).joinDate 
+      ? format((user as any).joinDate, 'MMM dd, yyyy')
+      : format(user.createdAt, 'MMM dd, yyyy')
+    
+    return {
+      id: user.employeeCode ?? `EMP${user.id.slice(-4).toUpperCase()}`,
+      name: user.name,
+      initials,
+      email: user.email,
+      department: user.department ?? 'N/A',
+      position: user.position ?? 'N/A',
+      status,
+      joinDate,
+      location: user.site?.name ?? 'Unassigned',
+      locationCode: user.site?.code ?? '',
+    }
+  }).sort((a, b) => a.name.localeCompare(b.name))
 
   const locationStats: LocationStat[] = sites.map((site) => ({
     name: site.name,
@@ -87,7 +145,7 @@ export default async function EmployeesPage({
         }}
         locationStats={locationStats} 
       />
-      <EmployeesTable searchQuery={searchQuery} />
+      <EmployeesTable users={employees} />
     </div>
   )
 }

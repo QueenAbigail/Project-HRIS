@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -10,7 +11,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import type { Employee } from './employee-profile-sheet'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -28,59 +31,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MoreHorizontal, Eye, Pencil, Trash2, MapPin, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
-import { EmployeeProfileSheet, type Employee } from './employee-profile-sheet'
+import { Search, Filter, Download, MoreHorizontal, Eye, Pencil, Trash2, MapPin, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { EmployeeProfileSheet } from './employee-profile-sheet'
 import { EmployeeEditDialog } from './employee-edit-dialog'
-import { NewEmployee } from './add-employee-dialog'
+import type { NewEmployee } from './add-employee-dialog'
 
-// Generate 200 employees for pagination testing
-const departments = ['Field Security', 'Surveillance', 'Administration', 'Patrol', 'VIP Protection']
-const positions = ['Security Guard', 'Senior Guard', 'CCTV Operator', 'Control Room Lead', 'Patrol Lead', 'Night Patrol', 'Mobile Patrol', 'VIP Protection', 'HR Coordinator', 'Payroll Specialist']
-const locations = [
-  { name: 'Head Office', code: 'HO' },
-  { name: 'Plaza Tower - Downtown', code: 'PT-DT' },
-  { name: 'Riverside Mall', code: 'RM' },
-  { name: 'Metro Bank - Central', code: 'MB-CT' },
-  { name: 'Corporate Center - North', code: 'CC-N' },
-  { name: 'Industrial Park - West', code: 'IP-W' },
-]
-const statuses = ['active', 'active', 'active', 'active', 'on-leave', 'inactive'] // weighted towards active
-
-const firstNames = ['Michael', 'Sarah', 'David', 'Emily', 'James', 'Robert', 'Jessica', 'Thomas', 'Amanda', 'Kevin', 'Jennifer', 'Daniel', 'Michelle', 'Christopher', 'Lisa', 'Matthew', 'Ashley', 'Andrew', 'Nicole', 'Joshua', 'Stephanie', 'Ryan', 'Heather', 'Brandon', 'Rachel', 'Justin', 'Samantha', 'Brian', 'Megan', 'Eric', 'Laura', 'Steven', 'Rebecca', 'Timothy', 'Brittany', 'Mark', 'Katherine', 'Jason', 'Amber', 'Jeffrey', 'Christina', 'Adam', 'Danielle', 'Nathan', 'Lindsay', 'Zachary', 'Angela', 'Jonathan', 'Chelsea', 'Kyle']
-const lastNames = ['Chen', 'Williams', 'Rodriguez', 'Johnson', 'Wilson', 'Taylor', 'Brown', 'Anderson', 'Lee', 'Martinez', 'Garcia', 'Moore', 'Clark', 'Harris', 'Lewis', 'Robinson', 'Walker', 'Hall', 'Young', 'King', 'Wright', 'Lopez', 'Hill', 'Scott', 'Green', 'Adams', 'Baker', 'Nelson', 'Carter', 'Mitchell', 'Perez', 'Roberts', 'Turner', 'Phillips', 'Campbell', 'Parker', 'Evans', 'Edwards', 'Collins', 'Stewart', 'Sanchez', 'Morris', 'Rogers', 'Reed', 'Cook', 'Morgan', 'Bell', 'Murphy', 'Bailey', 'Rivera']
-
-function generateEmployees(count: number): Employee[] {
-  return Array.from({ length: count }, (_, i) => {
-    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)]
-    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)]
-    const name = `${firstName} ${lastName}`
-    const location = locations[Math.floor(Math.random() * locations.length)]
-    const dept = departments[Math.floor(Math.random() * departments.length)]
-    const pos = positions[Math.floor(Math.random() * positions.length)]
-    const status = statuses[Math.floor(Math.random() * statuses.length)]
-    
-    // Generate random join date between 2019 and 2024
-    const year = 2019 + Math.floor(Math.random() * 6)
-    const month = Math.floor(Math.random() * 12)
-    const day = 1 + Math.floor(Math.random() * 28)
-    const joinDate = new Date(year, month, day).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
-    
-    return {
-      id: `EMP${String(i + 1).padStart(3, '0')}`,
-      name,
-      initials: `${firstName[0]}${lastName[0]}`,
-      email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@secureguard.com`,
-      department: dept,
-      position: pos,
-      status,
-      joinDate,
-      location: location.name,
-      locationCode: location.code,
-    }
-  })
-}
-
-const initialEmployees = generateEmployees(200)
 
 const statusStyles: Record<string, string> = {
   'active': 'bg-success/10 text-success border-success/20',
@@ -88,17 +43,26 @@ const statusStyles: Record<string, string> = {
   'inactive': 'bg-muted text-muted-foreground border-muted',
 }
 
+
 interface EmployeesTableProps {
-  searchQuery?: string
-  onAddEmployee?: (employee: NewEmployee) => void
+  users: Employee[]
 }
 
-export function EmployeesTable({ searchQuery = '' }: EmployeesTableProps) {
-  const [employees, setEmployees] = useState<Employee[]>(initialEmployees)
+export function EmployeesTable({ users }: EmployeesTableProps) {
+  const [employees, setEmployees] = useState<Employee[]>(users)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
   
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value
+    setSearchQuery(query)
+    setCurrentPage(1) // Reset to first page on search
+  }
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -192,23 +156,75 @@ export function EmployeesTable({ searchQuery = '' }: EmployeesTableProps) {
   return (
     <>
       <Card className="bg-card border-border">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>Employee Directory</CardTitle>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Show</span>
-            <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-              <SelectTrigger className="w-[70px] h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5">5</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-                <SelectItem value="100">100</SelectItem>
-              </SelectContent>
-            </Select>
-            <span className="text-sm text-muted-foreground">per page</span>
+        <CardHeader className="space-y-4 pb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <CardTitle className="flex-1">Employee Directory</CardTitle>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Show</span>
+              <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                <SelectTrigger className="w-[70px] h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-muted-foreground">per page</span>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search employees by name, email, department..."
+                className="pl-9 h-10"
+                value={searchQuery}
+                onChange={handleSearch}
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="whitespace-nowrap">
+                    <Filter className="mr-2 size-4" />
+                    Filter
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>All Employees</DropdownMenuItem>
+                  <DropdownMenuItem>Active</DropdownMenuItem>
+                  <DropdownMenuItem>On Leave</DropdownMenuItem>
+                  <DropdownMenuItem>Inactive</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Filter by Location</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>All Locations</DropdownMenuItem>
+                  <DropdownMenuItem>Head Office</DropdownMenuItem>
+                  <DropdownMenuItem>Plaza Tower - Downtown</DropdownMenuItem>
+                  <DropdownMenuItem>Riverside Mall</DropdownMenuItem>
+                  <DropdownMenuItem>Metro Bank - Central</DropdownMenuItem>
+                  <DropdownMenuItem>Corporate Center - North</DropdownMenuItem>
+                  <DropdownMenuItem>Industrial Park - West</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Filter by Department</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>Field Security</DropdownMenuItem>
+                  <DropdownMenuItem>Surveillance</DropdownMenuItem>
+                  <DropdownMenuItem>Administration</DropdownMenuItem>
+                  <DropdownMenuItem>Patrol</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button variant="outline" className="whitespace-nowrap">
+                <Download className="mr-2 size-4" />
+                Export
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

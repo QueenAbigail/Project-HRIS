@@ -1,0 +1,16 @@
+# 🎨 UI & STYLING RULES (STRICT)
+- STRICTLY use `shadcn/ui` for all UI components. Always assume components are located in `@/components/ui/`.
+- NEVER build custom UI components from scratch if a `shadcn/ui` equivalent exists (e.g., use shadcn's Card, Button, Input, Table, Badge).
+- If a shadcn component is missing, tell me to run `npx shadcn@latest add <component>` first.
+- Use Tailwind CSS for all custom styling. 
+- Respect the adaptive Light/Dark mode implementation. Rely STRICTLY on global CSS variables (e.g., `bg-background`, `text-foreground`, `border-border`, `text-muted-foreground`) so the theme switcher works seamlessly. AVOID hardcoding specific colors or `dark:` utility classes.
+- Exclusively use `lucide-react` for all icons.
+
+# ⚛️ NEXT.JS APP ROUTER ARCHITECTURE
+- Default to Server Components for data fetching. 
+- Only use `"use client"` when React hooks (`useState`, `useEffect`) or user interactivity (`onClick`, `onChange`) are strictly required.
+- NEVER pass React elements/components (like Lucide icons) as props from Server Components to Client Components to avoid serialization errors. Pass raw data instead.
+
+# 🗄️ DATABASE & DATA FETCHING
+- Always use Prisma (`@/lib/prisma`) for database queries inside Server Components and Server Actions.
+- Avoid client-side data fetching unless absolutely necessary.

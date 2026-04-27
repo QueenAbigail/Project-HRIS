@@ -1,19 +1,19 @@
-# Dynamic Employees Page Implementation
+# Add Employee Dialog Rewrite
 
-## Plan Summary
-Convert hardcoded stats in employees/page.tsx to live Prisma data (Server Component).
-Update employees-stats.tsx to use props.
+## Objective
+Completely rewrite `components/employees/add-employee-dialog.tsx` into a 4-step wizard based on `schema.prisma` while preserving the existing Import tab functionality.
 
-## Steps:
-- [x] Step 1: Create TODO.md (done)
-- [ ] Step 2: Update app/dashboard/employees/page.tsx to Server Component with Prisma queries
-- [ ] Step 3: Update components/employees/employees-stats.tsx to accept/use dynamic props  
-- [ ] Step 4: Test and complete
+## Steps
+1. [x] Read existing files (`schema.prisma`, `add-employee-dialog.tsx`, `employees-header.tsx`, `employees-table.tsx`, `constants.ts`, `client-system.ts`, `switch.tsx`)
+2. [x] Analyze dependencies and props
+3. [ ] Rewrite `components/employees/add-employee-dialog.tsx` with:
+   - 4-step wizard in Manual tab
+   - State for `step`, `showPassword`, `errorMsg`, `formData`
+   - Dynamic per-step validation with Indonesian error messages
+   - `fetchUserRole` to conditionally hide SUPER_ADMIN
+   - Hardcoded `locations`/`departments`/`positions` arrays for dropdowns
+   - Proper dialog sizing (`sm:max-w-[700px] min-h-[500px]`)
+   - All navigation buttons with `type="button"`
+   - Updated `NewEmployee` interface
+4. [ ] Verify the file compiles (type-check / lint)
 
-Current progress: Steps 2 & 3 complete (page.tsx Server Component + dynamic stats; employees-stats.tsx props-based). employees-stats.tsx updated successfully.
-
-## Steps:
-- [x] Step 1: Create TODO.md (done)
-- [x] Step 2: Update app/dashboard/employees/page.tsx to Server Component with Prisma queries (done)
-- [x] Step 3: Update components/employees/employees-stats.tsx to accept/use dynamic props (done)
-- [ ] Step 4: Test and complete
