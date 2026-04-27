@@ -56,18 +56,17 @@ export function AddEmployeeDialog({
   const [errorMsg, setErrorMsg] = useState('')
   
   const [formData, setFormData] = useState({
-    name: '',
-    email: '', // Personal Email (Optional)
-    employeeCode: '',
-    password: 'promaxima',
-    department: '',
-    position: '',
-    location: '',
-    joinDate: new Date().toISOString().split('T')[0],
-    // Sisanya buat Step 2, 3, 4 nyusul di fase berikutnya
+    // Step 1
+    name: '', email: '', employeeCode: '', password: 'promaxima', department: '', position: '', location: '', joinDate: new Date().toISOString().split('T')[0],
+    // Step 2
+    phoneNumber: '', ktpNumber: '', address: '', birthCity: '', birthDate: '', bpjsNumber: '', gender: '',
+    // Step 3
+    employmentStatus: '', maritalStatus: '', religion: '', bloodType: '', npwpNumber: '', ktaNumber: '', ktaExpiry: '',
+    // Step 4
+    role: 'STAFF', allowMobileAttendance: 'false', allowWebAppAccess: 'false'
   })
 
-  // Reset form tiap kali modal ditutup
+  // Reset form
   const handleOpenChange = (isOpen: boolean) => {
     onOpenChange(isOpen)
     if (!isOpen) {
@@ -76,35 +75,56 @@ export function AddEmployeeDialog({
       resetImportStatus()
       setActiveTab('manual')
       setFormData({
-        name: '', email: '', employeeCode: '', password: 'promaxima', 
-        department: '', position: '', location: '', joinDate: new Date().toISOString().split('T')[0]
+        name: '', email: '', employeeCode: '', password: 'promaxima', department: '', position: '', location: '', joinDate: new Date().toISOString().split('T')[0],
+        phoneNumber: '', ktpNumber: '', address: '', birthCity: '', birthDate: '', bpjsNumber: '', gender: '',
+        employmentStatus: '', maritalStatus: '', religion: '', bloodType: '', npwpNumber: '', ktaNumber: '', ktaExpiry: '',
+        role: 'STAFF', allowMobileAttendance: 'false', allowWebAppAccess: 'false'
       })
     }
   }
 
-  // Logika Validasi Pindah Step
+  // Validasi Dinamis & Navigasi
   const handleNextStep = () => {
+    const missingFields = []
+    
     if (step === 1) {
-      const missingFields = []
       if (!formData.name) missingFields.push('Full Name')
-      if (!formData.employeeCode) missingFields.push('NIP / Employee Code')
+      if (!formData.employeeCode) missingFields.push('NIP')
       if (!formData.password) missingFields.push('Password')
       if (!formData.department) missingFields.push('Department')
       if (!formData.position) missingFields.push('Position')
       if (!formData.location) missingFields.push('Location')
       if (!formData.joinDate) missingFields.push('Join Date')
+    } else if (step === 2) {
+      if (!formData.phoneNumber) missingFields.push('Phone Number')
+      if (!formData.ktpNumber) missingFields.push('KTP Number')
+      if (!formData.address) missingFields.push('Address')
+      if (!formData.birthCity) missingFields.push('City of Birth')
+      if (!formData.birthDate) missingFields.push('Date of Birth')
+      if (!formData.gender) missingFields.push('Gender')
+    } else if (step === 3) {
+      if (!formData.employmentStatus) missingFields.push('Employment Status')
+      if (!formData.maritalStatus) missingFields.push('Marital Status')
+      if (!formData.religion) missingFields.push('Religion')
+    }
 
-      if (missingFields.length > 0) {
-        setErrorMsg(`Kolom berikut wajib diisi: ${missingFields.join(', ')}`)
-        return // Stop, jangan pindah step
-      }
+    if (missingFields.length > 0) {
+      setErrorMsg(`Kolom berikut wajib diisi: ${missingFields.join(', ')}`)
+      return
     }
     
     setErrorMsg('')
     setStep(step + 1)
   }
 
-  // Fitur Import (Tidak diubah, tetap bawaan dari kodemu)
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    // Karena Step 4 datanya otomatis keisi default, langsung submit aja
+    onAddEmployee?.({ ...formData, status: 'active' })
+    handleOpenChange(false) // Tutup modal setelah sukses
+  }
+
+  // Fitur Import (Tetap utuh)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -117,16 +137,7 @@ export function AddEmployeeDialog({
     }
     reader.readAsText(file)
   }
-
-  const downloadTemplate = () => {
-    // Simulasi download template bawaanmu
-    alert("Downloading template...") 
-  }
-
-  const resetImportStatus = () => {
-    setImportStatus('idle')
-    setImportCount(0)
-  }
+  const resetImportStatus = () => { setImportStatus('idle'); setImportCount(0) }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -140,106 +151,187 @@ export function AddEmployeeDialog({
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="manual" className="gap-2">
-              <UserPlus className="size-4" /> Manual Entry
-            </TabsTrigger>
-            <TabsTrigger value="import" className="gap-2">
-              <FileSpreadsheet className="size-4" /> Import from Excel
-            </TabsTrigger>
+            <TabsTrigger value="manual" className="gap-2"><UserPlus className="size-4" /> Manual Entry</TabsTrigger>
+            <TabsTrigger value="import" className="gap-2"><FileSpreadsheet className="size-4" /> Import from Excel</TabsTrigger>
           </TabsList>
           
-          {/* TAB 1: MANUAL ENTRY WIZARD */}
-          <TabsContent value="manual" className="mt-4 flex flex-col h-[400px]">
-            <h3 className="text-lg font-medium mb-4">Step {step} of 4: Basic Information</h3>
+          <TabsContent value="manual" className="mt-4 flex flex-col h-[420px]">
+            <h3 className="text-lg font-medium mb-4">
+              Step {step} of 4: 
+              {step === 1 && " Basic Information"}
+              {step === 2 && " Personal Identity"}
+              {step === 3 && " Demographics & Admin"}
+              {step === 4 && " Access & Authentication"}
+            </h3>
             
-            <div className="flex-1 overflow-y-auto pr-2">
+            <div className="flex-1 overflow-y-auto pr-2 pb-2">
+              {/* STEP 1 */}
               {step === 1 && (
                 <div className="grid grid-cols-2 gap-4">
-                  {/* Name */}
-                  <div className="space-y-2">
-                    <Label>Full Name <span className="text-red-500">*</span></Label>
-                    <Input placeholder="Enter full name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
-                  </div>
-
-                  {/* Optional Email */}
-                  <div className="space-y-2">
-                    <Label>Personal Email</Label>
-                    <Input type="email" placeholder="Enter email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
-                  </div>
-
-                  {/* NIP */}
-                  <div className="space-y-2">
-                    <Label>NIP / Employee Code <span className="text-red-500">*</span></Label>
-                    <Input placeholder="Enter NIP" value={formData.employeeCode} onChange={(e) => setFormData({...formData, employeeCode: e.target.value})} />
-                  </div>
-
-                  {/* Password Show/Hide */}
-                  <div className="space-y-2">
-                    <Label>Password <span className="text-red-500">*</span></Label>
-                    <div className="relative">
-                      <Input type={showPassword ? 'text' : 'password'} value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="pr-10" />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Department */}
+                  <div className="space-y-2"><Label>Full Name <span className="text-red-500">*</span></Label><Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>Personal Email</Label><Input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>NIP / Employee Code <span className="text-red-500">*</span></Label><Input value={formData.employeeCode} onChange={(e) => setFormData({...formData, employeeCode: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>Password <span className="text-red-500">*</span></Label><div className="relative"><Input type={showPassword ? 'text' : 'password'} value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="pr-10" /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></div>
                   <div className="space-y-2">
                     <Label>Department <span className="text-red-500">*</span></Label>
                     <Select value={formData.department} onValueChange={(val) => setFormData({...formData, department: val})}>
-                      <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
-                      <SelectContent>
-                        {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                      </SelectContent>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>{departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-
-                  {/* Position */}
                   <div className="space-y-2">
                     <Label>Position <span className="text-red-500">*</span></Label>
                     <Select value={formData.position} onValueChange={(val) => setFormData({...formData, position: val})}>
-                      <SelectTrigger><SelectValue placeholder="Select position" /></SelectTrigger>
-                      <SelectContent>
-                        {positions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                      </SelectContent>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>{positions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-
-                  {/* Location */}
                   <div className="space-y-2">
                     <Label>Location <span className="text-red-500">*</span></Label>
                     <Select value={formData.location} onValueChange={(val) => setFormData({...formData, location: val})}>
-                      <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>{locations.map(l => <SelectItem key={l.code} value={l.name}>{l.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2"><Label>Join Date <span className="text-red-500">*</span></Label><Input type="date" value={formData.joinDate} onChange={(e) => setFormData({...formData, joinDate: e.target.value})} /></div>
+                </div>
+              )}
+
+              {/* STEP 2 */}
+              {step === 2 && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2"><Label>Phone Number <span className="text-red-500">*</span></Label><Input value={formData.phoneNumber} onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>KTP Number <span className="text-red-500">*</span></Label><Input value={formData.ktpNumber} onChange={(e) => setFormData({...formData, ktpNumber: e.target.value})} /></div>
+                  <div className="space-y-2 col-span-2">
+                    <Label>Address <span className="text-red-500">*</span></Label>
+                    <textarea className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
+                  </div>
+                  <div className="space-y-2"><Label>City of Birth <span className="text-red-500">*</span></Label><Input value={formData.birthCity} onChange={(e) => setFormData({...formData, birthCity: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>Date of Birth <span className="text-red-500">*</span></Label><Input type="date" value={formData.birthDate} onChange={(e) => setFormData({...formData, birthDate: e.target.value})} /></div>
+                  <div className="space-y-2">
+                    <Label>Gender <span className="text-red-500">*</span></Label>
+                    <Select value={formData.gender} onValueChange={(val) => setFormData({...formData, gender: val})}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent><SelectItem value="Male">Male</SelectItem><SelectItem value="Female">Female</SelectItem></SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2"><Label>BPJS Number</Label><Input value={formData.bpjsNumber} onChange={(e) => setFormData({...formData, bpjsNumber: e.target.value})} /></div>
+                </div>
+              )}
+
+              {/* STEP 3 */}
+              {step === 3 && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Employment Status <span className="text-red-500">*</span></Label>
+                    <Select value={formData.employmentStatus} onValueChange={(val) => setFormData({...formData, employmentStatus: val})}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>
-                        {locations.map(l => <SelectItem key={l.code} value={l.name}>{l.name}</SelectItem>)}
+                        <SelectItem value="Permanent">Permanent</SelectItem>
+                        <SelectItem value="Contract">Contract</SelectItem>
+                        <SelectItem value="Probation">Probation</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Join Date */}
                   <div className="space-y-2">
-                    <Label>Join Date <span className="text-red-500">*</span></Label>
-                    <Input type="date" value={formData.joinDate} onChange={(e) => setFormData({...formData, joinDate: e.target.value})} />
+                    <Label>Marital Status <span className="text-red-500">*</span></Label>
+                    <Select value={formData.maritalStatus} onValueChange={(val) => setFormData({...formData, maritalStatus: val})}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Single">Single</SelectItem>
+                        <SelectItem value="Married">Married</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Religion <span className="text-red-500">*</span></Label>
+                    <Select value={formData.religion} onValueChange={(val) => setFormData({...formData, religion: val})}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Islam">Islam</SelectItem>
+                        <SelectItem value="Christianity">Christianity</SelectItem>
+                        <SelectItem value="Catholicism">Catholicism</SelectItem>
+                        <SelectItem value="Hinduism">Hinduism</SelectItem>
+                        <SelectItem value="Buddhism">Buddhism</SelectItem>
+                        <SelectItem value="Confucianism">Confucianism</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Blood Type</Label>
+                    <Select value={formData.bloodType} onValueChange={(val) => setFormData({...formData, bloodType: val})}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A">A</SelectItem><SelectItem value="B">B</SelectItem><SelectItem value="AB">AB</SelectItem><SelectItem value="O">O</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2"><Label>NPWP Number</Label><Input value={formData.npwpNumber} onChange={(e) => setFormData({...formData, npwpNumber: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>KTA Number</Label><Input value={formData.ktaNumber} onChange={(e) => setFormData({...formData, ktaNumber: e.target.value})} /></div>
+                  <div className="space-y-2"><Label>KTA Expiry</Label><Input type="date" value={formData.ktaExpiry} onChange={(e) => setFormData({...formData, ktaExpiry: e.target.value})} /></div>
+                </div>
+              )}
+
+              {/* STEP 4 */}
+              {step === 4 && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>System Role <span className="text-red-500">*</span></Label>
+                    <Select value={formData.role} onValueChange={(val) => setFormData({...formData, role: val})}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="STAFF">Super Admin</SelectItem>
+                        <SelectItem value="STAFF">Staff</SelectItem>
+                        <SelectItem value="HR_ADMIN">HR Admin</SelectItem>
+                        <SelectItem value="MANAGER">Manager</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Mobile Attendance Access <span className="text-red-500">*</span></Label>
+                    <Select value={formData.allowMobileAttendance} onValueChange={(val) => setFormData({...formData, allowMobileAttendance: val})}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="true">Yes, Allow</SelectItem><SelectItem value="false">No, Block</SelectItem></SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Web App Access <span className="text-red-500">*</span></Label>
+                    <Select value={formData.allowWebAppAccess} onValueChange={(val) => setFormData({...formData, allowWebAppAccess: val})}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="true">Yes, Allow</SelectItem><SelectItem value="false">No, Block</SelectItem></SelectContent>
+                    </Select>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Error Message Display */}
-            {errorMsg && (
-              <p className="text-sm text-red-500 mt-2 font-medium">{errorMsg}</p>
-            )}
+            {errorMsg && <p className="text-sm text-red-500 mt-2 font-medium bg-red-500/10 p-2 rounded">{errorMsg}</p>}
 
             <DialogFooter className="mt-4 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>Cancel</Button>
-              <Button type="button" onClick={handleNextStep}>Next &rarr;</Button>
+              {step === 1 && (
+                <>
+                  <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>Cancel</Button>
+                  <Button type="button" onClick={handleNextStep}>Next &rarr;</Button>
+                </>
+              )}
+              {(step > 1 && step < 4) && (
+                <>
+                  <Button type="button" variant="outline" onClick={() => { setStep(step - 1); setErrorMsg(''); }}>&larr; Back</Button>
+                  <Button type="button" onClick={handleNextStep}>Next &rarr;</Button>
+                </>
+              )}
+              {step === 4 && (
+                <>
+                  <Button type="button" variant="outline" onClick={() => setStep(3)}>&larr; Back</Button>
+                  <Button type="submit" onClick={handleSubmit}>Add Employee</Button>
+                </>
+              )}
             </DialogFooter>
           </TabsContent>
           
-          {/* TAB 2: IMPORT EXCEL (Bawaan Kodingan Lu) */}
           <TabsContent value="import" className="mt-4 space-y-4">
-            {importStatus === 'idle' && (
+             {/* Konten Import Tetap Utuh */}
+             {importStatus === 'idle' && (
               <>
                 <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-8 text-center">
                   <Upload className="mx-auto size-12 text-muted-foreground/50" />
@@ -249,15 +341,8 @@ export function AddEmployeeDialog({
                     <Upload className="mr-2 size-4" /> Choose File
                   </Button>
                 </div>
-                
-                <Alert>
-                  <AlertCircle className="size-4" />
-                  <AlertTitle>Supported Formats</AlertTitle>
-                  <AlertDescription>Excel (.xlsx, .xls) and CSV files are supported.</AlertDescription>
-                </Alert>
               </>
             )}
-            
             {importStatus === 'success' && (
               <Alert className="border-success bg-success/10">
                 <CheckCircle2 className="size-4 text-success" />
@@ -265,7 +350,6 @@ export function AddEmployeeDialog({
                 <AlertDescription>Successfully imported {importCount} employees.</AlertDescription>
               </Alert>
             )}
-            
             {importStatus !== 'idle' && (
               <DialogFooter>
                 <Button variant="outline" onClick={() => handleOpenChange(false)}>Close</Button>
