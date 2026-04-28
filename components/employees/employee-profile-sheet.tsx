@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   Sheet,
   SheetContent,
@@ -26,7 +27,8 @@ import {
   AlertCircle,
   CheckCircle2,
   User,
-  CreditCard
+  CreditCard,
+  ChevronDown
 } from 'lucide-react'
 
 export interface Employee {
@@ -41,6 +43,7 @@ export interface Employee {
   location: string
   locationCode: string
   phone?: string
+  phoneNumber?: string
   emergencyContact?: string
   certifications?: string[]
   bankAccount?: string
@@ -51,6 +54,11 @@ export interface Employee {
   bloodType?: string
   ktaNumber?: string
   ktaExpiry?: string
+  ktpNumber?: string
+  address?: string
+  birthCity?: string
+  birthDate?: string
+  gender?: string
 }
 
 interface EmployeeProfileSheetProps {
@@ -132,6 +140,7 @@ export function EmployeeProfileSheet({ employee, open, onOpenChange, onEdit }: E
   if (!employee) return null
 
   const details = employeeDetails[employee.id] || defaultDetails
+  const [isExpanded, setIsExpanded] = useState(false)
 
   // Dynamic check for missing administrative fields
   const fieldChecks: { key: keyof Employee; label: string }[] = [
@@ -200,21 +209,80 @@ export function EmployeeProfileSheet({ employee, open, onOpenChange, onEdit }: E
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center gap-3 text-sm">
-                  <Mail className="size-4 text-muted-foreground" />
-                  <span>{employee.email}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Phone className="size-4 text-muted-foreground" />
-                  <span>{details.phone}</span>
-                </div>
                 <div className="flex items-start gap-3 text-sm">
-                  <AlertCircle className="size-4 text-muted-foreground mt-0.5" />
+                  <Mail className="size-4 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Emergency Contact</p>
-                    <span>{details.emergencyContact}</span>
+                    <p className="text-xs text-muted-foreground">Personal Email</p>
+                    <span>{employee.personalEmail || 'Not provided'}</span>
                   </div>
                 </div>
+                <div className="flex items-start gap-3 text-sm">
+                  <Phone className="size-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Phone Number</p>
+                    <span>{employee.phoneNumber || 'Not provided'}</span>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 text-sm">
+                  <User className="size-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Gender</p>
+                    <span>{employee.gender || 'Not provided'}</span>
+                  </div>
+                </div>
+
+                {/* Expandable Section */}
+                <div
+                  className={`grid transition-all duration-300 ease-in-out ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0'}`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="space-y-3 pt-3 border-t border-border">
+                      <div className="flex items-start gap-3 text-sm">
+                        <AlertCircle className="size-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">KTP Number</p>
+                          <span>{employee.ktpNumber || 'Not provided'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm">
+                        <MapPin className="size-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Address</p>
+                          <span>{employee.address || 'Not provided'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm">
+                        <MapPin className="size-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">City of Birth</p>
+                          <span>{employee.birthCity || 'Not provided'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm">
+                        <Calendar className="size-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Date of Birth</p>
+                          <span>{employee.birthDate || 'Not provided'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm">
+                        <CreditCard className="size-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">BPJS Number</p>
+                          <span>{employee.bpjsNumber || 'Not provided'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="w-full flex justify-center items-center py-1 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setIsExpanded((prev) => !prev)}
+                >
+                  <ChevronDown className={`size-4 transition-transform duration-300 ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
+                </button>
               </CardContent>
             </Card>
 
