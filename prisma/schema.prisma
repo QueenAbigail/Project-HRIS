@@ -116,6 +116,7 @@ model User {
   bloodType             String?
   npwpNumber            String?
   ktaNumber             String?
+  certifications        String[]
   ktaExpiry             DateTime?
   allowMobileAttendance Boolean                   @default(false)
   allowWebAppAccess     Boolean                   @default(false)

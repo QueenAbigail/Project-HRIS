@@ -93,8 +93,37 @@ export default async function EmployeesPage({
       }
     }),
     prisma.user.findMany({
-      include: {
-        site: true
+      select: {
+        id: true,
+        name: true,
+        initials: true,
+        email: true,
+        department: true,
+        position: true,
+        status: true,
+        joinDate: true,
+        phoneNumber: true,
+        personalEmail: true,
+        bpjsNumber: true,
+        npwpNumber: true,
+        ktpNumber: true,
+        address: true,
+        birthCity: true,
+        birthDate: true,
+        gender: true,
+        religion: true,
+        maritalStatus: true,
+        bloodType: true,
+        employeeCode: true,
+        ktaNumber: true,
+        ktaExpiry: true,
+        certifications: true,
+        site: {
+          select: {
+            name: true,
+            code: true
+          }
+        }
       }
     })
   ])
