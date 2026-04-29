@@ -36,6 +36,7 @@ export interface Employee {
   name: string
   initials: string
   email: string
+  employeeCode?: string | null
   department: string
   position: string
   status: string
