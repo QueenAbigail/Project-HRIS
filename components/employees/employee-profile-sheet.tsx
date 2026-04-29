@@ -176,7 +176,7 @@ export function EmployeeProfileSheet({ employee, open, onOpenChange, onEdit }: E
                 <Badge variant="outline" className={statusStyles[employee.status]}>
                   {employee.status === 'on-leave' ? 'On Leave' : employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
                 </Badge>
-                <span className="text-xs text-muted-foreground font-mono">{employee.id}</span>
+                <span className="text-xs text-muted-foreground font-mono">{employee.employeeCode || 'No ID'}</span>
               </div>
             </div>
           </div>

@@ -139,6 +139,7 @@ export default async function EmployeesPage({
       religion: user.religion ?? '',
       maritalStatus: user.maritalStatus ?? '',
       bloodType: user.bloodType ?? '',
+      employeeCode: user.employeeCode ?? '',
       ktaNumber: user.ktaNumber ?? '',
       ktaExpiry: user.ktaExpiry
         ? format(user.ktaExpiry, 'yyyy-MM-dd')

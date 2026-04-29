@@ -259,7 +259,7 @@ export function EmployeesTable({ users }: EmployeesTableProps) {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono text-sm">{employee.id}</TableCell>
+                    <TableCell className="font-mono text-sm">{employee.employeeCode || employee.id}</TableCell>
                     <TableCell className="hidden md:table-cell">
                       <div className="flex items-center gap-2">
                         <MapPin className="size-3 text-muted-foreground" />
