@@ -161,6 +161,7 @@ export function EmployeeProfileSheet({ employee, open, onOpenChange, onEdit }: E
 const details = employeeDetails[employee.id] || defaultDetails
   const [isExpanded, setIsExpanded] = useState(false)
   const [isExpandedAssignment, setIsExpandedAssignment] = useState(false)
+  const [isExpandedKTA, setIsExpandedKTA] = useState(false)
 
   // Dynamic check for missing administrative fields
   const fieldChecks: { key: keyof Employee; label: string }[] = [
@@ -175,6 +176,10 @@ const details = employeeDetails[employee.id] || defaultDetails
     .map((f) => f.label)
 
   const hasMissingFields = missingFields.length > 0
+
+  const certName = employee.certifications?.[0];
+  const hasCert = !!certName && certName !== "none"; 
+  const isKtaExpired = employee.ktaExpiry ? new Date(employee.ktaExpiry) < new Date() : false;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -409,13 +414,47 @@ const details = employeeDetails[employee.id] || defaultDetails
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {details.certifications.map((cert, index) => (
-                    <Badge key={index} variant="secondary" className="bg-primary/10 text-primary border-0">
-                      {cert}
-                    </Badge>
-                  ))}
+                <Badge className={
+                  !hasCert ? "bg-warning/10 text-warning border-0" :
+                  isKtaExpired ? "bg-destructive/10 text-destructive border-0" :
+                  "bg-primary/10 text-primary border-0"
+                }>
+                  {!hasCert ? "No Certification" : certName}
+                </Badge>
+
+                {/* Expandable KTA Details */}
+                <div
+                  className={`grid transition-all duration-300 ease-in-out ${isExpandedKTA ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0'}`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="space-y-3 pt-3 border-t border-border">
+                      <div className="flex items-start gap-3 text-sm">
+                        <CreditCard className="size-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">KTA Number</p>
+                          <span>{employee.ktaNumber || "Not provided"}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm">
+                        <Calendar className="size-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">KTA Expiry</p>
+                          <span>{employee.ktaExpiry ? new Date(employee.ktaExpiry).toLocaleDateString() : "Not provided"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
+                {hasCert && (
+                  <button
+                    type="button"
+                    className="w-full flex justify-center items-center py-1 text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setIsExpandedKTA((prev) => !prev)}
+                  >
+                    <ChevronDown className={`size-4 transition-transform duration-300 ${isExpandedKTA ? 'rotate-180' : 'rotate-0'}`} />
+                  </button>
+                )}
               </CardContent>
             </Card>
 

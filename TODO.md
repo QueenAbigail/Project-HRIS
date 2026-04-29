@@ -1,18 +1,15 @@
-# Add Certification Dropdown to Add Employee Form - ✅ COMPLETE
+# Upgrade Certifications Card with Dynamic Expiry Logic - TODO
 
-## Completed Steps:
-- [x] Step 1: formData state updated (initial + reset)
-- [x] Step 2: Certification Select added to Step 3 JSX (between NPWP & KTA Number)
-- [x] Step 3: handleSubmit transforms `certification` → `certifications: [...] || []`
+## Approved Plan Steps:
+- [x] Step 1: Add `isExpandedKTA` state
+- [x] Step 2: Add certName, hasCert, isKtaExpired logic variables
+- [x] Step 3: Replace entire Certifications Card with dynamic Badge + expandable KTA details + conditional toggle
+- [ ] Step 4: Verify imports (CreditCard, Calendar already present)
+- [ ] Step 5: Test badge logic and expand/collapse
 
-**Changes in**: `components/employees/add-employee-dialog.tsx`
+**Status**: Starting implementation...
 
-## Testing:
-1. Navigate to Employees → Add Employee → Step 3
-2. Select Certification (e.g. "Gada Madya"), fill required, submit
-3. Verify browser Network tab: payload has `"certifications": ["Gada Madya"]`
-4. Check DB: `npx prisma studio` → users → certifications array
+**Status**: ✅ Steps 1-3 complete. Step 4: Imports verified (CreditCard, Calendar, ChevronDown already present). Step 5: Ready for testing.
 
-No migrations/installs needed. Ready to use.
-
+**Remaining**: Test in browser.
 
