@@ -28,7 +28,10 @@ import {
   CheckCircle2,
   User,
   CreditCard,
-  ChevronDown
+  ChevronDown,
+  Building,
+  FileSignature,
+  UserCheck
 } from 'lucide-react'
 
 export interface Employee {
@@ -62,6 +65,9 @@ export interface Employee {
   gender?: string
   religion?: string
   maritalStatus?: string
+  employmentStatus?: string
+  site?: { name: string }
+  supervisor?: { name: string }
 }
 
 interface EmployeeProfileSheetProps {
@@ -100,13 +106,23 @@ const employeeDetails: Record<string, Partial<Employee> & {
     totalWorkHours: 176,
     overtimeHours: 12,
     baseSalary: 4200,
-    recentActivity: [
+  recentActivity: [
       { date: 'Mar 28, 2026', action: 'Checked In', time: '07:55 AM' },
       { date: 'Mar 28, 2026', action: 'Checked Out', time: '04:05 PM' },
       { date: 'Mar 27, 2026', action: 'Overtime Approved', time: '06:30 PM' },
-    ]
+    ],
+    employmentStatus: 'Permanent',
+    site: { name: 'Head Office' },
+    supervisor: { name: 'Michael Johnson' }
   },
   'EMP002': {
+    recentActivity: [
+      { date: 'Mar 28, 2026', action: 'Checked In', time: '08:00 AM' },
+      { date: 'Mar 27, 2026', action: 'Shift Completed', time: '04:00 PM' },
+    ],
+    employmentStatus: 'Contract',
+    site: { name: 'Branch A' },
+    supervisor: { name: 'Sarah Wilson' },
     phone: '+1 (555) 234-5678',
     emergencyContact: 'Tom Williams - +1 (555) 876-5432',
     certifications: ['CCTV Operations', 'Security Systems'],
@@ -142,8 +158,9 @@ const defaultDetails = {
 export function EmployeeProfileSheet({ employee, open, onOpenChange, onEdit }: EmployeeProfileSheetProps) {
   if (!employee) return null
 
-  const details = employeeDetails[employee.id] || defaultDetails
+const details = employeeDetails[employee.id] || defaultDetails
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpandedAssignment, setIsExpandedAssignment] = useState(false)
 
   // Dynamic check for missing administrative fields
   const fieldChecks: { key: keyof Employee; label: string }[] = [
@@ -327,15 +344,15 @@ export function EmployeeProfileSheet({ employee, open, onOpenChange, onEdit }: E
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-start gap-3 text-sm">
-                  <Building2 className="size-4 text-muted-foreground mt-0.5" />
+                  <MapPin className="size-4 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Location</p>
-                    <span>{employee.location}</span>
+                    <p className="text-xs text-muted-foreground">Location / Site</p>
+                    <span>{employee.site?.name || employee.location}</span>
                     <span className="ml-2 text-xs font-mono text-muted-foreground">({employee.locationCode})</span>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 text-sm">
-                  <Briefcase className="size-4 text-muted-foreground mt-0.5" />
+                  <Building className="size-4 text-muted-foreground mt-0.5" />
                   <div>
                     <p className="text-xs text-muted-foreground">Department</p>
                     <span>{employee.department}</span>
@@ -348,6 +365,38 @@ export function EmployeeProfileSheet({ employee, open, onOpenChange, onEdit }: E
                     <span>{employee.joinDate}</span>
                   </div>
                 </div>
+
+                {/* Expandable Assignment Section - EXACT same pattern as Contact */}
+                <div
+                  className={`grid transition-all duration-300 ease-in-out ${isExpandedAssignment ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0'}`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="space-y-3 pt-3 border-t border-border">
+                      <div className="flex items-start gap-3 text-sm">
+                        <FileSignature className="size-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Employment Status</p>
+                          <span>{employee.employmentStatus || 'Not specified'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm">
+                        <UserCheck className="size-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Direct Supervisor</p>
+                          <span>{employee.supervisor?.name || 'Not assigned'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="w-full flex justify-center items-center py-1 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setIsExpandedAssignment((prev) => !prev)}
+                >
+                  <ChevronDown className={`size-4 transition-transform duration-300 ${isExpandedAssignment ? 'rotate-180' : 'rotate-0'}`} />
+                </button>
               </CardContent>
             </Card>
 
