@@ -101,31 +101,50 @@ export default async function EmployeesPage({
 
   const onLeaveIds = new Set(activeLeaves.map((leave) => leave.requesterId))
 
-  const employees: Employee[] = users.map((user) => {
-    const nameParts = user.name.trim().split(/\s+/)
-    const initials = nameParts.slice(0, 2).map((part) => part[0]?.toUpperCase() || '').join('')
-    
-    const status = onLeaveIds.has(user.id) && user.status === 'ACTIVE' 
-      ? 'on-leave' 
-      : user.status.toLowerCase() as 'active' | 'inactive' | 'on-leave'
-    
-    const joinDate = (user as any).joinDate 
-      ? format((user as any).joinDate, 'MMM dd, yyyy')
-      : format(user.createdAt, 'MMM dd, yyyy')
-    
+  const employees = users.map((user) => {
+    const status = onLeaveIds.has(user.id) && user.status === 'ACTIVE'
+      ? 'on-leave'
+      : (user.status.toLowerCase() as 'active' | 'inactive' | 'on-leave')
+
+    const initials = user.initials ?? user.name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase()
+
     return {
-      id: user.employeeCode ?? `EMP${user.id.slice(-4).toUpperCase()}`,
+      id: user.id,
       name: user.name,
       initials,
       email: user.email,
-      department: user.department ?? 'N/A',
-      position: user.position ?? 'N/A',
+      department: user.department ?? '',
+      position: user.position ?? '',
       status,
-      joinDate,
-      location: user.site?.name ?? 'Unassigned',
+      joinDate: user.joinDate ? format(user.joinDate, 'MMM d, yyyy') : '',
+      location: user.site?.name ?? '',
       locationCode: user.site?.code ?? '',
+      phone: user.phoneNumber ?? '',
+      phoneNumber: user.phoneNumber ?? '',
+      personalEmail: user.personalEmail ?? '',
+      bpjsNumber: user.bpjsNumber ?? '',
+      npwpNumber: user.npwpNumber ?? '',
+      ktpNumber: user.ktpNumber ?? '',
+      address: user.address ?? '',
+      birthCity: user.birthCity ?? '',
+      birthDate: user.birthDate
+        ? format(user.birthDate, 'yyyy-MM-dd')
+        : '',
+      gender: user.gender ?? '',
+      religion: user.religion ?? '',
+      maritalStatus: user.maritalStatus ?? '',
+      bloodType: user.bloodType ?? '',
+      ktaNumber: user.ktaNumber ?? '',
+      ktaExpiry: user.ktaExpiry
+        ? format(user.ktaExpiry, 'yyyy-MM-dd')
+        : '',
     }
-  }).sort((a, b) => a.name.localeCompare(b.name))
+  })
 
   const locationStats: LocationStat[] = sites.map((site) => ({
     name: site.name,

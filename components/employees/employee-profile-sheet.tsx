@@ -59,6 +59,8 @@ export interface Employee {
   birthCity?: string
   birthDate?: string
   gender?: string
+  religion?: string
+  maritalStatus?: string
 }
 
 interface EmployeeProfileSheetProps {
@@ -252,6 +254,13 @@ export function EmployeeProfileSheet({ employee, open, onOpenChange, onEdit }: E
                         </div>
                       </div>
                       <div className="flex items-start gap-3 text-sm">
+                        <Shield className="size-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Religion</p>
+                          <span>{employee.religion || 'Not provided'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm">
                         <MapPin className="size-4 text-muted-foreground mt-0.5" />
                         <div>
                           <p className="text-xs text-muted-foreground">City of Birth</p>
@@ -270,6 +279,27 @@ export function EmployeeProfileSheet({ employee, open, onOpenChange, onEdit }: E
                         <div>
                           <p className="text-xs text-muted-foreground">BPJS Number</p>
                           <span>{employee.bpjsNumber || 'Not provided'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm">
+                        <FileText className="size-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">NPWP Number</p>
+                          <span>{employee.npwpNumber || 'Not provided'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm">
+                        <User className="size-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Marital Status</p>
+                          <span>{employee.maritalStatus || 'Not provided'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 text-sm">
+                        <CheckCircle2 className="size-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Blood Type</p>
+                          <span>{employee.bloodType || 'Not provided'}</span>
                         </div>
                       </div>
                     </div>
