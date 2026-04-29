@@ -70,8 +70,8 @@ export function AddEmployeeDialog({
     name: '', email: '', employeeCode: '', password: 'promaxima', department: '', position: '', location: '', joinDate: new Date().toISOString().split('T')[0],
     // Step 2
     phoneNumber: '', ktpNumber: '', address: '', birthCity: '', birthDate: '', bpjsNumber: '', gender: '',
-    // Step 3
-    employmentStatus: '', maritalStatus: '', religion: '', bloodType: '', npwpNumber: '', ktaNumber: '', ktaExpiry: '',
+// Step 3
+    employmentStatus: '', maritalStatus: '', religion: '', bloodType: '', npwpNumber: '', ktaNumber: '', ktaExpiry: '', certification: '',
     // Step 4
     role: 'STAFF', allowMobileAttendance: 'false', allowWebAppAccess: 'false'
   })
@@ -87,7 +87,7 @@ export function AddEmployeeDialog({
       setFormData({
         name: '', email: '', employeeCode: '', password: 'promaxima', department: '', position: '', location: '', joinDate: new Date().toISOString().split('T')[0],
         phoneNumber: '', ktpNumber: '', address: '', birthCity: '', birthDate: '', bpjsNumber: '', gender: '',
-        employmentStatus: '', maritalStatus: '', religion: '', bloodType: '', npwpNumber: '', ktaNumber: '', ktaExpiry: '',
+        employmentStatus: '', maritalStatus: '', religion: '', bloodType: '', npwpNumber: '', ktaNumber: '', ktaExpiry: '', certification: '',
         role: 'STAFF', allowMobileAttendance: 'false', allowWebAppAccess: 'false'
       })
     }
@@ -130,7 +130,7 @@ export function AddEmployeeDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     // Karena Step 4 datanya otomatis keisi default, langsung submit aja
-    onAddEmployee?.({ ...formData, status: 'active' })
+    onAddEmployee?.({ ...formData, certifications: formData.certification ? [formData.certification] : [], status: 'active' })
     handleOpenChange(false) // Tutup modal setelah sukses
   }
 
@@ -277,6 +277,18 @@ export function AddEmployeeDialog({
                     </Select>
                   </div>
                   <div className="space-y-2"><Label>NPWP Number</Label><Input value={formData.npwpNumber} onChange={(e) => setFormData({...formData, npwpNumber: e.target.value})} /></div>
+                  <div className="space-y-2">
+                    <Label>Certification Level</Label>
+                    <Select value={formData.certification} onValueChange={(val) => setFormData({...formData, certification: val})}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None / Non-Security</SelectItem>
+                        <SelectItem value="Gada Pratama">Gada Pratama</SelectItem>
+                        <SelectItem value="Gada Madya">Gada Madya</SelectItem>
+                        <SelectItem value="Gada Utama">Gada Utama</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="space-y-2"><Label>KTA Number</Label><Input value={formData.ktaNumber} onChange={(e) => setFormData({...formData, ktaNumber: e.target.value})} /></div>
                   <div className="space-y-2"><Label>KTA Expiry</Label><Input type="date" value={formData.ktaExpiry} onChange={(e) => setFormData({...formData, ktaExpiry: e.target.value})} /></div>
                 </div>

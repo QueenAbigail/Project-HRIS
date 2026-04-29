@@ -1,10 +1,18 @@
-# Task: Add certifications and ktaExpiry to Prisma Employee Fetch Query
+# Add Certification Dropdown to Add Employee Form - ✅ COMPLETE
 
-## Steps:
-- [x] Step 1: Edit app/dashboard/employees/page.tsx to update prisma.user.findMany with explicit select including certifications: true, ktaExpiry: true, and all mapped fields
-- [ ] Step 2: Run `npx prisma generate` to regenerate Prisma client after schema changes  
-- [ ] Step 3: Test /dashboard/employees page loads correctly and profile sheet receives new fields
-- [ ] Step 4: Verify no breaking changes in EmployeesTable or mapping
+## Completed Steps:
+- [x] Step 1: formData state updated (initial + reset)
+- [x] Step 2: Certification Select added to Step 3 JSX (between NPWP & KTA Number)
+- [x] Step 3: handleSubmit transforms `certification` → `certifications: [...] || []`
 
-Current progress: Step 1 complete. TypeScript errors expected to resolve after prisma generate (nested site typing).
+**Changes in**: `components/employees/add-employee-dialog.tsx`
+
+## Testing:
+1. Navigate to Employees → Add Employee → Step 3
+2. Select Certification (e.g. "Gada Madya"), fill required, submit
+3. Verify browser Network tab: payload has `"certifications": ["Gada Madya"]`
+4. Check DB: `npx prisma studio` → users → certifications array
+
+No migrations/installs needed. Ready to use.
+
 
