@@ -20,9 +20,35 @@ import {
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Textarea } from '@/components/ui/textarea'
 import type { Employee } from './employee-profile-sheet'
 import { Camera } from 'lucide-react'
+
+interface EmployeeEditFormData {
+  name: string
+  email: string
+  phoneNumber: string
+  personalEmail: string
+  gender: string
+  maritalStatus: string
+  ktpNumber: string
+  religion: string
+  birthCity: string
+  birthDate: string
+  bloodType: string
+  bpjsNumber: string
+  npwpNumber: string
+  address: string
+  department: string
+  position: string
+  status: string
+  location: string
+  locationCode: string
+  emergencyContact: string
+  bankAccount: string
+  taxId: string
+}
 
 interface EmployeeEditDialogProps {
   employee: Employee | null
@@ -60,17 +86,22 @@ const positions = [
   'VIP Protection',
 ]
 
-const statuses = [
-  { value: 'active', label: 'Active' },
-  { value: 'on-leave', label: 'On Leave' },
-  { value: 'inactive', label: 'Inactive' },
-]
-
 export function EmployeeEditDialog({ employee, open, onOpenChange, onSave }: EmployeeEditDialogProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<EmployeeEditFormData>({
     name: '',
     email: '',
-    phone: '',
+    phoneNumber: '',
+    personalEmail: '',
+    gender: '',
+    maritalStatus: '',
+    ktpNumber: '',
+    religion: '',
+    birthCity: '',
+    birthDate: '',
+    bloodType: '',
+    bpjsNumber: '',
+    npwpNumber: '',
+    address: '',
     department: '',
     position: '',
     status: '',
@@ -85,14 +116,25 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave }: Emp
     if (employee) {
       const locationEntry = locations.find(l => l.label === employee.location || l.code === employee.locationCode)
       setFormData({
-        name: employee.name,
-        email: employee.email,
-        phone: employee.phone || '+1 (555) 000-0000',
-        department: employee.department,
-        position: employee.position,
-        status: employee.status,
+        name: employee.name || '',
+        email: employee.email || '',
+        phoneNumber: employee.phoneNumber || employee.phone || '',
+        personalEmail: employee.personalEmail || '',
+        gender: employee.gender || '',
+        maritalStatus: employee.maritalStatus || '',
+        ktpNumber: employee.ktpNumber || '',
+        religion: employee.religion || '',
+        birthCity: employee.birthCity || '',
+        birthDate: employee.birthDate || '',
+        bloodType: employee.bloodType || '',
+        bpjsNumber: employee.bpjsNumber || '',
+        npwpNumber: employee.npwpNumber || '',
+        address: employee.address || '',
+        department: employee.department || '',
+        position: employee.position || '',
+        status: employee.status || '',
         location: locationEntry?.value || 'head-office',
-        locationCode: employee.locationCode,
+        locationCode: employee.locationCode || '',
         emergencyContact: employee.emergencyContact || 'Emergency Contact - +1 (555) 000-0000',
         bankAccount: employee.bankAccount || '**** **** **** 0000',
         taxId: employee.taxId || '***-**-0000',
@@ -115,215 +157,222 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave }: Emp
     const locationEntry = locations.find(l => l.value === formData.location)
     onSave({
       ...employee,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      department: formData.department,
-      position: formData.position,
-      status: formData.status,
+      ...formData,
+      phoneNumber: formData.phoneNumber || employee.phoneNumber || employee.phone,
       location: locationEntry?.label || employee.location,
       locationCode: locationEntry?.code || employee.locationCode,
-      emergencyContact: formData.emergencyContact,
-      bankAccount: formData.bankAccount,
-      taxId: formData.taxId,
     })
     onOpenChange(false)
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Employee Details</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col overflow-hidden p-0">
+        
+        {/* === HEADER FIXED === */}
+        <div className="px-6 pt-6 pb-2 shrink-0">
+          <DialogHeader className="mb-2">
+            <DialogTitle className="text-lg">Edit Employee Details</DialogTitle>
+          </DialogHeader>
 
-        {/* Avatar Section */}
-        <div className="flex items-center gap-4 py-4">
-          <div className="relative">
-            <Avatar className="size-20 border-2 border-border">
-              <AvatarImage src={`/avatars/${employee.id}.jpg`} alt={employee.name} />
-              <AvatarFallback className="bg-primary/10 text-primary text-xl">
-                {employee.initials}
-              </AvatarFallback>
-            </Avatar>
-            <Button 
-              size="icon" 
-              variant="secondary" 
-              className="absolute -bottom-1 -right-1 size-7 rounded-full"
-            >
-              <Camera className="size-3" />
-            </Button>
-          </div>
-          <div>
-            <p className="font-medium">{employee.name}</p>
-            <p className="text-sm text-muted-foreground font-mono">{employee.id}</p>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Avatar className="size-12 border-2 border-border">
+                <AvatarImage src={`/avatars/${employee.id}.jpg`} alt={employee.name} />
+                <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                  {employee.initials}
+                </AvatarFallback>
+              </Avatar>
+              <Button size="icon" variant="secondary" className="absolute -bottom-0.5 -right-0.5 size-6 rounded-full">
+                <Camera className="size-3" />
+              </Button>
+            </div>
+            <div>
+              <p className="font-semibold text-lg">{employee.name}</p>
+              <p className="text-xs text-muted-foreground font-mono">{employee.id}</p>
+            </div>
           </div>
         </div>
 
-        <Separator />
+        {/* === BODY FLEXIBLE (YANG BISA DI-SCROLL) === */}
+        <div className="flex-1 overflow-hidden px-6 flex flex-col min-h-0">
+          <Tabs defaultValue="personal" className="flex-1 flex flex-col min-h-0 w-full">
+            <TabsList className="w-full grid grid-cols-3">
+              <TabsTrigger value="personal">Personal Info</TabsTrigger>
+              <TabsTrigger value="assignment">Assignment</TabsTrigger>
+              <TabsTrigger value="payroll">Payroll</TabsTrigger>
+            </TabsList>
 
-        <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="w-full grid grid-cols-3">
-            <TabsTrigger value="personal">Personal Info</TabsTrigger>
-            <TabsTrigger value="assignment">Assignment</TabsTrigger>
-            <TabsTrigger value="payroll">Payroll</TabsTrigger>
-          </TabsList>
+            <div className="flex-1 overflow-y-auto min-h-0 mt-4 pr-3 pb-4">
+              
+              {/* TAB 1: PERSONAL INFO */}
+              <TabsContent value="personal" className="mt-0 p-0">
+                <div className="grid grid-cols-2 gap-4 pb-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input id="name" value={formData.name} onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phoneNumber">Phone Number</Label>
+                    <Input id="phoneNumber" value={formData.phoneNumber} onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="personalEmail">Personal Email</Label>
+                    <Input id="personalEmail" type="email" value={formData.personalEmail} onChange={(e) => setFormData(prev => ({ ...prev, personalEmail: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gender">Gender</Label>
+                    <Select value={formData.gender} onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}>
+                      <SelectTrigger id="gender"><SelectValue placeholder="Select gender" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="maritalStatus">Marital Status</Label>
+                    <Select value={formData.maritalStatus} onValueChange={(value) => setFormData(prev => ({ ...prev, maritalStatus: value }))}>
+                      <SelectTrigger id="maritalStatus"><SelectValue placeholder="Select status" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Single">Single</SelectItem>
+                        <SelectItem value="Married">Married</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ktpNumber">KTP Number</Label>
+                    <Input id="ktpNumber" value={formData.ktpNumber} onChange={(e) => setFormData(prev => ({ ...prev, ktpNumber: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="religion">Religion</Label>
+                    <Select value={formData.religion} onValueChange={(value) => setFormData(prev => ({ ...prev, religion: value }))}>
+                      <SelectTrigger id="religion"><SelectValue placeholder="Select religion" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Islam">Islam</SelectItem>
+                        <SelectItem value="Christianity">Christianity</SelectItem>
+                        <SelectItem value="Catholicism">Catholicism</SelectItem>
+                        <SelectItem value="Hinduism">Hinduism</SelectItem>
+                        <SelectItem value="Buddhism">Buddhism</SelectItem>
+                        <SelectItem value="Confucianism">Confucianism</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="birthCity">Birth City</Label>
+                    <Input id="birthCity" value={formData.birthCity} onChange={(e) => setFormData(prev => ({ ...prev, birthCity: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="birthDate">Birth Date</Label>
+                    <Input id="birthDate" type="date" value={formData.birthDate} onChange={(e) => setFormData(prev => ({ ...prev, birthDate: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bloodType">Blood Type</Label>
+                    <Select value={formData.bloodType} onValueChange={(value) => setFormData(prev => ({ ...prev, bloodType: value }))}>
+                      <SelectTrigger id="bloodType"><SelectValue placeholder="Select blood type" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A">A</SelectItem>
+                        <SelectItem value="B">B</SelectItem>
+                        <SelectItem value="AB">AB</SelectItem>
+                        <SelectItem value="O">O</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bpjsNumber">BPJS Number</Label>
+                    <Input id="bpjsNumber" value={formData.bpjsNumber} onChange={(e) => setFormData(prev => ({ ...prev, bpjsNumber: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="npwpNumber">NPWP Number</Label>
+                    <Input id="npwpNumber" value={formData.npwpNumber} onChange={(e) => setFormData(prev => ({ ...prev, npwpNumber: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Textarea id="address" value={formData.address} onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))} className="min-h-[80px]" />
+                  </div>
+                </div>
+              </TabsContent>
 
-          <TabsContent value="personal" className="mt-4 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
-                  <SelectTrigger id="status">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statuses.map((status) => (
-                      <SelectItem key={status.value} value={status.value}>
-                        {status.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="emergency">Emergency Contact</Label>
-              <Input
-                id="emergency"
-                value={formData.emergencyContact}
-                onChange={(e) => setFormData(prev => ({ ...prev, emergencyContact: e.target.value }))}
-                placeholder="Name - Phone Number"
-              />
-            </div>
-          </TabsContent>
+              {/* TAB 2: ASSIGNMENT */}
+              <TabsContent value="assignment" className="mt-0 pb-4 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="location">Placement Location</Label>
+                  <Select value={formData.location} onValueChange={handleLocationChange}>
+                    <SelectTrigger id="location"><SelectValue placeholder="Select location" /></SelectTrigger>
+                    <SelectContent>
+                      {locations.map((location) => (
+                        <SelectItem key={location.value} value={location.value}>
+                          <div className="flex items-center justify-between w-full">
+                            <span>{location.label}</span>
+                            <span className="ml-2 text-xs font-mono text-muted-foreground">({location.code})</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Current assignment code: <span className="font-mono">{formData.locationCode || employee.locationCode}</span>
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="department">Department</Label>
+                    <Select value={formData.department} onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}>
+                      <SelectTrigger id="department"><SelectValue placeholder="Select department" /></SelectTrigger>
+                      <SelectContent>
+                        {departments.map((dept) => (
+                          <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="position">Position</Label>
+                    <Select value={formData.position} onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}>
+                      <SelectTrigger id="position"><SelectValue placeholder="Select position" /></SelectTrigger>
+                      <SelectContent>
+                        {positions.map((pos) => (
+                          <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4 mt-4">
+                  <p className="text-sm text-muted-foreground">
+                    <strong className="text-foreground">Note:</strong> Changing the placement location will trigger a notification to the site supervisor at the new location.
+                  </p>
+                </div>
+              </TabsContent>
 
-          <TabsContent value="assignment" className="mt-4 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="location">Placement Location</Label>
-              <Select value={formData.location} onValueChange={handleLocationChange}>
-                <SelectTrigger id="location">
-                  <SelectValue placeholder="Select location" />
-                </SelectTrigger>
-                <SelectContent>
-                  {locations.map((location) => (
-                    <SelectItem key={location.value} value={location.value}>
-                      <div className="flex items-center justify-between w-full">
-                        <span>{location.label}</span>
-                        <span className="ml-2 text-xs font-mono text-muted-foreground">({location.code})</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Current assignment code: <span className="font-mono">{formData.locationCode || employee.locationCode}</span>
-              </p>
-            </div>
+              {/* TAB 3: PAYROLL */}
+              <TabsContent value="payroll" className="mt-0 pb-4 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="bank">Bank Account Number</Label>
+                  <Input id="bank" value={formData.bankAccount} onChange={(e) => setFormData(prev => ({ ...prev, bankAccount: e.target.value }))} placeholder="**** **** **** ****" />
+                  <p className="text-xs text-muted-foreground">Enter full account number. Will be partially masked after saving.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tax">Tax ID / NPWP</Label>
+                  <Input id="tax" value={formData.taxId} onChange={(e) => setFormData(prev => ({ ...prev, taxId: e.target.value }))} placeholder="***-**-****" />
+                </div>
+                <div className="rounded-lg bg-warning/10 border border-warning/20 p-4 mt-4">
+                  <p className="text-sm text-warning">
+                    <strong>Security Notice:</strong> Changes to payroll information will require verification.
+                  </p>
+                </div>
+              </TabsContent>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
-                <Select value={formData.department} onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}>
-                  <SelectTrigger id="department">
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept} value={dept}>
-                        {dept}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="position">Position</Label>
-                <Select value={formData.position} onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}>
-                  <SelectTrigger id="position">
-                    <SelectValue placeholder="Select position" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {positions.map((pos) => (
-                      <SelectItem key={pos} value={pos}>
-                        {pos}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
+          </Tabs>
+        </div>
 
-            <div className="rounded-lg bg-muted/50 p-4 mt-4">
-              <p className="text-sm text-muted-foreground">
-                <strong className="text-foreground">Note:</strong> Changing the placement location will trigger a notification to the site supervisor at the new location. Make sure to coordinate shift schedules before reassigning personnel.
-              </p>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="payroll" className="mt-4 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="bank">Bank Account Number</Label>
-              <Input
-                id="bank"
-                value={formData.bankAccount}
-                onChange={(e) => setFormData(prev => ({ ...prev, bankAccount: e.target.value }))}
-                placeholder="**** **** **** ****"
-              />
-              <p className="text-xs text-muted-foreground">
-                Enter full account number. Will be partially masked after saving.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="tax">Tax ID / SSN</Label>
-              <Input
-                id="tax"
-                value={formData.taxId}
-                onChange={(e) => setFormData(prev => ({ ...prev, taxId: e.target.value }))}
-                placeholder="***-**-****"
-              />
-              <p className="text-xs text-muted-foreground">
-                Required for payroll processing. Will be encrypted and partially masked.
-              </p>
-            </div>
-
-            <div className="rounded-lg bg-warning/10 border border-warning/20 p-4 mt-4">
-              <p className="text-sm text-warning">
-                <strong>Security Notice:</strong> Changes to payroll information will require verification from the employee via their registered email address.
-              </p>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        <DialogFooter className="mt-6">
+        {/* === FOOTER FIXED (TOMBOL SAVE) === */}
+        <DialogFooter className="px-6 py-4 border-t shrink-0 flex justify-end gap-2 bg-background">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -331,6 +380,7 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave }: Emp
             Save Changes
           </Button>
         </DialogFooter>
+
       </DialogContent>
     </Dialog>
   )
