@@ -396,6 +396,7 @@ export function EmployeesTable({ users }: EmployeesTableProps) {
         open={editOpen}
         onOpenChange={setEditOpen}
         onSave={handleSaveEmployee}
+        currentUserRole="SUPER_ADMIN" // TODO: Replace with actual user role from auth context
       />
     </>
   )

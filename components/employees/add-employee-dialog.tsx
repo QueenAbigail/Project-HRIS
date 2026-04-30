@@ -22,6 +22,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Upload, UserPlus, FileSpreadsheet, Download, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { createEmployeeAction } from '@/app/actions/employee' // Taruh di baris paling atas bareng import lain
 
 export interface NewEmployee {
   name: string;
@@ -127,12 +128,42 @@ export function AddEmployeeDialog({
     setStep(step + 1)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Karena Step 4 datanya otomatis keisi default, langsung submit aja
-    onAddEmployee?.({ ...formData, certifications: formData.certification ? [formData.certification] : [], status: 'active' })
-    handleOpenChange(false) // Tutup modal setelah sukses
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+
+  try {
+    // Kita translate/mapping dulu data dari state lu biar cocok sama maunya backend
+    const finalData = {
+      ...formData,
+      siteId: formData.location, // Backend butuh siteId, form lu ngirim location
+      systemRole: formData.role, // Backend butuh systemRole, form lu ngirim role
+      dob: formData.birthDate,
+      cob: formData.birthCity,
+      personalEmail: formData.email, // Asumsi form email ini buat personal email
+      
+      // Ubah teks 'true'/'false' dari form jadi boolean beneran
+      mobileAccess: formData.allowMobileAttendance === 'true' || formData.allowMobileAttendance === true,
+      webAppAccess: formData.allowWebAppAccess === 'true' || formData.allowWebAppAccess === true,
+      
+      certifications: formData.certification ? [formData.certification] : [],
+      status: 'ACTIVE'
+    }
+
+    // Tembak ke action
+    const result = await createEmployeeAction(finalData)
+
+    if (result.success) {
+      onAddEmployee?.(finalData) 
+      alert("Mantap! Karyawan baru berhasil masuk.")
+      handleOpenChange(false) 
+    } else {
+      alert("Gagal simpan data: " + result.error)
+    }
+  } catch (error) {
+    console.error("System error:", error)
+    alert("Ada masalah koneksi/sistem.")
   }
+}
 
   // Fitur Import (Tetap utuh)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -302,7 +333,7 @@ export function AddEmployeeDialog({
                     <Select value={formData.role} onValueChange={(val) => setFormData({...formData, role: val})}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="STAFF">Super Admin</SelectItem>
+                        <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
                         <SelectItem value="STAFF">Staff</SelectItem>
                         <SelectItem value="HR_ADMIN">HR Admin</SelectItem>
                         <SelectItem value="MANAGER">Manager</SelectItem>

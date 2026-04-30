@@ -23,11 +23,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
 import type { Employee } from './employee-profile-sheet'
-import { Camera } from 'lucide-react'
+import { Camera, Eye, EyeOff } from 'lucide-react'
+import { updateEmployeeAction } from '@/app/actions/employee'
 
 interface EmployeeEditFormData {
   name: string
   email: string
+  password?: string
   phoneNumber: string
   personalEmail: string
   gender: string
@@ -55,6 +57,7 @@ interface EmployeeEditDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSave: (employee: Employee) => void
+  currentUserRole?: string
 }
 
 const locations = [
@@ -86,10 +89,11 @@ const positions = [
   'VIP Protection',
 ]
 
-export function EmployeeEditDialog({ employee, open, onOpenChange, onSave }: EmployeeEditDialogProps) {
+export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, currentUserRole }: EmployeeEditDialogProps) {
   const [formData, setFormData] = useState<EmployeeEditFormData>({
     name: '',
     email: '',
+    password: '',
     phoneNumber: '',
     personalEmail: '',
     gender: '',
@@ -112,12 +116,15 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave }: Emp
     taxId: '',
   })
 
+  const [showPassword, setShowPassword] = useState(false);
+
   useEffect(() => {
     if (employee) {
       const locationEntry = locations.find(l => l.label === employee.location || l.code === employee.locationCode)
-      setFormData({
+        setFormData({
         name: employee.name || '',
         email: employee.email || '',
+        password: employee.password || '',
         phoneNumber: employee.phoneNumber || employee.phone || '',
         personalEmail: employee.personalEmail || '',
         gender: employee.gender || '',
@@ -142,6 +149,8 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave }: Emp
     }
   }, [employee])
 
+  const hasPasswordAccess = currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'HR_ADMIN';
+
   if (!employee) return null
 
   const handleLocationChange = (value: string) => {
@@ -153,16 +162,35 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave }: Emp
     }))
   }
 
-  const handleSave = () => {
-    const locationEntry = locations.find(l => l.value === formData.location)
-    onSave({
-      ...employee,
-      ...formData,
-      phoneNumber: formData.phoneNumber || employee.phoneNumber || employee.phone,
-      location: locationEntry?.label || employee.location,
-      locationCode: locationEntry?.code || employee.locationCode,
-    })
-    onOpenChange(false)
+  const handleSave = async () => {
+    try {
+      // 1. Cari data lokasi biar label & code-nya sinkron
+      const locationEntry = locations.find(l => l.value === formData.location)
+      
+      // 2. Siapin data yang mau dikirim ke backend
+      const updatedData = {
+        ...formData,
+        location: locationEntry?.label || employee.location,
+        locationCode: locationEntry?.code || employee.locationCode,
+      }
+
+      // 3. Eksekusi Server Action (Mesin backend yang kita bikin di point 1)
+      const result = await updateEmployeeAction(employee.id, updatedData)
+      
+      if (result.success) {
+        // Update UI lokal biar user nggak perlu refresh buat liat perubahan
+        onSave({ ...employee, ...updatedData })
+        
+        // Kasih notif sukses
+        alert("Mantap Can! Data dan Password berhasil diupdate.")
+        onOpenChange(false)
+      } else {
+        alert("Duh gagal simpan nih: " + result.error)
+      }
+    } catch (error) {
+      console.error(error)
+      alert("Ada masalah koneksi/sistem pas mau nyimpen")
+    }
   }
 
   return (
@@ -213,8 +241,33 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave }: Emp
                     <Input id="name" value={formData.name} onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} />
+                    <Label htmlFor="password">Password</Label>
+                    <div className="relative">
+                      <Input 
+                        id="password" 
+                        type={hasPasswordAccess ? (showPassword ? "text" : "password") : "password"}
+                        value={formData.password || ""}
+                        onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                        disabled={!hasPasswordAccess}
+                        className="pr-10"
+                        placeholder={!hasPasswordAccess ? "********" : "Enter password"}
+                      />
+                      {hasPasswordAccess && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="size-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="size-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phoneNumber">Phone Number</Label>
