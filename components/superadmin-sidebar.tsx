@@ -1,18 +1,10 @@
 "use client"
 
+import React from 'react'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 
 import {
-  LayoutDashboard,
-  Users,
-  Clock,
-  Wallet,
-  CalendarDays,
-  CalendarClock,
-  FileBarChart,
-  Settings,
   Shield,
   Bell,
   LogOut,
@@ -30,11 +22,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
 } from '@/components/ui/sidebar'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,7 +35,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import Image from 'next/image'
 
-import { fetchSystemSettings, fetchUserRole } from '@/lib/client-system'
+import { fetchSystemSettings } from '@/lib/client-system'
 
 interface SystemSettings {
   appName: string
@@ -83,50 +73,18 @@ function LogoIcon({ src, alt, className }: { src: string; alt: string; className
   )
 }
 
-const mainNavItems = [
-  {
-    title: 'Overview',
-    url: '/dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    title: 'Employees',
-    url: '/dashboard/employees',
-    icon: Users,
-  },
-  {
-    title: 'Attendance',
-    url: '/dashboard/attendance',
-    icon: Clock,
-    badge: 12,
-  },
-  {
-    title: 'Payroll',
-    url: '/dashboard/payroll',
-    icon: Wallet,
-  },
-  {
-    title: 'Leave Management',
-    url: '/dashboard/leave',
-    icon: CalendarDays,
-    badge: 5,
-  },
-  {
-    title: 'Shift Schedule',
-    url: '/dashboard/shifts',
-    icon: CalendarClock,
-  },
+const adminNavItems = [
+  // Add superadmin-specific menu items here later
 ]
 
-export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) {
+export function SuperadminSidebar({ user, systemSettings: propSystemSettings }: Props) {
   const pathname = usePathname()
-  const [localSystemSettings, setLocalSystemSettings] = useState<SystemSettings>({ appName: 'SecureGuard', appDescription: 'HR Administration' })
-  const [loading, setLoading] = useState(!propSystemSettings)
+  const [localSystemSettings, setLocalSystemSettings] = React.useState<SystemSettings>({ appName: 'SecureGuard', appDescription: 'HR Administration' })
+  const [loading, setLoading] = React.useState(!propSystemSettings)
 
   const systemSettings = propSystemSettings || localSystemSettings
-  const userRole = user?.role || null
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!propSystemSettings) {
       const loadData = async () => {
         const settings = await fetchSystemSettings()
@@ -145,22 +103,10 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
     return <Sidebar variant="inset" />
   }
 
-  const secondaryNavItems = [
-    {
-      title: 'Reports',
-      url: '/dashboard/reports',
-      icon: FileBarChart,
-    },
-    {
-      title: 'Settings',
-      url: '/dashboard/settings',
-      icon: Settings,
-    },
-  ]
-
   const displayName = user?.name ?? user?.email ?? 'Unknown User'
   const displayPosition = user?.position ?? 'Staff'
   const initials = user?.name ? (user.name[0]?.toUpperCase() + (user.name[1]?.toUpperCase() || '')) : 'U?'
+  const userRole = user?.role || null
 
   return (
     <Sidebar variant="inset">
@@ -180,46 +126,25 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url}>
-                    <Link href={item.url}>
-                      <item.icon className="size-4" />
-                      <span>{item.title}</span>
-                      {item.badge && (
-                        <Badge variant="secondary" className="ml-auto text-xs">
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarSeparator />
-        <SidebarGroup>
-          <SidebarGroupLabel>System</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {secondaryNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url}>
-                    <Link href={item.url}>
-                      <item.icon className="size-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {adminNavItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Admin Settings</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminNavItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={pathname === item.url}>
+                      <Link href={item.url}>
+                        <item.icon className="size-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu className="flex flex-row justify-between">
@@ -251,10 +176,6 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                   <Bell className="mr-2 size-4" />
                   Notifications
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 size-4" />
-                  Settings
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   className="text-destructive cursor-pointer"
@@ -277,4 +198,3 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
     </Sidebar>
   )
 }
-
