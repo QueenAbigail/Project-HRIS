@@ -9,6 +9,11 @@ import {
   Bell,
   LogOut,
   ChevronDown,
+  LayoutDashboard,
+  Info,
+  Users,
+  Layers,
+  Database,
 } from 'lucide-react'
 
 import {
@@ -74,7 +79,31 @@ function LogoIcon({ src, alt, className }: { src: string; alt: string; className
 }
 
 const adminNavItems = [
-  // Add superadmin-specific menu items here later
+  {
+    title: 'Dashboard',
+    url: '/dashboard/superadmin',
+    icon: LayoutDashboard,
+  },
+  {
+    title: 'Information',
+    url: '/dashboard/superadmin/information',
+    icon: Info,
+  },
+  {
+    title: 'Client',
+    url: '/dashboard/superadmin/client',
+    icon: Users,
+  },
+  {
+    title: 'Structure',
+    url: '/dashboard/superadmin/structure',
+    icon: Layers,
+  },
+  {
+    title: 'Data',
+    url: '/dashboard/superadmin/data',
+    icon: Database,
+  },
 ]
 
 export function SuperadminSidebar({ user, systemSettings: propSystemSettings }: Props) {
@@ -126,25 +155,23 @@ export function SuperadminSidebar({ user, systemSettings: propSystemSettings }: 
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {adminNavItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Admin Settings</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {adminNavItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={pathname === item.url}>
-                      <Link href={item.url}>
-                        <item.icon className="size-4" />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        <SidebarGroup>
+          <SidebarGroupLabel>Admin Dashboard</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {adminNavItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={pathname === item.url}>
+                    <Link href={item.url}>
+                      <item.icon className="size-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu className="flex flex-row justify-between">
