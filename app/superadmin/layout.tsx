@@ -59,10 +59,14 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
   const systemSettings = await getSystemSettings()
 
   const pathNames: Record<string, string> = {
-    '/dashboard/superadmin': 'Superadmin Settings',
+    '/superadmin': 'Dashboard',
+    '/superadmin/information': 'Information',
+    '/superadmin/client': 'Client',
+    '/superadmin/structure': 'Structure',
+    '/superadmin/data': 'Data',
   }
 
-  const pathname = '/dashboard/superadmin'
+  const pathname = '/superadmin'
   const currentPage = pathNames[pathname] || 'Superadmin'
 
   return (

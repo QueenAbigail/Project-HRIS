@@ -17,7 +17,7 @@ export function HeaderControls({ userRole }: HeaderControlsProps) {
 
   return (
     <div className="ml-auto">
-      <Link href="/dashboard/superadmin">
+      <Link href="/superadmin">
         <Button variant="outline" size="sm" className="gap-2">
           <ShieldAlert className="size-4" />
           Superadmin

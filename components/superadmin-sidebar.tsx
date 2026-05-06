@@ -81,27 +81,27 @@ function LogoIcon({ src, alt, className }: { src: string; alt: string; className
 const adminNavItems = [
   {
     title: 'Dashboard',
-    url: '/dashboard/superadmin',
+    url: '/superadmin',
     icon: LayoutDashboard,
   },
   {
     title: 'Information',
-    url: '/dashboard/superadmin/information',
+    url: '/superadmin/information',
     icon: Info,
   },
   {
     title: 'Client',
-    url: '/dashboard/superadmin/client',
+    url: '/superadmin/client',
     icon: Users,
   },
   {
     title: 'Structure',
-    url: '/dashboard/superadmin/structure',
+    url: '/superadmin/structure',
     icon: Layers,
   },
   {
     title: 'Data',
-    url: '/dashboard/superadmin/data',
+    url: '/superadmin/data',
     icon: Database,
   },
 ]
