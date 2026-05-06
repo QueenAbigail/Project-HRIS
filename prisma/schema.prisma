@@ -200,3 +200,16 @@ model SystemSettings {
 
   @@map("system_settings")
 }
+
+model MasterData {
+  id        String   @id @default(cuid())
+  category  String   
+  value     String   
+  isActive  Boolean  @default(true) 
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([category, value])
+  @@map("master_data")
+}
