@@ -1,94 +1,225 @@
-"use client"
+'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { ShieldAlert, Loader2 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { LayoutDashboard, LogIn, UserPlus, AlertTriangle, Clock } from 'lucide-react'
 
-// 👉 Import fungsi penarik datanya juga
-import { updateSettings, getSystemSettings } from './actions'
+interface LoginActivity {
+  id: string
+  email: string
+  timestamp: string
+  ipAddress: string
+  device: string
+}
 
-export default function SuperadminPage() {
-  const [previewLogo, setPreviewLogo] = useState<string | null>(null)
-  
-  // 👉 State buat nampung data asli dari database
-  const [settings, setSettings] = useState({ appName: '', appDescription: '' })
-  const [isLoading, setIsLoading] = useState(true)
+interface UserChangeActivity {
+  id: string
+  type: 'user_added' | 'user_edited' | 'attendance_error' | 'permission_changed'
+  actor: string
+  subject: string
+  timestamp: string
+  description: string
+}
 
-  // 👉 Narik data pas halaman pertama kali dibuka
-  useEffect(() => {
-    getSystemSettings().then((data) => {
-      if (data) {
-        setSettings({
-          appName: data.appName,
-          appDescription: data.appDescription
-        })
-      }
-      setIsLoading(false) // Matiin loading kalau data udah dapet
-    })
-  }, [])
+// Dummy data
+const loginActivities: LoginActivity[] = [
+  { id: '1', email: 'john.doe@example.com', timestamp: '2025-05-07 14:32:15', ipAddress: '192.168.1.100', device: 'Chrome - Windows' },
+  { id: '2', email: 'jane.smith@example.com', timestamp: '2025-05-07 13:45:22', ipAddress: '192.168.1.101', device: 'Safari - macOS' },
+  { id: '3', email: 'admin@example.com', timestamp: '2025-05-07 12:15:00', ipAddress: '192.168.1.102', device: 'Firefox - Ubuntu' },
+  { id: '4', email: 'hr.manager@example.com', timestamp: '2025-05-07 10:30:45', ipAddress: '192.168.1.103', device: 'Chrome - Windows' },
+  { id: '5', email: 'finance.team@example.com', timestamp: '2025-05-07 09:12:30', ipAddress: '192.168.1.104', device: 'Safari - iOS' },
+  { id: '6', email: 'support@example.com', timestamp: '2025-05-06 16:45:20', ipAddress: '192.168.1.105', device: 'Chrome - Android' },
+  { id: '7', email: 'ops@example.com', timestamp: '2025-05-06 15:20:10', ipAddress: '192.168.1.106', device: 'Edge - Windows' },
+  { id: '8', email: 'marketing@example.com', timestamp: '2025-05-06 14:05:00', ipAddress: '192.168.1.107', device: 'Firefox - macOS' },
+]
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const url = URL.createObjectURL(file)
-      setPreviewLogo(url)
-    }
+const userChangeActivities: UserChangeActivity[] = [
+  { 
+    id: '1', 
+    type: 'user_added', 
+    actor: 'Super Admin', 
+    subject: 'Ahmad Rif\'an', 
+    timestamp: '2025-05-07 14:15:30', 
+    description: 'New user added to HR Department' 
+  },
+  { 
+    id: '2', 
+    type: 'attendance_error', 
+    actor: 'System', 
+    subject: 'Attendance Check-in Failed', 
+    timestamp: '2025-05-07 13:30:00', 
+    description: '5 employees failed to check in today' 
+  },
+  { 
+    id: '3', 
+    type: 'user_edited', 
+    actor: 'Admin User', 
+    subject: 'Budi Santoso', 
+    timestamp: '2025-05-07 12:45:15', 
+    description: 'Position changed from Staff to Senior Staff' 
+  },
+  { 
+    id: '4', 
+    type: 'permission_changed', 
+    actor: 'Super Admin', 
+    subject: 'Finance Team', 
+    timestamp: '2025-05-07 11:20:00', 
+    description: 'Added report access permission' 
+  },
+  { 
+    id: '5', 
+    type: 'attendance_error', 
+    actor: 'System', 
+    subject: 'Overtime Record Error', 
+    timestamp: '2025-05-07 10:00:00', 
+    description: 'Invalid overtime entries detected' 
+  },
+  { 
+    id: '6', 
+    type: 'user_added', 
+    actor: 'Super Admin', 
+    subject: 'Siti Nurhaliza', 
+    timestamp: '2025-05-06 16:30:00', 
+    description: 'New user added to Marketing Department' 
+  },
+  { 
+    id: '7', 
+    type: 'user_edited', 
+    actor: 'Admin User', 
+    subject: 'Rinto Harahap', 
+    timestamp: '2025-05-06 15:15:00', 
+    description: 'Department changed from Operations to Finance' 
+  },
+]
+
+const getActivityBadgeColor = (type: string) => {
+  switch (type) {
+    case 'user_added':
+      return 'bg-green-100 text-green-800'
+    case 'user_edited':
+      return 'bg-blue-100 text-blue-800'
+    case 'attendance_error':
+      return 'bg-red-100 text-red-800'
+    case 'permission_changed':
+      return 'bg-purple-100 text-purple-800'
+    default:
+      return 'bg-gray-100 text-gray-800'
   }
+}
 
-  // 👉 Kalau data belum kekumpul, tampilin loading muter biar defaultValue gak kosong
-  if (isLoading) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
-      </div>
-    )
+const getActivityIcon = (type: string) => {
+  switch (type) {
+    case 'user_added':
+      return UserPlus
+    case 'attendance_error':
+      return AlertTriangle
+    default:
+      return Clock
   }
+}
 
+export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center space-x-4">
-        <ShieldAlert className="size-8 text-primary" />
+        <LayoutDashboard className="size-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Superadmin Settings</h1>
-          <p className="text-muted-foreground">Configure global application branding</p>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">Monitor system activity and user operations</p>
         </div>
       </div>
 
-      <form action={updateSettings} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Global Branding</CardTitle>
-            <CardDescription>Update logo, app name and description. Changes reflect everywhere.</CardDescription>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* User Login Activity */}
+        <Card className="border border-border bg-card flex flex-col h-full min-h-[500px]">
+          <CardHeader className="border-b border-border">
+            <div className="flex items-center gap-2">
+              <LogIn className="size-5 text-primary" />
+              <div>
+                <CardTitle>User Login Activity</CardTitle>
+                <CardDescription>Recent login records from system users</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="logo">App Logo</Label>
-              <Input id="logo" name="logo" type="file" accept="image/*" onChange={handleLogoChange} />
-              {previewLogo && (
-                <img src={previewLogo} alt="Preview" className="mt-2 h-32 w-32 rounded-lg object-cover" />
-              )}
-            </div>
-            <div className="space-y-4 md:col-span-2">
-              <div className="space-y-2">
-                <Label htmlFor="appName">App Name</Label>
-                {/* 👉 Sekarang defaultValue ngambil dari database */}
-                <Input id="appName" name="appName" defaultValue={settings.appName} />
+          <CardContent className="flex-1 pt-6">
+            <ScrollArea className="h-full pr-4">
+              <div className="space-y-3">
+                {loginActivities.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="rounded-lg border border-border bg-background p-4 hover:bg-muted transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm text-foreground truncate">{activity.email}</p>
+                        <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        {activity.ipAddress}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {activity.device}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="appDescription">App Description</Label>
-                {/* 👉 Ini juga ngambil dari database */}
-                <Input id="appDescription" name="appDescription" defaultValue={settings.appDescription} />
-              </div>
-            </div>
+            </ScrollArea>
           </CardContent>
         </Card>
-        <Button type="submit" className="w-full md:w-auto">
-          Save Changes
-        </Button>
-      </form>
+
+        {/* User Change Activity */}
+        <Card className="border border-border bg-card flex flex-col h-full min-h-[500px]">
+          <CardHeader className="border-b border-border">
+            <div className="flex items-center gap-2">
+              <UserPlus className="size-5 text-primary" />
+              <div>
+                <CardTitle>User Change Activity</CardTitle>
+                <CardDescription>Recent changes to users and system events</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1 pt-6">
+            <ScrollArea className="h-full pr-4">
+              <div className="space-y-3">
+                {userChangeActivities.map((activity) => {
+                  const Icon = getActivityIcon(activity.type)
+                  return (
+                    <div
+                      key={activity.id}
+                      className="rounded-lg border border-border bg-background p-4 hover:bg-muted transition-colors"
+                    >
+                      <div className="flex items-start gap-3 mb-2">
+                        <div className="rounded-lg bg-muted p-2 flex-shrink-0">
+                          <Icon className="size-4 text-primary" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-sm text-foreground">{activity.subject}</p>
+                            <Badge
+                              className={`text-xs ${getActivityBadgeColor(activity.type)}`}
+                              variant="outline"
+                            >
+                              {activity.type.replace(/_/g, ' ')}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-1">{activity.description}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {activity.actor} • {activity.timestamp}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
