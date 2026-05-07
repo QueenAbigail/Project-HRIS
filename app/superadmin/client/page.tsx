@@ -19,21 +19,12 @@ interface CategoryItem {
 interface Category {
   title: string
   key: string
-  items: CategoryItem[]
 }
 
 export default function ClientPage() {
   const [categories, setCategories] = useState<Record<string, CategoryItem[]>>({
-    company: [
-      { id: '1', name: 'PT Maju Jaya', abbreviation: 'PMJ' },
-      { id: '2', name: 'PT Digital Indonesia', abbreviation: 'PDI' },
-      { id: '3', name: 'PT Tech Solutions', abbreviation: 'PTS' },
-    ],
-    site: [
-      { id: '1', name: 'Site Jakarta', abbreviation: 'SJ' },
-      { id: '2', name: 'Site Bandung', abbreviation: 'SB' },
-      { id: '3', name: 'Site Surabaya', abbreviation: 'SS' },
-    ],
+    company: [],
+    site: [],
   })
 
   const [editingItem, setEditingItem] = useState<CategoryItem | null>(null)
@@ -42,8 +33,8 @@ export default function ClientPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const categoryConfig: Category[] = [
-    { title: 'Kategori Data: Company', key: 'company', items: categories.company },
-    { title: 'Kategori Data: Site', key: 'site', items: categories.site },
+    { title: 'Kategori Data: Company', key: 'company' },
+    { title: 'Kategori Data: Site', key: 'site' },
   ]
 
   const handleAddNewEntry = (categoryKey: string) => {
@@ -91,22 +82,22 @@ export default function ClientPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Management Client</h1>
       </div>
 
       {categoryConfig.map((category) => (
         <div key={category.key} className="space-y-4">
-          <Card className="border border-slate-200 bg-slate-900/50 dark:border-slate-700 dark:bg-slate-900/80 p-6">
+          <Card className="border border-border bg-card p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-slate-200">{category.title}</h2>
+              <h2 className="text-lg font-semibold text-card-foreground">{category.title}</h2>
               <Dialog open={isDialogOpen && selectedCategory === category.key} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
                   <Button
                     onClick={() => handleAddNewEntry(category.key)}
-                    className="gap-2 bg-lime-400 hover:bg-lime-500 text-black font-semibold"
                     size="sm"
+                    className="gap-2 bg-primary hover:bg-primary/90"
                   >
                     <Plus className="h-4 w-4" />
                     ADD NEW ENTRY
@@ -135,27 +126,33 @@ export default function ClientPage() {
             </div>
 
             <div className="space-y-3">
-              {category.items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/50 p-4 hover:bg-slate-800 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                    <Badge variant="outline" className="h-10 w-10 flex items-center justify-center rounded-full text-slate-300 font-semibold">
-                      {item.abbreviation}
-                    </Badge>
-                    <span className="text-slate-100">{item.name}</span>
-                  </div>
-                  <Button
-                    onClick={() => handleEditItem(category.key, item)}
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 hover:bg-slate-700"
+              {categories[category.key]?.length > 0 ? (
+                categories[category.key].map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between rounded-lg border border-border bg-background p-4 hover:bg-muted transition-colors"
                   >
-                    <Pencil className="h-4 w-4 text-lime-400" />
-                  </Button>
+                    <div className="flex items-center gap-4">
+                      <Badge variant="outline" className="h-10 w-10 flex items-center justify-center rounded-full font-semibold">
+                        {item.abbreviation}
+                      </Badge>
+                      <span className="text-foreground">{item.name}</span>
+                    </div>
+                    <Button
+                      onClick={() => handleEditItem(category.key, item)}
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 hover:bg-muted"
+                    >
+                      <Pencil className="h-4 w-4 text-primary" />
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <div className="py-12 text-center">
+                  <p className="text-muted-foreground">No entries yet. Click "ADD NEW ENTRY" to get started.</p>
                 </div>
-              ))}
+              )}
             </div>
           </Card>
         </div>
