@@ -33,8 +33,8 @@ export default function ClientPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const categoryConfig: Category[] = [
-    { title: 'Kategori Data: Company', key: 'company' },
-    { title: 'Kategori Data: Site', key: 'site' },
+    { title: 'Company', key: 'company' },
+    { title: 'Site', key: 'site' },
   ]
 
   const handleAddNewEntry = (categoryKey: string) => {
