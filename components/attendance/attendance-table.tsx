@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
   Table,
@@ -11,9 +12,18 @@ import {
 } from '@/components/ui/table'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getEmployeesWithAttendance, formatTime, getLateCheckInSeverity } from '@/lib/data'
-import { Clock, AlertTriangle } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { getEmployeesWithAttendance, formatTime, getLateCheckInSeverity, EmployeeWithAttendance } from '@/lib/data'
+import { Clock, AlertTriangle, MapPin, Camera, Navigation, ExternalLink } from 'lucide-react'
+import type { GpsCoordinates } from '@/lib/constants'
 
 const statusStyles: Record<string, string> = {
   'present': 'bg-success/10 text-success border-success/20',
@@ -41,13 +51,219 @@ const severityStyles = {
 
 export function AttendanceTable() {
   const employees = getEmployeesWithAttendance()
+  const [selectedEmployee, setSelectedEmployee] = useState<EmployeeWithAttendance | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const allEmployees = employees
   const lateEmployees = employees.filter(e => e.status === 'late')
   const presentEmployees = employees.filter(e => e.status === 'present')
   const absentEmployees = employees.filter(e => e.status === 'absent' || e.status === 'not-checked-in')
   const dayOffEmployees = employees.filter(e => e.status === 'day-off')
 
+  const openDetails = (employee: EmployeeWithAttendance) => {
+    setSelectedEmployee(employee)
+    setDetailsOpen(true)
+  }
+
+  const openGoogleMaps = (gps: GpsCoordinates) => {
+    const url = `https://www.google.com/maps?q=${gps.latitude},${gps.longitude}`
+    window.open(url, '_blank')
+  }
+
   return (
+    <>
+      {/* GPS and Photo Details Dialog */}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin className="size-5 text-primary" />
+              Attendance Details - {selectedEmployee?.employeeName}
+            </DialogTitle>
+            <DialogDescription>
+              GPS location and selfie verification for check-in/check-out
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedEmployee && (
+            <div className="space-y-6">
+              {/* Employee Info */}
+              <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
+                <Avatar className="size-12">
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    {selectedEmployee.initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-semibold">{selectedEmployee.employeeName}</p>
+                  <p className="text-sm text-muted-foreground">{selectedEmployee.department} - {selectedEmployee.position}</p>
+                  <p className="text-sm text-muted-foreground">{selectedEmployee.locationName}</p>
+                </div>
+                <Badge variant="outline" className={`ml-auto ${statusStyles[selectedEmployee.status]}`}>
+                  {statusLabels[selectedEmployee.status]}
+                </Badge>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Check In Section */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold flex items-center gap-2 text-success">
+                    <Clock className="size-4" />
+                    Check In - {formatTime(selectedEmployee.actualCheckIn)}
+                  </h3>
+                  
+                  {/* Check In Photo */}
+                  {selectedEmployee.checkInPhotoUrl ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Camera className="size-4" />
+                        Selfie Verification
+                      </div>
+                      <div className="relative aspect-square w-full max-w-[200px] bg-muted rounded-lg overflow-hidden border border-border">
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Avatar className="size-20">
+                            <AvatarFallback className="bg-primary/10 text-primary text-2xl">
+                              {selectedEmployee.initials}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                        <div className="absolute bottom-2 left-2 right-2">
+                          <Badge variant="secondary" className="text-xs">
+                            Verified at {formatTime(selectedEmployee.actualCheckIn)}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+                      No check-in photo available
+                    </div>
+                  )}
+                  
+                  {/* Check In GPS */}
+                  {selectedEmployee.checkInGps ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Navigation className="size-4" />
+                        GPS Location
+                      </div>
+                      <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                        <p className="text-sm font-medium">{selectedEmployee.checkInGps.address || 'Unknown location'}</p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>Lat: {selectedEmployee.checkInGps.latitude.toFixed(6)}</span>
+                          <span>Lng: {selectedEmployee.checkInGps.longitude.toFixed(6)}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">
+                            Accuracy: {selectedEmployee.checkInGps.accuracy}m
+                          </span>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => openGoogleMaps(selectedEmployee.checkInGps!)}
+                            className="gap-1"
+                          >
+                            <ExternalLink className="size-3" />
+                            View on Map
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+                      No GPS data available
+                    </div>
+                  )}
+                </div>
+
+                {/* Check Out Section */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold flex items-center gap-2 text-primary">
+                    <Clock className="size-4" />
+                    Check Out - {formatTime(selectedEmployee.actualCheckOut)}
+                  </h3>
+                  
+                  {/* Check Out Photo */}
+                  {selectedEmployee.checkOutPhotoUrl ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Camera className="size-4" />
+                        Selfie Verification
+                      </div>
+                      <div className="relative aspect-square w-full max-w-[200px] bg-muted rounded-lg overflow-hidden border border-border">
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Avatar className="size-20">
+                            <AvatarFallback className="bg-primary/10 text-primary text-2xl">
+                              {selectedEmployee.initials}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                        <div className="absolute bottom-2 left-2 right-2">
+                          <Badge variant="secondary" className="text-xs">
+                            Verified at {formatTime(selectedEmployee.actualCheckOut)}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+                      {selectedEmployee.actualCheckOut ? 'No check-out photo available' : 'Not checked out yet'}
+                    </div>
+                  )}
+                  
+                  {/* Check Out GPS */}
+                  {selectedEmployee.checkOutGps ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Navigation className="size-4" />
+                        GPS Location
+                      </div>
+                      <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                        <p className="text-sm font-medium">{selectedEmployee.checkOutGps.address || 'Unknown location'}</p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span>Lat: {selectedEmployee.checkOutGps.latitude.toFixed(6)}</span>
+                          <span>Lng: {selectedEmployee.checkOutGps.longitude.toFixed(6)}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">
+                            Accuracy: {selectedEmployee.checkOutGps.accuracy}m
+                          </span>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => openGoogleMaps(selectedEmployee.checkOutGps!)}
+                            className="gap-1"
+                          >
+                            <ExternalLink className="size-3" />
+                            View on Map
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+                      {selectedEmployee.actualCheckOut ? 'No GPS data available' : 'Not checked out yet'}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Late Warning */}
+              {selectedEmployee.status === 'late' && selectedEmployee.lateMinutes > 0 && (
+                <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
+                  <div className="flex items-center gap-2 text-warning">
+                    <AlertTriangle className="size-4" />
+                    <span className="font-medium">Late by {selectedEmployee.lateMinutes} minutes</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Scheduled start: {formatTime(selectedEmployee.scheduledStart)} | Actual: {formatTime(selectedEmployee.actualCheckIn)}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
     <Card className="bg-card border-border">
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -80,27 +296,28 @@ export function AttendanceTable() {
           </TabsList>
 
           <TabsContent value="all">
-            <AttendanceTableContent records={allEmployees} showSchedule />
+            <AttendanceTableContent records={allEmployees} showSchedule onViewDetails={openDetails} />
           </TabsContent>
           
           <TabsContent value="late">
-            <AttendanceTableContent records={lateEmployees} showSchedule showLateDetails />
+            <AttendanceTableContent records={lateEmployees} showSchedule showLateDetails onViewDetails={openDetails} />
           </TabsContent>
           
           <TabsContent value="present">
-            <AttendanceTableContent records={presentEmployees} showSchedule />
+            <AttendanceTableContent records={presentEmployees} showSchedule onViewDetails={openDetails} />
           </TabsContent>
           
           <TabsContent value="absent">
-            <AttendanceTableContent records={absentEmployees} showSchedule />
+            <AttendanceTableContent records={absentEmployees} showSchedule onViewDetails={openDetails} />
           </TabsContent>
           
           <TabsContent value="day-off">
-            <AttendanceTableContent records={dayOffEmployees} showSchedule isDayOffView />
+            <AttendanceTableContent records={dayOffEmployees} showSchedule isDayOffView onViewDetails={openDetails} />
           </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
+    </>
   )
 }
 
@@ -109,9 +326,10 @@ interface AttendanceTableContentProps {
   showSchedule?: boolean
   showLateDetails?: boolean
   isDayOffView?: boolean
+  onViewDetails?: (employee: EmployeeWithAttendance) => void
 }
 
-function AttendanceTableContent({ records, showSchedule, showLateDetails, isDayOffView }: AttendanceTableContentProps) {
+function AttendanceTableContent({ records, showSchedule, showLateDetails, isDayOffView, onViewDetails }: AttendanceTableContentProps) {
   if (records.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -138,6 +356,7 @@ function AttendanceTableContent({ records, showSchedule, showLateDetails, isDayO
             )}
             <TableHead className="hidden sm:table-cell">Hours</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -206,6 +425,20 @@ function AttendanceTableContent({ records, showSchedule, showLateDetails, isDayO
                   <Badge variant="outline" className={statusStyles[record.status]}>
                     {statusLabels[record.status]}
                   </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  {(record.checkInGps || record.checkInPhotoUrl) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onViewDetails?.(record)}
+                      className="gap-1 text-primary hover:text-primary"
+                    >
+                      <MapPin className="size-3" />
+                      <Camera className="size-3" />
+                      <span className="hidden sm:inline">View</span>
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             )

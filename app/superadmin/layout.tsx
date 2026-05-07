@@ -64,6 +64,8 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
     '/superadmin/client': 'Client',
     '/superadmin/structure': 'Structure',
     '/superadmin/data': 'Data',
+    '/superadmin/schedules': 'Schedules',
+    '/superadmin/settings': 'Settings',
   }
 
   const pathname = '/superadmin'
