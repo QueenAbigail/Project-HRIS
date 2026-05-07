@@ -37,10 +37,24 @@ import {
   RotateCcw,
   Users,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  Settings,
+  Sunset,
+  Download
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Toaster } from '@/components/ui/sonner'
+import { useSchedulesStore } from '@/stores/useSchedulesStore'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { 
+  formatTime,
+  getLateCheckIns,
+  getShiftEmployees,
+  getShiftStats,
+} from '@/lib/data'
+import { ShiftFormDialog } from '@/components/shifts/ShiftFormDialog'
+import { EmployeeAssignmentTable } from '@/components/shifts/EmployeeAssignmentTable'
+import { EmployeeSwapDialog } from '@/components/shifts/EmployeeSwapDialog'
 
 // Schedule pattern types
 type PatternType = 'fixed' | 'rotating'
@@ -112,10 +126,24 @@ const shiftOptions = [
 
 const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
+const shiftIcons = {
+  morning: Sun,
+  day: Sun,
+  evening: Sunset,
+  night: Moon,
+} as const
+
 export default function SchedulesPage() {
   const [patterns, setPatterns] = useState<SchedulePattern[]>(initialPatterns)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editPattern, setEditPattern] = useState<SchedulePattern | null>(null)
+  const [activeMainTab, setActiveMainTab] = useState('patterns')
+  const [createShiftOpen, setCreateShiftOpen] = useState(false)
+  const [swapOpen, setSwapOpen] = useState(false)
+  
+  // Get shifts from store
+  const shifts = useSchedulesStore(state => state.shifts)
+  const lateCheckIns = getLateCheckIns()
   
   // Form state
   const [formData, setFormData] = useState({
@@ -327,18 +355,44 @@ export default function SchedulesPage() {
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Schedule Management</h1>
               <p className="text-muted-foreground">
-                Manage fixed and rotating schedule patterns for attendance tracking
+                Manage shifts, assignments, and rotating schedule patterns
               </p>
             </div>
           </div>
-          <Button onClick={() => { resetForm(); setCreateDialogOpen(true); }}>
-            <Plus className="mr-2 size-4" />
-            Create Pattern
-          </Button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Main Management Tabs */}
+        <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="patterns">
+              <CalendarDays className="mr-2 size-4" />
+              Patterns
+            </TabsTrigger>
+            <TabsTrigger value="shifts">
+              <Clock className="mr-2 size-4" />
+              Shifts
+            </TabsTrigger>
+            <TabsTrigger value="assignments">
+              <Users className="mr-2 size-4" />
+              Assignments
+            </TabsTrigger>
+            <TabsTrigger value="swaps">
+              <Settings className="mr-2 size-4" />
+              Quick Swaps
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Patterns Tab */}
+          <TabsContent value="patterns" className="space-y-6">
+            <div className="flex justify-end">
+              <Button onClick={() => { resetForm(); setCreateDialogOpen(true); }}>
+                <Plus className="mr-2 size-4" />
+                Create Pattern
+              </Button>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -432,6 +486,159 @@ export default function SchedulesPage() {
             </Tabs>
           </CardContent>
         </Card>
+          </TabsContent>
+
+          {/* Shifts Tab */}
+          <TabsContent value="shifts" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-semibold">Shift Configuration</h2>
+                <p className="text-sm text-muted-foreground">Manage shift times, grace periods, and attendance rules</p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline">
+                  <Download className="mr-2 size-4" />
+                  Export CSV
+                </Button>
+                <Button onClick={() => setCreateShiftOpen(true)}>
+                  <Plus className="mr-2 size-4" />
+                  Create Shift
+                </Button>
+              </div>
+            </div>
+
+            {/* Late Check-ins Alert */}
+            {lateCheckIns.length > 0 && (
+              <Card className="bg-warning/5 border-warning/30">
+                <CardContent className="flex items-center gap-4 py-4">
+                  <div className="size-10 rounded-lg bg-warning/10 flex items-center justify-center">
+                    <AlertTriangle className="size-5 text-warning" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">
+                      {lateCheckIns.length} late check-ins today
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {lateCheckIns.slice(0, 3).map(l => l.employeeName).join(', ')}
+                      {lateCheckIns.length > 3 && ` and ${lateCheckIns.length - 3} more`}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Shift Overview Cards */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {shifts.map((shift) => {
+                const stats = getShiftStats(shift.id)
+                const ShiftIcon = shiftIcons[shift.id as keyof typeof shiftIcons] || Clock
+                const hasLate = stats.late > 0
+
+                return (
+                  <Card 
+                    key={shift.id} 
+                    className={`cursor-pointer hover:shadow-md transition-shadow ${hasLate ? 'ring-1 ring-warning/50' : ''}`}
+                  >
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <ShiftIcon className="size-4 text-primary" />
+                          </div>
+                          <CardTitle className="text-base">{shift.name}</CardTitle>
+                        </div>
+                        {hasLate && (
+                          <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 text-xs">
+                            {stats.late} late
+                          </Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Time</span>
+                          <span className="font-mono">{formatTime(shift.startTime)} - {formatTime(shift.endTime)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Grace</span>
+                          <span>{shift.gracePeriodMinutes} min</span>
+                        </div>
+                        <div className="pt-2 border-t border-border">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-1">
+                              <Users className="size-3" />
+                              {stats.total} assigned
+                            </span>
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="text-success">{stats.present}</span>
+                              <span className="text-warning">{stats.late}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+
+            {/* Active Shifts List */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Active Shifts</CardTitle>
+                <CardDescription>Configure shift times and grace periods</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {shifts.map(shift => (
+                  <div key={shift.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div className="flex items-center gap-4">
+                      <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        {(() => {
+                          const ShiftIcon = shiftIcons[shift.id as keyof typeof shiftIcons] || Clock
+                          return <ShiftIcon className="size-5 text-primary" />
+                        })()}
+                      </div>
+                      <div>
+                        <h4 className="font-medium">{shift.name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {formatTime(shift.startTime)} - {formatTime(shift.endTime)} | {shift.gracePeriodMinutes}min grace
+                        </p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm">
+                      <Edit className="size-4 mr-2" />
+                      Edit
+                    </Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <ShiftFormDialog 
+              open={createShiftOpen} 
+              onOpenChange={setCreateShiftOpen}
+            />
+          </TabsContent>
+
+          {/* Assignments Tab */}
+          <TabsContent value="assignments">
+            <EmployeeAssignmentTable />
+          </TabsContent>
+
+          {/* Swaps Tab */}
+          <TabsContent value="swaps" className="p-6">
+            <EmployeeSwapDialog open={swapOpen} onOpenChange={setSwapOpen} />
+            <div className="text-center py-12 text-muted-foreground">
+              <Users className="mx-auto size-12 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Quick Employee Swaps</h3>
+              <p>Use the swap dialog for fast schedule changes with automatic attendance adjustment</p>
+              <Button onClick={() => setSwapOpen(true)} className="mt-4">
+                Start Swap
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Create/Edit Dialog */}
