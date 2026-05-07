@@ -90,7 +90,10 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
             </Breadcrumb>
           </div>
           <Link href="/dashboard">
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button 
+              size="sm" 
+              className="gap-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold shadow-md transition-all duration-200 active:scale-95"
+            >
               <LogOut className="size-4" />
               Back to Dashboard
             </Button>
