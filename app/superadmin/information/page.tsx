@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ShieldAlert, Loader2 } from 'lucide-react'
+import { ShieldAlert } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 // 👉 Import fungsi penarik datanya juga
@@ -38,13 +38,9 @@ export default function InformationPage() {
     }
   }
 
-  // 👉 Kalau data belum kekumpul, tampilin loading muter biar defaultValue gak kosong
+  // Return null while loading to let skeleton handle loading state
   if (isLoading) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
-      </div>
-    )
+    return null
   }
 
   return (

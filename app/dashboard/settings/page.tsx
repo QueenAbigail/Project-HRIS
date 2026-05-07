@@ -65,7 +65,7 @@ export default function SettingsPage() {
                 <Label>Email Notifications</Label>
                 <p className="text-sm text-muted-foreground">Receive email alerts for important events</p>
               </div>
-              <Switch defaultChecked />
+              <Switch />
             </div>
             <Separator />
             <div className="flex items-center justify-between">
@@ -73,7 +73,7 @@ export default function SettingsPage() {
                 <Label>Leave Request Alerts</Label>
                 <p className="text-sm text-muted-foreground">Get notified when new leave requests are submitted</p>
               </div>
-              <Switch defaultChecked />
+              <Switch />
             </div>
             <Separator />
             <div className="flex items-center justify-between">
@@ -81,7 +81,7 @@ export default function SettingsPage() {
                 <Label>Late Check-In Alerts</Label>
                 <p className="text-sm text-muted-foreground">Notify when employees check in late based on schedule</p>
               </div>
-              <Switch defaultChecked />
+              <Switch />
             </div>
             <Separator />
             <div className="flex items-center justify-between">
@@ -89,7 +89,7 @@ export default function SettingsPage() {
                 <Label>Attendance Alerts</Label>
                 <p className="text-sm text-muted-foreground">Notify when employees are absent</p>
               </div>
-              <Switch defaultChecked />
+              <Switch />
             </div>
             <Separator />
             <div className="flex items-center justify-between">
@@ -97,7 +97,7 @@ export default function SettingsPage() {
                 <Label>Payroll Reminders</Label>
                 <p className="text-sm text-muted-foreground">Remind before payroll processing deadlines</p>
               </div>
-              <Switch defaultChecked />
+              <Switch />
             </div>
             <div className="pt-4">
               <Button>Save Preferences</Button>

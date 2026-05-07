@@ -113,7 +113,7 @@ const mainNavItems = [
   },
   {
     title: 'Shift Schedule',
-    url: '/dashboard/shifts',
+    url: '/superadmin/schedules',
     icon: CalendarClock,
   },
 ]
