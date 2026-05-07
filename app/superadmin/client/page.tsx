@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Plus, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 
 // Types
@@ -105,62 +106,64 @@ export default function ClientPage() {
         <h1 className="text-3xl font-bold tracking-tight">Management Client</h1>
       </div>
 
-      {categoryConfig.map((category) => (
-        <div key={category.key} className="space-y-4">
-          <Card className="border border-border bg-card p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+        {categoryConfig.map((category) => (
+          <Card key={category.key} className="border border-border bg-card p-6 flex flex-col h-full min-h-96">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-card-foreground">{category.title}</h2>
               <Button
                 onClick={() => handleAddNewEntry(category.key)}
                 size="sm"
-                className="gap-2 bg-primary hover:bg-primary/90"
+                className="gap-2 bg-primary hover:bg-primary/90 h-8 px-2"
               >
-                <Plus className="h-4 w-4" />
-                ADD NEW ENTRY
+                <Plus className="h-3 w-3" />
+                <span className="text-xs">Add</span>
               </Button>
             </div>
 
-            <div className="space-y-3">
-              {categories[category.key]?.length > 0 ? (
-                categories[category.key].map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between rounded-lg border border-border bg-background p-4 hover:bg-muted transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <Badge variant="outline" className="h-10 w-10 flex items-center justify-center rounded-full font-semibold">
-                        {item.abbreviation}
-                      </Badge>
-                      <span className="text-foreground">{item.name}</span>
+            <ScrollArea className="flex-1 pr-4">
+              <div className="space-y-3">
+                {categories[category.key]?.length > 0 ? (
+                  categories[category.key].map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between rounded-lg border border-border bg-background p-4 hover:bg-muted transition-colors group"
+                    >
+                      <div className="flex items-center gap-4 min-w-0">
+                        <Badge variant="outline" className="h-9 w-9 flex items-center justify-center rounded-full font-semibold flex-shrink-0 text-sm">
+                          {item.abbreviation}
+                        </Badge>
+                        <span className="text-foreground truncate">{item.name}</span>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <MoreVertical className="h-4 w-4 text-primary" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditItem(category.key, item)} className="cursor-pointer">
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDeleteItem(category.key, item.id)} className="cursor-pointer text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted">
-                          <MoreVertical className="h-4 w-4 text-primary" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEditItem(category.key, item)} className="cursor-pointer">
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDeleteItem(category.key, item.id)} className="cursor-pointer text-destructive">
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  ))
+                ) : (
+                  <div className="py-12 text-center">
+                    <p className="text-muted-foreground">No entries yet. Click "Add" to get started.</p>
                   </div>
-                ))
-              ) : (
-                <div className="py-12 text-center">
-                  <p className="text-muted-foreground">No entries yet. Click "ADD NEW ENTRY" to get started.</p>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            </ScrollArea>
           </Card>
-        </div>
-      ))}
+        ))}
+      </div>
 
       <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent>
