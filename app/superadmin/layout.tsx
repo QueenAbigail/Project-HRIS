@@ -1,6 +1,6 @@
-import { AppSidebar } from "@/components/app-sidebar"
-import { HeaderControls } from "@/components/header-controls"
+import { SuperadminSidebar } from "@/components/superadmin-sidebar"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
 
 import {
   Breadcrumb,
@@ -15,6 +15,7 @@ import { createClient } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getSystemSettings } from "@/lib/system"
 import Link from "next/link"
+import { LogOut } from "lucide-react"
 
 interface User {
   name: string | null
@@ -33,7 +34,7 @@ export interface LayoutProps {
   children: React.ReactNode
 }
 
-export default async function DashboardLayout({ children }: LayoutProps) {
+export default async function SuperadminLayout({ children }: LayoutProps) {
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
 
@@ -50,28 +51,29 @@ export default async function DashboardLayout({ children }: LayoutProps) {
     }
   }) as User | null
 
+  // Verify user is SUPER_ADMIN
+  if (user?.role !== 'SUPER_ADMIN') {
+    redirect('/dashboard')
+  }
+
   const systemSettings = await getSystemSettings()
 
   const pathNames: Record<string, string> = {
-    '/dashboard': 'Overview',
-    '/dashboard/employees': 'Employees',
-    '/dashboard/attendance': 'Attendance',
-    '/dashboard/payroll': 'Payroll',
-    '/dashboard/leave': 'Leave Management',
-    '/dashboard/shifts': 'Shift Schedule',
-    '/dashboard/reports': 'Reports',
-    '/dashboard/settings': 'Settings',
+    '/superadmin': 'Dashboard',
+    '/superadmin/information': 'Information',
+    '/superadmin/client': 'Client',
+    '/superadmin/structure': 'Structure',
+    '/superadmin/data': 'Data',
   }
 
-  const pathname = '/dashboard' // Default since server, or use headers() for real pathname if needed
-
-  const currentPage = pathNames[pathname] || 'Dashboard'
+  const pathname = '/superadmin'
+  const currentPage = pathNames[pathname] || 'Superadmin'
 
   return (
     <SidebarProvider>
-      <AppSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
+      <SuperadminSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
       <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card/50 backdrop-blur-sm px-4">
+        <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border bg-card/50 backdrop-blur-sm px-4">
           <div className="flex items-center gap-2">
             <Breadcrumb>
               <BreadcrumbList>
@@ -80,18 +82,22 @@ export default async function DashboardLayout({ children }: LayoutProps) {
                     Dashboard
                   </BreadcrumbLink>
                 </BreadcrumbItem>
-                {pathname !== '/dashboard' && (
-                  <>
-                    <BreadcrumbSeparator className="hidden md:block" />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage>{currentPage}</BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </>
-                )}
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{currentPage}</BreadcrumbPage>
+                </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <HeaderControls userRole={user?.role || null} />
+          <Link href="/dashboard">
+            <Button 
+              size="sm" 
+              className="gap-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-slate-100 font-medium transition-all duration-200 active:scale-95"
+            >
+              <LogOut className="size-4" />
+              Back to Dashboard
+            </Button>
+          </Link>
         </header>
         <main className="flex-1 overflow-auto p-4 md:p-6">
           {children}
@@ -100,4 +106,3 @@ export default async function DashboardLayout({ children }: LayoutProps) {
     </SidebarProvider>
   )
 }
-
