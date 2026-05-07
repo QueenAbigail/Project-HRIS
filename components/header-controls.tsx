@@ -20,7 +20,7 @@ export function HeaderControls({ userRole }: HeaderControlsProps) {
       <Link href="/superadmin">
         <Button 
           size="sm" 
-          className="gap-2 bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-white font-semibold shadow-md transition-all duration-200 active:scale-95"
+          className="gap-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-slate-100 font-medium transition-all duration-200 active:scale-95"
         >
           <ShieldAlert className="size-4" />
           Superadmin

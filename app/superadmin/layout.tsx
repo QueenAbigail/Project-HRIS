@@ -92,7 +92,7 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
           <Link href="/dashboard">
             <Button 
               size="sm" 
-              className="gap-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold shadow-md transition-all duration-200 active:scale-95"
+              className="gap-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-slate-100 font-medium transition-all duration-200 active:scale-95"
             >
               <LogOut className="size-4" />
               Back to Dashboard
