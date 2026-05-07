@@ -22,11 +22,12 @@ interface Category {
   key: string
 }
 
-export default function StructurePage() {
+export default function DataPage() {
   const [categories, setCategories] = useState<Record<string, CategoryItem[]>>({
-    department: [],
-    position: [],
-    certificate: [],
+    religion: [],
+    maritalStatus: [],
+    employmentStatus: [],
+    bloodType: [],
   })
 
   const [editingItem, setEditingItem] = useState<CategoryItem | null>(null)
@@ -35,9 +36,10 @@ export default function StructurePage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const categoryConfig: Category[] = [
-    { title: 'Department', key: 'department' },
-    { title: 'Position', key: 'position' },
-    { title: 'Certificate', key: 'certificate' },
+    { title: 'Religion', key: 'religion' },
+    { title: 'Marital Status', key: 'maritalStatus' },
+    { title: 'Employment Status', key: 'employmentStatus' },
+    { title: 'Blood Type', key: 'bloodType' },
   ]
 
   const handleAddNewEntry = (categoryKey: string) => {
@@ -104,10 +106,10 @@ export default function StructurePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Management Structure</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Management Data</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
         {categoryConfig.map((category) => (
           <Card key={category.key} className="border border-border bg-card p-6 flex flex-col">
             <div className="flex items-center justify-between mb-6">
