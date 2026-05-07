@@ -4,10 +4,11 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Pencil, Plus } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Plus, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 
 // Types
 interface CategoryItem {
@@ -51,6 +52,14 @@ export default function ClientPage() {
     setIsDialogOpen(true)
   }
 
+  const handleDeleteItem = (categoryKey: string, itemId: string) => {
+    setCategories((prev) => {
+      const updated = { ...prev }
+      updated[categoryKey] = updated[categoryKey].filter((item) => item.id !== itemId)
+      return updated
+    })
+  }
+
   const handleSaveItem = () => {
     if (!newItemName.trim() || !selectedCategory) return
 
@@ -78,7 +87,16 @@ export default function ClientPage() {
     })
 
     setIsDialogOpen(false)
+    setEditingItem(null)
     setNewItemName('')
+    setSelectedCategory('')
+  }
+
+  const handleDialogClose = () => {
+    setIsDialogOpen(false)
+    setEditingItem(null)
+    setNewItemName('')
+    setSelectedCategory('')
   }
 
   return (
@@ -92,37 +110,14 @@ export default function ClientPage() {
           <Card className="border border-border bg-card p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-card-foreground">{category.title}</h2>
-              <Dialog open={isDialogOpen && selectedCategory === category.key} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button
-                    onClick={() => handleAddNewEntry(category.key)}
-                    size="sm"
-                    className="gap-2 bg-primary hover:bg-primary/90"
-                  >
-                    <Plus className="h-4 w-4" />
-                    ADD NEW ENTRY
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{editingItem ? 'Edit Entry' : 'Add New Entry'}</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="item-name">Name</Label>
-                      <Input
-                        id="item-name"
-                        value={newItemName}
-                        onChange={(e) => setNewItemName(e.target.value)}
-                        placeholder="Enter name"
-                      />
-                    </div>
-                    <Button onClick={handleSaveItem} className="w-full">
-                      {editingItem ? 'Update' : 'Add'} Entry
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <Button
+                onClick={() => handleAddNewEntry(category.key)}
+                size="sm"
+                className="gap-2 bg-primary hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4" />
+                ADD NEW ENTRY
+              </Button>
             </div>
 
             <div className="space-y-3">
@@ -138,14 +133,23 @@ export default function ClientPage() {
                       </Badge>
                       <span className="text-foreground">{item.name}</span>
                     </div>
-                    <Button
-                      onClick={() => handleEditItem(category.key, item)}
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 hover:bg-muted"
-                    >
-                      <Pencil className="h-4 w-4 text-primary" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted">
+                          <MoreVertical className="h-4 w-4 text-primary" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEditItem(category.key, item)} className="cursor-pointer">
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDeleteItem(category.key, item.id)} className="cursor-pointer text-destructive">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 ))
               ) : (
@@ -157,6 +161,29 @@ export default function ClientPage() {
           </Card>
         </div>
       ))}
+
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingItem ? 'Edit Entry' : 'Add New Entry'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="item-name">Name</Label>
+              <Input
+                id="item-name"
+                value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)}
+                placeholder="Enter name"
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
+              />
+            </div>
+            <Button onClick={handleSaveItem} className="w-full">
+              {editingItem ? 'Update' : 'Add'} Entry
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
