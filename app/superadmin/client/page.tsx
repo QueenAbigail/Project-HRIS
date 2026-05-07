@@ -108,7 +108,7 @@ export default function ClientPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
         {categoryConfig.map((category) => (
-          <Card key={category.key} className="border border-border bg-card p-6 flex flex-col h-full min-h-96">
+          <Card key={category.key} className="border border-border bg-card p-6 flex flex-col h-96 max-h-96">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold text-card-foreground">{category.title}</h2>
               <Button

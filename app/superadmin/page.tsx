@@ -1,9 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { LayoutDashboard, LogIn, UserPlus, AlertTriangle, Clock } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { LayoutDashboard, LogIn, UserPlus, AlertTriangle, Clock, AlertCircle, Eye } from 'lucide-react'
 
 interface LoginActivity {
   id: string
@@ -120,6 +123,17 @@ const getActivityIcon = (type: string) => {
 }
 
 export default function DashboardPage() {
+  const [filterDate, setFilterDate] = useState('')
+
+  // Filtered activities based on date
+  const filteredLoginActivities = filterDate
+    ? loginActivities.filter((activity) => activity.timestamp.startsWith(filterDate))
+    : loginActivities
+
+  const filteredUserChangeActivities = filterDate
+    ? userChangeActivities.filter((activity) => activity.timestamp.startsWith(filterDate))
+    : userChangeActivities
+
   return (
     <div className="space-y-6">
       <div className="flex items-center space-x-4">
@@ -127,6 +141,89 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">Monitor system activity and user operations</p>
+        </div>
+      </div>
+
+      {/* Error Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border border-border bg-card">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Login Errors</p>
+                <p className="text-2xl font-bold text-foreground mt-1">{errorCounts.login}</p>
+              </div>
+              <div className="rounded-lg bg-red-100 p-3">
+                <LogIn className="size-6 text-red-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border bg-card">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Attendance Errors</p>
+                <p className="text-2xl font-bold text-foreground mt-1">{errorCounts.attendance}</p>
+              </div>
+              <div className="rounded-lg bg-orange-100 p-3">
+                <AlertTriangle className="size-6 text-orange-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border bg-card">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Patrol Errors</p>
+                <p className="text-2xl font-bold text-foreground mt-1">{errorCounts.patrol}</p>
+              </div>
+              <div className="rounded-lg bg-yellow-100 p-3">
+                <Eye className="size-6 text-yellow-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border bg-card">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Data Errors</p>
+                <p className="text-2xl font-bold text-foreground mt-1">{errorCounts.data}</p>
+              </div>
+              <div className="rounded-lg bg-purple-100 p-3">
+                <AlertCircle className="size-6 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filter Section */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <label className="text-sm font-medium text-foreground">Filter by Date</label>
+            <Input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          {filterDate && (
+            <Button
+              variant="outline"
+              onClick={() => setFilterDate('')}
+              className="mt-6"
+            >
+              Clear Filter
+            </Button>
+          )}
         </div>
       </div>
 
@@ -145,7 +242,7 @@ export default function DashboardPage() {
           <CardContent className="flex-1 pt-6">
             <ScrollArea className="h-full pr-4">
               <div className="space-y-3">
-                {loginActivities.map((activity) => (
+                {filteredLoginActivities.map((activity) => (
                   <div
                     key={activity.id}
                     className="rounded-lg border border-border bg-background p-4 hover:bg-muted transition-colors"
@@ -185,7 +282,7 @@ export default function DashboardPage() {
           <CardContent className="flex-1 pt-6">
             <ScrollArea className="h-full pr-4">
               <div className="space-y-3">
-                {userChangeActivities.map((activity) => {
+                {filteredUserChangeActivities.map((activity) => {
                   const Icon = getActivityIcon(activity.type)
                   return (
                     <div
