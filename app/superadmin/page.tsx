@@ -125,6 +125,14 @@ const getActivityIcon = (type: string) => {
 export default function DashboardPage() {
   const [filterDate, setFilterDate] = useState('')
 
+  // Error counts
+  const errorCounts = {
+    login: 12,
+    attendance: 28,
+    patrol: 5,
+    data: 8,
+  }
+
   // Filtered activities based on date
   const filteredLoginActivities = filterDate
     ? loginActivities.filter((activity) => activity.timestamp.startsWith(filterDate))
