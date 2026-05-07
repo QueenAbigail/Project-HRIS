@@ -14,6 +14,8 @@ import {
   Users,
   Layers,
   Database,
+  CalendarDays,
+  Settings,
 } from 'lucide-react'
 
 import {
@@ -103,6 +105,16 @@ const adminNavItems = [
     title: 'Data',
     url: '/superadmin/data',
     icon: Database,
+  },
+  {
+    title: 'Schedules',
+    url: '/superadmin/schedules',
+    icon: CalendarDays,
+  },
+  {
+    title: 'Settings',
+    url: '/superadmin/settings',
+    icon: Settings,
   },
 ]
 

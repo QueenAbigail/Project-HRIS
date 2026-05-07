@@ -5,7 +5,8 @@ import {
   todayAttendance, 
   LocationId, 
   EmployeeSchedule, 
-  AttendanceRecord 
+  AttendanceRecord,
+  GpsCoordinates
 } from './constants'
 
 
@@ -265,6 +266,11 @@ export interface EmployeeWithAttendance {
   workHours: string
   workingDays: number[]
   isWorkingToday: boolean
+  // GPS and photo data
+  checkInGps: GpsCoordinates | null
+  checkOutGps: GpsCoordinates | null
+  checkInPhotoUrl: string | null
+  checkOutPhotoUrl: string | null
 }
 
 export function getEmployeesWithAttendance(date: Date = new Date()): EmployeeWithAttendance[] {
@@ -312,6 +318,10 @@ export function getEmployeesWithAttendance(date: Date = new Date()): EmployeeWit
       workHours,
       workingDays: schedule.workingDays,
       isWorkingToday,
+      checkInGps: attendance?.checkInGps || null,
+      checkOutGps: attendance?.checkOutGps || null,
+      checkInPhotoUrl: attendance?.checkInPhotoUrl || null,
+      checkOutPhotoUrl: attendance?.checkOutPhotoUrl || null,
     }
   })
 }

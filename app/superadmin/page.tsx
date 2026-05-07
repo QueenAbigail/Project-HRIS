@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { LayoutDashboard, LogIn, UserPlus, AlertTriangle, Clock, AlertCircle, Eye } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { LayoutDashboard, LogIn, UserPlus, AlertTriangle, Clock, AlertCircle, Eye, Search, X } from 'lucide-react'
 
 interface LoginActivity {
   id: string
@@ -124,6 +125,8 @@ const getActivityIcon = (type: string) => {
 
 export default function DashboardPage() {
   const [filterDate, setFilterDate] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'week' | 'month'>('all')
 
   // Error counts
   const errorCounts = {
@@ -133,14 +136,63 @@ export default function DashboardPage() {
     data: 8,
   }
 
-  // Filtered activities based on date
-  const filteredLoginActivities = filterDate
-    ? loginActivities.filter((activity) => activity.timestamp.startsWith(filterDate))
-    : loginActivities
+  // Helper function to check if timestamp is within filter range
+  const isWithinTimeRange = (timestamp: string) => {
+    if (timeFilter === 'all') return true
+    const date = new Date(timestamp)
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    
+    switch (timeFilter) {
+      case 'today':
+        return date >= today
+      case 'week':
+        const weekAgo = new Date(today)
+        weekAgo.setDate(weekAgo.getDate() - 7)
+        return date >= weekAgo
+      case 'month':
+        const monthAgo = new Date(today)
+        monthAgo.setMonth(monthAgo.getMonth() - 1)
+        return date >= monthAgo
+      default:
+        return true
+    }
+  }
 
-  const filteredUserChangeActivities = filterDate
-    ? userChangeActivities.filter((activity) => activity.timestamp.startsWith(filterDate))
-    : userChangeActivities
+  // Filtered activities based on date, search, and time filter
+  const filteredLoginActivities = useMemo(() => {
+    return loginActivities.filter((activity) => {
+      const matchesDate = filterDate ? activity.timestamp.startsWith(filterDate) : true
+      const matchesSearch = searchQuery 
+        ? activity.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          activity.ipAddress.includes(searchQuery) ||
+          activity.device.toLowerCase().includes(searchQuery.toLowerCase())
+        : true
+      const matchesTime = isWithinTimeRange(activity.timestamp)
+      return matchesDate && matchesSearch && matchesTime
+    })
+  }, [filterDate, searchQuery, timeFilter])
+
+  const filteredUserChangeActivities = useMemo(() => {
+    return userChangeActivities.filter((activity) => {
+      const matchesDate = filterDate ? activity.timestamp.startsWith(filterDate) : true
+      const matchesSearch = searchQuery 
+        ? activity.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          activity.actor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          activity.description.toLowerCase().includes(searchQuery.toLowerCase())
+        : true
+      const matchesTime = isWithinTimeRange(activity.timestamp)
+      return matchesDate && matchesSearch && matchesTime
+    })
+  }, [filterDate, searchQuery, timeFilter])
+
+  const clearFilters = () => {
+    setFilterDate('')
+    setSearchQuery('')
+    setTimeFilter('all')
+  }
+
+  const hasActiveFilters = filterDate || searchQuery || timeFilter !== 'all'
 
   return (
     <div className="space-y-6">
@@ -212,28 +264,101 @@ export default function DashboardPage() {
       </div>
 
       {/* Filter Section */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <label className="text-sm font-medium text-foreground">Filter by Date</label>
-            <Input
-              type="date"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-              className="mt-1"
-            />
+      <Card className="bg-card border-border">
+        <CardContent className="pt-6">
+          <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Search Input */}
+              <div className="md:col-span-2">
+                <label className="text-sm font-medium text-foreground mb-1.5 block">Search</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search by name, email, IP, or description..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* Time Filter */}
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">Time Range</label>
+                <Select value={timeFilter} onValueChange={(v) => setTimeFilter(v as typeof timeFilter)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select time range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="today">Today</SelectItem>
+                    <SelectItem value="week">Last 7 Days</SelectItem>
+                    <SelectItem value="month">Last 30 Days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Date Filter */}
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">Specific Date</label>
+                <Input
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Active Filters & Clear */}
+            {hasActiveFilters && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-muted-foreground">Active filters:</span>
+                {searchQuery && (
+                  <Badge variant="secondary" className="gap-1">
+                    Search: {searchQuery}
+                    <X 
+                      className="size-3 cursor-pointer hover:text-destructive" 
+                      onClick={() => setSearchQuery('')}
+                    />
+                  </Badge>
+                )}
+                {timeFilter !== 'all' && (
+                  <Badge variant="secondary" className="gap-1">
+                    Time: {timeFilter}
+                    <X 
+                      className="size-3 cursor-pointer hover:text-destructive" 
+                      onClick={() => setTimeFilter('all')}
+                    />
+                  </Badge>
+                )}
+                {filterDate && (
+                  <Badge variant="secondary" className="gap-1">
+                    Date: {filterDate}
+                    <X 
+                      className="size-3 cursor-pointer hover:text-destructive" 
+                      onClick={() => setFilterDate('')}
+                    />
+                  </Badge>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="text-destructive hover:text-destructive"
+                >
+                  Clear All
+                </Button>
+              </div>
+            )}
+
+            {/* Results Count */}
+            <div className="text-sm text-muted-foreground">
+              Showing {filteredLoginActivities.length} login activities and {filteredUserChangeActivities.length} change activities
+            </div>
           </div>
-          {filterDate && (
-            <Button
-              variant="outline"
-              onClick={() => setFilterDate('')}
-              className="mt-6"
-            >
-              Clear Filter
-            </Button>
-          )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* User Login Activity */}
