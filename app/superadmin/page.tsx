@@ -100,26 +100,30 @@ const userChangeActivities: UserChangeActivity[] = [
 const getActivityBadgeColor = (type: string) => {
   switch (type) {
     case 'user_added':
-      return 'bg-green-100 text-green-800'
+      return 'bg-success/10 text-success'
     case 'user_edited':
-      return 'bg-blue-100 text-blue-800'
+      return 'bg-primary/10 text-primary'
     case 'attendance_error':
-      return 'bg-red-100 text-red-800'
+      return 'bg-destructive/10 text-destructive'
     case 'permission_changed':
-      return 'bg-purple-100 text-purple-800'
+      return 'bg-warning/10 text-warning'
     default:
-      return 'bg-gray-100 text-gray-800'
+      return 'bg-muted/10 text-muted-foreground'
   }
 }
 
 const getActivityIcon = (type: string) => {
   switch (type) {
     case 'user_added':
-      return UserPlus
+      return { icon: UserPlus, color: 'text-success' }
+    case 'user_edited':
+      return { icon: UserPlus, color: 'text-primary' }
     case 'attendance_error':
-      return AlertTriangle
+      return { icon: AlertTriangle, color: 'text-destructive' }
+    case 'permission_changed':
+      return { icon: AlertTriangle, color: 'text-warning' }
     default:
-      return Clock
+      return { icon: Clock, color: 'text-muted-foreground' }
   }
 }
 
@@ -213,8 +217,8 @@ export default function DashboardPage() {
                 <p className="text-sm text-muted-foreground">Login Errors</p>
                 <p className="text-2xl font-bold text-foreground mt-1">{errorCounts.login}</p>
               </div>
-              <div className="rounded-lg bg-red-100 p-3">
-                <LogIn className="size-6 text-red-600" />
+              <div className="rounded-lg bg-destructive/10 p-3">
+                <LogIn className="size-6 text-destructive" />
               </div>
             </div>
           </CardContent>
@@ -227,8 +231,8 @@ export default function DashboardPage() {
                 <p className="text-sm text-muted-foreground">Attendance Errors</p>
                 <p className="text-2xl font-bold text-foreground mt-1">{errorCounts.attendance}</p>
               </div>
-              <div className="rounded-lg bg-orange-100 p-3">
-                <AlertTriangle className="size-6 text-orange-600" />
+              <div className="rounded-lg bg-warning/10 p-3">
+                <AlertTriangle className="size-6 text-warning" />
               </div>
             </div>
           </CardContent>
@@ -241,8 +245,8 @@ export default function DashboardPage() {
                 <p className="text-sm text-muted-foreground">Patrol Errors</p>
                 <p className="text-2xl font-bold text-foreground mt-1">{errorCounts.patrol}</p>
               </div>
-              <div className="rounded-lg bg-yellow-100 p-3">
-                <Eye className="size-6 text-yellow-600" />
+              <div className="rounded-lg bg-primary/10 p-3">
+                <Eye className="size-6 text-primary" />
               </div>
             </div>
           </CardContent>
@@ -255,8 +259,8 @@ export default function DashboardPage() {
                 <p className="text-sm text-muted-foreground">Data Errors</p>
                 <p className="text-2xl font-bold text-foreground mt-1">{errorCounts.data}</p>
               </div>
-              <div className="rounded-lg bg-purple-100 p-3">
-                <AlertCircle className="size-6 text-purple-600" />
+              <div className="rounded-lg bg-success/10 p-3">
+                <AlertCircle className="size-6 text-success" />
               </div>
             </div>
           </CardContent>
@@ -416,7 +420,7 @@ export default function DashboardPage() {
             <ScrollArea className="h-full pr-4">
               <div className="space-y-3">
                 {filteredUserChangeActivities.map((activity) => {
-                  const Icon = getActivityIcon(activity.type)
+                  const { icon: Icon, color } = getActivityIcon(activity.type)
                   return (
                     <div
                       key={activity.id}
@@ -424,7 +428,7 @@ export default function DashboardPage() {
                     >
                       <div className="flex items-start gap-3 mb-2">
                         <div className="rounded-lg bg-muted p-2 flex-shrink-0">
-                          <Icon className="size-4 text-primary" />
+                          <Icon className={`size-4 ${color}`} />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-1">
