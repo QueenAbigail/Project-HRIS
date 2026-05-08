@@ -65,6 +65,7 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
     '/superadmin/structure': 'Structure',
     '/superadmin/data': 'Data',
     '/superadmin/schedules': 'Schedules',
+    '/superadmin/devices': 'Device Management',
     '/superadmin/settings': 'Settings',
   }
 
