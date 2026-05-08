@@ -110,6 +110,7 @@ model User {
   leavesApproved        Leave[]                   @relation("LeaveApprover")
   assignments           EmployeeShiftAssignment[]
   patrols               Patrol[]
+  deviceBindings        DeviceBinding[]
   createdAt             DateTime                  @default(now())
   updatedAt             DateTime                  @updatedAt
   status                EmployeeStatus            @default(ACTIVE)
@@ -286,4 +287,23 @@ model PatrolEvidence {
 
   @@index([patrolId])
   @@map("patrol_evidence")
+}
+
+// Device Binding model - restricts accounts to single device/app login
+model DeviceBinding {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId      String   @unique // Unique device identifier from mobile app
+  deviceName    String   // e.g., "Samsung Galaxy S23 (Android)", "iPhone 14 Pro (iOS)"
+  deviceType    String   // "mobile" or "app"
+  appVersion    String?  // App version when bound
+  bindDate      DateTime @default(now())
+  lastUsed      DateTime @updatedAt
+  isActive      Boolean  @default(true)
+
+  @@unique([userId, deviceType]) // One mobile device + one app per user
+  @@index([userId])
+  @@index([deviceId])
+  @@map("device_bindings")
 }

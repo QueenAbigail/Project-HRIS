@@ -18,6 +18,7 @@ import {
   LogOut,
   ChevronDown,
   MapPin,
+  Smartphone,
 } from 'lucide-react'
 
 import {
@@ -152,6 +153,11 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   }
 
   const secondaryNavItems = [
+    {
+      title: 'Device Management',
+      url: '/superadmin/devices',
+      icon: Smartphone,
+    },
     {
       title: 'Reports',
       url: '/dashboard/reports',
