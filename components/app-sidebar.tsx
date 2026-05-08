@@ -117,11 +117,6 @@ const mainNavItems = [
     icon: CalendarDays,
     badge: 5,
   },
-  {
-    title: 'Device Management',
-    url: '/superadmin/devices',
-    icon: Smartphone,
-  },
 ]
 
 export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) {
@@ -152,6 +147,11 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   }
 
   const secondaryNavItems = [
+    {
+      title: 'Device Management',
+      url: '/superadmin/devices',
+      icon: Smartphone,
+    },
     {
       title: 'Reports',
       url: '/dashboard/reports',
