@@ -50,8 +50,6 @@ export default function LoginPage() {
       setIsLoading(false)
       return
     }
-    
-    // Success - middleware/redirect handles the rest
   }
 
   return (
