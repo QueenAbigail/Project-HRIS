@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Shield, Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react'
 import { login } from '@/lib/auth'
 import { toast } from 'sonner'
@@ -10,12 +10,40 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 
+interface SystemSettings {
+  appName: string
+  appDescription: string
+  logoUrl?: string
+}
+
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(false)
+  const [settings, setSettings] = useState<SystemSettings>({
+    appName: 'HR Administration System',
+    appDescription: 'Sign in to access the admin dashboard'
+  })
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true)
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('/api/system-settings')
+        if (response.ok) {
+          const data = await response.json()
+          setSettings(data)
+        }
+      } catch (error) {
+        // Silently fail and use default settings
+      } finally {
+        setIsLoadingSettings(false)
+      }
+    }
+    fetchSettings()
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,6 +80,14 @@ export default function LoginPage() {
     }
   }
 
+  if (isLoadingSettings) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="size-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 relative overflow-hidden">
       {/* Background decorations */}
@@ -76,17 +112,21 @@ export default function LoginPage() {
         <CardHeader className="space-y-4 text-center pb-2">
           {/* Logo */}
           <div className="flex justify-center">
-            <div className="flex items-center justify-center size-16 rounded-2xl bg-primary/10 border border-primary/20 shadow-lg shadow-primary/10">
-              <Shield className="size-8 text-primary" />
-            </div>
+            {settings.logoUrl ? (
+              <img src={settings.logoUrl} alt="App Logo" className="size-16 rounded-2xl object-cover shadow-lg shadow-primary/10" />
+            ) : (
+              <div className="flex items-center justify-center size-16 rounded-2xl bg-primary/10 border border-primary/20 shadow-lg shadow-primary/10">
+                <Shield className="size-8 text-primary" />
+              </div>
+            )}
           </div>
           
           <div className="space-y-1.5">
             <CardTitle className="text-2xl font-bold tracking-tight">
-              SecureGuard HR
+              {settings.appName}
             </CardTitle>
             <CardDescription className="text-muted-foreground">
-              Sign in to access the admin dashboard
+              {settings.appDescription}
             </CardDescription>
           </div>
         </CardHeader>
@@ -113,17 +153,9 @@ export default function LoginPage() {
 
             {/* Password Field */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-sm font-medium">
-                  Password
-                </Label>
-                <button
-                  type="button"
-                  className="text-xs text-primary hover:text-primary/80 transition-colors"
-                >
-                  Forgot password?
-                </button>
-              </div>
+              <Label htmlFor="password" className="text-sm font-medium">
+                Password
+              </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <Input
