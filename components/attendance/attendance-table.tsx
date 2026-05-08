@@ -49,7 +49,7 @@ const severityStyles = {
   severe: 'text-destructive',
 }
 
-export function AttendanceTable() {
+export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
   const employees = getEmployeesWithAttendance()
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeWithAttendance | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
