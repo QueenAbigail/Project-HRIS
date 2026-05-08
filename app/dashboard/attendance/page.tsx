@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { AttendanceHeader } from '@/components/attendance/attendance-header'
 import { AttendanceStats } from '@/components/attendance/attendance-stats'
 import { AttendanceTable } from '@/components/attendance/attendance-table'
@@ -24,7 +25,16 @@ const mockSites = [
 ]
 
 export default function AttendancePage() {
+  const searchParams = useSearchParams()
   const [selectedSite, setSelectedSite] = useState('all')
+
+  useEffect(() => {
+    // Set site from query parameter if available
+    const siteParam = searchParams.get('site')
+    if (siteParam) {
+      setSelectedSite(siteParam)
+    }
+  }, [searchParams])
 
   return (
     <div className="space-y-6">
