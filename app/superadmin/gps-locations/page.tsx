@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Accordion,
   AccordionContent,
@@ -19,6 +20,15 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -26,7 +36,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Plus, Edit, Trash2, Building2 } from 'lucide-react'
+import { MapPin, Plus, Edit, Trash2, Building2, Search, X } from 'lucide-react'
 
 // Shared sites data - synced between attendance and patrol
 const mockSites = [
@@ -82,13 +92,34 @@ const mockPatrolCheckpoints: Record<string, Array<any>> = {
 
 export default function GPSLocationsPage() {
   const [selectedSite, setSelectedSite] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeTab, setActiveTab] = useState('attendance')
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [newLocationData, setNewLocationData] = useState({
+    name: '',
+    siteId: 'site-1',
+    latitude: '',
+    longitude: '',
+    radius: '50',
+  })
 
-  // Filter sites based on selection
+  // Filter sites based on selection and search
   const getFilteredSites = () => {
-    if (selectedSite === 'all') {
-      return mockSites.filter((s) => s.id !== 'all')
+    let filtered = mockSites.filter((s) => s.id !== 'all')
+    
+    if (selectedSite !== 'all') {
+      filtered = filtered.filter((s) => s.id === selectedSite)
     }
-    return mockSites.filter((s) => s.id === selectedSite)
+
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (s) =>
+          s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          s.code.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    }
+
+    return filtered
   }
 
   // Get locations for a specific site
@@ -113,29 +144,47 @@ export default function GPSLocationsPage() {
         </p>
       </div>
 
-      {/* Site Filter */}
-      <div className="flex items-end gap-4">
-        <div className="flex-1 max-w-xs">
+      {/* Site Filter with Search */}
+      <div className="flex items-end gap-3">
+        <div className="flex-1 max-w-md">
           <label className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2 block">
             <Building2 className="h-4 w-4" />
             Filter by Site
           </label>
-          <Select value={selectedSite} onValueChange={setSelectedSite}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {mockSites.map((site) => (
-                <SelectItem key={site.id} value={site.id}>
-                  {site.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search site name or code..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
+        {searchQuery && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSearchQuery('')
+              setSelectedSite('all')
+            }}
+          >
+            Reset
+          </Button>
+        )}
       </div>
 
-      <Tabs defaultValue="attendance" className="w-full">
+      <Tabs defaultValue="attendance" className="w-full" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="attendance" className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
@@ -151,10 +200,28 @@ export default function GPSLocationsPage() {
         <TabsContent value="attendance" className="space-y-4 mt-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Attendance GPS Locations</h2>
-            <Button size="sm" className="gap-1">
-              <Plus className="h-4 w-4" />
-              Add Location
-            </Button>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-1">
+                  <Plus className="h-4 w-4" />
+                  Add Location
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Attendance Location</DialogTitle>
+                  <DialogDescription>
+                    Create a new GPS location for attendance tracking
+                  </DialogDescription>
+                </DialogHeader>
+                <AddLocationForm
+                  type="attendance"
+                  onClose={() => setIsAddDialogOpen(false)}
+                  newLocationData={newLocationData}
+                  setNewLocationData={setNewLocationData}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
 
           {filteredSites.length === 0 ? (
@@ -242,10 +309,28 @@ export default function GPSLocationsPage() {
         <TabsContent value="patrol" className="space-y-4 mt-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Patrol Checkpoints</h2>
-            <Button size="sm" className="gap-1">
-              <Plus className="h-4 w-4" />
-              Add Checkpoint
-            </Button>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-1">
+                  <Plus className="h-4 w-4" />
+                  Add Checkpoint
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Patrol Checkpoint</DialogTitle>
+                  <DialogDescription>
+                    Create a new GPS checkpoint for patrol monitoring
+                  </DialogDescription>
+                </DialogHeader>
+                <AddLocationForm
+                  type="patrol"
+                  onClose={() => setIsAddDialogOpen(false)}
+                  newLocationData={newLocationData}
+                  setNewLocationData={setNewLocationData}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
 
           {filteredSites.length === 0 ? (
@@ -329,6 +414,123 @@ export default function GPSLocationsPage() {
           )}
         </TabsContent>
       </Tabs>
+    </div>
+  )
+}
+
+interface AddLocationFormProps {
+  type: 'attendance' | 'patrol'
+  onClose: () => void
+  newLocationData: any
+  setNewLocationData: (data: any) => void
+}
+
+function AddLocationForm({
+  type,
+  onClose,
+  newLocationData,
+  setNewLocationData,
+}: AddLocationFormProps) {
+  const handleAddLocation = () => {
+    if (!newLocationData.name || !newLocationData.latitude || !newLocationData.longitude) {
+      alert('Please fill in all required fields')
+      return
+    }
+    
+    console.log(`[v0] Adding ${type} location:`, newLocationData)
+    
+    // Reset form and close dialog
+    setNewLocationData({
+      name: '',
+      siteId: 'site-1',
+      latitude: '',
+      longitude: '',
+      radius: '50',
+    })
+    onClose()
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="site" className="text-sm font-medium">
+          Site <span className="text-destructive">*</span>
+        </Label>
+        <Select value={newLocationData.siteId} onValueChange={(value) => setNewLocationData({ ...newLocationData, siteId: value })}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {mockSites
+              .filter((s) => s.id !== 'all')
+              .map((site) => (
+                <SelectItem key={site.id} value={site.id}>
+                  {site.name}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="name" className="text-sm font-medium">
+          {type === 'attendance' ? 'Location Name' : 'Checkpoint Name'} <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="name"
+          placeholder={type === 'attendance' ? 'e.g., Main Entrance' : 'e.g., Checkpoint A1'}
+          value={newLocationData.name}
+          onChange={(e) => setNewLocationData({ ...newLocationData, name: e.target.value })}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="latitude" className="text-sm font-medium">
+            Latitude <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="latitude"
+            placeholder="-6.2088"
+            value={newLocationData.latitude}
+            onChange={(e) => setNewLocationData({ ...newLocationData, latitude: e.target.value })}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="longitude" className="text-sm font-medium">
+            Longitude <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="longitude"
+            placeholder="106.8456"
+            value={newLocationData.longitude}
+            onChange={(e) => setNewLocationData({ ...newLocationData, longitude: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="radius" className="text-sm font-medium">
+          Radius (meters)
+        </Label>
+        <Input
+          id="radius"
+          type="number"
+          placeholder="50"
+          value={newLocationData.radius}
+          onChange={(e) => setNewLocationData({ ...newLocationData, radius: e.target.value })}
+        />
+      </div>
+
+      <div className="flex items-center justify-end gap-3 pt-4">
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button onClick={handleAddLocation} className="gap-1">
+          <Plus className="h-4 w-4" />
+          Add {type === 'attendance' ? 'Location' : 'Checkpoint'}
+        </Button>
+      </div>
     </div>
   )
 }
