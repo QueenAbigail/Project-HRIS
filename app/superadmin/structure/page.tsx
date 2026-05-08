@@ -140,7 +140,7 @@ export default function StructurePage() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-muted flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <MoreVertical className="h-3 w-3 text-primary" />
+                            <MoreVertical className="h-3 w-3 text-muted-foreground" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

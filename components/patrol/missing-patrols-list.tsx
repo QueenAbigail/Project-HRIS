@@ -55,7 +55,7 @@ export function MissingPatrolsList({ siteId }: MissingPatrolsListProps) {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-lg font-semibold flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-600" />
+            <AlertTriangle className="h-5 w-5 text-warning" />
             Patrols Not Yet Completed
           </h3>
           <Badge variant="secondary">{totalMissing} Missing</Badge>
@@ -75,7 +75,7 @@ export function MissingPatrolsList({ siteId }: MissingPatrolsListProps) {
             <TabsTrigger value="morning" className="relative">
               Morning
               {mockMissingByShift.morning.length > 0 && (
-                <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center bg-amber-600">
+                <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center bg-warning">
                   {mockMissingByShift.morning.length}
                 </Badge>
               )}
@@ -83,7 +83,7 @@ export function MissingPatrolsList({ siteId }: MissingPatrolsListProps) {
             <TabsTrigger value="afternoon" className="relative">
               Afternoon
               {mockMissingByShift.afternoon.length > 0 && (
-                <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center bg-amber-600">
+                <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center bg-warning">
                   {mockMissingByShift.afternoon.length}
                 </Badge>
               )}
@@ -91,7 +91,7 @@ export function MissingPatrolsList({ siteId }: MissingPatrolsListProps) {
             <TabsTrigger value="night" className="relative">
               Night
               {mockMissingByShift.night.length > 0 && (
-                <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center bg-amber-600">
+                <Badge className="ml-2 h-5 w-5 p-0 flex items-center justify-center bg-warning">
                   {mockMissingByShift.night.length}
                 </Badge>
               )}
@@ -108,11 +108,11 @@ export function MissingPatrolsList({ siteId }: MissingPatrolsListProps) {
                 missing.map((patrol) => (
                   <div
                     key={patrol.id}
-                    className="flex items-start gap-4 p-4 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100/50 transition-colors"
+                    className="flex items-start gap-4 p-4 rounded-lg border border-warning/30 bg-warning/10 hover:bg-warning/15 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
-                        <User className="h-4 w-4 text-amber-700" />
+                        <User className="h-4 w-4 text-warning" />
                         <p className="font-semibold text-card-foreground">{patrol.officer}</p>
                       </div>
 
@@ -127,7 +127,7 @@ export function MissingPatrolsList({ siteId }: MissingPatrolsListProps) {
                       </div>
                     </div>
 
-                    <Badge variant="outline" className="text-amber-700 border-amber-300">
+                    <Badge variant="outline" className="text-warning border-warning/50">
                       Pending
                     </Badge>
                   </div>

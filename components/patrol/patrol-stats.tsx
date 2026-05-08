@@ -17,25 +17,25 @@ export function PatrolStats() {
       title: 'Total Patrols Today',
       value: 24,
       icon: <MapPin className="h-4 w-4" />,
-      color: 'bg-blue-50 text-blue-700',
+      color: 'bg-primary/10 text-primary',
     },
     {
       title: 'Completed',
       value: 18,
       icon: <CheckCircle2 className="h-4 w-4" />,
-      color: 'bg-green-50 text-green-700',
+      color: 'bg-success/10 text-success',
     },
     {
       title: 'In Progress',
       value: 4,
       icon: <Clock className="h-4 w-4" />,
-      color: 'bg-yellow-50 text-yellow-700',
+      color: 'bg-warning/10 text-warning',
     },
     {
       title: 'Missed',
       value: 2,
       icon: <AlertCircle className="h-4 w-4" />,
-      color: 'bg-red-50 text-red-700',
+      color: 'bg-destructive/10 text-destructive',
     },
   ]
 

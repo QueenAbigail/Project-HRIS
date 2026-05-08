@@ -27,11 +27,11 @@ export function PatrolLocationCards({ locations, siteId }: PatrolLocationCardsPr
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle2 className="h-5 w-5 text-green-600" />
+        return <CheckCircle2 className="h-5 w-5 text-success" />
       case 'in_progress':
-        return <Clock className="h-5 w-5 text-yellow-600" />
+        return <Clock className="h-5 w-5 text-warning" />
       case 'missed':
-        return <AlertCircle className="h-5 w-5 text-red-600" />
+        return <AlertCircle className="h-5 w-5 text-destructive" />
       default:
         return null
     }
@@ -40,11 +40,11 @@ export function PatrolLocationCards({ locations, siteId }: PatrolLocationCardsPr
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-50 border-green-200'
+        return 'bg-success/10 border-success/30'
       case 'in_progress':
-        return 'bg-yellow-50 border-yellow-200'
+        return 'bg-warning/10 border-warning/30'
       case 'missed':
-        return 'bg-red-50 border-red-200'
+        return 'bg-destructive/10 border-destructive/30'
       default:
         return 'bg-background'
     }
@@ -53,9 +53,9 @@ export function PatrolLocationCards({ locations, siteId }: PatrolLocationCardsPr
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge className="bg-green-600">Completed</Badge>
+        return <Badge className="bg-success">Completed</Badge>
       case 'in_progress':
-        return <Badge className="bg-yellow-600 text-black">In Progress</Badge>
+        return <Badge className="bg-warning text-warning-foreground">In Progress</Badge>
       case 'missed':
         return <Badge variant="destructive">Missed</Badge>
       default:
@@ -97,7 +97,7 @@ export function PatrolLocationCards({ locations, siteId }: PatrolLocationCardsPr
                 </div>
               )}
               {location.status === 'missed' && (
-                <div className="flex items-center gap-2 text-red-600 mt-3">
+                <div className="flex items-center gap-2 text-destructive mt-3">
                   <AlertCircle className="h-3 w-3" />
                   <span className="font-medium">No patrol recorded</span>
                 </div>
