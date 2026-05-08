@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Calendar } from '@/components/ui/calendar'
 
-export function AttendanceCalendar() {
+export function AttendanceCalendar({ siteId = 'all' }: { siteId?: string }) {
   const [date, setDate] = useState<Date | undefined>(new Date())
 
   return (

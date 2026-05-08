@@ -15,6 +15,8 @@ import {
   Layers,
   Database,
   CalendarDays,
+  Smartphone,
+  MapPin,
   Settings,
 } from 'lucide-react'
 
@@ -110,6 +112,16 @@ const adminNavItems = [
     title: 'Schedules',
     url: '/superadmin/schedules',
     icon: CalendarDays,
+  },
+  {
+    title: 'Device Management',
+    url: '/superadmin/devices',
+    icon: Smartphone,
+  },
+  {
+    title: 'GPS Locations',
+    url: '/superadmin/gps-locations',
+    icon: MapPin,
   },
   {
     title: 'Settings',

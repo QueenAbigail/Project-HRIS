@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -11,6 +12,12 @@ interface LocationAttendanceProps {
 }
 
 export function LocationAttendance({ locationData }: LocationAttendanceProps) {
+  const router = useRouter()
+
+  const handleLocationClick = (siteId: string) => {
+    router.push(`/dashboard/attendance?site=${siteId}`)
+  }
+
   if (!locationData || locationData.length === 0) {
     return (
       <Card className="bg-card border-border">
@@ -159,9 +166,10 @@ export function LocationAttendance({ locationData }: LocationAttendanceProps) {
             const hasLateCheckIns = location.late > 0
             const hasDayOff = location.dayOff > 0
             return (
-              <div
+              <button
+                onClick={() => handleLocationClick(location.locationId)}
                 key={location.locationId}
-                className={`p-4 rounded-lg border bg-secondary/20 hover:bg-secondary/30 transition-colors ${
+                className={`w-full text-left p-4 rounded-lg border bg-secondary/20 hover:bg-secondary/40 hover:border-primary/50 transition-all cursor-pointer ${
                   hasLateCheckIns ? 'border-warning/30' : 'border-border'
                 }`}
               >
@@ -238,7 +246,7 @@ export function LocationAttendance({ locationData }: LocationAttendanceProps) {
                     <span>{location.expectedToWork} expected / {location.totalStaff} total</span>
                   </div>
                 </div>
-              </div>
+              </button>
             )
           })}
         </div>

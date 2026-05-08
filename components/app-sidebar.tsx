@@ -10,13 +10,13 @@ import {
   Clock,
   Wallet,
   CalendarDays,
-  CalendarClock,
   FileBarChart,
   Settings,
   Shield,
   Bell,
   LogOut,
   ChevronDown,
+  MapPin,
 } from 'lucide-react'
 
 import {
@@ -101,6 +101,11 @@ const mainNavItems = [
     badge: 12,
   },
   {
+    title: 'Patrol Monitoring',
+    url: '/dashboard/patrol',
+    icon: MapPin,
+  },
+  {
     title: 'Payroll',
     url: '/dashboard/payroll',
     icon: Wallet,
@@ -110,11 +115,6 @@ const mainNavItems = [
     url: '/dashboard/leave',
     icon: CalendarDays,
     badge: 5,
-  },
-  {
-    title: 'Shift Schedule',
-    url: '/superadmin/schedules',
-    icon: CalendarClock,
   },
 ]
 

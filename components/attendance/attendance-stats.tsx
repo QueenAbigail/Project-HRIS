@@ -4,7 +4,11 @@ import { Card, CardContent } from '@/components/ui/card'
 import { UserCheck, UserX, Clock, AlertTriangle, CalendarOff } from 'lucide-react'
 import { getOverallAttendanceStats } from '@/lib/data'
 
-export function AttendanceStats() {
+interface AttendanceStatsProps {
+  siteId?: string
+}
+
+export function AttendanceStats({ siteId = 'all' }: AttendanceStatsProps) {
   const overallStats = getOverallAttendanceStats()
 
   const stats = [
