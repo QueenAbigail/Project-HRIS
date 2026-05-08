@@ -10,7 +10,6 @@ import {
   Clock,
   Wallet,
   CalendarDays,
-  CalendarClock,
   FileBarChart,
   Settings,
   Shield,
@@ -119,9 +118,9 @@ const mainNavItems = [
     badge: 5,
   },
   {
-    title: 'Shift Schedule',
-    url: '/superadmin/schedules',
-    icon: CalendarClock,
+    title: 'Device Management',
+    url: '/superadmin/devices',
+    icon: Smartphone,
   },
 ]
 
@@ -153,11 +152,6 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   }
 
   const secondaryNavItems = [
-    {
-      title: 'Device Management',
-      url: '/superadmin/devices',
-      icon: Smartphone,
-    },
     {
       title: 'Reports',
       url: '/dashboard/reports',

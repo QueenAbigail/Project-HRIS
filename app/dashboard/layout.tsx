@@ -62,6 +62,7 @@ export default async function DashboardLayout({ children }: LayoutProps) {
     '/dashboard/shifts': 'Shift Schedule',
     '/dashboard/reports': 'Reports',
     '/dashboard/settings': 'Settings',
+    '/superadmin/devices': 'Device Management',
   }
 
   const pathname = '/dashboard' // Default since server, or use headers() for real pathname if needed
