@@ -1,0 +1,197 @@
+'use client'
+
+import { useState } from 'react'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { ChevronDown } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+
+interface PatrolRecord {
+  id: string
+  checkpoint: string
+  officer: string
+  timestamp: string
+  date: string
+  gpsStatus: 'verified' | 'unverified'
+  photos: number
+  description: string
+  evidence: string[]
+}
+
+export function PatrolTimelineView({ siteId }: { siteId: string }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
+
+  // Mock data - in real implementation, fetch from database
+  const mockPatrols: PatrolRecord[] = [
+    {
+      id: '1',
+      checkpoint: 'Gate Entrance',
+      officer: 'John Doe',
+      timestamp: '09:30 AM',
+      date: 'Today',
+      gpsStatus: 'verified',
+      photos: 2,
+      description: 'Gate secure, no issues detected. All barriers intact.',
+      evidence: [
+        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
+        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
+      ],
+    },
+    {
+      id: '2',
+      checkpoint: 'Perimeter North',
+      officer: 'Jane Smith',
+      timestamp: '09:15 AM',
+      date: 'Today',
+      gpsStatus: 'verified',
+      photos: 1,
+      description: 'Perimeter fence checked. Minor debris cleared.',
+      evidence: [
+        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
+      ],
+    },
+    {
+      id: '3',
+      checkpoint: 'Back Gate',
+      officer: 'Bob Johnson',
+      timestamp: '09:00 AM',
+      date: 'Today',
+      gpsStatus: 'verified',
+      photos: 3,
+      description: 'All systems normal. Gate functioning properly.',
+      evidence: [
+        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
+        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
+        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
+      ],
+    },
+    {
+      id: '4',
+      checkpoint: 'Perimeter South',
+      officer: 'Alice Brown',
+      timestamp: '08:45 AM',
+      date: 'Today',
+      gpsStatus: 'unverified',
+      photos: 1,
+      description: 'Quick check completed.',
+      evidence: [
+        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
+      ],
+    },
+  ]
+
+  return (
+    <div className="space-y-3">
+      {mockPatrols.map((patrol) => (
+        <Card
+          key={patrol.id}
+          className="border border-border bg-card p-4 hover:bg-accent/50 transition-colors cursor-pointer"
+          onClick={() => setExpandedId(expandedId === patrol.id ? null : patrol.id)}
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <h3 className="font-semibold text-card-foreground">{patrol.checkpoint}</h3>
+                <Badge
+                  className={
+                    patrol.gpsStatus === 'verified'
+                      ? 'bg-success'
+                      : 'bg-warning text-warning-foreground'
+                  }
+                >
+                  {patrol.gpsStatus === 'verified' ? 'GPS Verified' : 'GPS Unverified'}
+                </Badge>
+              </div>
+
+              <div className="space-y-1 text-sm">
+                <p className="text-muted-foreground">
+                  <span className="font-medium">Officer:</span> {patrol.officer}
+                </p>
+                <p className="text-muted-foreground">
+                  <span className="font-medium">Time:</span> {patrol.timestamp} · {patrol.date}
+                </p>
+              </div>
+
+              {expandedId === patrol.id && (
+                <div className="mt-4 pt-4 border-t border-border space-y-3">
+                  <div>
+                    <p className="text-sm font-medium mb-1">Observation:</p>
+                    <p className="text-sm text-muted-foreground">{patrol.description}</p>
+                  </div>
+
+                  {patrol.evidence.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium mb-2">Evidence ({patrol.photos} photos)</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {patrol.evidence.map((photo, idx) => (
+                          <button
+                            key={idx}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedPhoto(photo)
+                            }}
+                            className="relative group overflow-hidden rounded-lg bg-muted"
+                          >
+                            <img
+                              src={photo}
+                              alt={`Evidence ${idx + 1}`}
+                              className="w-full h-24 object-cover group-hover:opacity-75 transition-opacity"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                              <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100">
+                                View
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex-shrink-0 h-8 w-8 p-0"
+              onClick={(e) => {
+                e.stopPropagation()
+                setExpandedId(expandedId === patrol.id ? null : patrol.id)
+              }}
+            >
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${
+                  expandedId === patrol.id ? 'rotate-180' : ''
+                }`}
+              />
+            </Button>
+          </div>
+        </Card>
+      ))}
+
+      {/* Photo Modal */}
+      <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Patrol Evidence</DialogTitle>
+          </DialogHeader>
+          {selectedPhoto && (
+            <img
+              src={selectedPhoto}
+              alt="Full evidence"
+              className="w-full rounded-lg"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
