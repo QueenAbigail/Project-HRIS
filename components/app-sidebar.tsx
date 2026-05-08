@@ -17,6 +17,7 @@ import {
   Bell,
   LogOut,
   ChevronDown,
+  MapPin,
 } from 'lucide-react'
 
 import {
@@ -99,6 +100,11 @@ const mainNavItems = [
     url: '/dashboard/attendance',
     icon: Clock,
     badge: 12,
+  },
+  {
+    title: 'Patrol Monitoring',
+    url: '/dashboard/patrol',
+    icon: MapPin,
   },
   {
     title: 'Payroll',

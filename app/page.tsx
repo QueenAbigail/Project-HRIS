@@ -196,7 +196,7 @@ export default function LoginPage() {
 
       {/* Footer */}
       <p className="mt-6 text-xs text-muted-foreground text-center relative z-10">
-        &copy; {new Date().getFullYear()} SecureGuard Security Services. All rights reserved.
+        &copy; {new Date().getFullYear()} Pro Maxima Rajawali. All rights reserved.
       </p>
     </div>
   )

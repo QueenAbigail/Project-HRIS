@@ -50,6 +50,13 @@ enum EmployeeStatus {
   SUSPENDED
 }
 
+enum PatrolStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  MISSED
+}
+
 
 // Site model (from locations in constants.ts)
 model Site {
@@ -60,6 +67,8 @@ model Site {
   users       User[]
   attendances Attendance[]
   assignments EmployeeShiftAssignment[]
+  patrolLocations PatrolLocation[]
+  patrols     Patrol[]
   createdAt   DateTime                  @default(now())
   updatedAt   DateTime                  @updatedAt
 
@@ -75,6 +84,7 @@ model Shift {
   gracePeriodMinutes Int
   assignments        EmployeeShiftAssignment[]
   Attendance         Attendance[]
+  patrols            Patrol[]
 
   @@map("shifts")
 }
@@ -99,6 +109,7 @@ model User {
   leaves                Leave[]                   @relation("LeaveRequester")
   leavesApproved        Leave[]                   @relation("LeaveApprover")
   assignments           EmployeeShiftAssignment[]
+  patrols               Patrol[]
   createdAt             DateTime                  @default(now())
   updatedAt             DateTime                  @updatedAt
   status                EmployeeStatus            @default(ACTIVE)
@@ -212,4 +223,67 @@ model MasterData {
 
   @@unique([category, value])
   @@map("master_data")
+}
+
+// Patrol Location model (specific locations at a site for patrol check-ins)
+model PatrolLocation {
+  id        String   @id @default(cuid())
+  siteId    String
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  name      String   // Name of patrol location (e.g., "Gate A", "Building 1 Entrance")
+  barcode   String   @unique // Barcode for scanning
+  latitude  Float    // GPS coordinates for validation
+  longitude Float
+  isActive  Boolean  @default(true)
+  patrols   Patrol[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([siteId])
+  @@map("patrol_locations")
+}
+
+// Patrol model (patrol check-ins by user at specific times)
+model Patrol {
+  id                String              @id @default(cuid())
+  userId            String
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  siteId            String
+  site              Site                @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  patrolLocationId  String
+  patrolLocation    PatrolLocation      @relation(fields: [patrolLocationId], references: [id], onDelete: Cascade)
+  shiftId           String?
+  shift             Shift?              @relation(fields: [shiftId], references: [id])
+  date              DateTime            // Date of patrol
+  status            PatrolStatus        @default(NOT_STARTED)
+  checkInTime       DateTime?           // Actual check-in time
+  gpsLat            Float?              // Actual GPS latitude for validation
+  gpsLng            Float?              // Actual GPS longitude
+  gpsAccuracy       Float?              // GPS accuracy in meters
+  barcodeScanned    Boolean             @default(false)
+  gpsValidated      Boolean             @default(false)
+  description       String?             // Description of patrol findings
+  evidence          PatrolEvidence[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@unique([userId, patrolLocationId, date])
+  @@index([userId])
+  @@index([siteId])
+  @@index([patrolLocationId])
+  @@index([date])
+  @@map("patrols")
+}
+
+// Patrol Evidence model (photos/documents from patrol)
+model PatrolEvidence {
+  id       String   @id @default(cuid())
+  patrolId String
+  patrol   Patrol   @relation(fields: [patrolId], references: [id], onDelete: Cascade)
+  imageUrl String   // URL to uploaded image
+  caption  String? // Description of what the photo shows
+  createdAt DateTime @default(now())
+
+  @@index([patrolId])
+  @@map("patrol_evidence")
 }

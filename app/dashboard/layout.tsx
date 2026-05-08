@@ -56,6 +56,7 @@ export default async function DashboardLayout({ children }: LayoutProps) {
     '/dashboard': 'Overview',
     '/dashboard/employees': 'Employees',
     '/dashboard/attendance': 'Attendance',
+    '/dashboard/patrol': 'Patrol Monitoring',
     '/dashboard/payroll': 'Payroll',
     '/dashboard/leave': 'Leave Management',
     '/dashboard/shifts': 'Shift Schedule',
