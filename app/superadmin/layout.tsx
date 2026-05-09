@@ -18,7 +18,6 @@ import { LogOut } from "lucide-react"
 
 interface User {
   name: string | null
-  email: string
   position: string | null
   role: string
 }
@@ -50,11 +49,8 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
     }
   }) as User | null
 
-  console.log("[v0] Superadmin Auth Check - Email:", session.user.email, "User:", user)
-
   // Verify user is SUPER_ADMIN
   if (user?.role !== 'SUPER_ADMIN') {
-    console.log("[v0] User role check failed:", user?.role)
     redirect('/dashboard')
   }
 
