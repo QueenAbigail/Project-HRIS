@@ -78,19 +78,6 @@ export default function LoginPage() {
       setIsLoading(false)
       return
     }
-
-    // Show success toast with user name
-    if (result?.success && result?.userName) {
-      toast.success('Welcome back!', {
-        description: `Hello ${result.userName}, you have been successfully logged in.`,
-        duration: 3000,
-      })
-      
-      // Redirect to dashboard after showing toast
-      setTimeout(() => {
-        window.location.href = '/dashboard'
-      }, 500)
-    }
   }
 
   if (isLoadingSettings) {

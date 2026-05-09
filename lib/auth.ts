@@ -51,7 +51,8 @@ export async function login(email: string, password: string, remember: boolean) 
   // Get user metadata that includes name
   const userName = data?.user?.user_metadata?.name || data?.user?.email?.split('@')[0] || 'User'
   
-  return { success: true, userName }
+  // Redirect to dashboard on successful login
+  redirect('/dashboard')
 }
 
 export async function logout() {

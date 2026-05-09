@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar"
 import { HeaderControls } from "@/components/header-controls"
+import { WelcomeToast } from "@/components/dashboard/welcome-toast"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 
 import {
@@ -71,6 +72,7 @@ export default async function DashboardLayout({ children }: LayoutProps) {
 
   return (
     <SidebarProvider>
+      <WelcomeToast userName={user?.name} />
       <AppSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
       <SidebarInset>
         <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card/50 backdrop-blur-sm px-4">
