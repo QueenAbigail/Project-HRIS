@@ -50,8 +50,11 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
     }
   }) as User | null
 
+  console.log("[v0] Superadmin Auth Check - Email:", session.user.email, "User:", user)
+
   // Verify user is SUPER_ADMIN
   if (user?.role !== 'SUPER_ADMIN') {
+    console.log("[v0] User role check failed:", user?.role)
     redirect('/dashboard')
   }
 
