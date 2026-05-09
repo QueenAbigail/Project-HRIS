@@ -1,6 +1,8 @@
 import { SuperadminSidebar } from "@/components/superadmin-sidebar"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
+import { Suspense } from "react"
+import { SuperadminPageLoader } from "@/components/superadmin-page-loader"
 
 import {
   Breadcrumb,
@@ -75,7 +77,9 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
 
   return (
     <SidebarProvider>
-      <SuperadminSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
+      <Suspense fallback={<SuperadminPageLoader />}>
+        <SuperadminSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
+      </Suspense>
       <SidebarInset>
         <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border bg-card/50 backdrop-blur-sm px-4">
           <div className="flex items-center gap-2">
@@ -103,9 +107,11 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
             </Button>
           </Link>
         </header>
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          {children}
-        </main>
+        <Suspense fallback={<SuperadminPageLoader />}>
+          <main className="flex-1 overflow-auto p-4 md:p-6">
+            {children}
+          </main>
+        </Suspense>
       </SidebarInset>
     </SidebarProvider>
   )
