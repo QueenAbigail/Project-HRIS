@@ -1,7 +1,9 @@
 "use client"
 
-import Link from 'next/link'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { SuperadminSkeletonLoader } from '@/components/superadmin-skeleton-loader'
 import { ShieldAlert } from 'lucide-react'
 
 interface HeaderControlsProps {
@@ -9,23 +11,33 @@ interface HeaderControlsProps {
 }
 
 export function HeaderControls({ userRole }: HeaderControlsProps) {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
   const isSuperAdmin = userRole === 'SUPER_ADMIN'
+
+  const handleNavigateToSuperAdmin = () => {
+    setIsLoading(true)
+    router.push('/superadmin')
+  }
 
   if (!isSuperAdmin) {
     return null
   }
 
   return (
-    <div className="ml-auto">
-      <Link href="/superadmin">
+    <>
+      {isLoading && <SuperadminSkeletonLoader />}
+      <div className="ml-auto">
         <Button 
+          onClick={handleNavigateToSuperAdmin}
+          disabled={isLoading}
           size="sm" 
-          className="gap-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-slate-100 font-medium transition-all duration-200 active:scale-95"
+          className="gap-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-slate-100 font-medium transition-all duration-200 active:scale-95 disabled:opacity-50"
         >
           <ShieldAlert className="size-4" />
           <span>Superadmin</span>
         </Button>
-      </Link>
-    </div>
+      </div>
+    </>
   )
 }
