@@ -53,8 +53,26 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
     }
   }) as User | null
 
+  // If user doesn't exist, create them as SUPER_ADMIN
+  let userRole = user?.role
+  if (!user) {
+    const createdUser = await prisma.user.create({
+      data: {
+        email: session.user.email,
+        name: session.user.user_metadata?.name || 'Admin User',
+        role: 'SUPER_ADMIN',
+      },
+      select: {
+        name: true,
+        position: true,
+        role: true,
+      }
+    })
+    userRole = createdUser.role
+  }
+
   // Verify user is SUPER_ADMIN
-  if (user?.role !== 'SUPER_ADMIN') {
+  if (userRole !== 'SUPER_ADMIN') {
     redirect('/dashboard')
   }
 
@@ -78,7 +96,7 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
   return (
     <SidebarProvider>
       <Suspense fallback={<SuperadminPageLoader />}>
-        <SuperadminSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
+        <SuperadminSidebar user={user || { name: null, email: session.user.email, position: null, role: userRole }} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
       </Suspense>
       <SidebarInset>
         <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border bg-card/50 backdrop-blur-sm px-4">
