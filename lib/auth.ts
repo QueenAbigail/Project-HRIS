@@ -38,7 +38,7 @@ export async function login(email: string, password: string, remember: boolean) 
   // 2. Tambahkan await pas manggil createClient
   const supabase = await createClient()
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email, // Ingat: ini nerima dari app/page.tsx yang udah di-mapping pakai @hris.com
     password,
   })
@@ -48,7 +48,10 @@ export async function login(email: string, password: string, remember: boolean) 
     return { error: error.message }
   }
 
-  redirect('/dashboard')
+  // Get user metadata that includes name
+  const userName = data?.user?.user_metadata?.name || data?.user?.email?.split('@')[0] || 'User'
+  
+  return { success: true, userName }
 }
 
 export async function logout() {
