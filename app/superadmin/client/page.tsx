@@ -47,17 +47,6 @@ export default function ClientPage() {
     },
   ])
 
-export default function ClientPage() {
-  const [categories, setCategories] = useState<Record<string, CategoryItem[]>>({
-    company: [],
-    site: [],
-  })
-
-  const [searchQueries, setSearchQueries] = useState<Record<string, string>>({
-    company: '',
-    site: '',
-  })
-
   const [editingItem, setEditingItem] = useState<Company | Site | null>(null)
   const [editingCompanyId, setEditingCompanyId] = useState<string>('')
   const [editingType, setEditingType] = useState<'company' | 'site' | ''>('')
@@ -124,7 +113,7 @@ export default function ClientPage() {
       if (editingItem && 'sites' in editingItem) {
         setCompanies((prev) =>
           prev.map((company) =>
-            company.id === company.id ? { ...company, name: newItemName, abbreviation: newAbbr } : company
+            company.id === editingItem.id ? { ...company, name: newItemName, abbreviation: newAbbr } : company
           )
         )
       } else {
