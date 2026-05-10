@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
-import { Plus, MoreVertical, Pencil, Trash2, ChevronDown } from 'lucide-react'
+import { Plus, MoreVertical, Pencil, Trash2, ChevronDown, Search, X } from 'lucide-react'
 
 // Types
 interface Site {
@@ -52,6 +52,22 @@ export default function ClientPage() {
   const [editingType, setEditingType] = useState<'company' | 'site' | ''>('')
   const [newItemName, setNewItemName] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const filteredCompanies = companies
+    .map((company) => ({
+      ...company,
+      sites: company.sites.filter((site) =>
+        site.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        site.abbreviation.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    }))
+    .filter(
+      (company) =>
+        company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        company.abbreviation.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        company.sites.length > 0
+    )
 
   const handleAddCompany = () => {
     setEditingType('company')
@@ -185,9 +201,29 @@ export default function ClientPage() {
         </Button>
       </div>
 
+      {/* Search Filter */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <Input
+          type="text"
+          placeholder="Search by company or site name..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10 pr-10 h-10"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
       <div className="space-y-3">
-        {companies.length > 0 ? (
-          companies.map((company) => (
+        {filteredCompanies.length > 0 ? (
+          filteredCompanies.map((company) => (
             <Collapsible key={company.id} className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger asChild>
                 <button className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
@@ -279,11 +315,15 @@ export default function ClientPage() {
           ))
         ) : (
           <div className="py-12 text-center border border-border rounded-lg bg-card p-6">
-            <p className="text-muted-foreground mb-4">No companies yet</p>
-            <Button onClick={handleAddCompany} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add First Company
-            </Button>
+            <p className="text-muted-foreground mb-4">
+              {searchQuery ? 'No companies or sites match your search.' : 'No companies yet'}
+            </p>
+            {!searchQuery && (
+              <Button onClick={handleAddCompany} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add First Company
+              </Button>
+            )}
           </div>
         )}
       </div>
