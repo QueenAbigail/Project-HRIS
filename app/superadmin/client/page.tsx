@@ -216,7 +216,6 @@ export default function ClientPage() {
           )
         })}
       </div>
-      </div>
 
       <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent>
