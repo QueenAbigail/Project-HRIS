@@ -132,7 +132,7 @@ export default function ClientPage() {
         {categoryConfig.map((category) => {
           const filteredItems = getFilteredItems(category.key)
           return (
-            <Card key={category.key} className="border border-border bg-card p-6 flex flex-col h-96">
+            <Card key={category.key} className="border border-border bg-card p-6 flex flex-col h-[80vh]">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-card-foreground">{category.title}</h2>
                 <Button
