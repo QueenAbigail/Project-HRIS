@@ -138,8 +138,8 @@ export default function DataPage() {
         {categoryConfig.map((category) => {
           const filteredItems = getFilteredItems(category.key)
           return (
-            <Card key={category.key} className="border border-border bg-card p-6 flex flex-col h-96 max-h-96">
-              <div className="flex items-center justify-between mb-4">
+            <Card key={category.key} className="border border-border bg-card p-6 flex flex-col h-[35vh] overflow-hidden">
+              <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <h2 className="text-base font-semibold text-card-foreground">{category.title}</h2>
                 <Button
                   onClick={() => handleAddNewEntry(category.key)}
@@ -152,8 +152,8 @@ export default function DataPage() {
               </div>
 
               {/* Search Filter */}
-              <div className="mb-4 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <div className="mb-4 relative flex-shrink-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <Input
                   type="text"
                   placeholder={`Search ${category.title.toLowerCase()}...`}
@@ -164,7 +164,7 @@ export default function DataPage() {
                       [category.key]: e.target.value,
                     }))
                   }
-                  className="pl-10 pr-10 h-9 text-sm"
+                  className="pl-10 pr-10 h-9 text-sm w-full"
                 />
                 {searchQueries[category.key] && (
                   <button
@@ -176,13 +176,13 @@ export default function DataPage() {
                 )}
               </div>
 
-              <ScrollArea className="flex-1 pr-4">
-                <div className="space-y-2">
+              <ScrollArea className="flex-1 -mr-6 pr-6 w-full overflow-hidden">
+                <div className="space-y-2 pr-4">
                   {filteredItems?.length > 0 ? (
                     filteredItems.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between rounded-lg border border-border bg-background p-3 hover:bg-muted transition-colors group"
+                        className="flex items-center justify-between rounded-lg border border-border bg-background p-3 hover:bg-muted transition-colors group w-full"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <Badge variant="outline" className="h-8 w-8 flex items-center justify-center rounded-full font-semibold flex-shrink-0 text-xs">
