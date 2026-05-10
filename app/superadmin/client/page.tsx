@@ -123,16 +123,16 @@ export default function ClientPage() {
   }
 
   return (
-    <div className="space-y-6 h-[calc(100vh-200px)] flex flex-col">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Management Client</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 flex-1 min-h-0">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
         {categoryConfig.map((category) => {
           const filteredItems = getFilteredItems(category.key)
           return (
-            <Card key={category.key} className="border border-border bg-card p-6 flex flex-col">
+            <Card key={category.key} className="border border-border bg-card p-6 flex flex-col h-96">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-card-foreground">{category.title}</h2>
                 <Button
