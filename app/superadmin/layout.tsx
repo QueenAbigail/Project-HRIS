@@ -1,7 +1,7 @@
 import { SuperadminSidebar } from "@/components/superadmin-sidebar"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
-
+import { UnauthorizedAccess } from "@/components/superadmin/unauthorized-access"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -19,7 +19,6 @@ import { LogOut } from "lucide-react"
 
 interface User {
   name: string | null
-  email: string
   position: string | null
   role: string
 }
@@ -51,11 +50,6 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
     }
   }) as User | null
 
-  // Verify user is SUPER_ADMIN
-  if (user?.role !== 'SUPER_ADMIN') {
-    redirect('/dashboard')
-  }
-
   const systemSettings = await getSystemSettings()
 
   const pathNames: Record<string, string> = {
@@ -74,9 +68,11 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
   const currentPage = pathNames[pathname] || 'Superadmin'
 
   return (
-    <SidebarProvider>
-      <SuperadminSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
-      <SidebarInset>
+    <>
+      <UnauthorizedAccess userRole={user?.role || null} />
+      <SidebarProvider>
+        <SuperadminSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
+        <SidebarInset>
         <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border bg-card/50 backdrop-blur-sm px-4">
           <div className="flex items-center gap-2">
             <Breadcrumb>
@@ -108,5 +104,6 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
         </main>
       </SidebarInset>
     </SidebarProvider>
+    </>
   )
 }
