@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { getOverallAttendanceStats, getLocationAttendanceStats, getLateCheckIns } from '@/lib/data'
 import { LocationFilter } from '@/components/reports/location-filter'
+import { EmployeeLocationFilter } from '@/components/reports/employee-location-filter'
 import { DateRangeFilter } from '@/components/reports/date-range-filter'
 
 export default function ReportsPage() {
@@ -380,7 +381,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Location Filter */}
-          <LocationFilter 
+          <EmployeeLocationFilter 
             locations={locationStats}
             selectedLocationId={employeeLocationId}
             onLocationSelect={setEmployeeLocationId}
