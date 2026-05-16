@@ -21,8 +21,20 @@ import { LocationFilter } from '@/components/reports/location-filter'
 import { DateRangeFilter } from '@/components/reports/date-range-filter'
 
 export default function ReportsPage() {
-  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
-  const [selectedDateRange, setSelectedDateRange] = useState<'current-month' | 'custom'>('current-month')
+  // Late Check-In Report filters
+  const [lateCheckInLocationId, setLateCheckInLocationId] = useState<string | null>(null)
+  const [lateCheckInDateRange, setLateCheckInDateRange] = useState<'current-month' | 'custom'>('current-month')
+  
+  // Attendance Report filters
+  const [attendanceLocationId, setAttendanceLocationId] = useState<string | null>(null)
+  const [attendanceDateRange, setAttendanceDateRange] = useState<'current-month' | 'custom'>('current-month')
+  
+  // Employee Report filters
+  const [employeeLocationId, setEmployeeLocationId] = useState<string | null>(null)
+  
+  // Payroll Report filters
+  const [payrollLocationId, setPayrollLocationId] = useState<string | null>(null)
+  const [payrollDateRange, setPayrollDateRange] = useState<'current-month' | 'custom'>('current-month')
   
   // Get current month dates
   const getCurrentMonthDates = () => {
@@ -36,86 +48,110 @@ export default function ReportsPage() {
   }
 
   const currentMonthDates = getCurrentMonthDates()
-  const [startDate, setStartDate] = useState(currentMonthDates.start)
-  const [endDate, setEndDate] = useState(currentMonthDates.end)
+  
+  // Late Check-In Report state
+  const [lateCheckInStartDate, setLateCheckInStartDate] = useState(currentMonthDates.start)
+  const [lateCheckInEndDate, setLateCheckInEndDate] = useState(currentMonthDates.end)
+  
+  // Attendance Report state
+  const [attendanceStartDate, setAttendanceStartDate] = useState(currentMonthDates.start)
+  const [attendanceEndDate, setAttendanceEndDate] = useState(currentMonthDates.end)
+  
+  // Payroll Report state
+  const [payrollStartDate, setPayrollStartDate] = useState(currentMonthDates.start)
+  const [payrollEndDate, setPayrollEndDate] = useState(currentMonthDates.end)
   
   const overallStats = getOverallAttendanceStats()
   const locationStats = getLocationAttendanceStats()
   const lateCheckIns = getLateCheckIns()
 
-  // Export handlers
+  // Export handlers for Late Check-In Report
   const exportLatCheckInsPDF = () => {
-    const filteredData = selectedLocationId
-      ? lateCheckIns.filter(record => record.locationId === selectedLocationId)
+    const filteredData = lateCheckInLocationId
+      ? lateCheckIns.filter(record => record.locationId === lateCheckInLocationId)
       : lateCheckIns
     
     console.log('[v0] Exporting Late Check-In PDF', {
-      dateRange: selectedDateRange,
-      startDate,
-      endDate,
-      selectedLocation: selectedLocationId,
+      dateRange: lateCheckInDateRange,
+      startDate: lateCheckInStartDate,
+      endDate: lateCheckInEndDate,
+      selectedLocation: lateCheckInLocationId,
       recordCount: filteredData.length,
-      data: filteredData
     })
   }
 
   const exportLatCheckInsExcel = () => {
-    const filteredData = selectedLocationId
-      ? lateCheckIns.filter(record => record.locationId === selectedLocationId)
+    const filteredData = lateCheckInLocationId
+      ? lateCheckIns.filter(record => record.locationId === lateCheckInLocationId)
       : lateCheckIns
     
     console.log('[v0] Exporting Late Check-In Excel', {
-      dateRange: selectedDateRange,
-      startDate,
-      endDate,
-      selectedLocation: selectedLocationId,
+      dateRange: lateCheckInDateRange,
+      startDate: lateCheckInStartDate,
+      endDate: lateCheckInEndDate,
+      selectedLocation: lateCheckInLocationId,
       recordCount: filteredData.length,
-      data: filteredData
     })
   }
 
+  // Export handlers for Attendance Report
   const exportAttendancePDF = () => {
-    const filteredLocations = selectedLocationId
-      ? locationStats.filter(loc => loc.locationId === selectedLocationId)
+    const filteredLocations = attendanceLocationId
+      ? locationStats.filter(loc => loc.locationId === attendanceLocationId)
       : locationStats
     
     console.log('[v0] Exporting Attendance PDF', {
-      dateRange: selectedDateRange,
-      startDate,
-      endDate,
-      selectedLocation: selectedLocationId,
+      dateRange: attendanceDateRange,
+      startDate: attendanceStartDate,
+      endDate: attendanceEndDate,
+      selectedLocation: attendanceLocationId,
       locationCount: filteredLocations.length,
-      data: filteredLocations
     })
   }
 
+  const exportAttendanceExcel = () => {
+    const filteredLocations = attendanceLocationId
+      ? locationStats.filter(loc => loc.locationId === attendanceLocationId)
+      : locationStats
+    
+    console.log('[v0] Exporting Attendance Excel', {
+      dateRange: attendanceDateRange,
+      startDate: attendanceStartDate,
+      endDate: attendanceEndDate,
+      selectedLocation: attendanceLocationId,
+      locationCount: filteredLocations.length,
+    })
+  }
+
+  // Export handlers for Employee Report
   const exportEmployeePDF = () => {
     console.log('[v0] Exporting Employee PDF', {
-      selectedLocation: selectedLocationId,
+      selectedLocation: employeeLocationId,
     })
   }
 
   const exportEmployeeExcel = () => {
     console.log('[v0] Exporting Employee Excel', {
-      selectedLocation: selectedLocationId,
+      selectedLocation: employeeLocationId,
     })
   }
 
+  // Export handlers for Payroll Report
   const exportPayrollPDF = () => {
     console.log('[v0] Exporting Payroll PDF', {
-      dateRange: selectedDateRange,
-      startDate,
-      endDate,
-      selectedLocation: selectedLocationId,
+      dateRange: payrollDateRange,
+      startDate: payrollStartDate,
+      endDate: payrollEndDate,
+      selectedLocation: payrollLocationId,
     })
   }
 
   const exportPayrollExcel = () => {
     console.log('[v0] Exporting Payroll Excel', {
-      dateRange: selectedDateRange,
-      startDate,
-      endDate,
-      selectedLocation: selectedLocationId,
+      dateRange: payrollDateRange,
+      startDate: payrollStartDate,
+      endDate: payrollEndDate,
+      selectedLocation: payrollLocationId,
     })
   }
 
@@ -148,11 +184,11 @@ export default function ReportsPage() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={exportLatCheckInsPDF}>
                 <Download className="mr-2 size-3" />
                 PDF
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={exportLatCheckInsExcel}>
                 <Download className="mr-2 size-3" />
                 Excel
               </Button>
@@ -162,13 +198,13 @@ export default function ReportsPage() {
         <CardContent className="space-y-6">
           {/* Date Range Filter */}
           <DateRangeFilter
-            selectedRange={selectedDateRange}
-            startDate={startDate}
-            endDate={endDate}
-            onRangeChange={setSelectedDateRange}
+            selectedRange={lateCheckInDateRange}
+            startDate={lateCheckInStartDate}
+            endDate={lateCheckInEndDate}
+            onRangeChange={setLateCheckInDateRange}
             onDateChange={(start, end) => {
-              setStartDate(start)
-              setEndDate(end)
+              setLateCheckInStartDate(start)
+              setLateCheckInEndDate(end)
             }}
           />
 
@@ -216,8 +252,8 @@ export default function ReportsPage() {
           {/* Late by Location */}
           <LocationFilter 
             locations={locationStats}
-            selectedLocationId={selectedLocationId}
-            onLocationSelect={setSelectedLocationId}
+            selectedLocationId={lateCheckInLocationId}
+            onLocationSelect={setLateCheckInLocationId}
           />
         </CardContent>
       </Card>
@@ -236,11 +272,11 @@ export default function ReportsPage() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={exportAttendancePDF}>
                 <Download className="mr-2 size-3" />
                 PDF
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={exportAttendanceExcel}>
                 <Download className="mr-2 size-3" />
                 Excel
               </Button>
@@ -250,13 +286,13 @@ export default function ReportsPage() {
         <CardContent className="space-y-6">
           {/* Date Range Filter */}
           <DateRangeFilter
-            selectedRange={selectedDateRange}
-            startDate={startDate}
-            endDate={endDate}
-            onRangeChange={setSelectedDateRange}
+            selectedRange={attendanceDateRange}
+            startDate={attendanceStartDate}
+            endDate={attendanceEndDate}
+            onRangeChange={setAttendanceDateRange}
             onDateChange={(start, end) => {
-              setStartDate(start)
-              setEndDate(end)
+              setAttendanceStartDate(start)
+              setAttendanceEndDate(end)
             }}
           />
 
@@ -287,8 +323,8 @@ export default function ReportsPage() {
           {/* Location Filter */}
           <LocationFilter 
             locations={locationStats}
-            selectedLocationId={selectedLocationId}
-            onLocationSelect={setSelectedLocationId}
+            selectedLocationId={attendanceLocationId}
+            onLocationSelect={setAttendanceLocationId}
           />
         </CardContent>
       </Card>
@@ -346,8 +382,8 @@ export default function ReportsPage() {
           {/* Location Filter */}
           <LocationFilter 
             locations={locationStats}
-            selectedLocationId={selectedLocationId}
-            onLocationSelect={setSelectedLocationId}
+            selectedLocationId={employeeLocationId}
+            onLocationSelect={setEmployeeLocationId}
           />
         </CardContent>
       </Card>
@@ -380,13 +416,13 @@ export default function ReportsPage() {
         <CardContent className="space-y-6">
           {/* Date Range Filter */}
           <DateRangeFilter
-            selectedRange={selectedDateRange}
-            startDate={startDate}
-            endDate={endDate}
-            onRangeChange={setSelectedDateRange}
+            selectedRange={payrollDateRange}
+            startDate={payrollStartDate}
+            endDate={payrollEndDate}
+            onRangeChange={setPayrollDateRange}
             onDateChange={(start, end) => {
-              setStartDate(start)
-              setEndDate(end)
+              setPayrollStartDate(start)
+              setPayrollEndDate(end)
             }}
           />
 
@@ -417,8 +453,8 @@ export default function ReportsPage() {
           {/* Location Filter */}
           <LocationFilter 
             locations={locationStats}
-            selectedLocationId={selectedLocationId}
-            onLocationSelect={setSelectedLocationId}
+            selectedLocationId={payrollLocationId}
+            onLocationSelect={setPayrollLocationId}
           />
         </CardContent>
       </Card>
