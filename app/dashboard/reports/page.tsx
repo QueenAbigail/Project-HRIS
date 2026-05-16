@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -16,38 +17,146 @@ import {
   TrendingDown
 } from 'lucide-react'
 import { getOverallAttendanceStats, getLocationAttendanceStats, getLateCheckIns } from '@/lib/data'
+import { LocationFilter } from '@/components/reports/location-filter'
+import { EmployeeLocationFilter } from '@/components/reports/employee-location-filter'
+import { AttendanceLocationFilter } from '@/components/reports/attendance-location-filter'
+import { PayrollLocationFilter } from '@/components/reports/payroll-location-filter'
+import { DateRangeFilter } from '@/components/reports/date-range-filter'
 
 export default function ReportsPage() {
+  // Late Check-In Report filters
+  const [lateCheckInLocationId, setLateCheckInLocationId] = useState<string | null>(null)
+  const [lateCheckInDateRange, setLateCheckInDateRange] = useState<'current-month' | 'custom'>('current-month')
+  
+  // Attendance Report filters
+  const [attendanceLocationId, setAttendanceLocationId] = useState<string | null>(null)
+  const [attendanceDateRange, setAttendanceDateRange] = useState<'current-month' | 'custom'>('current-month')
+  
+  // Employee Report filters
+  const [employeeLocationId, setEmployeeLocationId] = useState<string | null>(null)
+  
+  // Payroll Report filters
+  const [payrollLocationId, setPayrollLocationId] = useState<string | null>(null)
+  const [payrollDateRange, setPayrollDateRange] = useState<'current-month' | 'custom'>('current-month')
+  
+  // Get current month dates
+  const getCurrentMonthDates = () => {
+    const now = new Date()
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    return {
+      start: firstDay.toISOString().split('T')[0],
+      end: lastDay.toISOString().split('T')[0],
+    }
+  }
+
+  const currentMonthDates = getCurrentMonthDates()
+  
+  // Late Check-In Report state
+  const [lateCheckInStartDate, setLateCheckInStartDate] = useState(currentMonthDates.start)
+  const [lateCheckInEndDate, setLateCheckInEndDate] = useState(currentMonthDates.end)
+  
+  // Attendance Report state
+  const [attendanceStartDate, setAttendanceStartDate] = useState(currentMonthDates.start)
+  const [attendanceEndDate, setAttendanceEndDate] = useState(currentMonthDates.end)
+  
+  // Payroll Report state
+  const [payrollStartDate, setPayrollStartDate] = useState(currentMonthDates.start)
+  const [payrollEndDate, setPayrollEndDate] = useState(currentMonthDates.end)
+  
   const overallStats = getOverallAttendanceStats()
   const locationStats = getLocationAttendanceStats()
   const lateCheckIns = getLateCheckIns()
 
-  const reports = [
-    {
-      title: 'Attendance Report',
-      description: 'Monthly attendance summary for all departments',
-      icon: Clock,
-      date: 'Last generated: Mar 28, 2026',
-    },
-    {
-      title: 'Payroll Report',
-      description: 'Salary and compensation breakdown',
-      icon: Wallet,
-      date: 'Last generated: Mar 25, 2026',
-    },
-    {
-      title: 'Employee Report',
-      description: 'Staff headcount and demographics',
-      icon: Users,
-      date: 'Last generated: Mar 20, 2026',
-    },
-    {
-      title: 'Leave Report',
-      description: 'Leave utilization and balance summary',
-      icon: Calendar,
-      date: 'Last generated: Mar 15, 2026',
-    },
-  ]
+  // Export handlers for Late Check-In Report
+  const exportLatCheckInsPDF = () => {
+    const filteredData = lateCheckInLocationId
+      ? lateCheckIns.filter(record => record.locationId === lateCheckInLocationId)
+      : lateCheckIns
+    
+    console.log('[v0] Exporting Late Check-In PDF', {
+      dateRange: lateCheckInDateRange,
+      startDate: lateCheckInStartDate,
+      endDate: lateCheckInEndDate,
+      selectedLocation: lateCheckInLocationId,
+      recordCount: filteredData.length,
+    })
+  }
+
+  const exportLatCheckInsExcel = () => {
+    const filteredData = lateCheckInLocationId
+      ? lateCheckIns.filter(record => record.locationId === lateCheckInLocationId)
+      : lateCheckIns
+    
+    console.log('[v0] Exporting Late Check-In Excel', {
+      dateRange: lateCheckInDateRange,
+      startDate: lateCheckInStartDate,
+      endDate: lateCheckInEndDate,
+      selectedLocation: lateCheckInLocationId,
+      recordCount: filteredData.length,
+    })
+  }
+
+  // Export handlers for Attendance Report
+  const exportAttendancePDF = () => {
+    const filteredLocations = attendanceLocationId
+      ? locationStats.filter(loc => loc.locationId === attendanceLocationId)
+      : locationStats
+    
+    console.log('[v0] Exporting Attendance PDF', {
+      dateRange: attendanceDateRange,
+      startDate: attendanceStartDate,
+      endDate: attendanceEndDate,
+      selectedLocation: attendanceLocationId,
+      locationCount: filteredLocations.length,
+    })
+  }
+
+  const exportAttendanceExcel = () => {
+    const filteredLocations = attendanceLocationId
+      ? locationStats.filter(loc => loc.locationId === attendanceLocationId)
+      : locationStats
+    
+    console.log('[v0] Exporting Attendance Excel', {
+      dateRange: attendanceDateRange,
+      startDate: attendanceStartDate,
+      endDate: attendanceEndDate,
+      selectedLocation: attendanceLocationId,
+      locationCount: filteredLocations.length,
+    })
+  }
+
+  // Export handlers for Employee Report
+  const exportEmployeePDF = () => {
+    console.log('[v0] Exporting Employee PDF', {
+      selectedLocation: employeeLocationId,
+    })
+  }
+
+  const exportEmployeeExcel = () => {
+    console.log('[v0] Exporting Employee Excel', {
+      selectedLocation: employeeLocationId,
+    })
+  }
+
+  // Export handlers for Payroll Report
+  const exportPayrollPDF = () => {
+    console.log('[v0] Exporting Payroll PDF', {
+      dateRange: payrollDateRange,
+      startDate: payrollStartDate,
+      endDate: payrollEndDate,
+      selectedLocation: payrollLocationId,
+    })
+  }
+
+  const exportPayrollExcel = () => {
+    console.log('[v0] Exporting Payroll Excel', {
+      dateRange: payrollDateRange,
+      startDate: payrollStartDate,
+      endDate: payrollEndDate,
+      selectedLocation: payrollLocationId,
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -78,18 +187,30 @@ export default function ReportsPage() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={exportLatCheckInsPDF}>
                 <Download className="mr-2 size-3" />
                 PDF
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={exportLatCheckInsExcel}>
                 <Download className="mr-2 size-3" />
                 Excel
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* Date Range Filter */}
+          <DateRangeFilter
+            selectedRange={lateCheckInDateRange}
+            startDate={lateCheckInStartDate}
+            endDate={lateCheckInEndDate}
+            onRangeChange={setLateCheckInDateRange}
+            onDateChange={(start, end) => {
+              setLateCheckInStartDate(start)
+              setLateCheckInEndDate(end)
+            }}
+          />
+
           {/* Summary Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 rounded-lg bg-muted/30 border border-border">
@@ -132,126 +253,214 @@ export default function ReportsPage() {
           </div>
 
           {/* Late by Location */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium flex items-center gap-2">
-              <MapPin className="size-4" />
-              Late Check-Ins by Location
-            </h4>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {locationStats.map((location) => (
-                <div 
-                  key={location.locationId}
-                  className={`flex items-center justify-between p-3 rounded-lg border ${
-                    location.late > 0 ? 'border-warning/30 bg-warning/5' : 'border-border bg-secondary/20'
-                  }`}
-                >
-                  <div>
-                    <p className="text-sm font-medium">{location.locationName}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{location.locationId}</p>
-                  </div>
-                  <div className="text-right">
-                    {location.late > 0 ? (
-                      <>
-                        <p className="text-sm font-medium text-warning">{location.late} late</p>
-                        <p className="text-xs text-muted-foreground">{location.lateMinutesTotal} min total</p>
-                      </>
-                    ) : (
-                      <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                        All on time
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Individual Late Records */}
-          {lateCheckIns.length > 0 && (
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium">Late Employees Detail</h4>
-              <div className="rounded-lg border border-border overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      <th className="text-left p-3 font-medium">Employee</th>
-                      <th className="text-left p-3 font-medium hidden sm:table-cell">Location</th>
-                      <th className="text-left p-3 font-medium">Scheduled</th>
-                      <th className="text-left p-3 font-medium">Actual</th>
-                      <th className="text-right p-3 font-medium">Late By</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {lateCheckIns.map((record) => (
-                      <tr key={record.id} className="bg-warning/5">
-                        <td className="p-3">
-                          <div className="font-medium">{record.employeeName}</div>
-                          <div className="text-xs text-muted-foreground">{record.shiftName}</div>
-                        </td>
-                        <td className="p-3 hidden sm:table-cell text-muted-foreground">
-                          {record.locationName}
-                        </td>
-                        <td className="p-3 font-mono">{record.scheduledStart}</td>
-                        <td className="p-3 font-mono text-warning">{record.actualCheckIn}</td>
-                        <td className="p-3 text-right">
-                          <Badge 
-                            variant="outline" 
-                            className={
-                              record.lateMinutes <= 15 
-                                ? 'bg-warning/10 text-warning border-warning/20' 
-                                : record.lateMinutes <= 30
-                                ? 'bg-orange-500/10 text-orange-500 border-orange-500/20'
-                                : 'bg-destructive/10 text-destructive border-destructive/20'
-                            }
-                          >
-                            +{record.lateMinutes} min
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+          <LocationFilter 
+            locations={locationStats}
+            selectedLocationId={lateCheckInLocationId}
+            onLocationSelect={setLateCheckInLocationId}
+          />
         </CardContent>
       </Card>
 
-      {/* Standard Reports */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        {reports.map((report) => (
-          <Card key={report.title} className="bg-card border-border">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-primary/10 p-2.5">
-                    <report.icon className="size-5 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base">{report.title}</CardTitle>
-                    <CardDescription>{report.description}</CardDescription>
-                  </div>
-                </div>
+      {/* Attendance Report */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Users className="size-5 text-primary" />
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{report.date}</span>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Download className="mr-2 size-3" />
-                    PDF
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Download className="mr-2 size-3" />
-                    Excel
-                  </Button>
-                </div>
+              <div>
+                <CardTitle>Attendance Report</CardTitle>
+                <CardDescription>Complete attendance records for all employees</CardDescription>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={exportAttendancePDF}>
+                <Download className="mr-2 size-3" />
+                PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportAttendanceExcel}>
+                <Download className="mr-2 size-3" />
+                Excel
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Date Range Filter */}
+          <DateRangeFilter
+            selectedRange={attendanceDateRange}
+            startDate={attendanceStartDate}
+            endDate={attendanceEndDate}
+            onRangeChange={setAttendanceDateRange}
+            onDateChange={(start, end) => {
+              setAttendanceStartDate(start)
+              setAttendanceEndDate(end)
+            }}
+          />
+
+          {/* Attendance Summary Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Total Staff</span>
+              <p className="text-2xl font-bold mt-1">{overallStats.totalEmployees}</p>
+              <p className="text-xs text-muted-foreground">employees</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Expected Today</span>
+              <p className="text-2xl font-bold mt-1">{overallStats.expectedToWork}</p>
+              <p className="text-xs text-muted-foreground">excluding day-off</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Attended</span>
+              <p className="text-2xl font-bold text-success mt-1">{overallStats.presentToday}</p>
+              <p className="text-xs text-muted-foreground">{overallStats.attendanceRate}% attendance</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Absent</span>
+              <p className="text-2xl font-bold text-destructive mt-1">{overallStats.absentToday + overallStats.notCheckedIn}</p>
+              <p className="text-xs text-muted-foreground">absent or no check-in</p>
+            </div>
+          </div>
+
+          {/* Location Filter */}
+          <AttendanceLocationFilter 
+            locations={locationStats}
+            selectedLocationId={attendanceLocationId}
+            onLocationSelect={setAttendanceLocationId}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Employee Report */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                <Users className="size-5 text-blue-500" />
+              </div>
+              <div>
+                <CardTitle>Employee Report</CardTitle>
+                <CardDescription>Staff headcount and demographics</CardDescription>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={exportEmployeePDF}>
+                <Download className="mr-2 size-3" />
+                PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportEmployeeExcel}>
+                <Download className="mr-2 size-3" />
+                Excel
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Employee Summary Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Total Employees</span>
+              <p className="text-2xl font-bold mt-1">{overallStats.totalEmployees}</p>
+              <p className="text-xs text-muted-foreground">on payroll</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Active Today</span>
+              <p className="text-2xl font-bold text-success mt-1">{overallStats.presentToday}</p>
+              <p className="text-xs text-muted-foreground">working today</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">On Leave</span>
+              <p className="text-2xl font-bold text-blue-500 mt-1">{overallStats.onLeave || 0}</p>
+              <p className="text-xs text-muted-foreground">approved leave</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Absent</span>
+              <p className="text-2xl font-bold text-destructive mt-1">{overallStats.absentToday}</p>
+              <p className="text-xs text-muted-foreground">not working today</p>
+            </div>
+          </div>
+
+          {/* Location Filter */}
+          <EmployeeLocationFilter 
+            locations={locationStats}
+            selectedLocationId={employeeLocationId}
+            onLocationSelect={setEmployeeLocationId}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Payroll Report */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                <Wallet className="size-5 text-purple-500" />
+              </div>
+              <div>
+                <CardTitle>Payroll Report</CardTitle>
+                <CardDescription>Salary and compensation breakdown</CardDescription>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={exportPayrollPDF}>
+                <Download className="mr-2 size-3" />
+                PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportPayrollExcel}>
+                <Download className="mr-2 size-3" />
+                Excel
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Date Range Filter */}
+          <DateRangeFilter
+            selectedRange={payrollDateRange}
+            startDate={payrollStartDate}
+            endDate={payrollEndDate}
+            onRangeChange={setPayrollDateRange}
+            onDateChange={(start, end) => {
+              setPayrollStartDate(start)
+              setPayrollEndDate(end)
+            }}
+          />
+
+          {/* Payroll Summary Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Total Payroll</span>
+              <p className="text-2xl font-bold mt-1">$234.5K</p>
+              <p className="text-xs text-muted-foreground">this period</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Avg Salary</span>
+              <p className="text-2xl font-bold mt-1">$3,850</p>
+              <p className="text-xs text-muted-foreground">per employee</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Overtime Cost</span>
+              <p className="text-2xl font-bold text-warning mt-1">$12.4K</p>
+              <p className="text-xs text-muted-foreground">OT compensation</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Deductions</span>
+              <p className="text-2xl font-bold mt-1">$28.3K</p>
+              <p className="text-xs text-muted-foreground">total deductions</p>
+            </div>
+          </div>
+
+          {/* Location Filter */}
+          <PayrollLocationFilter 
+            locations={locationStats}
+            selectedLocationId={payrollLocationId}
+            onLocationSelect={setPayrollLocationId}
+          />
+        </CardContent>
+      </Card>
     </div>
   )
 }
