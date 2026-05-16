@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -16,11 +17,19 @@ import {
   TrendingDown
 } from 'lucide-react'
 import { getOverallAttendanceStats, getLocationAttendanceStats, getLateCheckIns } from '@/lib/data'
+import { LocationFilter } from '@/components/reports/location-filter'
 
 export default function ReportsPage() {
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
+  
   const overallStats = getOverallAttendanceStats()
   const locationStats = getLocationAttendanceStats()
   const lateCheckIns = getLateCheckIns()
+
+  // Filter late check-ins based on selected location
+  const filteredLateCheckIns = selectedLocationId
+    ? lateCheckIns.filter(record => record.locationId === selectedLocationId)
+    : lateCheckIns
 
   const reports = [
     {
@@ -132,44 +141,23 @@ export default function ReportsPage() {
           </div>
 
           {/* Late by Location */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-medium flex items-center gap-2">
-              <MapPin className="size-4" />
-              Late Check-Ins by Location
-            </h4>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {locationStats.map((location) => (
-                <div 
-                  key={location.locationId}
-                  className={`flex items-center justify-between p-3 rounded-lg border ${
-                    location.late > 0 ? 'border-warning/30 bg-warning/5' : 'border-border bg-secondary/20'
-                  }`}
-                >
-                  <div>
-                    <p className="text-sm font-medium">{location.locationName}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{location.locationId}</p>
-                  </div>
-                  <div className="text-right">
-                    {location.late > 0 ? (
-                      <>
-                        <p className="text-sm font-medium text-warning">{location.late} late</p>
-                        <p className="text-xs text-muted-foreground">{location.lateMinutesTotal} min total</p>
-                      </>
-                    ) : (
-                      <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                        All on time
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <LocationFilter 
+            locations={locationStats}
+            selectedLocationId={selectedLocationId}
+            onLocationSelect={setSelectedLocationId}
+          />
 
           {/* Individual Late Records */}
-          {lateCheckIns.length > 0 && (
+          {filteredLateCheckIns.length > 0 && (
             <div className="space-y-3">
-              <h4 className="text-sm font-medium">Late Employees Detail</h4>
+              <h4 className="text-sm font-medium">
+                Late Employees Detail
+                {selectedLocationId && (
+                  <Badge variant="outline" className="ml-2 text-xs">
+                    Filtered by location
+                  </Badge>
+                )}
+              </h4>
               <div className="rounded-lg border border-border overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="bg-muted/50">
@@ -182,7 +170,7 @@ export default function ReportsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {lateCheckIns.map((record) => (
+                    {filteredLateCheckIns.map((record) => (
                       <tr key={record.id} className="bg-warning/5">
                         <td className="p-3">
                           <div className="font-medium">{record.employeeName}</div>
@@ -212,6 +200,11 @@ export default function ReportsPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+          {filteredLateCheckIns.length === 0 && selectedLocationId && (
+            <div className="text-center p-6 rounded-lg border border-border bg-muted/20">
+              <p className="text-sm text-muted-foreground">No late check-ins for the selected location</p>
             </div>
           )}
         </CardContent>
