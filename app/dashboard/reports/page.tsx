@@ -91,18 +91,12 @@ export default function ReportsPage() {
 
   const exportEmployeePDF = () => {
     console.log('[v0] Exporting Employee PDF', {
-      dateRange: selectedDateRange,
-      startDate,
-      endDate,
       selectedLocation: selectedLocationId,
     })
   }
 
   const exportEmployeeExcel = () => {
     console.log('[v0] Exporting Employee Excel', {
-      dateRange: selectedDateRange,
-      startDate,
-      endDate,
       selectedLocation: selectedLocationId,
     })
   }
@@ -325,18 +319,6 @@ export default function ReportsPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Date Range Filter */}
-          <DateRangeFilter
-            selectedRange={selectedDateRange}
-            startDate={startDate}
-            endDate={endDate}
-            onRangeChange={setSelectedDateRange}
-            onDateChange={(start, end) => {
-              setStartDate(start)
-              setEndDate(end)
-            }}
-          />
-
           {/* Location Filter */}
           <LocationFilter 
             locations={locationStats}
