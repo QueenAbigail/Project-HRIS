@@ -20,6 +20,7 @@ const leaveRequests = [
     employee: 'Robert Taylor',
     initials: 'RT',
     department: 'Patrol',
+    location: 'Downtown Site',
     type: 'Annual Leave',
     startDate: 'Apr 1, 2026',
     endDate: 'Apr 5, 2026',
@@ -32,6 +33,7 @@ const leaveRequests = [
     employee: 'Jessica Brown',
     initials: 'JB',
     department: 'Surveillance',
+    location: 'North Campus',
     type: 'Sick Leave',
     startDate: 'Mar 31, 2026',
     endDate: 'Mar 31, 2026',
@@ -44,6 +46,7 @@ const leaveRequests = [
     employee: 'Thomas Anderson',
     initials: 'TA',
     department: 'Field Security',
+    location: 'West Avenue',
     type: 'Personal',
     startDate: 'Apr 3, 2026',
     endDate: 'Apr 3, 2026',
@@ -56,6 +59,7 @@ const leaveRequests = [
     employee: 'Amanda Martinez',
     initials: 'AM',
     department: 'Administration',
+    location: 'Headquarters',
     type: 'Annual Leave',
     startDate: 'Apr 7, 2026',
     endDate: 'Apr 10, 2026',
@@ -68,6 +72,7 @@ const leaveRequests = [
     employee: 'Michael Chen',
     initials: 'MC',
     department: 'Field Security',
+    location: 'East Terminal',
     type: 'Emergency',
     startDate: 'Mar 28, 2026',
     endDate: 'Mar 29, 2026',
@@ -80,6 +85,7 @@ const leaveRequests = [
     employee: 'Sarah Williams',
     initials: 'SW',
     department: 'Surveillance',
+    location: 'Central Hub',
     type: 'Annual Leave',
     startDate: 'Apr 15, 2026',
     endDate: 'Apr 20, 2026',
@@ -114,6 +120,7 @@ export function LeaveRequestsTable() {
             <TableHeader>
               <TableRow>
                 <TableHead>Employee</TableHead>
+                <TableHead className="hidden lg:table-cell">Location</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead className="hidden md:table-cell">Period</TableHead>
                 <TableHead className="hidden sm:table-cell">Days</TableHead>
@@ -137,6 +144,9 @@ export function LeaveRequestsTable() {
                         <p className="text-xs text-muted-foreground hidden sm:block">{request.department}</p>
                       </div>
                     </div>
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                    {request.location}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={typeStyles[request.type]}>
