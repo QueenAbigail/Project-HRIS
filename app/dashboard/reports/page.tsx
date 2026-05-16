@@ -248,6 +248,18 @@ export default function ReportsPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Date Range Filter */}
+          <DateRangeFilter
+            selectedRange={selectedDateRange}
+            startDate={startDate}
+            endDate={endDate}
+            onRangeChange={setSelectedDateRange}
+            onDateChange={(start, end) => {
+              setStartDate(start)
+              setEndDate(end)
+            }}
+          />
+
           {/* Attendance Summary Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 rounded-lg bg-muted/30 border border-border">
@@ -271,18 +283,6 @@ export default function ReportsPage() {
               <p className="text-xs text-muted-foreground">absent or no check-in</p>
             </div>
           </div>
-
-          {/* Date Range Filter */}
-          <DateRangeFilter
-            selectedRange={selectedDateRange}
-            startDate={startDate}
-            endDate={endDate}
-            onRangeChange={setSelectedDateRange}
-            onDateChange={(start, end) => {
-              setStartDate(start)
-              setEndDate(end)
-            }}
-          />
 
           {/* Location Filter */}
           <LocationFilter 
@@ -378,6 +378,18 @@ export default function ReportsPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Date Range Filter */}
+          <DateRangeFilter
+            selectedRange={selectedDateRange}
+            startDate={startDate}
+            endDate={endDate}
+            onRangeChange={setSelectedDateRange}
+            onDateChange={(start, end) => {
+              setStartDate(start)
+              setEndDate(end)
+            }}
+          />
+
           {/* Payroll Summary Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 rounded-lg bg-muted/30 border border-border">
@@ -401,18 +413,6 @@ export default function ReportsPage() {
               <p className="text-xs text-muted-foreground">total deductions</p>
             </div>
           </div>
-
-          {/* Date Range Filter */}
-          <DateRangeFilter
-            selectedRange={selectedDateRange}
-            startDate={startDate}
-            endDate={endDate}
-            onRangeChange={setSelectedDateRange}
-            onDateChange={(start, end) => {
-              setStartDate(start)
-              setEndDate(end)
-            }}
-          />
 
           {/* Location Filter */}
           <LocationFilter 
