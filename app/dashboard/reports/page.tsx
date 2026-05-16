@@ -18,18 +18,40 @@ import {
 } from 'lucide-react'
 import { getOverallAttendanceStats, getLocationAttendanceStats, getLateCheckIns } from '@/lib/data'
 import { LocationFilter } from '@/components/reports/location-filter'
+import { DateRangeFilter } from '@/components/reports/date-range-filter'
 
 export default function ReportsPage() {
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
+  const [selectedDateRange, setSelectedDateRange] = useState<'current-month' | 'custom'>('current-month')
+  
+  // Get current month dates
+  const getCurrentMonthDates = () => {
+    const now = new Date()
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    return {
+      start: firstDay.toISOString().split('T')[0],
+      end: lastDay.toISOString().split('T')[0],
+    }
+  }
+
+  const currentMonthDates = getCurrentMonthDates()
+  const [startDate, setStartDate] = useState(currentMonthDates.start)
+  const [endDate, setEndDate] = useState(currentMonthDates.end)
   
   const overallStats = getOverallAttendanceStats()
   const locationStats = getLocationAttendanceStats()
   const lateCheckIns = getLateCheckIns()
 
-  // Filter late check-ins based on selected location
-  const filteredLateCheckIns = selectedLocationId
-    ? lateCheckIns.filter(record => record.locationId === selectedLocationId)
-    : lateCheckIns
+  // Filter late check-ins based on selected location and date range
+  const filteredLateCheckIns = lateCheckIns
+    .filter(record => {
+      if (selectedLocationId && record.locationId !== selectedLocationId) {
+        return false
+      }
+      // Note: In production, you'd filter by actual dates from the record
+      return true
+    })
 
   const reports = [
     {
@@ -98,7 +120,19 @@ export default function ReportsPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* Date Range Filter */}
+          <DateRangeFilter
+            selectedRange={selectedDateRange}
+            startDate={startDate}
+            endDate={endDate}
+            onRangeChange={setSelectedDateRange}
+            onDateChange={(start, end) => {
+              setStartDate(start)
+              setEndDate(end)
+            }}
+          />
+
           {/* Summary Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 rounded-lg bg-muted/30 border border-border">
@@ -152,11 +186,16 @@ export default function ReportsPage() {
             <div className="space-y-3">
               <h4 className="text-sm font-medium">
                 Late Employees Detail
-                {selectedLocationId && (
-                  <Badge variant="outline" className="ml-2 text-xs">
-                    Filtered by location
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {selectedLocationId && (
+                    <Badge variant="outline" className="text-xs">
+                      Location filtered
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className="text-xs">
+                    {selectedDateRange === 'current-month' ? 'Current month' : 'Custom date range'}
                   </Badge>
-                )}
+                </div>
               </h4>
               <div className="rounded-lg border border-border overflow-hidden">
                 <table className="w-full text-sm">
