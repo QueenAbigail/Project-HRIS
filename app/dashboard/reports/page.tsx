@@ -20,6 +20,7 @@ import { getOverallAttendanceStats, getLocationAttendanceStats, getLateCheckIns 
 import { LocationFilter } from '@/components/reports/location-filter'
 import { EmployeeLocationFilter } from '@/components/reports/employee-location-filter'
 import { AttendanceLocationFilter } from '@/components/reports/attendance-location-filter'
+import { PayrollLocationFilter } from '@/components/reports/payroll-location-filter'
 import { DateRangeFilter } from '@/components/reports/date-range-filter'
 
 export default function ReportsPage() {
@@ -453,7 +454,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Location Filter */}
-          <LocationFilter 
+          <PayrollLocationFilter 
             locations={locationStats}
             selectedLocationId={payrollLocationId}
             onLocationSelect={setPayrollLocationId}
