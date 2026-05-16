@@ -16,7 +16,7 @@ import {
   TrendingUp,
   TrendingDown
 } from 'lucide-react'
-import { getOverallAttendanceStats, getLocationAttendanceStats, getLateCheckIns } from '@/lib/data'
+import { getOverallAttendanceStats, getLocationAttendanceStats, getLateCheckIns, getEmployeesWithAttendance } from '@/lib/data'
 import { LocationFilter } from '@/components/reports/location-filter'
 import { DateRangeFilter } from '@/components/reports/date-range-filter'
 
@@ -42,9 +42,20 @@ export default function ReportsPage() {
   const overallStats = getOverallAttendanceStats()
   const locationStats = getLocationAttendanceStats()
   const lateCheckIns = getLateCheckIns()
+  const employeesWithAttendance = getEmployeesWithAttendance()
 
   // Filter late check-ins based on selected location and date range
   const filteredLateCheckIns = lateCheckIns
+    .filter(record => {
+      if (selectedLocationId && record.locationId !== selectedLocationId) {
+        return false
+      }
+      // Note: In production, you'd filter by actual dates from the record
+      return true
+    })
+
+  // Filter attendance records based on selected location
+  const filteredAttendanceRecords = employeesWithAttendance
     .filter(record => {
       if (selectedLocationId && record.locationId !== selectedLocationId) {
         return false
@@ -249,7 +260,162 @@ export default function ReportsPage() {
         </CardContent>
       </Card>
 
-      {/* Standard Reports */}
+      {/* Attendance Report */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Users className="size-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Attendance Report</CardTitle>
+                <CardDescription>Complete attendance records for all employees</CardDescription>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm">
+                <Download className="mr-2 size-3" />
+                PDF
+              </Button>
+              <Button variant="outline" size="sm">
+                <Download className="mr-2 size-3" />
+                Excel
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Date Range Filter */}
+          <DateRangeFilter
+            selectedRange={selectedDateRange}
+            startDate={startDate}
+            endDate={endDate}
+            onRangeChange={setSelectedDateRange}
+            onDateChange={(start, end) => {
+              setStartDate(start)
+              setEndDate(end)
+            }}
+          />
+
+          {/* Location Filter */}
+          <LocationFilter 
+            locations={locationStats}
+            selectedLocationId={selectedLocationId}
+            onLocationSelect={setSelectedLocationId}
+          />
+
+          {/* Attendance Summary Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Total Staff</span>
+              <p className="text-2xl font-bold mt-1">{overallStats.totalEmployees}</p>
+              <p className="text-xs text-muted-foreground">employees</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Expected Today</span>
+              <p className="text-2xl font-bold mt-1">{overallStats.expectedToWork}</p>
+              <p className="text-xs text-muted-foreground">excluding day-off</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Attended</span>
+              <p className="text-2xl font-bold text-success mt-1">{overallStats.presentToday}</p>
+              <p className="text-xs text-muted-foreground">{overallStats.attendanceRate}% attendance</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Absent</span>
+              <p className="text-2xl font-bold text-destructive mt-1">{overallStats.absentToday + overallStats.notCheckedIn}</p>
+              <p className="text-xs text-muted-foreground">absent or no check-in</p>
+            </div>
+          </div>
+
+          {/* Attendance Table */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium">
+              Attendance Details
+              <div className="flex gap-2 mt-2 flex-wrap">
+                {selectedLocationId && (
+                  <Badge variant="outline" className="text-xs">
+                    Location filtered
+                  </Badge>
+                )}
+                <Badge variant="outline" className="text-xs">
+                  {selectedDateRange === 'current-month' ? 'Current month' : 'Custom date range'}
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  {filteredAttendanceRecords.length} records
+                </Badge>
+              </div>
+            </h4>
+            <div className="rounded-lg border border-border overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-left p-3 font-medium">Employee</th>
+                    <th className="text-left p-3 font-medium hidden md:table-cell">Location</th>
+                    <th className="text-left p-3 font-medium hidden sm:table-cell">Position</th>
+                    <th className="text-left p-3 font-medium">Status</th>
+                    <th className="text-left p-3 font-medium hidden lg:table-cell">Check-In</th>
+                    <th className="text-left p-3 font-medium hidden lg:table-cell">Check-Out</th>
+                    <th className="text-left p-3 font-medium">Hours</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredAttendanceRecords.map((record) => (
+                    <tr 
+                      key={record.employeeId} 
+                      className={
+                        record.status === 'present' ? 'bg-success/5' :
+                        record.status === 'late' ? 'bg-warning/5' :
+                        record.status === 'absent' ? 'bg-destructive/5' :
+                        record.status === 'day-off' ? 'bg-muted/30' :
+                        'hover:bg-muted/30'
+                      }
+                    >
+                      <td className="p-3">
+                        <div className="font-medium">{record.employeeName}</div>
+                        <div className="text-xs text-muted-foreground">{record.initials}</div>
+                      </td>
+                      <td className="p-3 hidden md:table-cell text-muted-foreground">
+                        {record.locationName}
+                      </td>
+                      <td className="p-3 hidden sm:table-cell text-muted-foreground text-xs">
+                        {record.position}
+                      </td>
+                      <td className="p-3">
+                        <Badge 
+                          variant="outline"
+                          className={
+                            record.status === 'present' ? 'bg-success/10 text-success border-success/20' :
+                            record.status === 'late' ? 'bg-warning/10 text-warning border-warning/20' :
+                            record.status === 'absent' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                            record.status === 'leave' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' :
+                            record.status === 'day-off' ? 'bg-muted-foreground/10 text-muted-foreground border-muted-foreground/20' :
+                            'bg-orange-500/10 text-orange-500 border-orange-500/20'
+                          }
+                        >
+                          {record.status === 'not-checked-in' ? 'Not Checked In' : 
+                           record.status === 'day-off' ? 'Day Off' :
+                           record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                        </Badge>
+                      </td>
+                      <td className="p-3 hidden lg:table-cell font-mono text-sm">
+                        {record.actualCheckIn || '--:--'}
+                      </td>
+                      <td className="p-3 hidden lg:table-cell font-mono text-sm">
+                        {record.actualCheckOut || '--:--'}
+                      </td>
+                      <td className="p-3 font-medium">
+                        {record.workHours}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       <div className="grid gap-4 sm:grid-cols-2">
         {reports.map((report) => (
           <Card key={report.title} className="bg-card border-border">
