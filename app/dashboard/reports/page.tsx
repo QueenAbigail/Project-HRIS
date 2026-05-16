@@ -43,6 +43,67 @@ export default function ReportsPage() {
   const locationStats = getLocationAttendanceStats()
   const lateCheckIns = getLateCheckIns()
 
+  // Export handlers
+  const exportLatCheckInsPDF = () => {
+    const filteredData = selectedLocationId
+      ? lateCheckIns.filter(record => record.locationId === selectedLocationId)
+      : lateCheckIns
+    
+    console.log('[v0] Exporting Late Check-In PDF', {
+      dateRange: selectedDateRange,
+      startDate,
+      endDate,
+      selectedLocation: selectedLocationId,
+      recordCount: filteredData.length,
+      data: filteredData
+    })
+  }
+
+  const exportLatCheckInsExcel = () => {
+    const filteredData = selectedLocationId
+      ? lateCheckIns.filter(record => record.locationId === selectedLocationId)
+      : lateCheckIns
+    
+    console.log('[v0] Exporting Late Check-In Excel', {
+      dateRange: selectedDateRange,
+      startDate,
+      endDate,
+      selectedLocation: selectedLocationId,
+      recordCount: filteredData.length,
+      data: filteredData
+    })
+  }
+
+  const exportAttendancePDF = () => {
+    const filteredLocations = selectedLocationId
+      ? locationStats.filter(loc => loc.locationId === selectedLocationId)
+      : locationStats
+    
+    console.log('[v0] Exporting Attendance PDF', {
+      dateRange: selectedDateRange,
+      startDate,
+      endDate,
+      selectedLocation: selectedLocationId,
+      locationCount: filteredLocations.length,
+      data: filteredLocations
+    })
+  }
+
+  const exportAttendanceExcel = () => {
+    const filteredLocations = selectedLocationId
+      ? locationStats.filter(loc => loc.locationId === selectedLocationId)
+      : locationStats
+    
+    console.log('[v0] Exporting Attendance Excel', {
+      dateRange: selectedDateRange,
+      startDate,
+      endDate,
+      selectedLocation: selectedLocationId,
+      locationCount: filteredLocations.length,
+      data: filteredLocations
+    })
+  }
+
   const reports = [
     {
       title: 'Attendance Report',
@@ -262,16 +323,16 @@ export default function ReportsPage() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">{report.date}</span>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Download className="mr-2 size-3" />
-                    PDF
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Download className="mr-2 size-3" />
-                    Excel
-                  </Button>
-                </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={exportAttendancePDF}>
+                <Download className="mr-2 size-3" />
+                PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportAttendanceExcel}>
+                <Download className="mr-2 size-3" />
+                Excel
+              </Button>
+            </div>
               </div>
             </CardContent>
           </Card>
