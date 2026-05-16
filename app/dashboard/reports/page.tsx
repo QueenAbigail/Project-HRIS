@@ -89,47 +89,41 @@ export default function ReportsPage() {
     })
   }
 
-  const exportAttendanceExcel = () => {
-    const filteredLocations = selectedLocationId
-      ? locationStats.filter(loc => loc.locationId === selectedLocationId)
-      : locationStats
-    
-    console.log('[v0] Exporting Attendance Excel', {
+  const exportEmployeePDF = () => {
+    console.log('[v0] Exporting Employee PDF', {
       dateRange: selectedDateRange,
       startDate,
       endDate,
       selectedLocation: selectedLocationId,
-      locationCount: filteredLocations.length,
-      data: filteredLocations
     })
   }
 
-  const reports = [
-    {
-      title: 'Attendance Report',
-      description: 'Monthly attendance summary for all departments',
-      icon: Clock,
-      date: 'Last generated: Mar 28, 2026',
-    },
-    {
-      title: 'Payroll Report',
-      description: 'Salary and compensation breakdown',
-      icon: Wallet,
-      date: 'Last generated: Mar 25, 2026',
-    },
-    {
-      title: 'Employee Report',
-      description: 'Staff headcount and demographics',
-      icon: Users,
-      date: 'Last generated: Mar 20, 2026',
-    },
-    {
-      title: 'Leave Report',
-      description: 'Leave utilization and balance summary',
-      icon: Calendar,
-      date: 'Last generated: Mar 15, 2026',
-    },
-  ]
+  const exportEmployeeExcel = () => {
+    console.log('[v0] Exporting Employee Excel', {
+      dateRange: selectedDateRange,
+      startDate,
+      endDate,
+      selectedLocation: selectedLocationId,
+    })
+  }
+
+  const exportPayrollPDF = () => {
+    console.log('[v0] Exporting Payroll PDF', {
+      dateRange: selectedDateRange,
+      startDate,
+      endDate,
+      selectedLocation: selectedLocationId,
+    })
+  }
+
+  const exportPayrollExcel = () => {
+    console.log('[v0] Exporting Payroll Excel', {
+      dateRange: selectedDateRange,
+      startDate,
+      endDate,
+      selectedLocation: selectedLocationId,
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -304,40 +298,148 @@ export default function ReportsPage() {
           </div>
         </CardContent>
       </Card>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {reports.map((report) => (
-          <Card key={report.title} className="bg-card border-border">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-primary/10 p-2.5">
-                    <report.icon className="size-5 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-base">{report.title}</CardTitle>
-                    <CardDescription>{report.description}</CardDescription>
-                  </div>
-                </div>
+
+      {/* Employee Report */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                <Users className="size-5 text-blue-500" />
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{report.date}</span>
+              <div>
+                <CardTitle>Employee Report</CardTitle>
+                <CardDescription>Staff headcount and demographics</CardDescription>
+              </div>
+            </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={exportAttendancePDF}>
+              <Button variant="outline" size="sm" onClick={exportEmployeePDF}>
                 <Download className="mr-2 size-3" />
                 PDF
               </Button>
-              <Button variant="outline" size="sm" onClick={exportAttendanceExcel}>
+              <Button variant="outline" size="sm" onClick={exportEmployeeExcel}>
                 <Download className="mr-2 size-3" />
                 Excel
               </Button>
             </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Date Range Filter */}
+          <DateRangeFilter
+            selectedRange={selectedDateRange}
+            startDate={startDate}
+            endDate={endDate}
+            onRangeChange={setSelectedDateRange}
+            onDateChange={(start, end) => {
+              setStartDate(start)
+              setEndDate(end)
+            }}
+          />
+
+          {/* Location Filter */}
+          <LocationFilter 
+            locations={locationStats}
+            selectedLocationId={selectedLocationId}
+            onLocationSelect={setSelectedLocationId}
+          />
+
+          {/* Employee Summary Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Total Employees</span>
+              <p className="text-2xl font-bold mt-1">{overallStats.totalEmployees}</p>
+              <p className="text-xs text-muted-foreground">on payroll</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Active Today</span>
+              <p className="text-2xl font-bold text-success mt-1">{overallStats.presentToday}</p>
+              <p className="text-xs text-muted-foreground">working today</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">On Leave</span>
+              <p className="text-2xl font-bold text-blue-500 mt-1">{overallStats.onLeave || 0}</p>
+              <p className="text-xs text-muted-foreground">approved leave</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Absent</span>
+              <p className="text-2xl font-bold text-destructive mt-1">{overallStats.absentToday}</p>
+              <p className="text-xs text-muted-foreground">not working today</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Payroll Report */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                <Wallet className="size-5 text-purple-500" />
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <div>
+                <CardTitle>Payroll Report</CardTitle>
+                <CardDescription>Salary and compensation breakdown</CardDescription>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={exportPayrollPDF}>
+                <Download className="mr-2 size-3" />
+                PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportPayrollExcel}>
+                <Download className="mr-2 size-3" />
+                Excel
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Date Range Filter */}
+          <DateRangeFilter
+            selectedRange={selectedDateRange}
+            startDate={startDate}
+            endDate={endDate}
+            onRangeChange={setSelectedDateRange}
+            onDateChange={(start, end) => {
+              setStartDate(start)
+              setEndDate(end)
+            }}
+          />
+
+          {/* Location Filter */}
+          <LocationFilter 
+            locations={locationStats}
+            selectedLocationId={selectedLocationId}
+            onLocationSelect={setSelectedLocationId}
+          />
+
+          {/* Payroll Summary Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Total Payroll</span>
+              <p className="text-2xl font-bold mt-1">$234.5K</p>
+              <p className="text-xs text-muted-foreground">this period</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Avg Salary</span>
+              <p className="text-2xl font-bold mt-1">$3,850</p>
+              <p className="text-xs text-muted-foreground">per employee</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Overtime Cost</span>
+              <p className="text-2xl font-bold text-warning mt-1">$12.4K</p>
+              <p className="text-xs text-muted-foreground">OT compensation</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/30 border border-border">
+              <span className="text-sm text-muted-foreground">Deductions</span>
+              <p className="text-2xl font-bold mt-1">$28.3K</p>
+              <p className="text-xs text-muted-foreground">total deductions</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
