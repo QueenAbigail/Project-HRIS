@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
+import { formatCurrency } from '@/lib/currency'
 
 // Job positions - hardcoded for now, will fetch from database later
 // TODO: Replace with dynamic fetch from database when User.position is available
@@ -233,7 +234,7 @@ export function PayrollPayRateDialog({
                 <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="baseDailyRate">Base Daily Rate ($)</Label>
+                      <Label htmlFor="baseDailyRate">Base Daily Rate (IDR)</Label>
                       <Input
                         id="baseDailyRate"
                         type="number"
@@ -243,7 +244,7 @@ export function PayrollPayRateDialog({
                         className="font-mono"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Monthly: ${(currentConfig.baseDailyRate * 22).toFixed(2)}
+                        Monthly: {formatCurrency(currentConfig.baseDailyRate * 22)}
                       </p>
                     </div>
 
@@ -258,7 +259,7 @@ export function PayrollPayRateDialog({
                         className="font-mono"
                       />
                       <p className="text-xs text-muted-foreground">
-                        OT Rate: ${(currentConfig.baseDailyRate * currentConfig.overtimeMultiplier / 8).toFixed(2)}/hour
+                        OT Rate: {formatCurrency(currentConfig.baseDailyRate * currentConfig.overtimeMultiplier / 8)}/hour
                       </p>
                     </div>
                   </div>
@@ -266,8 +267,8 @@ export function PayrollPayRateDialog({
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
-                      For <strong>{selectedPosition}</strong>: Base daily rate ${currentConfig.baseDailyRate.toFixed(2)} 
-                      × {currentConfig.overtimeMultiplier}x multiplier = ${(currentConfig.baseDailyRate * currentConfig.overtimeMultiplier).toFixed(2)} OT daily
+                      For <strong>{selectedPosition}</strong>: Base daily rate {formatCurrency(currentConfig.baseDailyRate)} 
+                      × {currentConfig.overtimeMultiplier}x multiplier = {formatCurrency(currentConfig.baseDailyRate * currentConfig.overtimeMultiplier)} OT daily
                     </AlertDescription>
                   </Alert>
                 </div>
@@ -310,7 +311,7 @@ export function PayrollPayRateDialog({
                         className="font-mono"
                       />
                       <p className="text-xs text-muted-foreground">
-                        On ${currentConfig.baseDailyRate.toFixed(2)}: ${(currentConfig.baseDailyRate * currentConfig.taxPercentage / 100).toFixed(2)}/day
+                        On {formatCurrency(currentConfig.baseDailyRate)}: {formatCurrency(currentConfig.baseDailyRate * currentConfig.taxPercentage / 100)}/day
                       </p>
                     </div>
 
@@ -325,7 +326,7 @@ export function PayrollPayRateDialog({
                         className="font-mono"
                       />
                       <p className="text-xs text-muted-foreground">
-                        On ${currentConfig.baseDailyRate.toFixed(2)}: ${(currentConfig.baseDailyRate * currentConfig.insurancePercentage / 100).toFixed(2)}/day
+                        On {formatCurrency(currentConfig.baseDailyRate)}: {formatCurrency(currentConfig.baseDailyRate * currentConfig.insurancePercentage / 100)}/day
                       </p>
                     </div>
 
@@ -340,12 +341,12 @@ export function PayrollPayRateDialog({
                         className="font-mono"
                       />
                       <p className="text-xs text-muted-foreground">
-                        On ${currentConfig.baseDailyRate.toFixed(2)}: ${(currentConfig.baseDailyRate * currentConfig.bonusPercentage / 100).toFixed(2)}/day
+                        On {formatCurrency(currentConfig.baseDailyRate)}: {formatCurrency(currentConfig.baseDailyRate * currentConfig.bonusPercentage / 100)}/day
                       </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="allowanceAmount">Standard Allowance ($)</Label>
+                      <Label htmlFor="allowanceAmount">Standard Allowance (IDR)</Label>
                       <Input
                         id="allowanceAmount"
                         type="number"
@@ -363,7 +364,7 @@ export function PayrollPayRateDialog({
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
-                      For <strong>{selectedPosition}</strong>: Total daily deductions ${((currentConfig.baseDailyRate * currentConfig.taxPercentage / 100) + (currentConfig.baseDailyRate * currentConfig.insurancePercentage / 100)).toFixed(2)}
+                      For <strong>{selectedPosition}</strong>: Total daily deductions {formatCurrency((currentConfig.baseDailyRate * currentConfig.taxPercentage / 100) + (currentConfig.baseDailyRate * currentConfig.insurancePercentage / 100))}
                     </AlertDescription>
                   </Alert>
                 </div>

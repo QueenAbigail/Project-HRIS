@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { formatCurrency, formatNumber } from '@/lib/currency'
 import { PayslipDrawer } from './payslip-drawer'
 
 interface DetailedPayrollEmployee {
@@ -230,34 +231,34 @@ export function DetailedPayrollTable() {
                     {record.daysWorked}/{record.totalDays}
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs">
-                    ${record.dailyRate.toFixed(2)}
+                    {formatCurrency(record.dailyRate)}
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs font-semibold">
-                    ${record.baseSalary.toLocaleString()}
+                    {formatCurrency(record.baseSalary)}
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs text-green-600">
                     {record.overtimeHours}h
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs text-green-600 font-semibold">
-                    +${record.overtime.toLocaleString()}
+                    +{formatCurrency(record.overtime)}
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs text-green-600">
-                    +${record.bonus.toLocaleString()}
+                    +{formatCurrency(record.bonus)}
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs text-green-600">
-                    +${record.allowances.toLocaleString()}
+                    +{formatCurrency(record.allowances)}
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs text-red-600">
-                    -${record.taxDeduction.toLocaleString()}
+                    -{formatCurrency(record.taxDeduction)}
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs text-red-600">
-                    -${record.insuranceDeduction.toLocaleString()}
+                    -{formatCurrency(record.insuranceDeduction)}
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs text-red-600">
-                    -${record.otherDeductions.toLocaleString()}
+                    -{formatCurrency(record.otherDeductions)}
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs font-bold text-green-700 bg-green-50 px-3 py-2 rounded">
-                    ${record.netPay.toLocaleString()}
+                    {formatCurrency(record.netPay)}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={statusStyles[record.status]}>

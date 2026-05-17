@@ -11,6 +11,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Download, Printer } from 'lucide-react'
+import { formatCurrency } from '@/lib/currency'
 
 interface PayslipEmployee {
   id: string
@@ -118,31 +119,31 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Base Salary</span>
-                  <span className="font-mono font-semibold">${employee.baseSalary.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-mono font-semibold">{formatCurrency(employee.baseSalary)}</span>
                 </div>
                 {employee.overtimeHours > 0 && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Overtime ({employee.overtimeHours}h @ ${employee.overtimeRate.toFixed(2)}/hr)</span>
-                    <span className="font-mono font-semibold text-green-700">+${employee.overtime.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    <span className="text-muted-foreground">Overtime ({employee.overtimeHours}h @ {formatCurrency(employee.overtimeRate)}/hr)</span>
+                    <span className="font-mono font-semibold text-green-700">+{formatCurrency(employee.overtime)}</span>
                   </div>
                 )}
                 {employee.bonus > 0 && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Bonus</span>
-                    <span className="font-mono font-semibold text-green-700">+${employee.bonus.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    <span className="font-mono font-semibold text-green-700">+{formatCurrency(employee.bonus)}</span>
                   </div>
                 )}
                 {employee.allowances > 0 && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Allowances</span>
-                    <span className="font-mono font-semibold text-green-700">+${employee.allowances.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    <span className="font-mono font-semibold text-green-700">+{formatCurrency(employee.allowances)}</span>
                   </div>
                 )}
               </div>
               <div className="mt-4 border-t-2 border-gray-300 pt-4 flex justify-between">
                 <span className="font-semibold">Total Gross</span>
                 <span className="font-mono text-lg font-bold text-green-700">
-                  ${totalGross.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  {formatCurrency(totalGross)}
                 </span>
               </div>
             </div>
@@ -154,26 +155,26 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
                 {employee.taxDeduction > 0 && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Income Tax</span>
-                    <span className="font-mono font-semibold text-red-700">-${employee.taxDeduction.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    <span className="font-mono font-semibold text-red-700">-{formatCurrency(employee.taxDeduction)}</span>
                   </div>
                 )}
                 {employee.insuranceDeduction > 0 && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Insurance</span>
-                    <span className="font-mono font-semibold text-red-700">-${employee.insuranceDeduction.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    <span className="font-mono font-semibold text-red-700">-{formatCurrency(employee.insuranceDeduction)}</span>
                   </div>
                 )}
                 {employee.otherDeductions > 0 && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Other Deductions</span>
-                    <span className="font-mono font-semibold text-red-700">-${employee.otherDeductions.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                    <span className="font-mono font-semibold text-red-700">-{formatCurrency(employee.otherDeductions)}</span>
                   </div>
                 )}
               </div>
               <div className="mt-4 border-t-2 border-gray-300 pt-4 flex justify-between">
                 <span className="font-semibold">Total Deductions</span>
                 <span className="font-mono text-lg font-bold text-red-700">
-                  -${employee.deductions.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  -{formatCurrency(employee.deductions)}
                 </span>
               </div>
             </div>
@@ -183,7 +184,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
               <div className="flex items-center justify-between">
                 <span className="text-lg font-bold">NET PAY (Take Home)</span>
                 <span className="font-mono text-2xl font-bold text-green-700">
-                  ${employee.netPay.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  {formatCurrency(employee.netPay)}
                 </span>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
