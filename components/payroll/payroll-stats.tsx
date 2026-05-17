@@ -2,25 +2,26 @@
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Wallet, TrendingUp, Clock, Users } from 'lucide-react'
+import { formatCurrency } from '@/lib/currency'
 
 const stats = [
   {
     title: 'Total Payroll',
-    value: '$542,890',
+    value: formatCurrency(542890),
     change: '+3.2%',
     icon: Wallet,
     description: 'This month',
   },
   {
     title: 'Overtime Cost',
-    value: '$78,500',
+    value: formatCurrency(78500),
     change: '+12.5%',
     icon: Clock,
     description: '1,245 hours',
   },
   {
     title: 'Avg. Salary',
-    value: '$2,198',
+    value: formatCurrency(2198),
     change: '+1.8%',
     icon: TrendingUp,
     description: 'Per employee',

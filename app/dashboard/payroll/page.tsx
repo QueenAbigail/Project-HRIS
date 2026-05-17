@@ -1,21 +1,13 @@
 import { PayrollHeader } from '@/components/payroll/payroll-header'
 import { PayrollStats } from '@/components/payroll/payroll-stats'
-import { PayrollTable } from '@/components/payroll/payroll-table'
-import { PayrollChart } from '@/components/payroll/payroll-chart'
+import { DetailedPayrollTable } from '@/components/payroll/detailed-payroll-table'
 
 export default function PayrollPage() {
   return (
     <div className="space-y-6">
       <PayrollHeader />
       <PayrollStats />
-      <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
-          <PayrollTable />
-        </div>
-        <div className="lg:col-span-2">
-          <PayrollChart />
-        </div>
-      </div>
+      <DetailedPayrollTable />
     </div>
   )
 }

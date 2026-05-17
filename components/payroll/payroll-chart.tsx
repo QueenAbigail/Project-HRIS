@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts'
+import { formatCurrency } from '@/lib/currency'
 
 const data = [
   { month: 'Oct', total: 498000 },
@@ -35,7 +36,7 @@ export function PayrollChart() {
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                tickFormatter={(value) => `Rp ${(value / 1000000).toFixed(0)}M`}
               />
               <Tooltip
                 contentStyle={{
@@ -44,7 +45,7 @@ export function PayrollChart() {
                   borderRadius: '8px',
                   color: 'var(--color-foreground)',
                 }}
-                formatter={(value: number) => [`$${value.toLocaleString()}`, 'Total']}
+                formatter={(value: number) => [formatCurrency(value), 'Total']}
                 labelStyle={{ color: 'var(--color-foreground)' }}
               />
               <Bar 
@@ -58,11 +59,11 @@ export function PayrollChart() {
         <div className="mt-4 pt-4 border-t border-border space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Year-to-date</span>
-            <span className="font-medium">$1,591,890</span>
+            <span className="font-medium">{formatCurrency(1591890)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Monthly average</span>
-            <span className="font-medium">$530,630</span>
+            <span className="font-medium">{formatCurrency(530630)}</span>
           </div>
         </div>
       </CardContent>
