@@ -35,8 +35,18 @@ interface PayrollEmployee {
   name: string
   initials: string
   department: string
+  daysWorked: number
+  totalDays: number
+  dailyRate: number
   baseSalary: number
+  overtimeHours: number
+  overtimeRate: number
   overtime: number
+  bonus: number
+  allowances: number
+  taxDeduction: number
+  insuranceDeduction: number
+  otherDeductions: number
   deductions: number
   netPay: number
 }
@@ -52,8 +62,18 @@ const employeeData: PayrollEmployee[] = [
     name: 'Michael Chen',
     initials: 'MC',
     department: 'Field Security',
+    daysWorked: 22,
+    totalDays: 22,
+    dailyRate: 127.27,
     baseSalary: 2800,
+    overtimeHours: 18,
+    overtimeRate: 25,
     overtime: 450,
+    bonus: 0,
+    allowances: 150,
+    taxDeduction: 150,
+    insuranceDeduction: 80,
+    otherDeductions: 50,
     deductions: 280,
     netPay: 2970,
   },
@@ -62,8 +82,18 @@ const employeeData: PayrollEmployee[] = [
     name: 'Sarah Williams',
     initials: 'SW',
     department: 'Surveillance',
+    daysWorked: 21,
+    totalDays: 22,
+    dailyRate: 118.18,
     baseSalary: 2600,
+    overtimeHours: 12.8,
+    overtimeRate: 25,
     overtime: 320,
+    bonus: 100,
+    allowances: 100,
+    taxDeduction: 140,
+    insuranceDeduction: 80,
+    otherDeductions: 40,
     deductions: 260,
     netPay: 2660,
   },
@@ -72,8 +102,18 @@ const employeeData: PayrollEmployee[] = [
     name: 'David Rodriguez',
     initials: 'DR',
     department: 'Patrol',
+    daysWorked: 22,
+    totalDays: 22,
+    dailyRate: 145.45,
     baseSalary: 3200,
+    overtimeHours: 23.2,
+    overtimeRate: 25,
     overtime: 580,
+    bonus: 200,
+    allowances: 200,
+    taxDeduction: 160,
+    insuranceDeduction: 100,
+    otherDeductions: 60,
     deductions: 320,
     netPay: 3460,
   },
@@ -82,8 +122,18 @@ const employeeData: PayrollEmployee[] = [
     name: 'Emily Johnson',
     initials: 'EJ',
     department: 'Administration',
+    daysWorked: 20,
+    totalDays: 22,
+    dailyRate: 159.09,
     baseSalary: 3500,
+    overtimeHours: 0,
+    overtimeRate: 0,
     overtime: 0,
+    bonus: 300,
+    allowances: 200,
+    taxDeduction: 175,
+    insuranceDeduction: 100,
+    otherDeductions: 75,
     deductions: 350,
     netPay: 3150,
   },
@@ -92,8 +142,18 @@ const employeeData: PayrollEmployee[] = [
     name: 'James Wilson',
     initials: 'JW',
     department: 'Field Security',
+    daysWorked: 20,
+    totalDays: 22,
+    dailyRate: 109.09,
     baseSalary: 2400,
+    overtimeHours: 15.2,
+    overtimeRate: 25,
     overtime: 380,
+    bonus: 50,
+    allowances: 100,
+    taxDeduction: 120,
+    insuranceDeduction: 80,
+    otherDeductions: 40,
     deductions: 240,
     netPay: 2540,
   },
@@ -102,8 +162,18 @@ const employeeData: PayrollEmployee[] = [
     name: 'Robert Taylor',
     initials: 'RT',
     department: 'Patrol',
+    daysWorked: 20,
+    totalDays: 22,
+    dailyRate: 100,
     baseSalary: 2200,
+    overtimeHours: 0,
+    overtimeRate: 0,
     overtime: 0,
+    bonus: 0,
+    allowances: 80,
+    taxDeduction: 110,
+    insuranceDeduction: 80,
+    otherDeductions: 30,
     deductions: 220,
     netPay: 1980,
   },
@@ -284,19 +354,26 @@ export function CalculatePayrollDialog({
               {/* Employee Details Table */}
               <div className="rounded-lg border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
-                  <Table>
+                  <Table className="text-xs">
                     <TableHeader>
                       <TableRow className="bg-gray-50">
-                        <TableHead>Employee</TableHead>
-                        <TableHead className="text-right">Base</TableHead>
-                        <TableHead className="text-right hidden sm:table-cell">Overtime</TableHead>
-                        <TableHead className="text-right hidden md:table-cell">Deductions</TableHead>
-                        <TableHead className="text-right">Net Pay</TableHead>
+                        <TableHead className="text-xs">Employee</TableHead>
+                        <TableHead className="text-right text-xs whitespace-nowrap">Days</TableHead>
+                        <TableHead className="text-right text-xs whitespace-nowrap">Daily Rate</TableHead>
+                        <TableHead className="text-right text-xs whitespace-nowrap">Base Pay</TableHead>
+                        <TableHead className="text-right text-xs whitespace-nowrap">OT Hours</TableHead>
+                        <TableHead className="text-right text-xs whitespace-nowrap">OT Amount</TableHead>
+                        <TableHead className="text-right text-xs whitespace-nowrap">Bonus</TableHead>
+                        <TableHead className="text-right text-xs whitespace-nowrap">Allowances</TableHead>
+                        <TableHead className="text-right text-xs whitespace-nowrap">Tax</TableHead>
+                        <TableHead className="text-right text-xs whitespace-nowrap">Insurance</TableHead>
+                        <TableHead className="text-right text-xs whitespace-nowrap">Other Ded.</TableHead>
+                        <TableHead className="text-right text-xs whitespace-nowrap">Net Pay</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredEmployees.map((emp) => (
-                        <TableRow key={emp.id}>
+                        <TableRow key={emp.id} className="hover:bg-gray-50">
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Avatar className="size-8">
@@ -305,22 +382,43 @@ export function CalculatePayrollDialog({
                                   {emp.initials}
                                 </AvatarFallback>
                               </Avatar>
-                              <div>
-                                <p className="font-medium text-sm">{emp.name}</p>
-                                <p className="text-xs text-muted-foreground hidden sm:block">{emp.department}</p>
+                              <div className="hidden sm:block">
+                                <p className="font-medium text-xs">{emp.name}</p>
+                                <p className="text-xs text-muted-foreground">{emp.department}</p>
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell className="text-right font-mono text-sm">
+                          <TableCell className="text-right font-mono text-xs">
+                            {emp.daysWorked}/{emp.totalDays}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-xs">
+                            ${emp.dailyRate.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-xs">
                             ${emp.baseSalary.toLocaleString()}
                           </TableCell>
-                          <TableCell className="text-right font-mono text-sm hidden sm:table-cell text-green-600">
+                          <TableCell className="text-right font-mono text-xs text-green-600">
+                            {emp.overtimeHours}h
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-xs text-green-600">
                             +${emp.overtime.toLocaleString()}
                           </TableCell>
-                          <TableCell className="text-right font-mono text-sm hidden md:table-cell text-red-600">
-                            -${emp.deductions.toLocaleString()}
+                          <TableCell className="text-right font-mono text-xs text-green-600">
+                            +${emp.bonus.toLocaleString()}
                           </TableCell>
-                          <TableCell className="text-right font-mono text-sm font-medium">
+                          <TableCell className="text-right font-mono text-xs text-green-600">
+                            +${emp.allowances.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-xs text-red-600">
+                            -${emp.taxDeduction.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-xs text-red-600">
+                            -${emp.insuranceDeduction.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-xs text-red-600">
+                            -${emp.otherDeductions.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-xs font-bold text-green-700 bg-green-50">
                             ${emp.netPay.toLocaleString()}
                           </TableCell>
                         </TableRow>
