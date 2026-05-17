@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Calculator, Download, Send } from 'lucide-react'
 import {
@@ -9,8 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { CalculatePayrollDialog } from './calculate-payroll-dialog'
 
 export function PayrollHeader() {
+  const [openCalculateDialog, setOpenCalculateDialog] = useState(false)
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -21,7 +25,10 @@ export function PayrollHeader() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline">
+          <Button 
+            variant="outline"
+            onClick={() => setOpenCalculateDialog(true)}
+          >
             <Calculator className="mr-2 size-4" />
             Calculate Payroll
           </Button>
@@ -60,6 +67,11 @@ export function PayrollHeader() {
           </SelectContent>
         </Select>
       </div>
+
+      <CalculatePayrollDialog 
+        open={openCalculateDialog} 
+        onOpenChange={setOpenCalculateDialog} 
+      />
     </div>
   )
 }
