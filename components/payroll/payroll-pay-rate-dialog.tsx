@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/tabs'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { CurrencyInput } from '@/components/ui/currency-input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
 import { formatCurrency } from '@/lib/currency'
@@ -235,12 +236,10 @@ export function PayrollPayRateDialog({
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="baseDailyRate">Base Daily Rate (IDR)</Label>
-                      <Input
+                      <CurrencyInput
                         id="baseDailyRate"
-                        type="number"
-                        step="0.01"
                         value={currentConfig.baseDailyRate}
-                        onChange={e => handleChange('baseDailyRate', parseFloat(e.target.value))}
+                        onValueChange={(value) => handleChange('baseDailyRate', value)}
                         className="font-mono"
                       />
                       <p className="text-xs text-muted-foreground">
@@ -347,12 +346,10 @@ export function PayrollPayRateDialog({
 
                     <div className="space-y-2">
                       <Label htmlFor="allowanceAmount">Standard Allowance (IDR)</Label>
-                      <Input
+                      <CurrencyInput
                         id="allowanceAmount"
-                        type="number"
-                        step="0.01"
                         value={currentConfig.allowanceAmount}
-                        onChange={e => handleChange('allowanceAmount', parseFloat(e.target.value))}
+                        onValueChange={(value) => handleChange('allowanceAmount', value)}
                         className="font-mono"
                       />
                       <p className="text-xs text-muted-foreground">
