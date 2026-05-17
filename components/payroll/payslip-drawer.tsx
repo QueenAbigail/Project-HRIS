@@ -2,12 +2,12 @@
 
 import { Button } from '@/components/ui/button'
 import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-} from '@/components/ui/drawer'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Download, Printer } from 'lucide-react'
@@ -55,16 +55,16 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
   const takeHomePercentage = ((employee.netPay / totalGross) * 100).toFixed(1)
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent>
-        <DrawerHeader>
-          <DrawerTitle>Pay Slip</DrawerTitle>
-          <DrawerDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Pay Slip</DialogTitle>
+          <DialogDescription>
             {period} • {employee.name}
-          </DrawerDescription>
-        </DrawerHeader>
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="mx-auto w-full max-w-2xl px-6 pb-8">
+        <div className="px-4">
           {/* Pay Slip Container */}
           <div className={`rounded-lg border-2 border-gray-300 ${statusStyle.bg}`}>
             {/* Header Section */}
@@ -204,7 +204,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
             </Button>
           </div>
         </div>
-      </DrawerContent>
-    </Drawer>
+      </DialogContent>
+    </Dialog>
   )
 }
