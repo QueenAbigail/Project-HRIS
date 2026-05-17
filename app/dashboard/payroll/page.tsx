@@ -1,6 +1,6 @@
 import { PayrollHeader } from '@/components/payroll/payroll-header'
 import { PayrollStats } from '@/components/payroll/payroll-stats'
-import { PayrollTable } from '@/components/payroll/payroll-table'
+import { DetailedPayrollTable } from '@/components/payroll/detailed-payroll-table'
 import { PayrollChart } from '@/components/payroll/payroll-chart'
 
 export default function PayrollPage() {
@@ -10,7 +10,7 @@ export default function PayrollPage() {
       <PayrollStats />
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          <PayrollTable />
+          <DetailedPayrollTable />
         </div>
         <div className="lg:col-span-2">
           <PayrollChart />
