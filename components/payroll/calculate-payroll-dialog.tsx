@@ -18,21 +18,96 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { AlertCircle, CheckCircle2, Send } from 'lucide-react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { AlertCircle, CheckCircle2, Download, Send } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
-interface PayrollSummary {
-  employeeCount: number
-  totalGross: number
-  totalDeductions: number
-  totalNet: number
-  overtimeIncluded: boolean
+interface PayrollEmployee {
+  id: string
+  name: string
+  initials: string
+  department: string
+  baseSalary: number
+  overtime: number
+  deductions: number
+  netPay: number
 }
 
 interface CalculatePayrollDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
+
+const employeeData: PayrollEmployee[] = [
+  {
+    id: 'EMP001',
+    name: 'Michael Chen',
+    initials: 'MC',
+    department: 'Field Security',
+    baseSalary: 2800,
+    overtime: 450,
+    deductions: 280,
+    netPay: 2970,
+  },
+  {
+    id: 'EMP002',
+    name: 'Sarah Williams',
+    initials: 'SW',
+    department: 'Surveillance',
+    baseSalary: 2600,
+    overtime: 320,
+    deductions: 260,
+    netPay: 2660,
+  },
+  {
+    id: 'EMP003',
+    name: 'David Rodriguez',
+    initials: 'DR',
+    department: 'Patrol',
+    baseSalary: 3200,
+    overtime: 580,
+    deductions: 320,
+    netPay: 3460,
+  },
+  {
+    id: 'EMP004',
+    name: 'Emily Johnson',
+    initials: 'EJ',
+    department: 'Administration',
+    baseSalary: 3500,
+    overtime: 0,
+    deductions: 350,
+    netPay: 3150,
+  },
+  {
+    id: 'EMP005',
+    name: 'James Wilson',
+    initials: 'JW',
+    department: 'Field Security',
+    baseSalary: 2400,
+    overtime: 380,
+    deductions: 240,
+    netPay: 2540,
+  },
+  {
+    id: 'EMP006',
+    name: 'Robert Taylor',
+    initials: 'RT',
+    department: 'Patrol',
+    baseSalary: 2200,
+    overtime: 0,
+    deductions: 220,
+    netPay: 1980,
+  },
+]
 
 export function CalculatePayrollDialog({
   open,
@@ -41,70 +116,84 @@ export function CalculatePayrollDialog({
   const [month, setMonth] = useState('march-2026')
   const [department, setDepartment] = useState('all')
   const [includeOvertime, setIncludeOvertime] = useState('true')
-  const [status, setStatus] = useState<'idle' | 'calculating' | 'success' | 'error'>('idle')
-  const [message, setMessage] = useState('')
-  const [payrollSummary, setPayrollSummary] = useState<PayrollSummary | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isCalculated, setIsCalculated] = useState(false)
+  const [filteredEmployees, setFilteredEmployees] = useState<PayrollEmployee[]>([])
 
-  const handleCalculate = async () => {
-    setStatus('calculating')
-    setMessage('')
-
-    // Simulate calculation
+  const calculatePayroll = () => {
+    setIsLoading(true)
+    
+    // Simulate calculation delay
     setTimeout(() => {
-      const summary: PayrollSummary = {
-        employeeCount: department === 'all' ? 45 : 12,
-        totalGross: department === 'all' ? 185500 : 48200,
-        totalDeductions: department === 'all' ? 38420 : 9850,
-        totalNet: department === 'all' ? 147080 : 38350,
-        overtimeIncluded: includeOvertime === 'true',
+      let filtered = employeeData
+
+      // Filter by department
+      if (department !== 'all') {
+        filtered = filtered.filter(emp => 
+          emp.department.toLowerCase().includes(department.toLowerCase())
+        )
       }
-      setPayrollSummary(summary)
-      setStatus('success')
-      setMessage(`Payroll calculated successfully for ${month} (${department === 'all' ? 'All Departments' : department}).`)
-    }, 2000)
+
+      // Filter by overtime if needed
+      if (includeOvertime === 'false') {
+        filtered = filtered.map(emp => ({
+          ...emp,
+          overtime: 0,
+          netPay: emp.baseSalary + emp.deductions,
+        }))
+      }
+
+      setFilteredEmployees(filtered)
+      setIsCalculated(true)
+      setIsLoading(false)
+    }, 1500)
   }
 
-  const handleProcessPayment = () => {
-    // Handle payment processing
-    console.log('[v0] Processing payment:', payrollSummary)
-    handleReset()
-  }
-
-  const handleReset = () => {
+  const handleClose = () => {
+    setIsCalculated(false)
+    setFilteredEmployees([])
     setMonth('march-2026')
     setDepartment('all')
     setIncludeOvertime('true')
-    setStatus('idle')
-    setMessage('')
-    setPayrollSummary(null)
     onOpenChange(false)
   }
 
+  const calculateTotals = () => {
+    return {
+      totalGross: filteredEmployees.reduce((sum, emp) => sum + emp.baseSalary + emp.overtime, 0),
+      totalDeductions: filteredEmployees.reduce((sum, emp) => sum + emp.deductions, 0),
+      totalNet: filteredEmployees.reduce((sum, emp) => sum + emp.netPay, 0),
+    }
+  }
+
+  const totals = calculateTotals()
+
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {status === 'success' ? 'Payroll Summary' : 'Calculate Payroll'}
+            {isCalculated ? 'Payroll Preview' : 'Calculate Payroll'}
           </DialogTitle>
           <DialogDescription>
-            {status === 'success' 
-              ? 'Review the payroll calculation and process payment'
-              : 'Select the period and department to calculate payroll'
+            {isCalculated 
+              ? `Review payroll data for ${month.replace('-', ' ').toUpperCase()}`
+              : 'Select period and filters to preview payroll'
             }
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Input Form - Only show in idle state */}
-          {status !== 'success' && (
-            <>
+          {/* Form - Show only when not calculated */}
+          {!isCalculated && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {/* Month Selection */}
               <div className="space-y-2">
                 <Label htmlFor="month">
                   Period <span className="text-red-500">*</span>
                 </Label>
-                <Select value={month} onValueChange={setMonth} disabled={status === 'calculating'}>
+                <Select value={month} onValueChange={setMonth} disabled={isLoading}>
                   <SelectTrigger id="month">
                     <SelectValue placeholder="Select month" />
                   </SelectTrigger>
@@ -120,7 +209,7 @@ export function CalculatePayrollDialog({
               {/* Department Selection */}
               <div className="space-y-2">
                 <Label htmlFor="department">Department</Label>
-                <Select value={department} onValueChange={setDepartment} disabled={status === 'calculating'}>
+                <Select value={department} onValueChange={setDepartment} disabled={isLoading}>
                   <SelectTrigger id="department">
                     <SelectValue placeholder="All Departments" />
                   </SelectTrigger>
@@ -137,7 +226,7 @@ export function CalculatePayrollDialog({
               {/* Include Overtime */}
               <div className="space-y-2">
                 <Label htmlFor="overtime">Include Overtime</Label>
-                <Select value={includeOvertime} onValueChange={setIncludeOvertime} disabled={status === 'calculating'}>
+                <Select value={includeOvertime} onValueChange={setIncludeOvertime} disabled={isLoading}>
                   <SelectTrigger id="overtime">
                     <SelectValue />
                   </SelectTrigger>
@@ -147,11 +236,11 @@ export function CalculatePayrollDialog({
                   </SelectContent>
                 </Select>
               </div>
-            </>
+            </div>
           )}
 
-          {/* Status Messages */}
-          {status === 'calculating' && (
+          {/* Loading State */}
+          {isLoading && (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
@@ -160,97 +249,119 @@ export function CalculatePayrollDialog({
             </Alert>
           )}
 
-          {status === 'success' && payrollSummary && (
+          {/* Payroll Summary */}
+          {isCalculated && (
             <div className="space-y-4">
               <Alert className="bg-green-500/10 border-green-500/20">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <AlertDescription className="text-green-700">
-                  {message}
+                  Payroll calculated successfully for {filteredEmployees.length} employee{filteredEmployees.length !== 1 ? 's' : ''} in {month.replace('-', ' ').toUpperCase()}
                 </AlertDescription>
               </Alert>
 
-              {/* Payroll Summary */}
-              <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Period:</span>
-                    <span className="font-medium">{month.replace('-', ' ').toUpperCase()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Department:</span>
-                    <span className="font-medium">
-                      {department === 'all' ? 'All Departments' : department.charAt(0).toUpperCase() + department.slice(1)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Employees:</span>
-                    <span className="font-medium">{payrollSummary.employeeCount}</span>
-                  </div>
-                  {payrollSummary.overtimeIncluded && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Overtime:</span>
-                      <span className="font-medium">Included</span>
-                    </div>
-                  )}
+              {/* Summary Stats */}
+              <div className="grid grid-cols-3 gap-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Total Gross</p>
+                  <p className="text-lg font-bold">
+                    ${totals.totalGross.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </p>
                 </div>
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Deductions</p>
+                  <p className="text-lg font-bold text-red-600">
+                    -${totals.totalDeductions.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Total Net</p>
+                  <p className="text-lg font-bold text-green-600">
+                    ${totals.totalNet.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
 
-                <div className="border-t border-gray-300 pt-3">
-                  <div className="flex justify-between py-2">
-                    <span className="text-muted-foreground">Total Gross:</span>
-                    <span className="font-medium">
-                      ${payrollSummary.totalGross.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-2">
-                    <span className="text-muted-foreground">Deductions:</span>
-                    <span className="font-medium text-red-600">
-                      -${payrollSummary.totalDeductions.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-t border-gray-300 py-2 font-semibold">
-                    <span>Total Net:</span>
-                    <span className="text-green-600">
-                      ${payrollSummary.totalNet.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
+              {/* Employee Details Table */}
+              <div className="rounded-lg border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-50">
+                        <TableHead>Employee</TableHead>
+                        <TableHead className="text-right">Base</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">Overtime</TableHead>
+                        <TableHead className="text-right hidden md:table-cell">Deductions</TableHead>
+                        <TableHead className="text-right">Net Pay</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredEmployees.map((emp) => (
+                        <TableRow key={emp.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="size-8">
+                                <AvatarImage src={`/avatars/${emp.id}.jpg`} alt={emp.name} />
+                                <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                                  {emp.initials}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium text-sm">{emp.name}</p>
+                                <p className="text-xs text-muted-foreground hidden sm:block">{emp.department}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm">
+                            ${emp.baseSalary.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm hidden sm:table-cell text-green-600">
+                            +${emp.overtime.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm hidden md:table-cell text-red-600">
+                            -${emp.deductions.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm font-medium">
+                            ${emp.netPay.toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
             </div>
-          )}
-
-          {status === 'error' && (
-            <Alert className="bg-red-500/10 border-red-500/20">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-700">
-                {message || 'An error occurred while calculating payroll.'}
-              </AlertDescription>
-            </Alert>
           )}
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button
             variant="outline"
-            onClick={handleReset}
-            disabled={status === 'calculating'}
+            onClick={handleClose}
+            disabled={isLoading}
           >
-            {status === 'success' ? 'Close' : 'Cancel'}
+            {isCalculated ? 'Close' : 'Cancel'}
           </Button>
-          {status === 'success' ? (
+          {!isCalculated ? (
             <Button
-              onClick={handleProcessPayment}
-              className="bg-green-600 hover:bg-green-700"
+              onClick={calculatePayroll}
+              disabled={isLoading}
             >
-              <Send className="mr-2 size-4" />
-              Process Payment
+              {isLoading ? 'Calculating...' : 'Calculate Payroll'}
             </Button>
           ) : (
-            <Button
-              onClick={handleCalculate}
-              disabled={status === 'calculating'}
-            >
-              {status === 'calculating' ? 'Calculating...' : 'Calculate Payroll'}
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setIsCalculated(false)}
+              >
+                <Download className="mr-2 size-4" />
+                Export
+              </Button>
+              <Button className="bg-green-600 hover:bg-green-700">
+                <Send className="mr-2 size-4" />
+                Process Payment
+              </Button>
+            </>
           )}
         </DialogFooter>
       </DialogContent>
