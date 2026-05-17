@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Download, Send, TrendingUp } from 'lucide-react'
+import { Send, TrendingUp } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -43,13 +43,9 @@ export function PayrollHeader() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline">
-            <Download className="mr-2 size-4" />
-            Export
-          </Button>
           <Button className="bg-green-600 hover:bg-green-700">
             <Send className="mr-2 size-4" />
-            Process Payment
+            Payroll Pay Rate
           </Button>
         </div>
       </div>
