@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -11,6 +12,7 @@ import {
 } from '@/components/ui/table'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { PayslipDrawer } from './payslip-drawer'
 
 interface DetailedPayrollEmployee {
   id: string
@@ -170,7 +172,15 @@ const statusStyles: Record<string, string> = {
 }
 
 export function DetailedPayrollTable() {
+  const [selectedEmployee, setSelectedEmployee] = useState<DetailedPayrollEmployee | null>(null)
+  const [openPayslip, setOpenPayslip] = useState(false)
+
+  const handleEmployeeClick = (employee: DetailedPayrollEmployee) => {
+    setSelectedEmployee(employee)
+    setOpenPayslip(true)
+  }
   return (
+    <>
     <Card className="bg-card border-border">
       <CardHeader>
         <CardTitle>Payroll Details</CardTitle>
@@ -197,7 +207,11 @@ export function DetailedPayrollTable() {
             </TableHeader>
             <TableBody>
               {detailedPayrollData.map((record) => (
-                <TableRow key={record.id} className="hover:bg-gray-50">
+                <TableRow 
+                  key={record.id} 
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={() => handleEmployeeClick(record)}
+                >
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Avatar className="size-8">
@@ -257,5 +271,13 @@ export function DetailedPayrollTable() {
         </div>
       </CardContent>
     </Card>
+
+    <PayslipDrawer 
+      open={openPayslip}
+      onOpenChange={setOpenPayslip}
+      employee={selectedEmployee}
+      period="March 2026"
+    />
+    </>
   )
 }
