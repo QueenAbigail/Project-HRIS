@@ -10,28 +10,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { AlertCircle, CheckCircle2, Save } from 'lucide-react'
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AlertCircle, CheckCircle2 } from 'lucide-react'
 
-interface PayRateEmployee {
-  id: string
-  name: string
-  initials: string
-  department: string
-  currentDailyRate: number
-  newDailyRate: number | null
-  baseSalary: number
+interface PayrollConfig {
+  baseDailyRate: number
+  overtimeMultiplier: number
+  taxPercentage: number
+  insurancePercentage: number
+  otherDeductionsPercentage: number
+  bonusPercentage: number
+  allowanceAmount: number
 }
 
 interface PayrollPayRateDialogProps {
@@ -39,226 +36,268 @@ interface PayrollPayRateDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-const payRateData: PayRateEmployee[] = [
-  {
-    id: 'EMP001',
-    name: 'Michael Chen',
-    initials: 'MC',
-    department: 'Field Security',
-    currentDailyRate: 127.27,
-    newDailyRate: null,
-    baseSalary: 2800,
-  },
-  {
-    id: 'EMP002',
-    name: 'Sarah Williams',
-    initials: 'SW',
-    department: 'Surveillance',
-    currentDailyRate: 118.18,
-    newDailyRate: null,
-    baseSalary: 2600,
-  },
-  {
-    id: 'EMP003',
-    name: 'David Rodriguez',
-    initials: 'DR',
-    department: 'Patrol',
-    currentDailyRate: 145.45,
-    newDailyRate: null,
-    baseSalary: 3200,
-  },
-  {
-    id: 'EMP004',
-    name: 'Emily Johnson',
-    initials: 'EJ',
-    department: 'Administration',
-    currentDailyRate: 159.09,
-    newDailyRate: null,
-    baseSalary: 3500,
-  },
-  {
-    id: 'EMP005',
-    name: 'James Wilson',
-    initials: 'JW',
-    department: 'Field Security',
-    currentDailyRate: 109.09,
-    newDailyRate: null,
-    baseSalary: 2400,
-  },
-  {
-    id: 'EMP006',
-    name: 'Robert Taylor',
-    initials: 'RT',
-    department: 'Patrol',
-    currentDailyRate: 100,
-    newDailyRate: null,
-    baseSalary: 2200,
-  },
-]
-
 export function PayrollPayRateDialog({
   open,
   onOpenChange,
 }: PayrollPayRateDialogProps) {
-  const [employees, setEmployees] = useState<PayRateEmployee[]>(payRateData)
-  const [isSaving, setIsSaving] = useState(false)
-  const [saveMessage, setSaveMessage] = useState('')
+  const [config, setConfig] = useState<PayrollConfig>({
+    baseDailyRate: 127.27,
+    overtimeMultiplier: 1.5,
+    taxPercentage: 5,
+    insurancePercentage: 3,
+    otherDeductionsPercentage: 2,
+    bonusPercentage: 3,
+    allowanceAmount: 150,
+  })
 
-  const handleRateChange = (id: string, newRate: string) => {
-    const rate = newRate === '' ? null : parseFloat(newRate)
-    setEmployees(
-      employees.map((emp) =>
-        emp.id === id
-          ? { ...emp, newDailyRate: rate }
-          : emp
-      )
-    )
+  const [originalConfig, setOriginalConfig] = useState<PayrollConfig>(config)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
+
+  const handleChange = (key: keyof PayrollConfig, value: string) => {
+    const numValue = parseFloat(value) || 0
+    const newConfig = { ...config, [key]: numValue }
+    setConfig(newConfig)
+    setHasChanges(JSON.stringify(newConfig) !== JSON.stringify(originalConfig))
+    setSaveSuccess(false)
   }
 
-  const handleSaveChanges = () => {
+  const handleSave = async () => {
     setIsSaving(true)
-    setSaveMessage('')
-
+    
     // Simulate API call
     setTimeout(() => {
-      const changedRates = employees.filter((emp) => emp.newDailyRate !== null)
-      if (changedRates.length > 0) {
-        console.log('[v0] Pay rates updated:', changedRates)
-        setSaveMessage(`Successfully updated ${changedRates.length} employee pay rate(s). Payroll will be recalculated.`)
-        
-        // Reset the new rates after saving
-        setEmployees(
-          employees.map((emp) => ({
-            ...emp,
-            currentDailyRate: emp.newDailyRate !== null ? emp.newDailyRate : emp.currentDailyRate,
-            newDailyRate: null,
-          }))
-        )
-      } else {
-        setSaveMessage('No changes to save.')
-      }
+      setOriginalConfig(config)
+      setHasChanges(false)
+      setSaveSuccess(true)
       setIsSaving(false)
-    }, 1000)
+      
+      // Log for debugging
+      console.log('[v0] Payroll config saved:', config)
+      
+      // Auto-close after 2 seconds
+      setTimeout(() => {
+        onOpenChange(false)
+        setSaveSuccess(false)
+      }, 2000)
+    }, 1500)
   }
 
   const handleCancel = () => {
-    setEmployees(
-      employees.map((emp) => ({
-        ...emp,
-        newDailyRate: null,
-      }))
-    )
-    setSaveMessage('')
+    setConfig(originalConfig)
+    setHasChanges(false)
+    setSaveSuccess(false)
     onOpenChange(false)
   }
 
-  const hasChanges = employees.some((emp) => emp.newDailyRate !== null)
-  const changedCount = employees.filter((emp) => emp.newDailyRate !== null).length
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Payroll Pay Rate Management</DialogTitle>
+          <DialogTitle>Payroll Configuration</DialogTitle>
           <DialogDescription>
-            Update daily pay rates for employees. Changes will trigger automatic payroll recalculation.
+            Manage global payroll settings including tax rates, multipliers, and deductions
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {saveMessage && (
-            <Alert className={saveMessage.includes('Successfully') ? 'bg-green-500/10 border-green-500/20' : 'bg-blue-500/10 border-blue-500/20'}>
-              {saveMessage.includes('Successfully') ? (
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-blue-600" />
-              )}
-              <AlertDescription className={saveMessage.includes('Successfully') ? 'text-green-700' : 'text-blue-700'}>
-                {saveMessage}
-              </AlertDescription>
-            </Alert>
-          )}
+        <Tabs defaultValue="rates" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="rates">Rates & Multipliers</TabsTrigger>
+            <TabsTrigger value="deductions">Deductions & Allowances</TabsTrigger>
+          </TabsList>
 
-          {/* Pay Rate Table */}
-          <div className="rounded-lg border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table className="text-sm">
-                <TableHeader>
-                  <TableRow className="bg-gray-50">
-                    <TableHead>Employee</TableHead>
-                    <TableHead className="text-right">Department</TableHead>
-                    <TableHead className="text-right">Current Daily Rate</TableHead>
-                    <TableHead className="text-right">New Daily Rate</TableHead>
-                    <TableHead className="text-center">Change</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {employees.map((emp) => {
-                    const change = emp.newDailyRate !== null
-                      ? emp.newDailyRate - emp.currentDailyRate
-                      : null
-                    const percentChange = change !== null
-                      ? ((change / emp.currentDailyRate) * 100).toFixed(2)
-                      : null
+          {/* Rates & Multipliers Tab */}
+          <TabsContent value="rates" className="space-y-4 py-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="baseDailyRate">
+                  Base Daily Rate ($)
+                  <span className="text-xs text-muted-foreground ml-1">
+                    Standard daily pay amount
+                  </span>
+                </Label>
+                <Input
+                  id="baseDailyRate"
+                  type="number"
+                  step="0.01"
+                  value={config.baseDailyRate}
+                  onChange={(e) => handleChange('baseDailyRate', e.target.value)}
+                  placeholder="0.00"
+                  disabled={isSaving}
+                />
+              </div>
 
-                    return (
-                      <TableRow key={emp.id} className="hover:bg-gray-50">
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="size-8">
-                              <AvatarImage src={`/avatars/${emp.id}.jpg`} alt={emp.name} />
-                              <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                                {emp.initials}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-medium text-sm">{emp.name}</p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right text-sm text-muted-foreground">
-                          {emp.department}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm font-semibold">
-                          ${emp.currentDailyRate.toFixed(2)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={emp.newDailyRate !== null ? emp.newDailyRate : ''}
-                            onChange={(e) => handleRateChange(emp.id, e.target.value)}
-                            placeholder="Enter new rate"
-                            className="w-28 text-right font-mono"
-                            disabled={isSaving}
-                          />
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {change !== null && (
-                            <span className={`text-sm font-semibold ${
-                              change >= 0 ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              {change >= 0 ? '+' : ''}{change.toFixed(2)} ({percentChange}%)
-                            </span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
+              <div className="space-y-2">
+                <Label htmlFor="overtimeMultiplier">
+                  Overtime Multiplier (x)
+                  <span className="text-xs text-muted-foreground ml-1">
+                    Multiplier for overtime hours
+                  </span>
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="overtimeMultiplier"
+                    type="number"
+                    step="0.1"
+                    value={config.overtimeMultiplier}
+                    onChange={(e) => handleChange('overtimeMultiplier', e.target.value)}
+                    placeholder="0.0"
+                    disabled={isSaving}
+                    className="flex-1"
+                  />
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    (e.g., 1.5x = 50% extra)
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-3 rounded-md">
+                <p className="text-xs text-muted-foreground">
+                  <strong>Example:</strong> If base rate is ${config.baseDailyRate.toFixed(2)} and overtime multiplier is {config.overtimeMultiplier}x, 
+                  overtime pay per hour would be ${(config.baseDailyRate / 8 * config.overtimeMultiplier).toFixed(2)}
+                </p>
+              </div>
             </div>
-          </div>
+          </TabsContent>
 
-          {hasChanges && (
-            <Alert className="bg-amber-500/10 border-amber-500/20">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-amber-700">
-                {changedCount} employee pay rate{changedCount !== 1 ? 's' : ''} will be updated. Payroll will be automatically recalculated.
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
+          {/* Deductions & Allowances Tab */}
+          <TabsContent value="deductions" className="space-y-4 py-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="taxPercentage">
+                  Tax Rate (%)
+                  <span className="text-xs text-muted-foreground ml-1">
+                    Percentage of gross pay
+                  </span>
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="taxPercentage"
+                    type="number"
+                    step="0.1"
+                    value={config.taxPercentage}
+                    onChange={(e) => handleChange('taxPercentage', e.target.value)}
+                    placeholder="0.0"
+                    disabled={isSaving}
+                    className="flex-1"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="insurancePercentage">
+                  Insurance Deduction (%)
+                  <span className="text-xs text-muted-foreground ml-1">
+                    Percentage of gross pay
+                  </span>
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="insurancePercentage"
+                    type="number"
+                    step="0.1"
+                    value={config.insurancePercentage}
+                    onChange={(e) => handleChange('insurancePercentage', e.target.value)}
+                    placeholder="0.0"
+                    disabled={isSaving}
+                    className="flex-1"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="otherDeductionsPercentage">
+                  Other Deductions (%)
+                  <span className="text-xs text-muted-foreground ml-1">
+                    Percentage of gross pay
+                  </span>
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="otherDeductionsPercentage"
+                    type="number"
+                    step="0.1"
+                    value={config.otherDeductionsPercentage}
+                    onChange={(e) => handleChange('otherDeductionsPercentage', e.target.value)}
+                    placeholder="0.0"
+                    disabled={isSaving}
+                    className="flex-1"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="bonusPercentage">
+                  Bonus Rate (%)
+                  <span className="text-xs text-muted-foreground ml-1">
+                    Percentage bonus on gross pay
+                  </span>
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="bonusPercentage"
+                    type="number"
+                    step="0.1"
+                    value={config.bonusPercentage}
+                    onChange={(e) => handleChange('bonusPercentage', e.target.value)}
+                    placeholder="0.0"
+                    disabled={isSaving}
+                    className="flex-1"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="allowanceAmount">
+                  Standard Allowance ($)
+                  <span className="text-xs text-muted-foreground ml-1">
+                    Fixed allowance amount per employee
+                  </span>
+                </Label>
+                <Input
+                  id="allowanceAmount"
+                  type="number"
+                  step="0.01"
+                  value={config.allowanceAmount}
+                  onChange={(e) => handleChange('allowanceAmount', e.target.value)}
+                  placeholder="0.00"
+                  disabled={isSaving}
+                />
+              </div>
+
+              <div className="bg-gray-50 p-3 rounded-md">
+                <p className="text-xs text-muted-foreground">
+                  <strong>Deduction Summary:</strong> Tax ({config.taxPercentage}%) + Insurance ({config.insurancePercentage}%) + Other ({config.otherDeductionsPercentage}%) = {(config.taxPercentage + config.insurancePercentage + config.otherDeductionsPercentage).toFixed(1)}% total
+                </p>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Change Alert */}
+        {hasChanges && (
+          <Alert className="bg-blue-500/10 border-blue-500/20">
+            <AlertCircle className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-700">
+              Changes will trigger automatic payroll recalculation for the next period
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Success Alert */}
+        {saveSuccess && (
+          <Alert className="bg-green-500/10 border-green-500/20">
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-700">
+              Payroll configuration saved successfully
+            </AlertDescription>
+          </Alert>
+        )}
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button
@@ -269,12 +308,11 @@ export function PayrollPayRateDialog({
             Cancel
           </Button>
           <Button
-            onClick={handleSaveChanges}
+            onClick={handleSave}
             disabled={!hasChanges || isSaving}
             className="bg-green-600 hover:bg-green-700"
           >
-            <Save className="mr-2 size-4" />
-            {isSaving ? 'Saving...' : 'Save Changes'}
+            {isSaving ? 'Saving...' : 'Save Configuration'}
           </Button>
         </DialogFooter>
       </DialogContent>
