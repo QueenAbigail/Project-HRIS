@@ -19,9 +19,11 @@ import {
 } from '@/components/ui/drawer'
 import { Badge } from '@/components/ui/badge'
 import { PayrollChart } from './payroll-chart'
+import { PayrollPayRateDialog } from './payroll-pay-rate-dialog'
 
 export function PayrollHeader() {
   const [openTrendDrawer, setOpenTrendDrawer] = useState(false)
+  const [openPayRateDialog, setOpenPayRateDialog] = useState(false)
   // In production, this would come from your database/backend
   const lastCalculatedTime = new Date(2026, 2, 17, 0, 0, 0).toLocaleDateString('en-US', { 
     month: 'short', 
@@ -43,7 +45,10 @@ export function PayrollHeader() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button className="bg-green-600 hover:bg-green-700">
+          <Button 
+            onClick={() => setOpenPayRateDialog(true)}
+            className="bg-green-600 hover:bg-green-700"
+          >
             <Send className="mr-2 size-4" />
             Payroll Pay Rate
           </Button>
@@ -98,6 +103,11 @@ export function PayrollHeader() {
           </div>
         </DrawerContent>
       </Drawer>
+
+      <PayrollPayRateDialog 
+        open={openPayRateDialog}
+        onOpenChange={setOpenPayRateDialog}
+      />
     </div>
   )
 }
