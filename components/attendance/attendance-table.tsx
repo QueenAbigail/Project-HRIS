@@ -24,6 +24,7 @@ import {
 import { getEmployeesWithAttendance, formatTime, getLateCheckInSeverity, EmployeeWithAttendance, getBKOAssignments } from '@/lib/data'
 import { Clock, AlertTriangle, MapPin, Camera, Navigation, ExternalLink, Shield } from 'lucide-react'
 import type { GpsCoordinates } from '@/lib/constants'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 
 const statusStyles: Record<string, string> = {
   'present': 'bg-success/10 text-success border-success/20',
@@ -110,10 +111,34 @@ export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
                     {statusLabels[selectedEmployee.status]}
                   </Badge>
                   {isSelectedEmployeeBKO && (
-                    <Badge variant="outline" className={bkoStyles}>
-                      <Shield className="size-3 mr-1" />
-                      BKO
-                    </Badge>
+                    <HoverCard>
+                      <HoverCardTrigger asChild>
+                        <Badge variant="outline" className={`${bkoStyles} cursor-pointer`}>
+                          <Shield className="size-3 mr-1" />
+                          BKO
+                        </Badge>
+                      </HoverCardTrigger>
+                      <HoverCardContent className="w-64" align="end">
+                        <div className="flex gap-3">
+                          <div className="flex-1">
+                            <h4 className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2">Backup Replacement</h4>
+                            <div className="space-y-2 text-xs">
+                              <div>
+                                <p className="text-muted-foreground">Currently working as</p>
+                                <p className="font-medium">{selectedBKOInfo.backupEmployeeName}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Covering for</p>
+                                <p className="font-medium text-amber-600 dark:text-amber-400">{selectedBKOInfo.originalEmployeeName}</p>
+                              </div>
+                              <div className="pt-2 border-t border-muted">
+                                <p className="text-muted-foreground">Status: On Leave</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </HoverCardContent>
+                    </HoverCard>
                   )}
                 </div>
               </div>
@@ -459,10 +484,34 @@ function AttendanceTableContent({ records, bkoAssignments = [], showSchedule, sh
                       {statusLabels[record.status]}
                     </Badge>
                     {bkoInfo && (
-                      <Badge variant="outline" className={bkoStyles} title={`Covering for ${bkoInfo.originalEmployeeName}`}>
-                        <Shield className="size-3 mr-1" />
-                        BKO
-                      </Badge>
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <Badge variant="outline" className={`${bkoStyles} cursor-pointer`}>
+                            <Shield className="size-3 mr-1" />
+                            BKO
+                          </Badge>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-64" align="start">
+                          <div className="flex gap-3">
+                            <div className="flex-1">
+                              <h4 className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2">Backup Replacement</h4>
+                              <div className="space-y-2 text-xs">
+                                <div>
+                                  <p className="text-muted-foreground">Currently working as</p>
+                                  <p className="font-medium">{bkoInfo.backupEmployeeName}</p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">Covering for</p>
+                                  <p className="font-medium text-amber-600 dark:text-amber-400">{bkoInfo.originalEmployeeName}</p>
+                                </div>
+                                <div className="pt-2 border-t border-muted">
+                                  <p className="text-muted-foreground">Status: On Leave</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </HoverCardContent>
+                      </HoverCard>
                     )}
                   </div>
                 </TableCell>
