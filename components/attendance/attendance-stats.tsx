@@ -1,8 +1,8 @@
 'use client'
 
 import { Card, CardContent } from '@/components/ui/card'
-import { UserCheck, UserX, Clock, AlertTriangle, CalendarOff } from 'lucide-react'
-import { getOverallAttendanceStats } from '@/lib/data'
+import { UserCheck, UserX, Clock, AlertTriangle, CalendarOff, Shield } from 'lucide-react'
+import { getOverallAttendanceStats, getTotalBKOAssignments } from '@/lib/data'
 
 interface AttendanceStatsProps {
   siteId?: string
@@ -10,6 +10,7 @@ interface AttendanceStatsProps {
 
 export function AttendanceStats({ siteId = 'all' }: AttendanceStatsProps) {
   const overallStats = getOverallAttendanceStats()
+  const bkoAssignments = getTotalBKOAssignments()
 
   const stats = [
     {
@@ -45,6 +46,16 @@ export function AttendanceStats({ siteId = 'all' }: AttendanceStatsProps) {
       icon: AlertTriangle,
       color: 'text-chart-2',
       bgColor: 'bg-chart-2/10',
+    },
+    {
+      title: 'BKO (Coverage)',
+      value: bkoAssignments,
+      percentage: `${Math.round((bkoAssignments / overallStats.totalEmployees) * 100)}%`,
+      subtext: bkoAssignments > 0 ? `Backup replacements active` : 'No replacements',
+      icon: Shield,
+      color: 'text-blue-600 dark:text-blue-400',
+      bgColor: 'bg-blue-500/10',
+      highlight: bkoAssignments > 0,
     },
     {
       title: 'Scheduled Off',

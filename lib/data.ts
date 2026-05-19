@@ -344,3 +344,44 @@ export function getLateCheckInSeverity(lateMinutes: number): 'minor' | 'moderate
   if (lateMinutes <= 30) return 'moderate'
   return 'severe'
 }
+
+// Get all BKO (Backup/Replacement) assignments for today
+export function getBKOAssignments(): (AttendanceRecord & { backupEmployeeName: string; originalEmployeeName: string; backupInitials: string; originalInitials: string })[] {
+  const state = useSchedulesStore.getState()
+  return state.todayAttendance
+    .filter(record => record.isBackup && record.backupFor)
+    .map(record => {
+      const backupSchedule = state.employeeSchedules.find(s => s.employeeId === record.employeeId)
+      const originalSchedule = state.employeeSchedules.find(s => s.employeeId === record.backupFor)
+      
+      return {
+        ...record,
+        backupEmployeeName: backupSchedule?.employeeName || 'Unknown',
+        originalEmployeeName: originalSchedule?.employeeName || 'Unknown',
+        backupInitials: backupSchedule?.initials || '??',
+        originalInitials: originalSchedule?.initials || '??',
+      }
+    })
+}
+
+// Get BKO count by location
+export function getBKOCountByLocation(date: Date = new Date()): Record<LocationId, number> {
+  const state = useSchedulesStore.getState()
+  const result: Record<LocationId, number> = {
+    'HO': 0, 'PT-DT': 0, 'RM': 0, 'MB-CT': 0, 'CC-N': 0, 'IP-W': 0
+  }
+  
+  state.todayAttendance.forEach(record => {
+    if (record.isBackup && record.backupFor) {
+      result[record.locationId]++
+    }
+  })
+  
+  return result
+}
+
+// Get total BKO assignments for today
+export function getTotalBKOAssignments(): number {
+  const state = useSchedulesStore.getState()
+  return state.todayAttendance.filter(record => record.isBackup && record.backupFor).length
+}

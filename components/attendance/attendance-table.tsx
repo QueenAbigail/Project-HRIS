@@ -21,8 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { getEmployeesWithAttendance, formatTime, getLateCheckInSeverity, EmployeeWithAttendance } from '@/lib/data'
-import { Clock, AlertTriangle, MapPin, Camera, Navigation, ExternalLink } from 'lucide-react'
+import { getEmployeesWithAttendance, formatTime, getLateCheckInSeverity, EmployeeWithAttendance, getBKOAssignments } from '@/lib/data'
+import { Clock, AlertTriangle, MapPin, Camera, Navigation, ExternalLink, Shield } from 'lucide-react'
 import type { GpsCoordinates } from '@/lib/constants'
 
 const statusStyles: Record<string, string> = {
@@ -49,8 +49,11 @@ const severityStyles = {
   severe: 'text-destructive',
 }
 
+const bkoStyles = 'bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400'
+
 export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
   const employees = getEmployeesWithAttendance()
+  const bkoAssignments = getBKOAssignments()
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeWithAttendance | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const allEmployees = employees
@@ -58,6 +61,10 @@ export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
   const presentEmployees = employees.filter(e => e.status === 'present')
   const absentEmployees = employees.filter(e => e.status === 'absent' || e.status === 'not-checked-in')
   const dayOffEmployees = employees.filter(e => e.status === 'day-off')
+  
+  // Get BKO info for selected employee if any
+  const selectedBKOInfo = selectedEmployee ? bkoAssignments.find(b => b.employeeId === selectedEmployee.employeeId) : null
+  const isSelectedEmployeeBKO = !!selectedBKOInfo
 
   const openDetails = (employee: EmployeeWithAttendance) => {
     setSelectedEmployee(employee)
@@ -93,15 +100,36 @@ export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
                     {selectedEmployee.initials}
                   </AvatarFallback>
                 </Avatar>
-                <div>
+                <div className="flex-1">
                   <p className="font-semibold">{selectedEmployee.employeeName}</p>
                   <p className="text-sm text-muted-foreground">{selectedEmployee.department} - {selectedEmployee.position}</p>
                   <p className="text-sm text-muted-foreground">{selectedEmployee.locationName}</p>
                 </div>
-                <Badge variant="outline" className={`ml-auto ${statusStyles[selectedEmployee.status]}`}>
-                  {statusLabels[selectedEmployee.status]}
-                </Badge>
+                <div className="flex flex-col gap-2 ml-auto">
+                  <Badge variant="outline" className={statusStyles[selectedEmployee.status]}>
+                    {statusLabels[selectedEmployee.status]}
+                  </Badge>
+                  {isSelectedEmployeeBKO && (
+                    <Badge variant="outline" className={bkoStyles}>
+                      <Shield className="size-3 mr-1" />
+                      BKO
+                    </Badge>
+                  )}
+                </div>
               </div>
+              
+              {/* BKO Details Section */}
+              {isSelectedEmployeeBKO && selectedBKOInfo && (
+                <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield className="size-4 text-blue-600 dark:text-blue-400" />
+                    <p className="font-medium text-sm">Backup Replacement (BKO)</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Covering for <span className="font-semibold">{selectedBKOInfo.originalEmployeeName}</span> who is on leave
+                  </p>
+                </div>
+              )}
 
               <div className="grid gap-6 md:grid-cols-2">
                 {/* Check In Section */}
@@ -296,23 +324,23 @@ export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
           </TabsList>
 
           <TabsContent value="all">
-            <AttendanceTableContent records={allEmployees} showSchedule onViewDetails={openDetails} />
+            <AttendanceTableContent records={allEmployees} bkoAssignments={bkoAssignments} showSchedule onViewDetails={openDetails} />
           </TabsContent>
           
           <TabsContent value="late">
-            <AttendanceTableContent records={lateEmployees} showSchedule showLateDetails onViewDetails={openDetails} />
+            <AttendanceTableContent records={lateEmployees} bkoAssignments={bkoAssignments} showSchedule showLateDetails onViewDetails={openDetails} />
           </TabsContent>
           
           <TabsContent value="present">
-            <AttendanceTableContent records={presentEmployees} showSchedule onViewDetails={openDetails} />
+            <AttendanceTableContent records={presentEmployees} bkoAssignments={bkoAssignments} showSchedule onViewDetails={openDetails} />
           </TabsContent>
           
           <TabsContent value="absent">
-            <AttendanceTableContent records={absentEmployees} showSchedule onViewDetails={openDetails} />
+            <AttendanceTableContent records={absentEmployees} bkoAssignments={bkoAssignments} showSchedule onViewDetails={openDetails} />
           </TabsContent>
           
           <TabsContent value="day-off">
-            <AttendanceTableContent records={dayOffEmployees} showSchedule isDayOffView onViewDetails={openDetails} />
+            <AttendanceTableContent records={dayOffEmployees} bkoAssignments={bkoAssignments} showSchedule isDayOffView onViewDetails={openDetails} />
           </TabsContent>
         </Tabs>
       </CardContent>
@@ -323,13 +351,14 @@ export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
 
 interface AttendanceTableContentProps {
   records: ReturnType<typeof getEmployeesWithAttendance>
+  bkoAssignments?: ReturnType<typeof getBKOAssignments>
   showSchedule?: boolean
   showLateDetails?: boolean
   isDayOffView?: boolean
   onViewDetails?: (employee: EmployeeWithAttendance) => void
 }
 
-function AttendanceTableContent({ records, showSchedule, showLateDetails, isDayOffView, onViewDetails }: AttendanceTableContentProps) {
+function AttendanceTableContent({ records, bkoAssignments = [], showSchedule, showLateDetails, isDayOffView, onViewDetails }: AttendanceTableContentProps) {
   if (records.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -362,6 +391,7 @@ function AttendanceTableContent({ records, showSchedule, showLateDetails, isDayO
         <TableBody>
           {records.map((record) => {
             const severity = record.status === 'late' ? getLateCheckInSeverity(record.lateMinutes) : null
+            const bkoInfo = bkoAssignments.find(b => b.employeeId === record.employeeId)
             return (
               <TableRow 
                 key={record.employeeId}
@@ -370,7 +400,9 @@ function AttendanceTableContent({ records, showSchedule, showLateDetails, isDayO
                     ? 'bg-warning/5' 
                     : record.status === 'day-off' 
                       ? 'bg-primary/5' 
-                      : undefined
+                      : bkoInfo
+                        ? 'bg-blue-500/5'
+                        : undefined
                 }
               >
                 <TableCell>
@@ -422,9 +454,17 @@ function AttendanceTableContent({ records, showSchedule, showLateDetails, isDayO
                   {record.workHours}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className={statusStyles[record.status]}>
-                    {statusLabels[record.status]}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={statusStyles[record.status]}>
+                      {statusLabels[record.status]}
+                    </Badge>
+                    {bkoInfo && (
+                      <Badge variant="outline" className={bkoStyles} title={`Covering for ${bkoInfo.originalEmployeeName}`}>
+                        <Shield className="size-3 mr-1" />
+                        BKO
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="text-right">
                   {(record.checkInGps || record.checkInPhotoUrl) && (
