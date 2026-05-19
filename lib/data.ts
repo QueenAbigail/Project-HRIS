@@ -344,3 +344,66 @@ export function getLateCheckInSeverity(lateMinutes: number): 'minor' | 'moderate
   if (lateMinutes <= 30) return 'moderate'
   return 'severe'
 }
+
+// Get all BKO (Backup/Replacement) assignments for today
+export function getBKOAssignments(): (AttendanceRecord & { backupEmployeeName: string; originalEmployeeName: string; backupInitials: string; originalInitials: string })[] {
+  try {
+    const state = useSchedulesStore.getState()
+    if (!state.todayAttendance) return []
+    
+    return state.todayAttendance
+      .filter(record => record.isBackup && record.backupFor)
+      .map(record => {
+        const backupSchedule = state.employeeSchedules.find(s => s.employeeId === record.employeeId)
+        const originalSchedule = state.employeeSchedules.find(s => s.employeeId === record.backupFor)
+        
+        return {
+          ...record,
+          backupEmployeeName: backupSchedule?.employeeName || 'Unknown',
+          originalEmployeeName: originalSchedule?.employeeName || 'Unknown',
+          backupInitials: backupSchedule?.initials || '??',
+          originalInitials: originalSchedule?.initials || '??',
+        }
+      })
+  } catch (error) {
+    console.error('[v0] Error getting BKO assignments:', error)
+    return []
+  }
+}
+
+// Get BKO count by location
+export function getBKOCountByLocation(date: Date = new Date()): Record<LocationId, number> {
+  try {
+    const state = useSchedulesStore.getState()
+    if (!state.todayAttendance) {
+      return { 'HO': 0, 'PT-DT': 0, 'RM': 0, 'MB-CT': 0, 'CC-N': 0, 'IP-W': 0 }
+    }
+    
+    const result: Record<LocationId, number> = {
+      'HO': 0, 'PT-DT': 0, 'RM': 0, 'MB-CT': 0, 'CC-N': 0, 'IP-W': 0
+    }
+    
+    state.todayAttendance.forEach(record => {
+      if (record.isBackup && record.backupFor) {
+        result[record.locationId]++
+      }
+    })
+    
+    return result
+  } catch (error) {
+    console.error('[v0] Error getting BKO count by location:', error)
+    return { 'HO': 0, 'PT-DT': 0, 'RM': 0, 'MB-CT': 0, 'CC-N': 0, 'IP-W': 0 }
+  }
+}
+
+// Get total BKO assignments for today
+export function getTotalBKOAssignments(): number {
+  try {
+    const state = useSchedulesStore.getState()
+    if (!state.todayAttendance) return 0
+    return state.todayAttendance.filter(record => record.isBackup && record.backupFor).length
+  } catch (error) {
+    console.error('[v0] Error getting total BKO assignments:', error)
+    return 0
+  }
+}

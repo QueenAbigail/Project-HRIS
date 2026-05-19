@@ -84,6 +84,9 @@ export interface AttendanceRecord {
   checkOutGps?: GpsCoordinates | null
   checkInPhotoUrl?: string | null
   checkOutPhotoUrl?: string | null
+  // BKO (Backup/Replacement) field for security guard coverage
+  backupFor?: string | null // employeeId of the person being replaced (if this is BKO)
+  isBackup?: boolean // true if this employee is working as a backup replacement
 }
 
 // Today's attendance data with realistic late check-ins and GPS/photo data
@@ -147,12 +150,15 @@ export const todayAttendance: AttendanceRecord[] = [
 
   // Metro Bank (MB-CT) - 28 total, 24 present, 1 absent, 2 not checked in, 1 on leave
   { id: 'ATT006', employeeId: 'EMP006', date: '2026-03-28', scheduledStart: '06:00', actualCheckIn: null, actualCheckOut: null, status: 'leave', lateMinutes: 0, locationId: 'MB-CT' },
+  // BKO for EMP006 (on leave) - EMP012 is filling in
   { 
-    id: 'ATT012', employeeId: 'EMP012', date: '2026-03-28', scheduledStart: '08:00', actualCheckIn: '08:05', actualCheckOut: '16:00', status: 'present', lateMinutes: 0, locationId: 'MB-CT',
+    id: 'ATT006-BKO', employeeId: 'EMP012', date: '2026-03-28', scheduledStart: '06:00', actualCheckIn: '06:05', actualCheckOut: '16:00', status: 'present', lateMinutes: 0, locationId: 'MB-CT',
     checkInGps: { latitude: -6.1900, longitude: 106.8230, accuracy: 6, address: 'Metro Bank Central, Jl. Rasuna Said' },
     checkOutGps: { latitude: -6.1901, longitude: 106.8231, accuracy: 4, address: 'Metro Bank Central, Jl. Rasuna Said' },
     checkInPhotoUrl: '/placeholder-selfie.jpg',
-    checkOutPhotoUrl: '/placeholder-selfie.jpg'
+    checkOutPhotoUrl: '/placeholder-selfie.jpg',
+    backupFor: 'EMP006',
+    isBackup: true
   },
 
   // Corporate Center (CC-N) - 44 total, 38 present, 3 absent, 2 not checked in, 1 on leave
@@ -163,21 +169,15 @@ export const todayAttendance: AttendanceRecord[] = [
     checkInPhotoUrl: '/placeholder-selfie.jpg',
     checkOutPhotoUrl: '/placeholder-selfie.jpg'
   },
+  // BKO for CC-N: EMP013 on leave, EMP007 is filling in
   { 
-    id: 'ATT013', employeeId: 'EMP013', date: '2026-03-28', scheduledStart: '06:00', actualCheckIn: '06:42', actualCheckOut: '14:20', status: 'late', lateMinutes: 32, locationId: 'CC-N',
-    checkInGps: { latitude: -6.1680, longitude: 106.8920, accuracy: 30, address: 'Traffic Light, Near Corporate Center' },
-    checkOutGps: { latitude: -6.1650, longitude: 106.8900, accuracy: 6, address: 'Corporate Center North, Jl. Kuningan' },
+    id: 'ATT013-BKO', employeeId: 'EMP007', date: '2026-03-28', scheduledStart: '06:00', actualCheckIn: '06:00', actualCheckOut: '14:15', status: 'present', lateMinutes: 0, locationId: 'CC-N',
+    checkInGps: { latitude: -6.1650, longitude: 106.8900, accuracy: 4, address: 'Corporate Center North, Jl. Kuningan' },
+    checkOutGps: { latitude: -6.1651, longitude: 106.8901, accuracy: 5, address: 'Corporate Center North, Jl. Kuningan' },
     checkInPhotoUrl: '/placeholder-selfie.jpg',
-    checkOutPhotoUrl: '/placeholder-selfie.jpg'
-  },
-
-  // Industrial Park (IP-W) - 40 total, 35 present, 2 absent, 3 not checked in
-  { 
-    id: 'ATT008', employeeId: 'EMP008', date: '2026-03-28', scheduledStart: '06:00', actualCheckIn: '05:55', actualCheckOut: '14:00', status: 'present', lateMinutes: 0, locationId: 'IP-W',
-    checkInGps: { latitude: -6.2400, longitude: 106.7800, accuracy: 5, address: 'Industrial Park West, Gate A' },
-    checkOutGps: { latitude: -6.2401, longitude: 106.7801, accuracy: 4, address: 'Industrial Park West, Gate A' },
-    checkInPhotoUrl: '/placeholder-selfie.jpg',
-    checkOutPhotoUrl: '/placeholder-selfie.jpg'
+    checkOutPhotoUrl: '/placeholder-selfie.jpg',
+    backupFor: 'EMP013',
+    isBackup: true
   },
   { 
     id: 'ATT014', employeeId: 'EMP014', date: '2026-03-28', scheduledStart: '14:00', actualCheckIn: '14:28', actualCheckOut: null, status: 'late', lateMinutes: 18, locationId: 'IP-W',
