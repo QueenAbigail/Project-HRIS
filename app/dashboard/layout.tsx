@@ -42,16 +42,29 @@ export default async function DashboardLayout({ children }: LayoutProps) {
     redirect('/')
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    select: { 
-      name: true, 
-      position: true, 
-      role: true 
-    }
-  }) as User | null
+  let user: User | null = null
+  let systemSettings: SystemSettings | null = null
 
-  const systemSettings = await getSystemSettings()
+  try {
+    user = (await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { 
+        name: true, 
+        position: true, 
+        role: true 
+      }
+    })) as User | null
+  } catch (error) {
+    console.error('[v0] Error fetching user from database:', error)
+    user = null
+  }
+
+  try {
+    systemSettings = await getSystemSettings()
+  } catch (error) {
+    console.error('[v0] Error fetching system settings:', error)
+    systemSettings = null
+  }
 
   const pathNames: Record<string, string> = {
     '/dashboard': 'Overview',
