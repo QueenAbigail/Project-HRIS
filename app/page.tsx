@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import { LoginLoading } from '@/components/login/login-loading'
 
 interface SystemSettings {
   appName: string
@@ -81,11 +82,7 @@ export default function LoginPage() {
   }
 
   if (isLoadingSettings) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="size-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-      </div>
-    )
+    return <LoginLoading />
   }
 
   return (
