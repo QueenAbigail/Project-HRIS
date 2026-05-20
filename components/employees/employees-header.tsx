@@ -26,17 +26,17 @@ export function EmployeesHeader({ onAddEmployee, onImportEmployees }: EmployeesH
   return (
     <>
       <div className="space-y-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Employees</h1>
             <p className="text-muted-foreground">
               Manage your security personnel and team members
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button 
               variant="outline" 
-              className="w-full sm:w-auto"
+              className="w-full sm:flex-1"
               onClick={() => {
                 setDialogOpen(true)
               }}
@@ -44,7 +44,7 @@ export function EmployeesHeader({ onAddEmployee, onImportEmployees }: EmployeesH
               <Upload className="mr-2 size-4" />
               Import
             </Button>
-            <Button className="w-full sm:w-auto" onClick={() => setDialogOpen(true)}>
+            <Button className="w-full sm:flex-1" onClick={() => setDialogOpen(true)}>
               <Plus className="mr-2 size-4" />
               Add Employee
             </Button>
