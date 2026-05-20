@@ -34,9 +34,8 @@ export function LoginLoading() {
         <motion.div
           variants={pulseVariants}
           animate="animate"
-          className={`flex items-center justify-center p-6 rounded-lg border ${
-            isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-neutral-200'
-          }`}
+          className={`flex items-center justify-center p-6 rounded-lg border ${isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-white border-neutral-200'
+            }`}
         >
           <img
             src="/koperasi_icon.png"
@@ -47,7 +46,7 @@ export function LoginLoading() {
 
         {/* Loading Text */}
         <div className="flex flex-col items-center gap-2">
-          <p className="text-sm font-medium text-accent">Loading your workspace</p>
+          <p className="text-sm font-medium text-accent">Pro Maxima Rajawali</p>
           <div className="flex gap-1">
             <motion.div
               className="h-1.5 w-1.5 rounded-full bg-accent"
