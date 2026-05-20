@@ -53,7 +53,7 @@ export function LocationAttendance({ locationData }: LocationAttendanceProps) {
   return (
     <Card className="bg-card border-border">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3">
           <div>
             <CardTitle className="flex items-center gap-2">
               <MapPin className="size-5" />
@@ -61,7 +61,7 @@ export function LocationAttendance({ locationData }: LocationAttendanceProps) {
             </CardTitle>
             <CardDescription>Real-time status across all client sites</CardDescription>
           </div>
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             <div className="flex items-center gap-1.5">
               <div className="size-2 rounded-full bg-success" />
               <span className="text-muted-foreground">Present</span>
@@ -87,7 +87,7 @@ export function LocationAttendance({ locationData }: LocationAttendanceProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Summary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 p-4 rounded-lg bg-muted/30 border border-border">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-muted/30 border border-border">
           <div className="flex items-center gap-3">
             <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
               <Users className="size-5 text-primary" />
@@ -216,8 +216,8 @@ export function LocationAttendance({ locationData }: LocationAttendanceProps) {
                 </div>
                 <div className="space-y-2">
                   <Progress value={attendanceRate} className="h-2" />
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <span className="flex items-center gap-1">
                         <UserCheck className="size-3 text-success" />
                         {location.present} on-time
@@ -243,7 +243,7 @@ export function LocationAttendance({ locationData }: LocationAttendanceProps) {
                         </span>
                       )}
                     </div>
-                    <span>{location.expectedToWork} expected / {location.totalStaff} total</span>
+                    <span className="text-right">{location.expectedToWork} expected / {location.totalStaff} total</span>
                   </div>
                 </div>
               </button>
