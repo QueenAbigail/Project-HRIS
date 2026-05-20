@@ -46,7 +46,7 @@ export function LoginLoading() {
 
         {/* Loading Text */}
         <div className="flex flex-col items-center gap-2">
-          <p className="text-sm font-medium text-accent">Pro Maxima Rajawali</p>
+          <p className="text-sm font-medium text-foreground">Pro Maxima Rajawali</p>
           <div className="flex gap-1">
             <motion.div
               className="h-1.5 w-1.5 rounded-full bg-accent"
