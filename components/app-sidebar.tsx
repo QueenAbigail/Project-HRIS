@@ -200,16 +200,16 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
+          <SidebarGroupContent className="overflow-x-hidden">
             <SidebarMenu>
               {mainNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={pathname === item.url}>
-                    <Link href={item.url}>
-                      <item.icon className="size-4" />
-                      <span>{item.title}</span>
+                    <Link href={item.url} className="flex items-center min-w-0 gap-2">
+                      <item.icon className="size-4 flex-shrink-0" />
+                      <span className="truncate">{item.title}</span>
                       {item.badge && (
-                        <Badge variant="secondary" className="ml-auto text-xs">
+                        <Badge variant="secondary" className="ml-auto text-xs flex-shrink-0">
                           {item.badge}
                         </Badge>
                       )}
@@ -223,14 +223,14 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
         <SidebarSeparator />
         <SidebarGroup>
           <SidebarGroupLabel>System</SidebarGroupLabel>
-          <SidebarGroupContent>
+          <SidebarGroupContent className="overflow-x-hidden">
             <SidebarMenu>
               {secondaryNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={pathname === item.url}>
-                    <Link href={item.url}>
-                      <item.icon className="size-4" />
-                      <span>{item.title}</span>
+                    <Link href={item.url} className="flex items-center min-w-0 gap-2">
+                      <item.icon className="size-4 flex-shrink-0" />
+                      <span className="truncate">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
