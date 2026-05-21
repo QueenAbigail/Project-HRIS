@@ -69,7 +69,7 @@ export function AttendanceStats({ siteId = 'all' }: AttendanceStatsProps) {
   ]
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+    <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
       {stats.map((stat) => (
         <Card 
           key={stat.title} 
@@ -77,20 +77,22 @@ export function AttendanceStats({ siteId = 'all' }: AttendanceStatsProps) {
             'highlight' in stat && stat.highlight ? 'ring-1 ring-warning/50' : ''
           }`}
         >
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className={`rounded-lg p-2.5 ${stat.bgColor}`}>
-              <stat.icon className={`size-5 ${stat.color}`} />
+          <CardContent className="p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className={`text-lg font-bold ${'highlight' in stat && stat.highlight ? stat.color : ''}`}>
+                  {stat.value}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">{stat.title}</p>
+                {'subtext' in stat && stat.subtext && (
+                  <p className="text-xs text-warning mt-0.5">{stat.subtext}</p>
+                )}
+              </div>
+              <div className={`rounded-lg p-2 flex-shrink-0 ${stat.bgColor}`}>
+                <stat.icon className={`size-4 ${stat.color}`} />
+              </div>
             </div>
-            <div className="flex-1">
-              <p className={`text-2xl font-bold ${'highlight' in stat && stat.highlight ? stat.color : ''}`}>
-                {stat.value}
-              </p>
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
-              {'subtext' in stat && stat.subtext && (
-                <p className="text-xs text-warning mt-0.5">{stat.subtext}</p>
-              )}
-            </div>
-            <div className={`text-sm font-medium ${stat.color}`}>
+            <div className={`text-xs font-medium mt-2 ${stat.color}`}>
               {stat.percentage}
             </div>
           </CardContent>
