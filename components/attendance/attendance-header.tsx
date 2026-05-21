@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Calendar, Clock } from 'lucide-react'
+import { Calendar } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -18,6 +18,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { AttendanceCalendar } from './attendance-calendar'
+import { MarkAttendanceDialog } from './mark-attendance-dialog'
 
 export function AttendanceHeader({ siteId = 'all' }: { siteId?: string }) {
   const [openCalendarSheet, setOpenCalendarSheet] = useState(false)
@@ -33,13 +34,7 @@ export function AttendanceHeader({ siteId = 'all' }: { siteId?: string }) {
             </p>
           </div>
           <div className="flex flex-col gap-2 w-full sm:w-auto">
-            <Button 
-              onClick={() => {}}
-              className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
-            >
-              <Clock className="mr-2 size-4" />
-              Mark Attendance
-            </Button>
+            <MarkAttendanceDialog />
             <Button 
               variant="outline"
               onClick={() => setOpenCalendarSheet(true)}
