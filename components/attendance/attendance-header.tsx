@@ -11,39 +11,39 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-} from '@/components/ui/drawer'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { AttendanceCalendar } from './attendance-calendar'
 
 export function AttendanceHeader({ siteId = 'all' }: { siteId?: string }) {
-  const [openCalendarDrawer, setOpenCalendarDrawer] = useState(false)
-  const [openMarkAttendanceDialog, setOpenMarkAttendanceDialog] = useState(false)
+  const [openCalendarSheet, setOpenCalendarSheet] = useState(false)
 
   return (
     <>
       <div className="space-y-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Attendance</h1>
             <p className="text-muted-foreground">
               Track and manage employee attendance records
             </p>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-2 w-full sm:w-auto">
             <Button 
-              onClick={() => setOpenMarkAttendanceDialog(true)}
-              className="bg-green-600 hover:bg-green-700"
+              onClick={() => {}}
+              className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
             >
               <Clock className="mr-2 size-4" />
               Mark Attendance
             </Button>
             <Button 
               variant="outline"
-              onClick={() => setOpenCalendarDrawer(true)}
+              onClick={() => setOpenCalendarSheet(true)}
+              className="w-full sm:w-auto"
             >
               <Calendar className="mr-2 size-4" />
               Calendar
@@ -82,19 +82,19 @@ export function AttendanceHeader({ siteId = 'all' }: { siteId?: string }) {
         </div>
       </div>
 
-      <Drawer open={openCalendarDrawer} onOpenChange={setOpenCalendarDrawer}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Attendance Calendar</DrawerTitle>
-            <DrawerDescription>
+      <Sheet open={openCalendarSheet} onOpenChange={setOpenCalendarSheet}>
+        <SheetContent side="right" className="w-full sm:w-96 overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Attendance Calendar</SheetTitle>
+            <SheetDescription>
               View attendance records and statistics by date
-            </DrawerDescription>
-          </DrawerHeader>
-          <div className="p-6">
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6">
             <AttendanceCalendar siteId={siteId} />
           </div>
-        </DrawerContent>
-      </Drawer>
+        </SheetContent>
+      </Sheet>
     </>
   )
 }
