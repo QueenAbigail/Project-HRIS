@@ -197,7 +197,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="[&>[data-radix-scroll-area-viewport]]:overflow-x-hidden">
         <SidebarGroup>
           <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
           <SidebarGroupContent className="overflow-x-hidden">
