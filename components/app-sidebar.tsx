@@ -17,7 +17,9 @@ import {
   LogOut,
   ChevronDown,
   MapPin,
-  ChevronsLeft,
+  ChevronLeft,
+  Moon,
+  Sun,
 } from 'lucide-react'
 
 import {
@@ -34,8 +36,8 @@ import {
   SidebarSeparator,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { ThemeToggle } from '@/components/ThemeToggle'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useTheme } from 'next-themes'
 import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
@@ -123,11 +125,17 @@ const mainNavItems = [
 export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) {
   const pathname = usePathname()
   const { state, toggleSidebar } = useSidebar()
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [localSystemSettings, setLocalSystemSettings] = useState<SystemSettings>({ appName: 'SecureGuard', appDescription: 'HR Administration' })
   const [loading, setLoading] = useState(!propSystemSettings)
 
   const systemSettings = propSystemSettings || localSystemSettings
   const userRole = user?.role || null
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (!propSystemSettings) {
@@ -166,18 +174,27 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   const initials = user?.name ? (user.name[0]?.toUpperCase() + (user.name[1]?.toUpperCase() || '')) : 'U?'
 
   return (
-    <Sidebar variant="inset" collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border">
-        <SidebarMenu>
-          <SidebarMenuItem>
+    <Sidebar variant="inset" collapsible="icon" className="overflow-hidden">
+      <SidebarHeader className="border-b border-sidebar-border overflow-hidden">
+        <SidebarMenu className="flex items-center justify-between gap-2">
+          <SidebarMenuItem className="flex-1 min-w-0">
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard">
-                <LogoIcon src={systemSettings.logoUrl || '/icon.svg'} alt={systemSettings.appName} className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground" />
-                <div className="grid flex-1 text-left text-sm leading-tight">
+              <Link href="/dashboard" className="min-w-0">
+                <LogoIcon src={systemSettings.logoUrl || '/icon.svg'} alt={systemSettings.appName} className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground flex-shrink-0" />
+                <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
                   <span className="truncate font-semibold">{systemSettings.appName}</span>
                   <span className="truncate text-xs text-muted-foreground">{systemSettings.appDescription}</span>
                 </div>
               </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem className="flex-shrink-0">
+            <SidebarMenuButton 
+              onClick={toggleSidebar} 
+              className="size-9"
+              title={state === 'expanded' ? 'Collapse sidebar' : 'Expand sidebar'}
+            >
+              <ChevronLeft className={`size-4 transition-transform duration-300 ${state === 'collapsed' ? 'rotate-180' : ''}`} />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -224,21 +241,21 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border">
-        <SidebarMenu className="flex flex-col gap-2">
+      <SidebarFooter className="border-t border-sidebar-border overflow-hidden">
+        <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="lg">
-                  <Avatar className="size-8">
+                  <Avatar className="size-8 flex-shrink-0">
                     <AvatarImage src="/placeholder-user.jpg" alt={displayName} />
                     <AvatarFallback className="bg-primary/10 text-primary font-medium">{initials}</AvatarFallback>
                   </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
+                  <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
                     <span className="truncate font-semibold">{displayName}</span>
                     <span className="truncate text-xs text-muted-foreground">{displayPosition}</span>
                   </div>
-                  <ChevronDown className="ml-auto size-4" />
+                  <ChevronDown className="ml-auto size-4 flex-shrink-0" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -259,6 +276,27 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                   Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                {mounted && (
+                  <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : theme === 'light' ? 'system' : 'dark')}>
+                    {theme === 'light' ? (
+                      <>
+                        <Moon className="mr-2 size-4" />
+                        Dark Mode
+                      </>
+                    ) : theme === 'dark' ? (
+                      <>
+                        <Sun className="mr-2 size-4" />
+                        Light Mode
+                      </>
+                    ) : (
+                      <>
+                        <Sun className="mr-2 size-4" />
+                        System
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   className="text-destructive cursor-pointer"
                   onClick={async () => {
@@ -272,21 +310,6 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
-          <div className="flex gap-1">
-            <SidebarMenuItem className="flex-1">
-              <SidebarMenuButton 
-                onClick={toggleSidebar} 
-                className="w-full"
-                title={state === 'expanded' ? 'Collapse sidebar' : 'Expand sidebar'}
-              >
-                <ChevronsLeft className={`size-4 transition-transform duration-300 ${state === 'collapsed' ? 'rotate-180' : ''}`} />
-                <span className="group-data-[collapsible=icon]:hidden">Collapse</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <ThemeToggle />
-            </SidebarMenuItem>
-          </div>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
