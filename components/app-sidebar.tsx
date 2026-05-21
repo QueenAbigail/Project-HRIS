@@ -17,6 +17,7 @@ import {
   LogOut,
   ChevronDown,
   MapPin,
+  ChevronLeft,
 } from 'lucide-react'
 
 import {
@@ -31,9 +32,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
+  useSidebar,
 } from '@/components/ui/sidebar'
-import { ThemeToggle } from '@/components/ThemeToggle'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useTheme } from 'next-themes'
 import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
@@ -120,11 +122,18 @@ const mainNavItems = [
 
 export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) {
   const pathname = usePathname()
+  const { state, toggleSidebar } = useSidebar()
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [localSystemSettings, setLocalSystemSettings] = useState<SystemSettings>({ appName: 'SecureGuard', appDescription: 'HR Administration' })
   const [loading, setLoading] = useState(!propSystemSettings)
 
   const systemSettings = propSystemSettings || localSystemSettings
   const userRole = user?.role || null
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (!propSystemSettings) {
@@ -163,18 +172,27 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   const initials = user?.name ? (user.name[0]?.toUpperCase() + (user.name[1]?.toUpperCase() || '')) : 'U?'
 
   return (
-    <Sidebar variant="inset">
-      <SidebarHeader className="border-b border-sidebar-border">
-        <SidebarMenu>
-          <SidebarMenuItem>
+    <Sidebar variant="inset" collapsible="icon" className="overflow-hidden">
+      <SidebarHeader className="border-b border-sidebar-border overflow-hidden">
+        <SidebarMenu className="flex items-center justify-between gap-2">
+          <SidebarMenuItem className="flex-1 min-w-0">
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard">
-                <LogoIcon src={systemSettings.logoUrl || '/icon.svg'} alt={systemSettings.appName} className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground" />
-                <div className="grid flex-1 text-left text-sm leading-tight">
+              <Link href="/dashboard" className="min-w-0">
+                <LogoIcon src={systemSettings.logoUrl || '/icon.svg'} alt={systemSettings.appName} className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground flex-shrink-0" />
+                <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
                   <span className="truncate font-semibold">{systemSettings.appName}</span>
                   <span className="truncate text-xs text-muted-foreground">{systemSettings.appDescription}</span>
                 </div>
               </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem className="flex-shrink-0">
+            <SidebarMenuButton 
+              onClick={toggleSidebar} 
+              className="size-9"
+              title={state === 'expanded' ? 'Collapse sidebar' : 'Expand sidebar'}
+            >
+              <ChevronLeft className={`size-4 transition-transform duration-300 ${state === 'collapsed' ? 'rotate-180' : ''}`} />
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -221,21 +239,21 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border">
-        <SidebarMenu className="flex flex-row justify-between">
+      <SidebarFooter className="border-t border-sidebar-border overflow-hidden">
+        <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="lg">
-                  <Avatar className="size-8">
+                  <Avatar className="size-8 flex-shrink-0">
                     <AvatarImage src="/placeholder-user.jpg" alt={displayName} />
                     <AvatarFallback className="bg-primary/10 text-primary font-medium">{initials}</AvatarFallback>
                   </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
+                  <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
                     <span className="truncate font-semibold">{displayName}</span>
                     <span className="truncate text-xs text-muted-foreground">{displayPosition}</span>
                   </div>
-                  <ChevronDown className="ml-auto size-4" />
+                  <ChevronDown className="ml-auto size-4 flex-shrink-0" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -256,6 +274,37 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                   Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                {mounted && (
+                  <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : theme === 'light' ? 'system' : 'dark')}>
+                    {theme === 'light' ? (
+                      <>
+                        {/* Moon icon for dark mode */}
+                        <svg className="mr-2 size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                        Dark Mode
+                      </>
+                    ) : theme === 'dark' ? (
+                      <>
+                        {/* Sun icon for light mode */}
+                        <svg className="mr-2 size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1m-16 0H1m15.364 1.636l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        Light Mode
+                      </>
+                    ) : (
+                      <>
+                        {/* Settings icon for system mode */}
+                        <svg className="mr-2 size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        System
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   className="text-destructive cursor-pointer"
                   onClick={async () => {
@@ -268,9 +317,6 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </SidebarMenuItem>
-          <SidebarMenuItem className="ml-auto">
-            <ThemeToggle />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
