@@ -17,6 +17,7 @@ import {
   LogOut,
   ChevronDown,
   MapPin,
+  ChevronsLeft,
 } from 'lucide-react'
 
 import {
@@ -31,6 +32,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -120,6 +122,7 @@ const mainNavItems = [
 
 export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) {
   const pathname = usePathname()
+  const { state, toggleSidebar } = useSidebar()
   const [localSystemSettings, setLocalSystemSettings] = useState<SystemSettings>({ appName: 'SecureGuard', appDescription: 'HR Administration' })
   const [loading, setLoading] = useState(!propSystemSettings)
 
@@ -163,7 +166,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   const initials = user?.name ? (user.name[0]?.toUpperCase() + (user.name[1]?.toUpperCase() || '')) : 'U?'
 
   return (
-    <Sidebar variant="inset">
+    <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
         <SidebarMenu>
           <SidebarMenuItem>
@@ -222,7 +225,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border">
-        <SidebarMenu className="flex flex-row justify-between">
+        <SidebarMenu className="flex flex-col gap-2">
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -269,9 +272,21 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
-          <SidebarMenuItem className="ml-auto">
-            <ThemeToggle />
-          </SidebarMenuItem>
+          <div className="flex gap-1">
+            <SidebarMenuItem className="flex-1">
+              <SidebarMenuButton 
+                onClick={toggleSidebar} 
+                className="w-full"
+                title={state === 'expanded' ? 'Collapse sidebar' : 'Expand sidebar'}
+              >
+                <ChevronsLeft className={`size-4 transition-transform duration-300 ${state === 'collapsed' ? 'rotate-180' : ''}`} />
+                <span className="group-data-[collapsible=icon]:hidden">Collapse</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <ThemeToggle />
+            </SidebarMenuItem>
+          </div>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
