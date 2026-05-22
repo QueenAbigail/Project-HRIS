@@ -174,13 +174,13 @@ export function MarkAttendanceDialog() {
                     value={searchValue}
                     onValueChange={setSearchValue}
                   />
-                  <CommandList>
+                  <CommandList className="max-h-[300px] overflow-y-auto">
                     <CommandEmpty>No employee found.</CommandEmpty>
                     <CommandGroup>
                       {filteredEmployees.map((employee) => (
                         <CommandItem
                           key={employee.id}
-                          value={employee.id}
+                          value={`${employee.id} ${employee.name}`}
                           onSelect={handleEmployeeSelect}
                         >
                           <Check
