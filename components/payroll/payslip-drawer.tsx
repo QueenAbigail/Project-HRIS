@@ -68,15 +68,8 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
         {/* White Paper Container */}
         <div 
           className="relative bg-white text-slate-900 rounded-lg shadow-2xl p-10 overflow-hidden"
-          style={{
-            backgroundImage: `url(/logo/company-logo.webp)`,
-            backgroundAttachment: 'fixed',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            backgroundSize: '500px 500px',
-          }}
         >
-          {/* Watermark Overlay */}
+          {/* Watermark Overlay - Grayscale & Ultra Faint */}
           <div 
             className="absolute inset-0 pointer-events-none z-0"
             style={{
@@ -84,7 +77,8 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',
               backgroundSize: '500px 500px',
-              opacity: 0.08,
+              opacity: 0.03,
+              filter: 'grayscale(100%)',
             }}
           />
 
