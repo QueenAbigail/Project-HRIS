@@ -18,6 +18,7 @@ import {
   ChevronDown,
   MapPin,
   ChevronLeft,
+  Monitor,
 } from 'lucide-react'
 
 import {
@@ -123,7 +124,7 @@ const mainNavItems = [
 export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) {
   const pathname = usePathname()
   const { state, toggleSidebar } = useSidebar()
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [localSystemSettings, setLocalSystemSettings] = useState<SystemSettings>({ appName: 'SecureGuard', appDescription: 'HR Administration' })
   const [loading, setLoading] = useState(!propSystemSettings)
@@ -197,19 +198,19 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="[&>[data-radix-scroll-area-viewport]]:overflow-x-hidden">
         <SidebarGroup>
           <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
+          <SidebarGroupContent className="overflow-x-hidden">
             <SidebarMenu>
               {mainNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={pathname === item.url}>
-                    <Link href={item.url}>
-                      <item.icon className="size-4" />
-                      <span>{item.title}</span>
+                    <Link href={item.url} className="flex items-center min-w-0 gap-2">
+                      <item.icon className="size-4 flex-shrink-0" />
+                      <span className="truncate">{item.title}</span>
                       {item.badge && (
-                        <Badge variant="secondary" className="ml-auto text-xs">
+                        <Badge variant="secondary" className="ml-auto text-xs flex-shrink-0">
                           {item.badge}
                         </Badge>
                       )}
@@ -223,14 +224,14 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
         <SidebarSeparator />
         <SidebarGroup>
           <SidebarGroupLabel>System</SidebarGroupLabel>
-          <SidebarGroupContent>
+          <SidebarGroupContent className="overflow-x-hidden">
             <SidebarMenu>
               {secondaryNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={pathname === item.url}>
-                    <Link href={item.url}>
-                      <item.icon className="size-4" />
-                      <span>{item.title}</span>
+                    <Link href={item.url} className="flex items-center min-w-0 gap-2">
+                      <item.icon className="size-4 flex-shrink-0" />
+                      <span className="truncate">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -275,31 +276,32 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {mounted && (
-                  <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : theme === 'light' ? 'system' : 'dark')}>
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      const nextTheme = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'
+                      setTheme(nextTheme)
+                    }}
+                  >
                     {theme === 'light' ? (
-                      <>
-                        {/* Moon icon for dark mode */}
-                        <svg className="mr-2 size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                        </svg>
-                        Dark Mode
-                      </>
-                    ) : theme === 'dark' ? (
                       <>
                         {/* Sun icon for light mode */}
                         <svg className="mr-2 size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1m-16 0H1m15.364 1.636l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
-                        Light Mode
+                        Light
+                      </>
+                    ) : theme === 'dark' ? (
+                      <>
+                        {/* Moon icon for dark mode */}
+                        <svg className="mr-2 size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                        Dark
                       </>
                     ) : (
                       <>
-                        {/* Settings icon for system mode */}
-                        <svg className="mr-2 size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        System
+                        <Monitor className="mr-2 size-4" />
+                        System {resolvedTheme && `(${resolvedTheme.charAt(0).toUpperCase() + resolvedTheme.slice(1)})`}
                       </>
                     )}
                   </DropdownMenuItem>

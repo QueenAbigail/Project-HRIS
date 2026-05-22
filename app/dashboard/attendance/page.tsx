@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation'
 import { AttendanceHeader } from '@/components/attendance/attendance-header'
 import { AttendanceStats } from '@/components/attendance/attendance-stats'
 import { AttendanceTable } from '@/components/attendance/attendance-table'
-import { AttendanceCalendar } from '@/components/attendance/attendance-calendar'
 import {
   Select,
   SelectContent,
@@ -38,7 +37,7 @@ export default function AttendancePage() {
 
   return (
     <div className="space-y-6">
-      <AttendanceHeader />
+      <AttendanceHeader siteId={selectedSite} />
 
       {/* Site Filter */}
       <div className="flex items-end gap-4">
@@ -63,14 +62,7 @@ export default function AttendancePage() {
       </div>
 
       <AttendanceStats siteId={selectedSite} />
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <AttendanceTable siteId={selectedSite} />
-        </div>
-        <div className="lg:col-span-1">
-          <AttendanceCalendar siteId={selectedSite} />
-        </div>
-      </div>
+      <AttendanceTable siteId={selectedSite} />
     </div>
   )
 }

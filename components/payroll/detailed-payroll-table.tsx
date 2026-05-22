@@ -210,7 +210,7 @@ export function DetailedPayrollTable() {
               {detailedPayrollData.map((record) => (
                 <TableRow 
                   key={record.id} 
-                  className="hover:bg-gray-50 cursor-pointer"
+                  className="hover:bg-gray-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
                   onClick={() => handleEmployeeClick(record)}
                 >
                   <TableCell>
@@ -257,7 +257,7 @@ export function DetailedPayrollTable() {
                   <TableCell className="text-right font-mono text-xs text-red-600">
                     -{formatCurrency(record.otherDeductions)}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs font-bold text-green-700 bg-green-50 px-3 py-2 rounded">
+                  <TableCell className="text-right font-mono text-xs font-bold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30 px-3 py-2 rounded">
                     {formatCurrency(record.netPay)}
                   </TableCell>
                   <TableCell>
