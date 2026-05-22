@@ -77,7 +77,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',
               backgroundSize: '500px 500px',
-              opacity: 0.08,
+              opacity: 0.20,
               filter: 'grayscale(100%)',
             }}
           />
