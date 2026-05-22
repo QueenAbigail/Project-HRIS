@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -18,11 +18,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Clock } from 'lucide-react'
-import { locations, shifts } from '@/lib/constants'
+import { Clock, Check, ChevronsUpDown } from 'lucide-react'
+import { locations, employeeSchedules } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 
 type AttendanceStatus = 'present' | 'late' | 'absent' | 'leave' | 'not-checked-in'
 
@@ -36,8 +50,17 @@ interface MarkAttendanceFormData {
   notes: string
 }
 
+interface EmployeeOption {
+  id: string
+  name: string
+  displayText: string
+  defaultSite: string
+}
+
 export function MarkAttendanceDialog() {
   const [open, setOpen] = useState(false)
+  const [comboboxOpen, setComboboxOpen] = useState(false)
+  const [searchValue, setSearchValue] = useState('')
   const [formData, setFormData] = useState<MarkAttendanceFormData>({
     employeeId: '',
     date: new Date().toISOString().split('T')[0],
@@ -48,6 +71,27 @@ export function MarkAttendanceDialog() {
     notes: '',
   })
 
+  // Convert employee schedules to combobox options
+  const employeeOptions: EmployeeOption[] = useMemo(() => {
+    return employeeSchedules.map((schedule) => ({
+      id: schedule.employeeId,
+      name: schedule.employeeName,
+      displayText: `${schedule.employeeId} - ${schedule.employeeName} - ${locations.find((l) => l.id === schedule.locationId)?.name || schedule.locationId}`,
+      defaultSite: schedule.locationId,
+    }))
+  }, [])
+
+  // Filter employees based on search
+  const filteredEmployees = useMemo(() => {
+    if (!searchValue) return employeeOptions
+    const query = searchValue.toLowerCase()
+    return employeeOptions.filter(
+      (emp) =>
+        emp.id.toLowerCase().includes(query) ||
+        emp.name.toLowerCase().includes(query)
+    )
+  }, [searchValue, employeeOptions])
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -57,6 +101,19 @@ export function MarkAttendanceDialog() {
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleEmployeeSelect = (employeeId: string) => {
+    const selectedEmployee = employeeOptions.find((emp) => emp.id === employeeId)
+    if (selectedEmployee) {
+      setFormData((prev) => ({
+        ...prev,
+        employeeId: selectedEmployee.id,
+        location: selectedEmployee.defaultSite,
+      }))
+      setSearchValue(selectedEmployee.displayText)
+    }
+    setComboboxOpen(false)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -73,6 +130,7 @@ export function MarkAttendanceDialog() {
       checkOutTime: '14:00',
       notes: '',
     })
+    setSearchValue('')
   }
 
   return (
@@ -91,17 +149,56 @@ export function MarkAttendanceDialog() {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Employee Selection */}
+          {/* Employee Combobox */}
           <div className="space-y-2">
-            <Label htmlFor="employeeId">Employee *</Label>
-            <Input
-              id="employeeId"
-              name="employeeId"
-              placeholder="Enter employee ID or name"
-              value={formData.employeeId}
-              onChange={handleInputChange}
-              required
-            />
+            <Label>Employee *</Label>
+            <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={comboboxOpen}
+                  className="w-full justify-between"
+                >
+                  {formData.employeeId
+                    ? employeeOptions.find((emp) => emp.id === formData.employeeId)
+                        ?.displayText
+                    : 'Select employee...'}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0" align="start">
+                <Command>
+                  <CommandInput
+                    placeholder="Search by ID or name..."
+                    value={searchValue}
+                    onValueChange={setSearchValue}
+                  />
+                  <CommandList>
+                    <CommandEmpty>No employee found.</CommandEmpty>
+                    <CommandGroup>
+                      {filteredEmployees.map((employee) => (
+                        <CommandItem
+                          key={employee.id}
+                          value={employee.id}
+                          onSelect={handleEmployeeSelect}
+                        >
+                          <Check
+                            className={cn(
+                              'mr-2 h-4 w-4',
+                              formData.employeeId === employee.id
+                                ? 'opacity-100'
+                                : 'opacity-0'
+                            )}
+                          />
+                          {employee.displayText}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Date Selection */}
@@ -142,7 +239,9 @@ export function MarkAttendanceDialog() {
               <Label htmlFor="status">Status *</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value) => handleSelectChange('status', value as AttendanceStatus)}
+                onValueChange={(value) =>
+                  handleSelectChange('status', value as AttendanceStatus)
+                }
               >
                 <SelectTrigger id="status">
                   <SelectValue placeholder="Select status" />
