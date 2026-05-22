@@ -117,68 +117,70 @@ export function MarkAttendanceDialog() {
             />
           </div>
 
-          {/* Location Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="location">Location *</Label>
-            <Select
-              value={formData.location}
-              onValueChange={(value) => handleSelectChange('location', value)}
-            >
-              <SelectTrigger id="location">
-                <SelectValue placeholder="Select location" />
-              </SelectTrigger>
-              <SelectContent>
-                {locations.map((location) => (
-                  <SelectItem key={location.id} value={location.id}>
-                    {location.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Location and Status - Same Row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="location">Location *</Label>
+              <Select
+                value={formData.location}
+                onValueChange={(value) => handleSelectChange('location', value)}
+              >
+                <SelectTrigger id="location">
+                  <SelectValue placeholder="Select location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {locations.map((location) => (
+                    <SelectItem key={location.id} value={location.id}>
+                      {location.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status *</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => handleSelectChange('status', value as AttendanceStatus)}
+              >
+                <SelectTrigger id="status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="present">Present</SelectItem>
+                  <SelectItem value="late">Late</SelectItem>
+                  <SelectItem value="absent">Absent</SelectItem>
+                  <SelectItem value="leave">Leave</SelectItem>
+                  <SelectItem value="not-checked-in">Not Checked In</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {/* Status Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="status">Attendance Status *</Label>
-            <Select
-              value={formData.status}
-              onValueChange={(value) => handleSelectChange('status', value as AttendanceStatus)}
-            >
-              <SelectTrigger id="status">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="present">Present</SelectItem>
-                <SelectItem value="late">Late</SelectItem>
-                <SelectItem value="absent">Absent</SelectItem>
-                <SelectItem value="leave">Leave</SelectItem>
-                <SelectItem value="not-checked-in">Not Checked In</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Check-in and Check-out Times - Same Row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="checkInTime">Check-in Time</Label>
+              <Input
+                id="checkInTime"
+                name="checkInTime"
+                type="time"
+                value={formData.checkInTime}
+                onChange={handleInputChange}
+              />
+            </div>
 
-          {/* Check-in Time */}
-          <div className="space-y-2">
-            <Label htmlFor="checkInTime">Check-in Time</Label>
-            <Input
-              id="checkInTime"
-              name="checkInTime"
-              type="time"
-              value={formData.checkInTime}
-              onChange={handleInputChange}
-            />
-          </div>
-
-          {/* Check-out Time */}
-          <div className="space-y-2">
-            <Label htmlFor="checkOutTime">Check-out Time</Label>
-            <Input
-              id="checkOutTime"
-              name="checkOutTime"
-              type="time"
-              value={formData.checkOutTime}
-              onChange={handleInputChange}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="checkOutTime">Check-out Time</Label>
+              <Input
+                id="checkOutTime"
+                name="checkOutTime"
+                type="time"
+                value={formData.checkOutTime}
+                onChange={handleInputChange}
+              />
+            </div>
           </div>
 
           {/* Notes */}
