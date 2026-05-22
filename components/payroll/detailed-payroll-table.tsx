@@ -210,7 +210,7 @@ export function DetailedPayrollTable() {
               {detailedPayrollData.map((record) => (
                 <TableRow 
                   key={record.id} 
-                  className="hover:bg-gray-50 cursor-pointer"
+                  className="hover:bg-gray-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
                   onClick={() => handleEmployeeClick(record)}
                 >
                   <TableCell>
