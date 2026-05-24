@@ -20,6 +20,7 @@ interface CheckpointStatus {
     time: string
     gpsVerified: boolean
     photosCount: number
+    notes?: string
   }
   status: 'completed' | 'pending' | 'overdue'
 }
@@ -37,6 +38,7 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
         time: '09:30 AM',
         gpsVerified: true,
         photosCount: 2,
+        notes: 'Gate entrance secure. All locks functioning properly. No suspicious activity detected.',
       },
       status: 'completed',
     },
@@ -246,6 +248,18 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
                       )}
                     </div>
                   </div>
+
+                  {/* Patrol Report Notes */}
+                  {selectedCheckpoint.lastPatrol.notes && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-2">Patrol Report</p>
+                      <div className="bg-muted/50 border border-border rounded-lg p-3">
+                        <p className="text-sm text-foreground whitespace-pre-wrap">
+                          {selectedCheckpoint.lastPatrol.notes}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <p className="text-muted-foreground">No patrol data available for this checkpoint.</p>
