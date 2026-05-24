@@ -59,5 +59,5 @@ export async function logout() {
   // 3. Tambahkan await juga di sini
   const supabase = await createClient()
   await supabase.auth.signOut()
-  redirect('/')
+  return { success: true }
 }
