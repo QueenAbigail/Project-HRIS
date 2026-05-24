@@ -82,13 +82,8 @@ export default function LoginPage() {
       return
     }
 
-    // Show success toast before redirecting
+    // Redirect to dashboard immediately - welcome toast will show there
     if (result?.success) {
-      toast.success(`Welcome, ${result.userName}!`, {
-        description: 'Please wait while we redirect you to the dashboard.',
-        duration: 4000,
-      })
-      // Redirect immediately to show toast throughout the transition
       router.push('/dashboard')
     }
   }
