@@ -220,12 +220,12 @@ Patrol completed successfully. All systems operational.`,
 
       {/* Checkpoint Detail Modal */}
       <Dialog open={!!selectedCheckpoint} onOpenChange={() => setSelectedCheckpoint(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{selectedCheckpoint?.name}</DialogTitle>
           </DialogHeader>
           {selectedCheckpoint && (
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto pr-4">
               {selectedCheckpoint.lastPatrol ? (
                 <>
                   <div className="grid grid-cols-2 gap-4">
