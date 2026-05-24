@@ -86,12 +86,12 @@ export default function LoginPage() {
     if (result?.success) {
       toast.success(`Welcome, ${result.userName}!`, {
         description: 'Please wait while we redirect you to the dashboard.',
-        duration: 2000,
+        duration: 4000,
       })
       // Redirect after toast displays
       setTimeout(() => {
         router.push('/dashboard')
-      }, 1000)
+      }, 2500)
     }
   }
 
