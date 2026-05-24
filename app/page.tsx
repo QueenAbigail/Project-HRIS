@@ -82,8 +82,16 @@ export default function LoginPage() {
       return
     }
 
-    // Redirect to dashboard immediately - welcome toast will show there
+    // Show success toast immediately and mark that we showed it
     if (result?.success) {
+      toast.success(`Welcome, ${result.userName}!`, {
+        description: 'Please wait while we redirect you to the dashboard.',
+        duration: 10000, // Long duration to persist through redirect and dashboard load
+      })
+      // Mark in sessionStorage that we've shown the toast, so dashboard doesn't show duplicate
+      sessionStorage.setItem('loginToastShown', 'true')
+      
+      // Redirect immediately
       router.push('/dashboard')
     }
   }
