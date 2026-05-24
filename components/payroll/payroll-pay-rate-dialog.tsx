@@ -409,7 +409,6 @@ export function PayrollPayRateDialog({
           <Button
             onClick={handleSave}
             disabled={!hasChanges}
-            className="bg-green-600 hover:bg-green-700"
           >
             Save Configuration
           </Button>

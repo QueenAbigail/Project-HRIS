@@ -136,7 +136,7 @@ export function MarkAttendanceDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
+        <Button className="w-full sm:w-auto">
           <Clock className="mr-2 size-4" />
           Mark Attendance
         </Button>
@@ -306,7 +306,6 @@ export function MarkAttendanceDialog() {
             </Button>
             <Button
               type="submit"
-              className="bg-green-600 hover:bg-green-700"
             >
               Save Record
             </Button>
