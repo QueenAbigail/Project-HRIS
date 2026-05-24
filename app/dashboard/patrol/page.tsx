@@ -100,13 +100,6 @@ export default function PatrolPage() {
             </SelectContent>
           </Select>
         </div>
-        
-        {currentClient && (
-          <div className="text-sm text-muted-foreground">
-            <p className="font-medium">{currentClient.name}</p>
-            <p className="text-xs">{clientSites.length} sites • {clientSites.reduce((sum, s) => sum + s.checkpointCount, 0)} checkpoints</p>
-          </div>
-        )}
       </div>
 
       {/* Site Header */}
