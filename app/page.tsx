@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Shield, Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react'
 import { login } from '@/lib/auth'
 import { toast } from 'sonner'
@@ -18,6 +19,7 @@ interface SystemSettings {
 }
 
 export default function LoginPage() {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
@@ -78,6 +80,18 @@ export default function LoginPage() {
       }
       setIsLoading(false)
       return
+    }
+
+    // Show success toast before redirecting
+    if (result?.success) {
+      toast.success('Welcome back!', {
+        description: 'You have been successfully logged in.',
+        duration: 2000,
+      })
+      // Redirect after toast displays
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 1000)
     }
   }
 
