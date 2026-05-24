@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Building2, MapPin } from 'lucide-react'
+import { MapPin } from 'lucide-react'
 
 interface Client {
   id: string
@@ -80,21 +80,21 @@ export default function PatrolPage() {
     <div className="space-y-6">
       <PatrolHeader />
 
-      {/* Client Selector */}
+      {/* Site Selector */}
       <div className="flex items-end gap-4">
         <div className="flex-1 max-w-xs">
           <label className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            Select Client
+            <MapPin className="h-4 w-4" />
+            Select Site
           </label>
-          <Select value={selectedClient} onValueChange={setSelectedClient}>
+          <Select value={selectedSite || ''} onValueChange={setSelectedSite}>
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue placeholder="Choose a site" />
             </SelectTrigger>
             <SelectContent>
-              {mockClients.map((client) => (
-                <SelectItem key={client.id} value={client.id}>
-                  {client.name} ({client.totalSites} sites)
+              {clientSites.map((site) => (
+                <SelectItem key={site.id} value={site.id}>
+                  {site.name} ({site.code})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -108,26 +108,6 @@ export default function PatrolPage() {
           </div>
         )}
       </div>
-
-      {/* Site Selection Tabs */}
-      {clientSites.length > 0 && (
-        <div className="space-y-3">
-          <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            Select Site
-          </label>
-          <Tabs value={selectedSite || ''} onValueChange={setSelectedSite}>
-            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${Math.min(clientSites.length, 6)}, minmax(0, 1fr))` }}>
-              {clientSites.map((site) => (
-                <TabsTrigger key={site.id} value={site.id} className="text-xs sm:text-sm">
-                  <span className="hidden sm:inline">{site.name}</span>
-                  <span className="sm:hidden">{site.code}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
-      )}
 
       {/* Site Header */}
       {currentSite && (
