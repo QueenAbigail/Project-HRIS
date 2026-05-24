@@ -109,13 +109,7 @@ export default function LoginPage() {
         <CardHeader className="space-y-4 text-center pb-2">
           {/* Logo */}
           <div className="flex justify-center">
-            {settings.logoUrl ? (
-              <img src={settings.logoUrl} alt="App Logo" className="size-16 rounded-2xl object-cover shadow-lg shadow-primary/10" />
-            ) : (
-              <div className="flex items-center justify-center size-16 rounded-2xl bg-primary/10 border border-primary/20 shadow-lg shadow-primary/10">
-                <Shield className="size-8 text-primary" />
-              </div>
-            )}
+            <img src={settings.logoUrl || '/koperasi_icon.png'} alt="App Logo" className="size-16 rounded-2xl object-cover shadow-lg shadow-primary/10" />
           </div>
           
           <div className="space-y-1.5">
