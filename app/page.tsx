@@ -88,10 +88,8 @@ export default function LoginPage() {
         description: 'Please wait while we redirect you to the dashboard.',
         duration: 4000,
       })
-      // Redirect after toast displays
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 2500)
+      // Redirect immediately to show toast throughout the transition
+      router.push('/dashboard')
     }
   }
 
