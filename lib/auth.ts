@@ -51,13 +51,13 @@ export async function login(email: string, password: string, remember: boolean) 
   // Get user metadata that includes name
   const userName = data?.user?.user_metadata?.name || data?.user?.email?.split('@')[0] || 'User'
   
-  // Redirect to dashboard on successful login
-  redirect('/dashboard')
+  // Return success instead of redirecting immediately
+  return { success: true, userName }
 }
 
 export async function logout() {
   // 3. Tambahkan await juga di sini
   const supabase = await createClient()
   await supabase.auth.signOut()
-  redirect('/')
+  return { success: true }
 }

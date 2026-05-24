@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Shield, Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react'
 import { login } from '@/lib/auth'
 import { toast } from 'sonner'
@@ -18,6 +19,7 @@ interface SystemSettings {
 }
 
 export default function LoginPage() {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
@@ -79,6 +81,19 @@ export default function LoginPage() {
       setIsLoading(false)
       return
     }
+
+    // Show success toast immediately and mark that we showed it
+    if (result?.success) {
+      toast.success(`Welcome, ${result.userName}!`, {
+        description: 'Please wait while we redirect you to the dashboard.',
+        duration: 10000, // Long duration to persist through redirect and dashboard load
+      })
+      // Mark in sessionStorage that we've shown the toast, so dashboard doesn't show duplicate
+      sessionStorage.setItem('loginToastShown', 'true')
+      
+      // Redirect immediately
+      router.push('/dashboard')
+    }
   }
 
   if (isLoadingSettings) {
@@ -109,13 +124,7 @@ export default function LoginPage() {
         <CardHeader className="space-y-4 text-center pb-2">
           {/* Logo */}
           <div className="flex justify-center">
-            {settings.logoUrl ? (
-              <img src={settings.logoUrl} alt="App Logo" className="size-16 rounded-2xl object-cover shadow-lg shadow-primary/10" />
-            ) : (
-              <div className="flex items-center justify-center size-16 rounded-2xl bg-primary/10 border border-primary/20 shadow-lg shadow-primary/10">
-                <Shield className="size-8 text-primary" />
-              </div>
-            )}
+            <img src={settings.logoUrl || '/koperasi_icon.png'} alt="App Logo" className="max-w-xs h-auto shadow-lg shadow-primary/10" />
           </div>
           
           <div className="space-y-1.5">

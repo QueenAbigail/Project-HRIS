@@ -47,7 +47,6 @@ export function PayrollHeader() {
         <div className="flex flex-wrap gap-2">
           <Button 
             onClick={() => setOpenPayRateDialog(true)}
-            className="bg-green-600 hover:bg-green-700"
           >
             <Send className="mr-2 size-4" />
             Payroll Pay Rate

@@ -3,6 +3,7 @@ import { HeaderControls } from "@/components/header-controls"
 import { WelcomeToast } from "@/components/dashboard/welcome-toast"
 import { MobileHeader } from "@/components/mobile-header"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
+import { LoadingProvider } from "@/lib/loading-context"
 
 import {
   Breadcrumb,
@@ -85,38 +86,40 @@ export default async function DashboardLayout({ children }: LayoutProps) {
   const currentPage = pathNames[pathname] || 'Dashboard'
 
   return (
-    <SidebarProvider>
-      <WelcomeToast userName={user?.name} />
-      <AppSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
-      <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card/50 backdrop-blur-sm px-4">
-          <MobileHeader />
-          <div className="flex items-center gap-2">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/dashboard">
-                    Dashboard
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                {pathname !== '/dashboard' && (
-                  <>
-                    <BreadcrumbSeparator className="hidden md:block" />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage>{currentPage}</BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </>
-                )}
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-          <HeaderControls userRole={user?.role || null} />
-        </header>
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          {children}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+    <LoadingProvider>
+      <SidebarProvider>
+        <WelcomeToast userName={user?.name} />
+        <AppSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
+        <SidebarInset>
+          <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card/50 backdrop-blur-sm px-4">
+            <MobileHeader />
+            <div className="flex items-center gap-2">
+              <Breadcrumb>
+                <BreadcrumbList>
+                  <BreadcrumbItem className="hidden md:block">
+                    <BreadcrumbLink href="/dashboard">
+                      Dashboard
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  {pathname !== '/dashboard' && (
+                    <>
+                      <BreadcrumbSeparator className="hidden md:block" />
+                      <BreadcrumbItem>
+                        <BreadcrumbPage>{currentPage}</BreadcrumbPage>
+                      </BreadcrumbItem>
+                    </>
+                  )}
+                </BreadcrumbList>
+              </Breadcrumb>
+            </div>
+            <HeaderControls userRole={user?.role || null} />
+          </header>
+          <main className="flex-1 overflow-auto p-4 md:p-6">
+            {children}
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    </LoadingProvider>
   )
 }
 

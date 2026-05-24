@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, Filter, Download, MoreHorizontal, Eye, Pencil, Trash2, MapPin, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { Search, Filter, MoreHorizontal, Eye, Pencil, Trash2, MapPin, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { EmployeeProfileSheet } from './employee-profile-sheet'
 import { EmployeeEditDialog } from './employee-edit-dialog'
 import type { NewEmployee } from './add-employee-dialog'
@@ -220,10 +220,6 @@ export function EmployeesTable({ users }: EmployeesTableProps) {
                   <DropdownMenuItem>Patrol</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button variant="outline" className="whitespace-nowrap">
-                <Download className="mr-2 size-4" />
-                Export
-              </Button>
             </div>
           </div>
         </CardHeader>

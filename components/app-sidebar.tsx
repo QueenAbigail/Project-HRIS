@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 import {
   LayoutDashboard,
@@ -123,6 +124,7 @@ const mainNavItems = [
 
 export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) {
   const pathname = usePathname()
+  const router = useRouter()
   const { state, toggleSidebar } = useSidebar()
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -310,8 +312,15 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                 <DropdownMenuItem 
                   className="text-destructive cursor-pointer"
                   onClick={async () => {
+                    toast.success('Successfully logged out', {
+                      description: 'You have been signed out successfully.',
+                    })
                     const { logout } = await import('@/lib/auth')
                     await logout()
+                    // Add delay to let the toast display before redirecting
+                    setTimeout(() => {
+                      router.push('/')
+                    }, 1000)
                   }}
                 >
                   <LogOut className="mr-2 size-4" />
