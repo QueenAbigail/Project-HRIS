@@ -312,12 +312,15 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                 <DropdownMenuItem 
                   className="text-destructive cursor-pointer"
                   onClick={async () => {
-                    const { logout } = await import('@/lib/auth')
-                    await logout()
                     toast.success('Successfully logged out', {
                       description: 'You have been signed out successfully.',
                     })
-                    router.push('/')
+                    const { logout } = await import('@/lib/auth')
+                    await logout()
+                    // Add delay to let the toast display before redirecting
+                    setTimeout(() => {
+                      router.push('/')
+                    }, 1000)
                   }}
                 >
                   <LogOut className="mr-2 size-4" />
