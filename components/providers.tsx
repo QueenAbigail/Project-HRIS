@@ -14,7 +14,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     {children}
     <Toaster 
       theme="system"
-      position="top-right"
+      position="top-center"
       toastOptions={{
         classNames: {
           toast: 'bg-background border border-border text-foreground shadow-lg',
