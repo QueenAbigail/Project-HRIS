@@ -49,8 +49,41 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
         officer: 'Jane Smith',
         time: '09:15 AM',
         gpsVerified: true,
-        photosCount: 1,
-        notes: 'North perimeter fence intact. No damage or breaches observed. Completed full circuit inspection.',
+        photosCount: 6,
+        notes: `Completed comprehensive north perimeter patrol at 09:15 AM.
+
+FENCE CONDITION:
+- Full length fence inspected from west to east (2.4 km)
+- All fence panels intact with no visible damage or rust
+- Top rails secure and properly fastened
+- No gaps or holes detected along entire fence line
+- All tie-downs secured properly
+
+SECURITY FEATURES:
+- Motion sensors on north section tested and functioning
+- Security cameras at checkpoints 2A and 2B operational
+- Alarm system indicators showing green status
+- No tampering or attempted breaches observed
+
+AREA PERIMETER:
+- Cleared vegetation around fence line (5m radius)
+- No debris or foreign objects near perimeter
+- Drainage systems clear and functioning properly
+- Boundary markers visible and in good condition
+
+WILDLIFE/ENVIRONMENTAL:
+- No animal intrusions detected
+- Weather conditions: Clear and dry
+- Ground stable with no erosion issues
+- Night lighting system functional
+
+ADDITIONAL OBSERVATIONS:
+- North gate lock mechanism checked and working smoothly
+- Emergency access point clearly marked and accessible
+- All safety signage visible and legible
+- No unusual activity or security concerns noted
+
+Patrol completed successfully. All systems operational.`,
       },
       status: 'completed',
     },
