@@ -84,8 +84,8 @@ export default function LoginPage() {
 
     // Show success toast before redirecting
     if (result?.success) {
-      toast.success('Welcome back!', {
-        description: 'You have been successfully logged in.',
+      toast.success(`Welcome, ${result.userName}!`, {
+        description: 'Please wait while we redirect you to the dashboard.',
         duration: 2000,
       })
       // Redirect after toast displays
