@@ -422,7 +422,7 @@ export function AddEmployeeDialog({
                   <p className="text-sm text-muted-foreground mb-3">
                     Not sure what format to use? Download our employee template to see the required columns and data structure for bulk imports.
                   </p>
-                  <Button variant="outline" size="sm" className="gap-2" onClick={handleDownloadTemplate}>
+                  <Button variant="outline" className="mt-4 gap-2" onClick={handleDownloadTemplate}>
                     <Download className="size-4" />
                     Download Template
                   </Button>
