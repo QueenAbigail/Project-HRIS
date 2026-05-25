@@ -48,6 +48,56 @@ const statusColors: Record<string, { badge: string }> = {
   failed: { badge: 'bg-red-100 text-red-800' },
 }
 
+// Print styles
+const printStyles = `
+  @media print {
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      background: white;
+    }
+    
+    /* Hide all UI elements except payslip content */
+    [role="dialog"] {
+      all: unset !important;
+    }
+    
+    #payslip-content {
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      page-break-after: always;
+      background: white !important;
+    }
+    
+    .print-hidden {
+      display: none !important;
+    }
+    
+    /* Hide buttons and dialogs */
+    button, [role="button"], .close-btn {
+      display: none !important;
+    }
+    
+    /* Ensure proper sizing for A4 */
+    body, html {
+      width: 210mm;
+      height: 297mm;
+      margin: 0;
+      padding: 0;
+    }
+    
+    #payslip-content {
+      width: 100%;
+      padding: 20mm;
+      margin: 0;
+      font-size: 12px;
+    }
+  }
+`
+
 export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipDrawerProps) {
   if (!employee) return null
 
@@ -81,14 +131,16 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-100 p-6">
-        <DialogHeader className="sr-only">
-          <DialogTitle>Pay Slip</DialogTitle>
-          <DialogDescription>
-            {period} • {employee.name}
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <style>{printStyles}</style>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-100 p-6">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Pay Slip</DialogTitle>
+            <DialogDescription>
+              {period} • {employee.name}
+            </DialogDescription>
+          </DialogHeader>
 
         {/* White Paper Container */}
         <div
@@ -241,7 +293,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 justify-end mt-6 px-4">
+        <div className="print-hidden flex gap-2 justify-end mt-6 px-4">
           <Button 
             variant="outline" 
             size="sm" 
@@ -263,5 +315,6 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
         </div>
       </DialogContent>
     </Dialog>
+    </>
   )
 }
