@@ -55,6 +55,31 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
   const totalGross = employee.baseSalary + employee.overtime + employee.bonus + employee.allowances
   const takeHomePercentage = ((employee.netPay / totalGross) * 100).toFixed(1)
 
+  const handlePrint = () => {
+    window.print()
+  }
+
+  const handleDownloadPDF = async () => {
+    try {
+      const html2pdf = await import('html2pdf.js')
+      const element = document.getElementById('payslip-content')
+      if (!element) return
+
+      const opt = {
+        margin: 10,
+        filename: `payslip_${employee.id}_${period.replace(/\s+/g, '_')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
+      }
+
+      html2pdf.default().set(opt).from(element).save()
+    } catch (error) {
+      console.error('Error generating PDF:', error)
+      alert('Failed to generate PDF. Please try again.')
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-100 p-6">
@@ -67,6 +92,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
 
         {/* White Paper Container */}
         <div
+          id="payslip-content"
           className="relative bg-white text-slate-900 rounded-lg shadow-2xl p-10 overflow-hidden"
         >
           {/* Watermark Overlay - Grayscale & Ultra Faint */}
@@ -216,11 +242,21 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
 
         {/* Action Buttons */}
         <div className="flex gap-2 justify-end mt-6 px-4">
-          <Button variant="outline" size="sm" className="text-slate-900">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-slate-900"
+            onClick={handlePrint}
+          >
             <Printer className="mr-2 size-4" />
             Print
           </Button>
-          <Button variant="outline" size="sm" className="text-slate-900">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-slate-900"
+            onClick={handleDownloadPDF}
+          >
             <Download className="mr-2 size-4" />
             Download PDF
           </Button>
