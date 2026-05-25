@@ -1,7 +1,7 @@
 'use client'
 
 import { Card, CardContent } from '@/components/ui/card'
-import { Wallet, TrendingUp, Clock, Users } from 'lucide-react'
+import { Wallet, TrendingUp, Clock, Users, AlertCircle } from 'lucide-react'
 import { formatCurrency } from '@/lib/currency'
 
 const stats = [
@@ -20,11 +20,11 @@ const stats = [
     description: '1,245 hours',
   },
   {
-    title: 'Avg. Salary',
-    value: formatCurrency(2198),
-    change: '+1.8%',
-    icon: TrendingUp,
-    description: 'Per employee',
+    title: 'Total Employee Debts',
+    value: formatCurrency(245000),
+    change: '12 employees',
+    icon: AlertCircle,
+    description: 'Outstanding debts',
   },
   {
     title: 'Employees Paid',
