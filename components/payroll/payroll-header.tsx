@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Send, TrendingUp } from 'lucide-react'
+import { Send, TrendingUp, DollarSign } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -20,10 +20,12 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { PayrollChart } from './payroll-chart'
 import { PayrollPayRateDialog } from './payroll-pay-rate-dialog'
+import { EmployeeDebtDialog } from './employee-debt-dialog'
 
 export function PayrollHeader() {
   const [openTrendDrawer, setOpenTrendDrawer] = useState(false)
   const [openPayRateDialog, setOpenPayRateDialog] = useState(false)
+  const [openDebtDialog, setOpenDebtDialog] = useState(false)
   // In production, this would come from your database/backend
   const lastCalculatedTime = new Date(2026, 2, 17, 0, 0, 0).toLocaleDateString('en-US', { 
     month: 'short', 
@@ -50,6 +52,14 @@ export function PayrollHeader() {
           >
             <Send className="mr-2 size-4" />
             Payroll Pay Rate
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => setOpenDebtDialog(true)}
+            className="gap-2"
+          >
+            <DollarSign className="size-4" />
+            Manage Debts
           </Button>
         </div>
       </div>
@@ -106,6 +116,11 @@ export function PayrollHeader() {
       <PayrollPayRateDialog 
         open={openPayRateDialog}
         onOpenChange={setOpenPayRateDialog}
+      />
+
+      <EmployeeDebtDialog 
+        open={openDebtDialog}
+        onOpenChange={setOpenDebtDialog}
       />
     </div>
   )
