@@ -94,6 +94,29 @@ export function AddEmployeeDialog({
     }
   }
 
+  // Download template function
+  const handleDownloadTemplate = async () => {
+    try {
+      const XLSX = await import('xlsx')
+      const templateData = [
+        ['Full Name', 'Email', 'Employee Code (NIP)', 'Department', 'Position', 'Location', 'Join Date'],
+        ['John Doe', 'john.doe@company.com', 'EMP001', 'Field Security', 'Security Guard', 'HO-01', '2024-01-15'],
+        ['Jane Smith', 'jane.smith@company.com', 'EMP002', 'Surveillance', 'CCTV Operator', 'PT-DT', '2024-02-20'],
+        ['Mike Johnson', 'mike.johnson@company.com', 'EMP003', 'Administration', 'HR Coordinator', 'RM', '2024-03-10'],
+      ]
+
+      // Create worksheet
+      const ws = XLSX.utils.aoa_to_sheet(templateData)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Employees')
+      
+      // Download file
+      XLSX.writeFile(wb, 'employee_template.xlsx')
+    } catch (error) {
+      console.error('Failed to download template:', error)
+    }
+  }
+
   // Validasi Dinamis & Navigasi
   const handleNextStep = () => {
     const missingFields = []
@@ -399,7 +422,7 @@ export function AddEmployeeDialog({
                   <p className="text-sm text-muted-foreground mb-3">
                     Not sure what format to use? Download our employee template to see the required columns and data structure for bulk imports.
                   </p>
-                  <Button variant="outline" size="sm" className="gap-2">
+                  <Button variant="outline" size="sm" className="gap-2" onClick={handleDownloadTemplate}>
                     <Download className="size-4" />
                     Download Template
                   </Button>
