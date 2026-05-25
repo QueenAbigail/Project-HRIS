@@ -300,7 +300,7 @@ export function PayrollPayRateDialog({
                 <div className="space-y-4 rounded-lg border border-border bg-card p-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="taxPercentage">Tax Rate (%)</Label>
+                      <Label htmlFor="taxPercentage">Pajak PPh 21 (%)</Label>
                       <Input
                         id="taxPercentage"
                         type="number"
@@ -315,7 +315,7 @@ export function PayrollPayRateDialog({
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="insurancePercentage">Insurance Rate (%)</Label>
+                      <Label htmlFor="insurancePercentage">BPJS Kesehatan (%)</Label>
                       <Input
                         id="insurancePercentage"
                         type="number"
@@ -330,7 +330,7 @@ export function PayrollPayRateDialog({
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="bonusPercentage">Bonus Rate (%)</Label>
+                      <Label htmlFor="bonusPercentage">BPJS Ketenagakerjaan (%)</Label>
                       <Input
                         id="bonusPercentage"
                         type="number"
