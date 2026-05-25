@@ -418,8 +418,8 @@ export function AddEmployeeDialog({
                   </Button>
                 </div>
 
-                <div className="mt-4 p-4 bg-secondary rounded-lg border border-primary/20">
-                  <p className="text-sm text-secondary-foreground mb-3">
+                <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-muted-foreground/20">
+                  <p className="text-sm text-muted-foreground mb-3">
                     Not sure what format to use? Download our employee template to see the required columns and data structure for bulk imports.
                   </p>
                   <Button variant="outline" className="mt-4 gap-2" onClick={handleDownloadTemplate}>

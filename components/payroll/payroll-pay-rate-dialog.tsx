@@ -232,7 +232,7 @@ export function PayrollPayRateDialog({
 
               {/* Rates Configuration */}
               {currentConfig && (
-                <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="space-y-4 rounded-lg border border-border bg-card p-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="baseDailyRate">Base Daily Rate (IDR)</Label>
@@ -297,7 +297,7 @@ export function PayrollPayRateDialog({
 
               {/* Deductions Configuration */}
               {currentConfig && (
-                <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="space-y-4 rounded-lg border border-border bg-card p-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label htmlFor="taxPercentage">Tax Rate (%)</Label>
