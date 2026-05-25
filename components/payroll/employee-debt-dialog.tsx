@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -25,8 +25,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Check, ChevronsUpDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { locations, employeeSchedules } from '@/lib/constants'
 
 interface EmployeeDebt {
   id: string
@@ -47,13 +62,12 @@ interface EmployeeDebtDialogProps {
 }
 
 // Mock data - in production this would come from your database
-const mockEmployees = [
-  { id: 'EMP001', name: 'John Doe' },
-  { id: 'EMP002', name: 'Jane Smith' },
-  { id: 'EMP003', name: 'Mike Johnson' },
-  { id: 'EMP004', name: 'Sarah Williams' },
-  { id: 'EMP005', name: 'David Brown' },
-]
+const mockEmployees = employeeSchedules.map((schedule) => ({
+  id: schedule.employeeId,
+  name: schedule.employeeName,
+  displayText: `${schedule.employeeId} - ${schedule.employeeName} - ${locations.find((l) => l.id === schedule.locationId)?.name || schedule.locationId}`,
+  locationId: schedule.locationId,
+}))
 
 const mockDebts: EmployeeDebt[] = [
   {
@@ -86,10 +100,32 @@ export function EmployeeDebtDialog({ open, onOpenChange }: EmployeeDebtDialogPro
   const [debts, setDebts] = useState<EmployeeDebt[]>(mockDebts)
   const [activeTab, setActiveTab] = useState('list')
   const [selectedEmployee, setSelectedEmployee] = useState('')
+  const [comboboxOpen, setComboboxOpen] = useState(false)
+  const [searchValue, setSearchValue] = useState('')
   const [debtType, setDebtType] = useState('')
   const [amount, setAmount] = useState('')
   const [monthlyDeduction, setMonthlyDeduction] = useState('')
   const [reason, setReason] = useState('')
+
+  // Filter employees based on search
+  const filteredEmployees = useMemo(() => {
+    if (!searchValue) return mockEmployees
+    const query = searchValue.toLowerCase()
+    return mockEmployees.filter(
+      (emp) =>
+        emp.id.toLowerCase().includes(query) ||
+        emp.name.toLowerCase().includes(query)
+    )
+  }, [searchValue])
+
+  const handleEmployeeSelect = (employeeId: string) => {
+    const selectedEmp = mockEmployees.find((emp) => emp.id === employeeId)
+    if (selectedEmp) {
+      setSelectedEmployee(selectedEmp.id)
+      setSearchValue(selectedEmp.displayText)
+    }
+    setComboboxOpen(false)
+  }
 
   const handleAddDebt = () => {
     if (!selectedEmployee || !debtType || !amount || !monthlyDeduction || !reason) {
@@ -117,6 +153,7 @@ export function EmployeeDebtDialog({ open, onOpenChange }: EmployeeDebtDialogPro
     setDebts([...debts, newDebt])
     // Reset form
     setSelectedEmployee('')
+    setSearchValue('')
     setDebtType('')
     setAmount('')
     setMonthlyDeduction('')
@@ -210,19 +247,54 @@ export function EmployeeDebtDialog({ open, onOpenChange }: EmployeeDebtDialogPro
           <TabsContent value="add" className="space-y-4">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="employee">Select Employee</Label>
-                <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
-                  <SelectTrigger id="employee">
-                    <SelectValue placeholder="Choose employee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mockEmployees.map(emp => (
-                      <SelectItem key={emp.id} value={emp.id}>
-                        {emp.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Employee *</Label>
+                <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={comboboxOpen}
+                      className="w-full justify-between"
+                    >
+                      {selectedEmployee
+                        ? mockEmployees.find((emp) => emp.id === selectedEmployee)
+                            ?.displayText
+                        : 'Select employee...'}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput
+                        placeholder="Search by ID or name..."
+                        value={searchValue}
+                        onValueChange={setSearchValue}
+                      />
+                      <CommandList className="max-h-[300px] overflow-y-auto">
+                        <CommandEmpty>No employee found.</CommandEmpty>
+                        <CommandGroup>
+                          {filteredEmployees.map((employee) => (
+                            <CommandItem
+                              key={employee.id}
+                              value={`${employee.id} ${employee.name}`}
+                              onSelect={() => handleEmployeeSelect(employee.id)}
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  selectedEmployee === employee.id
+                                    ? 'opacity-100'
+                                    : 'opacity-0'
+                                )}
+                              />
+                              {employee.displayText}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="space-y-2">
