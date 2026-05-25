@@ -48,52 +48,51 @@ const statusColors: Record<string, { badge: string }> = {
   failed: { badge: 'bg-red-100 text-red-800' },
 }
 
-// Print styles
+// Print styles - Simple and effective
 const printStyles = `
   @media print {
     * {
-      margin: 0;
-      padding: 0;
+      margin: 0 !important;
+      padding: 0 !important;
     }
     
     body {
-      background: white;
+      background: white !important;
+      margin: 0 !important;
+      padding: 0 !important;
     }
     
-    /* Hide all UI elements except payslip content */
-    [role="dialog"] {
-      all: unset !important;
+    html {
+      background: white !important;
+      margin: 0 !important;
+      padding: 0 !important;
     }
     
+    /* Hide dialog wrapper and unnecessary elements */
+    [role="dialog"],
+    .print-hidden,
+    button,
+    [role="button"],
+    svg {
+      display: none !important;
+    }
+    
+    /* Show only payslip content */
     #payslip-content {
+      display: block !important;
       box-shadow: none !important;
       border-radius: 0 !important;
-      page-break-after: always;
+      padding: 0 !important;
+      margin: 0 !important;
+      width: 100% !important;
       background: white !important;
+      color: black !important;
     }
     
-    .print-hidden {
-      display: none !important;
-    }
-    
-    /* Hide buttons and dialogs */
-    button, [role="button"], .close-btn {
-      display: none !important;
-    }
-    
-    /* Ensure proper sizing for A4 */
-    body, html {
-      width: 210mm;
-      height: 297mm;
-      margin: 0;
-      padding: 0;
-    }
-    
-    #payslip-content {
-      width: 100%;
-      padding: 20mm;
-      margin: 0;
-      font-size: 12px;
+    /* Preserve content styling inside payslip */
+    #payslip-content * {
+      display: inherit !important;
+      visibility: visible !important;
     }
   }
 `
