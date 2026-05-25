@@ -394,6 +394,16 @@ export function AddEmployeeDialog({
                     <Upload className="mr-2 size-4" /> Choose File
                   </Button>
                 </div>
+
+                <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-muted-foreground/20">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Not sure what format to use? Download our employee template to see the required columns and data structure for bulk imports.
+                  </p>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Download className="size-4" />
+                    Download Template
+                  </Button>
+                </div>
               </>
             )}
             {importStatus === 'success' && (
