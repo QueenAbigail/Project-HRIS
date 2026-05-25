@@ -186,7 +186,7 @@ export function AddEmployeeDialog({
         <DialogHeader>
           <DialogTitle>Add Employee</DialogTitle>
           <DialogDescription>
-            Add a new employee manually or import multiple employees from an Excel/CSV file.
+            Add a new employee manually or import multiple employees from an Excel file.
           </DialogDescription>
         </DialogHeader>
         
@@ -388,8 +388,8 @@ export function AddEmployeeDialog({
               <>
                 <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-8 text-center">
                   <Upload className="mx-auto size-12 text-muted-foreground/50" />
-                  <h3 className="mt-4 text-lg font-semibold">Upload Excel or CSV File</h3>
-                  <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFileUpload} className="hidden" id="file-upload" />
+                  <h3 className="mt-4 text-lg font-semibold">Upload Excel File</h3>
+                  <input type="file" accept=".xlsx" onChange={handleFileUpload} className="hidden" id="file-upload" />
                   <Button variant="outline" className="mt-4" onClick={() => document.getElementById('file-upload')?.click()}>
                     <Upload className="mr-2 size-4" /> Choose File
                   </Button>
