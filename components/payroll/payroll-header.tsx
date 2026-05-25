@@ -53,14 +53,6 @@ export function PayrollHeader() {
             <Send className="mr-2 size-4" />
             Payroll Pay Rate
           </Button>
-          <Button 
-            variant="outline"
-            onClick={() => setOpenDebtDialog(true)}
-            className="gap-2"
-          >
-            <DollarSign className="size-4" />
-            Manage Debts
-          </Button>
         </div>
       </div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -89,14 +81,24 @@ export function PayrollHeader() {
             </SelectContent>
           </Select>
         </div>
-        <Button 
-          variant="outline"
-          onClick={() => setOpenTrendDrawer(true)}
-          className="w-full sm:w-auto"
-        >
-          <TrendingUp className="mr-2 size-4" />
-          Payroll Trend
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => setOpenDebtDialog(true)}
+            className="w-full sm:w-auto gap-2"
+          >
+            <DollarSign className="size-4" />
+            Manage Debts
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => setOpenTrendDrawer(true)}
+            className="w-full sm:w-auto"
+          >
+            <TrendingUp className="mr-2 size-4" />
+            Payroll Trend
+          </Button>
+        </div>
       </div>
 
       <Drawer open={openTrendDrawer} onOpenChange={setOpenTrendDrawer}>
