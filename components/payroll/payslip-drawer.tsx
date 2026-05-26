@@ -98,7 +98,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
     <>
       <style>{landscapePrintStyle}</style>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[calc(100vh*1.41)] max-h-[90vh] bg-gray-100 p-6 print:fixed print:inset-0 print:max-w-none print:max-h-screen print:p-0 print:m-0 print:bg-white print:rounded-none print:shadow-none print:w-screen print:h-screen print:overflow-visible print:break-inside-avoid overflow-auto rounded-lg shadow-xl">
+        <DialogContent className="w-[1400px] max-h-[700px] bg-gray-100 p-6 print:fixed print:inset-0 print:max-w-none print:max-h-screen print:p-0 print:m-0 print:bg-white print:rounded-none print:shadow-none print:w-screen print:h-screen print:overflow-visible print:break-inside-avoid overflow-auto rounded-lg shadow-xl">
           <DialogHeader className="sr-only print:hidden">
             <DialogTitle>Pay Slip</DialogTitle>
             <DialogDescription>
