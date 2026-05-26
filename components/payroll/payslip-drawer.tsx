@@ -238,7 +238,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
             {/* Bottom Section */}
             <div>
               {/* Net Pay */}
-              <div className="bg-green-50 border-2 border-green-300 rounded-md px-6 py-3 flex items-center justify-between mb-2">
+              <div className="bg-green-50/40 border-2 border-green-300 rounded-md px-6 py-3 flex items-center justify-between mb-2">
                 <span className="text-sm font-bold text-slate-900 uppercase">NET PAY (TAKE HOME)</span>
                 <div className="flex items-baseline gap-4">
                   <span className="font-mono text-2xl font-bold text-green-700">{formatCurrency(employee.netPay)}</span>
