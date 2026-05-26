@@ -48,55 +48,6 @@ const statusColors: Record<string, { badge: string }> = {
   failed: { badge: 'bg-red-100 text-red-800' },
 }
 
-// Print styles - Simple and effective
-const printStyles = `
-  @media print {
-    * {
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-    
-    body {
-      background: white !important;
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-    
-    html {
-      background: white !important;
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-    
-    /* Hide dialog wrapper and unnecessary elements */
-    [role="dialog"],
-    .print-hidden,
-    button,
-    [role="button"],
-    svg {
-      display: none !important;
-    }
-    
-    /* Show only payslip content */
-    #payslip-content {
-      display: block !important;
-      box-shadow: none !important;
-      border-radius: 0 !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      width: 100% !important;
-      background: white !important;
-      color: black !important;
-    }
-    
-    /* Preserve content styling inside payslip */
-    #payslip-content * {
-      display: inherit !important;
-      visibility: visible !important;
-    }
-  }
-`
-
 export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipDrawerProps) {
   if (!employee) return null
 
@@ -130,21 +81,19 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
   }
 
   return (
-    <>
-      <style>{printStyles}</style>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-100 p-6">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Pay Slip</DialogTitle>
-            <DialogDescription>
-              {period} • {employee.name}
-            </DialogDescription>
-          </DialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-100 p-6 print:fixed print:inset-0 print:max-h-screen print:p-0 print:m-0 print:bg-white print:rounded-none print:shadow-none print:w-screen print:h-screen">
+        <DialogHeader className="sr-only print:hidden">
+          <DialogTitle>Pay Slip</DialogTitle>
+          <DialogDescription>
+            {period} • {employee.name}
+          </DialogDescription>
+        </DialogHeader>
 
         {/* White Paper Container */}
         <div
           id="payslip-content"
-          className="relative bg-white text-slate-900 rounded-lg shadow-2xl p-10 overflow-hidden"
+          className="relative bg-white text-slate-900 rounded-lg shadow-2xl p-10 overflow-hidden print:fixed print:inset-0 print:rounded-none print:shadow-none print:p-20 print:m-0"
         >
           {/* Watermark Overlay - Grayscale & Ultra Faint */}
           <div
@@ -292,7 +241,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
         </div>
 
         {/* Action Buttons */}
-        <div className="print-hidden flex gap-2 justify-end mt-6 px-4">
+        <div className="print:hidden flex gap-2 justify-end mt-6 px-4">
           <Button 
             variant="outline" 
             size="sm" 
@@ -314,6 +263,5 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
         </div>
       </DialogContent>
     </Dialog>
-    </>
   )
 }
