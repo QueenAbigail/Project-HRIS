@@ -125,124 +125,131 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
           />
 
           {/* Content - Landscape Layout */}
-          <div className="relative z-10 flex flex-col h-full overflow-hidden">
-            {/* Header - Compact Horizontal */}
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-300 flex-shrink-0">
-              <div className="flex-1">
-                <h1 className="text-lg font-bold text-slate-900">PT Pro Maxima Rajawali</h1>
-                <div className="flex gap-4 mt-1 text-xs">
-                  <span className="text-slate-600">PAY SLIP</span>
-                  <span className="font-semibold text-slate-900">{period}</span>
+          <div className="relative z-10 flex flex-col h-full justify-between">
+            {/* Header Section */}
+            <div>
+              <div className="flex items-center justify-between mb-2 pb-3 border-b border-gray-300">
+                <div className="flex-1">
+                  <h1 className="text-base font-bold text-slate-900">PT Pro Maxima Rajawali</h1>
+                  <div className="flex gap-6 mt-1 text-xs">
+                    <span className="text-slate-600">PAY SLIP</span>
+                    <span className="font-semibold text-slate-900">{period}</span>
+                  </div>
+                </div>
+                <Badge className={`${statusStyle.badge} text-xs py-1 px-2 h-fit flex-shrink-0`}>
+                  {employee.status.toUpperCase()}
+                </Badge>
+              </div>
+
+              {/* Employee Info */}
+              <div className="flex items-center gap-4 py-2 border-b border-gray-300">
+                <Avatar className="size-12 flex-shrink-0">
+                  <AvatarImage src={`/avatars/${employee.id}.jpg`} alt={employee.name} />
+                  <AvatarFallback className="bg-blue-100 text-blue-900 text-sm font-bold">
+                    {employee.initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="grid grid-cols-4 gap-8 text-xs flex-1">
+                  <div>
+                    <p className="text-slate-500 font-semibold mb-0.5">NAME</p>
+                    <p className="font-semibold text-slate-900">{employee.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500 font-semibold mb-0.5">ID</p>
+                    <p className="font-semibold text-slate-900">{employee.id}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500 font-semibold mb-0.5">DEPARTMENT</p>
+                    <p className="font-semibold text-slate-900">{employee.department}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500 font-semibold mb-0.5">DAYS WORKED</p>
+                    <p className="font-semibold text-slate-900">{employee.daysWorked}/{employee.totalDays}</p>
+                  </div>
                 </div>
               </div>
-              <Badge className={`${statusStyle.badge} text-xs py-1 px-2 h-fit flex-shrink-0`}>
-                {employee.status.toUpperCase()}
-              </Badge>
             </div>
 
-            {/* Employee Info - Ultra Compact */}
-            <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gray-300 flex-shrink-0">
-              <Avatar className="size-10 flex-shrink-0">
-                <AvatarImage src={`/avatars/${employee.id}.jpg`} alt={employee.name} />
-                <AvatarFallback className="bg-blue-100 text-blue-900 text-xs font-bold">
-                  {employee.initials}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex gap-6 text-xs flex-1">
-                <div>
-                  <p className="text-slate-600 uppercase text-xs font-semibold">Name</p>
-                  <p className="font-semibold text-slate-900">{employee.name}</p>
-                </div>
-                <div>
-                  <p className="text-slate-600 uppercase text-xs font-semibold">ID</p>
-                  <p className="font-semibold text-slate-900">{employee.id}</p>
-                </div>
-                <div>
-                  <p className="text-slate-600 uppercase text-xs font-semibold">Dept</p>
-                  <p className="font-semibold text-slate-900">{employee.department}</p>
-                </div>
-                <div>
-                  <p className="text-slate-600 uppercase text-xs font-semibold">Days</p>
-                  <p className="font-semibold text-slate-900">{employee.daysWorked}/{employee.totalDays}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Main Content - Earnings and Deductions Side by Side */}
-            <div className="flex-1 flex gap-6 overflow-hidden mb-3">
+            {/* Main Content - Earnings and Deductions */}
+            <div className="flex-1 flex gap-8 py-4 border-b border-gray-300 overflow-hidden">
               {/* Earnings */}
-              <div className="flex-1 border-r border-gray-300 pr-6 overflow-y-auto">
-                <h3 className="font-bold text-slate-900 uppercase text-xs mb-2 flex-shrink-0">Earnings</h3>
-                <div className="space-y-1 text-xs">
-                  <div className="flex justify-between border-b border-gray-200 pb-1">
+              <div className="flex-1 border-r border-gray-300 pr-8">
+                <h3 className="font-bold text-slate-900 uppercase text-xs mb-3">Earnings</h3>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between items-center">
                     <span className="text-slate-700">Base Salary</span>
                     <span className="font-mono font-semibold text-slate-900">{formatCurrency(employee.baseSalary)}</span>
                   </div>
                   {employee.overtimeHours > 0 && (
-                    <div className="flex justify-between border-b border-gray-200 pb-1">
+                    <div className="flex justify-between items-center">
                       <span className="text-slate-700">Overtime ({employee.overtimeHours}h)</span>
                       <span className="font-mono font-semibold text-green-700">+{formatCurrency(employee.overtime)}</span>
                     </div>
                   )}
                   {employee.bonus > 0 && (
-                    <div className="flex justify-between border-b border-gray-200 pb-1">
+                    <div className="flex justify-between items-center">
                       <span className="text-slate-700">Bonus</span>
                       <span className="font-mono font-semibold text-green-700">+{formatCurrency(employee.bonus)}</span>
                     </div>
                   )}
                   {employee.allowances > 0 && (
-                    <div className="flex justify-between border-b border-gray-200 pb-1">
+                    <div className="flex justify-between items-center">
                       <span className="text-slate-700">Allowances</span>
                       <span className="font-mono font-semibold text-green-700">+{formatCurrency(employee.allowances)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between border-t border-gray-300 pt-1 mt-1 font-bold">
-                    <span className="text-slate-900 text-xs">Total Gross</span>
-                    <span className="font-mono text-green-700">{formatCurrency(totalGross)}</span>
+                  <div className="flex justify-between items-center pt-2 mt-2 border-t-2 border-gray-300 font-bold">
+                    <span className="text-slate-900 text-xs">TOTAL GROSS</span>
+                    <span className="font-mono text-sm text-green-700">{formatCurrency(totalGross)}</span>
                   </div>
                 </div>
               </div>
 
               {/* Deductions */}
-              <div className="flex-1 pl-6 overflow-y-auto">
-                <h3 className="font-bold text-slate-900 uppercase text-xs mb-2 flex-shrink-0">Deductions</h3>
-                <div className="space-y-1 text-xs">
+              <div className="flex-1 pl-8">
+                <h3 className="font-bold text-slate-900 uppercase text-xs mb-3">Deductions</h3>
+                <div className="space-y-2 text-xs">
                   {employee.taxDeduction > 0 && (
-                    <div className="flex justify-between border-b border-gray-200 pb-1">
+                    <div className="flex justify-between items-center">
                       <span className="text-slate-700">Income Tax</span>
                       <span className="font-mono font-semibold text-red-700">-{formatCurrency(employee.taxDeduction)}</span>
                     </div>
                   )}
                   {employee.insuranceDeduction > 0 && (
-                    <div className="flex justify-between border-b border-gray-200 pb-1">
+                    <div className="flex justify-between items-center">
                       <span className="text-slate-700">Insurance</span>
                       <span className="font-mono font-semibold text-red-700">-{formatCurrency(employee.insuranceDeduction)}</span>
                     </div>
                   )}
                   {employee.otherDeductions > 0 && (
-                    <div className="flex justify-between border-b border-gray-200 pb-1">
+                    <div className="flex justify-between items-center">
                       <span className="text-slate-700">Other Deductions</span>
                       <span className="font-mono font-semibold text-red-700">-{formatCurrency(employee.otherDeductions)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between border-t border-gray-300 pt-1 mt-1 font-bold">
-                    <span className="text-slate-900 text-xs">Total Deductions</span>
-                    <span className="font-mono text-red-700">-{formatCurrency(employee.deductions)}</span>
+                  <div className="flex justify-between items-center pt-2 mt-2 border-t-2 border-gray-300 font-bold">
+                    <span className="text-slate-900 text-xs">TOTAL DEDUCTIONS</span>
+                    <span className="font-mono text-sm text-red-700">-{formatCurrency(employee.deductions)}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Net Pay - Bottom */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded px-4 py-2 flex items-center justify-between flex-shrink-0 mb-2">
-              <span className="text-xs font-bold text-slate-900 uppercase">Net Pay</span>
-              <span className="font-mono text-lg font-bold text-green-700">{formatCurrency(employee.netPay)}</span>
-              <span className="text-xs text-slate-600 ml-auto">{takeHomePercentage}% of gross</span>
-            </div>
+            {/* Bottom Section */}
+            <div>
+              {/* Net Pay */}
+              <div className="bg-green-50 border-2 border-green-300 rounded-md px-6 py-3 flex items-center justify-between mb-2">
+                <span className="text-sm font-bold text-slate-900 uppercase">NET PAY (TAKE HOME)</span>
+                <div className="flex items-baseline gap-4">
+                  <span className="font-mono text-2xl font-bold text-green-700">{formatCurrency(employee.netPay)}</span>
+                  <span className="text-xs text-slate-600">{takeHomePercentage}% of gross salary</span>
+                </div>
+              </div>
 
-            {/* Footer */}
-            <div className="text-center flex-shrink-0">
-              <p className="text-xs text-slate-600">This is an automated pay slip. Please contact HR for discrepancies.</p>
+              {/* Footer */}
+              <div className="text-center py-2 border-t border-gray-200">
+                <p className="text-xs text-slate-600">This is an automated pay slip. Please contact HR for discrepancies.</p>
+              </div>
             </div>
           </div>
         </div>
