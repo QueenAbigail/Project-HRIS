@@ -48,6 +48,20 @@ const statusColors: Record<string, { badge: string }> = {
   failed: { badge: 'bg-red-100 text-red-800' },
 }
 
+// Landscape print CSS
+const landscapePrintStyle = `
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
+  @media print {
+    body {
+      margin: 0;
+      padding: 0;
+    }
+  }
+`
+
 export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipDrawerProps) {
   if (!employee) return null
 
@@ -70,7 +84,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
         filename: `payslip_${employee.id}_${period.replace(/\s+/g, '_')}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2 },
-        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
+        jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' },
       }
 
       html2pdf.default().set(opt).from(element).save()
@@ -81,20 +95,22 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-100 p-6 print:fixed print:inset-0 print:max-h-screen print:p-0 print:m-0 print:bg-white print:rounded-none print:shadow-none print:w-screen print:h-screen">
-        <DialogHeader className="sr-only print:hidden">
-          <DialogTitle>Pay Slip</DialogTitle>
-          <DialogDescription>
-            {period} • {employee.name}
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <style>{landscapePrintStyle}</style>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-gray-100 p-6 print:fixed print:inset-0 print:max-w-none print:max-h-screen print:p-0 print:m-0 print:bg-white print:rounded-none print:shadow-none print:w-screen print:h-screen print:overflow-visible print:break-inside-avoid">
+          <DialogHeader className="sr-only print:hidden">
+            <DialogTitle>Pay Slip</DialogTitle>
+            <DialogDescription>
+              {period} • {employee.name}
+            </DialogDescription>
+          </DialogHeader>
 
-        {/* White Paper Container */}
-        <div
-          id="payslip-content"
-          className="relative bg-white text-slate-900 rounded-lg shadow-2xl p-10 overflow-hidden print:fixed print:inset-0 print:rounded-none print:shadow-none print:p-20 print:m-0"
-        >
+          {/* White Paper Container */}
+          <div
+            id="payslip-content"
+            className="relative bg-white text-slate-900 rounded-lg shadow-2xl p-10 print:fixed print:inset-0 print:rounded-none print:shadow-none print:p-12 print:m-0 print:break-inside-avoid"
+          >
           {/* Watermark Overlay - Grayscale & Ultra Faint */}
           <div
             className="absolute inset-0 pointer-events-none z-0"
@@ -152,87 +168,92 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
               </div>
             </div>
 
-            {/* Earnings Section */}
-            <div className="border-b-2 border-gray-300 pb-6">
-              <h3 className="mb-4 font-bold text-slate-900 uppercase tracking-wide">Earnings</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm border-b border-gray-200 pb-2">
-                  <span className="text-slate-700">Base Salary</span>
-                  <span className="font-mono font-semibold text-slate-900">{formatCurrency(employee.baseSalary)}</span>
+            {/* Earnings and Deductions Section - Side by Side */}
+            <div className="grid grid-cols-2 gap-8">
+              {/* Earnings Section - Left Column */}
+              <div className="border-r-2 border-gray-300 pr-8">
+                <h3 className="mb-4 font-bold text-slate-900 uppercase tracking-wide text-sm">Earnings</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm border-b border-gray-200 pb-2">
+                    <span className="text-slate-700">Base Salary</span>
+                    <span className="font-mono font-semibold text-slate-900">{formatCurrency(employee.baseSalary)}</span>
+                  </div>
+                  {employee.overtimeHours > 0 && (
+                    <div className="flex items-center justify-between text-sm border-b border-gray-200 pb-2">
+                      <span className="text-slate-700">Overtime ({employee.overtimeHours}h)</span>
+                      <span className="font-mono font-semibold text-green-700">+{formatCurrency(employee.overtime)}</span>
+                    </div>
+                  )}
+                  {employee.bonus > 0 && (
+                    <div className="flex items-center justify-between text-sm border-b border-gray-200 pb-2">
+                      <span className="text-slate-700">Bonus</span>
+                      <span className="font-mono font-semibold text-green-700">+{formatCurrency(employee.bonus)}</span>
+                    </div>
+                  )}
+                  {employee.allowances > 0 && (
+                    <div className="flex items-center justify-between text-sm border-b border-gray-200 pb-2">
+                      <span className="text-slate-700">Allowances</span>
+                      <span className="font-mono font-semibold text-green-700">+{formatCurrency(employee.allowances)}</span>
+                    </div>
+                  )}
                 </div>
-                {employee.overtimeHours > 0 && (
-                  <div className="flex items-center justify-between text-sm border-b border-gray-200 pb-2">
-                    <span className="text-slate-700">Overtime ({employee.overtimeHours}h @ {formatCurrency(employee.overtimeRate)}/hr)</span>
-                    <span className="font-mono font-semibold text-green-700">+{formatCurrency(employee.overtime)}</span>
-                  </div>
-                )}
-                {employee.bonus > 0 && (
-                  <div className="flex items-center justify-between text-sm border-b border-gray-200 pb-2">
-                    <span className="text-slate-700">Bonus</span>
-                    <span className="font-mono font-semibold text-green-700">+{formatCurrency(employee.bonus)}</span>
-                  </div>
-                )}
-                {employee.allowances > 0 && (
-                  <div className="flex items-center justify-between text-sm border-b border-gray-200 pb-2">
-                    <span className="text-slate-700">Allowances</span>
-                    <span className="font-mono font-semibold text-green-700">+{formatCurrency(employee.allowances)}</span>
-                  </div>
-                )}
+                <div className="mt-4 pt-4 flex justify-between border-t-2 border-gray-300">
+                  <span className="font-bold text-slate-900 uppercase text-sm">Total Gross</span>
+                  <span className="font-mono text-base font-bold text-green-700">
+                    {formatCurrency(totalGross)}
+                  </span>
+                </div>
               </div>
-              <div className="mt-4 pt-4 flex justify-between border-t-2 border-gray-300">
-                <span className="font-bold text-slate-900 uppercase text-sm">Total Gross</span>
-                <span className="font-mono text-lg font-bold text-green-700">
-                  {formatCurrency(totalGross)}
-                </span>
-              </div>
-            </div>
 
-            {/* Deductions Section */}
-            <div className="border-b-2 border-gray-300 pb-6">
-              <h3 className="mb-4 font-bold text-slate-900 uppercase tracking-wide">Deductions</h3>
-              <div className="space-y-3">
-                {employee.taxDeduction > 0 && (
-                  <div className="flex items-center justify-between text-sm border-b border-gray-200 pb-2">
-                    <span className="text-slate-700">Income Tax</span>
-                    <span className="font-mono font-semibold text-red-700">-{formatCurrency(employee.taxDeduction)}</span>
-                  </div>
-                )}
-                {employee.insuranceDeduction > 0 && (
-                  <div className="flex items-center justify-between text-sm border-b border-gray-200 pb-2">
-                    <span className="text-slate-700">Insurance</span>
-                    <span className="font-mono font-semibold text-red-700">-{formatCurrency(employee.insuranceDeduction)}</span>
-                  </div>
-                )}
-                {employee.otherDeductions > 0 && (
-                  <div className="flex items-center justify-between text-sm border-b border-gray-200 pb-2">
-                    <span className="text-slate-700">Other Deductions</span>
-                    <span className="font-mono font-semibold text-red-700">-{formatCurrency(employee.otherDeductions)}</span>
-                  </div>
-                )}
-              </div>
-              <div className="mt-4 pt-4 flex justify-between border-t-2 border-gray-300">
-                <span className="font-bold text-slate-900 uppercase text-sm">Total Deductions</span>
-                <span className="font-mono text-lg font-bold text-red-700">
-                  -{formatCurrency(employee.deductions)}
-                </span>
+              {/* Deductions Section - Right Column */}
+              <div className="pl-8">
+                <h3 className="mb-4 font-bold text-slate-900 uppercase tracking-wide text-sm">Deductions</h3>
+                <div className="space-y-3">
+                  {employee.taxDeduction > 0 && (
+                    <div className="flex items-center justify-between text-sm border-b border-gray-200 pb-2">
+                      <span className="text-slate-700">Income Tax</span>
+                      <span className="font-mono font-semibold text-red-700">-{formatCurrency(employee.taxDeduction)}</span>
+                    </div>
+                  )}
+                  {employee.insuranceDeduction > 0 && (
+                    <div className="flex items-center justify-between text-sm border-b border-gray-200 pb-2">
+                      <span className="text-slate-700">Insurance</span>
+                      <span className="font-mono font-semibold text-red-700">-{formatCurrency(employee.insuranceDeduction)}</span>
+                    </div>
+                  )}
+                  {employee.otherDeductions > 0 && (
+                    <div className="flex items-center justify-between text-sm border-b border-gray-200 pb-2">
+                      <span className="text-slate-700">Other Deductions</span>
+                      <span className="font-mono font-semibold text-red-700">-{formatCurrency(employee.otherDeductions)}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4 pt-4 flex justify-between border-t-2 border-gray-300">
+                  <span className="font-bold text-slate-900 uppercase text-sm">Total Deductions</span>
+                  <span className="font-mono text-base font-bold text-red-700">
+                    -{formatCurrency(employee.deductions)}
+                  </span>
+                </div>
               </div>
             </div>
 
             {/* Net Pay Section */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg px-6 py-4">
-              <div className="flex items-center justify-between">
-                <span className="text-base font-bold text-slate-900 uppercase tracking-wide">Net Pay (Take Home)</span>
-                <span className="font-mono text-3xl font-bold text-green-700">
-                  {formatCurrency(employee.netPay)}
-                </span>
+            <div className="mt-8 pt-8 border-t-2 border-gray-300">
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-base font-bold text-slate-900 uppercase tracking-wide">Net Pay (Take Home)</span>
+                  <span className="font-mono text-3xl font-bold text-green-700">
+                    {formatCurrency(employee.netPay)}
+                  </span>
+                </div>
+                <p className="mt-3 text-xs text-slate-600">
+                  <span className="font-semibold">{takeHomePercentage}%</span> of gross salary
+                </p>
               </div>
-              <p className="mt-3 text-xs text-slate-600">
-                <span className="font-semibold">{takeHomePercentage}%</span> of gross salary
-              </p>
             </div>
 
             {/* Footer */}
-            <div className="border-t-2 border-gray-300 pt-6 text-center">
+            <div className="border-t-2 border-gray-300 pt-6 mt-8 text-center">
               <p className="text-xs text-slate-600">
                 This is an automated pay slip. Please contact HR for discrepancies.
               </p>
@@ -263,5 +284,6 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
         </div>
       </DialogContent>
     </Dialog>
+    </>
   )
 }
