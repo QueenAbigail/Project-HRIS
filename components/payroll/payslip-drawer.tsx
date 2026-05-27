@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Download, Printer } from 'lucide-react'
 import { formatCurrency } from '@/lib/currency'
-import html2pdf from 'html2pdf.js'
+import { useEffect } from 'react'
 
 interface PayslipEmployee {
   id: string
@@ -104,21 +104,32 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
       const element = document.getElementById('payslip-print-zone')
       if (!element) {
         console.error('[v0] Element not found')
+        alert('Error: Could not find payslip element')
         return
       }
 
+      // Load html2pdf from CDN if not already loaded
+      if (typeof (window as any).html2pdf === 'undefined') {
+        console.error('[v0] html2pdf library not found')
+        alert('PDF library is loading. Please try again in a moment.')
+        return
+      }
+
+      const html2pdf = (window as any).html2pdf.jsPDF || (window as any).html2pdf
+
       const opt = {
-        margin: 10,
+        margin: 8,
         filename: `payslip_${employee.id}_${period.replace(/\s+/g, '_')}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
+        html2canvas: { scale: 2, logging: false, useCORS: true },
         jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' },
       }
 
-      html2pdf().set(opt).from(element).save()
+      console.log('[v0] Generating PDF...')
+      html2pdf.default ? html2pdf.default().set(opt).from(element).save() : html2pdf().set(opt).from(element).save()
     } catch (error) {
       console.error('[v0] Error generating PDF:', error)
-      alert('Failed to generate PDF. Please try again.')
+      alert(`Failed to generate PDF: ${(error as Error).message}`)
     }
   }
 
