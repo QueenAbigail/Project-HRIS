@@ -48,33 +48,41 @@ const statusColors: Record<string, { badge: string }> = {
   failed: { badge: 'bg-red-100 text-red-800' },
 }
 
-// THE MAGIC CSS: Jinakin Shadcn Radix Portal
+// CSS Print Super Aman
 const landscapePrintStyle = `
   @page {
-    size: A4 landscape;
-    margin: 5mm; 
+    /* Sengaja nggak pakai 'size: landscape' biar dropdown Layout di Chrome muncul */
+    margin: 10mm; 
   }
   @media print {
-    /* 1. Sembunyikan SEMUA elemen background (Dashboard dll) KECUALI modal Shadcn */
-    body > *:not([data-radix-portal]) {
-      display: none !important;
-    }
-    
-    /* 2. Sembunyikan background hitam (overlay) dari Shadcn */
-    [data-radix-portal] > div:first-of-type {
-      display: none !important;
-    }
-
-    /* 3. Pastikan modal tidak ngambang, nempel pas di kertas */
-    [data-radix-portal] {
-      position: static !important;
-    }
-
-    /* 4. Tembak warna biar hijau Take Home Pay ga ilang */
     body {
-      background-color: white !important;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
+    }
+    
+    /* 1. Bikin semua elemen di layar jadi tembus pandang (hilang) */
+    body * {
+      visibility: hidden;
+    }
+    
+    /* 2. Tampilkan HANYA area payslip dan isinya */
+    #payslip-print-zone, #payslip-print-zone * {
+      visibility: visible;
+    }
+    
+    /* 3. Tarik area payslip ke pojok kiri atas kertas biar pas 1 halaman */
+    #payslip-print-zone {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* 4. Sembunyikan tombol 'X' (Close) bawaan Shadcn */
+    button[aria-label="Close"] {
+      display: none !important;
     }
   }
 `
@@ -115,8 +123,8 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
     <>
       <style>{landscapePrintStyle}</style>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        {/* KUNCI LEBAR WEB: !max-w-[1100px] biar melar landscape. KUNCI PRINT: Hilangkan transform & fixed */}
-        <DialogContent className="!max-w-[1100px] !w-[95vw] bg-white !p-0 overflow-hidden rounded-xl shadow-2xl border-none [&>button]:print:hidden print:!static print:!transform-none print:!w-full print:!max-w-none print:!m-0 print:!p-0 print:!shadow-none print:!rounded-none print:!h-auto print:!min-h-screen">
+        {/* max-w-5xl akan memaksa modal lebar di layar web */}
+        <DialogContent className="sm:max-w-5xl w-[95vw] bg-white p-0 border-none shadow-2xl overflow-hidden print:border-none print:shadow-none">
           <DialogHeader className="sr-only print:hidden">
             <DialogTitle>Pay Slip</DialogTitle>
             <DialogDescription>
@@ -124,10 +132,10 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
             </DialogDescription>
           </DialogHeader>
 
-          {/* Area Kertas - Lebar lega buat web & pas buat print */}
+          {/* ZONA CETAK - Hanya kotak ini yang akan masuk ke kertas */}
           <div
             id="payslip-print-zone"
-            className="relative w-full bg-white text-slate-900 p-10 flex flex-col justify-between print:p-8"
+            className="relative w-full bg-white text-slate-900 p-8 flex flex-col justify-between"
           >
             {/* Watermark Logo */}
             <div
@@ -142,10 +150,10 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
               }}
             />
 
-            <div className="relative z-10 flex flex-col h-full print:break-inside-avoid">
+            <div className="relative z-10 flex flex-col h-full">
               {/* Header */}
               <div>
-                <div className="flex items-center justify-between mb-4 pb-4 border-b-2 border-gray-200">
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
                   <div className="flex-1">
                     <h1 className="text-2xl font-black text-slate-900">PT Pro Maxima Rajawali</h1>
                     <div className="flex gap-6 mt-1 text-sm">
@@ -159,14 +167,14 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
                 </div>
 
                 {/* Info Karyawan */}
-                <div className="flex items-center gap-8 py-3 mb-2">
+                <div className="flex items-center gap-8 py-2 mb-2">
                   <Avatar className="size-16 flex-shrink-0 border bg-white shadow-sm">
                     <AvatarImage src={`/avatars/${employee.id}.jpg`} alt={employee.name} />
                     <AvatarFallback className="bg-slate-100 text-slate-700 text-lg font-bold">
                       {employee.initials}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="grid grid-cols-4 gap-12 text-sm flex-1">
+                  <div className="grid grid-cols-4 gap-8 text-sm flex-1">
                     <div>
                       <p className="text-slate-400 font-bold mb-1 text-xs tracking-wider">EMPLOYEE NAME</p>
                       <p className="font-bold text-slate-900 text-base">{employee.name}</p>
@@ -187,12 +195,12 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
                 </div>
               </div>
 
-              {/* Rincian Gaji - Format 2 Kolom Lebar */}
-              <div className="flex-1 flex gap-16 py-6 border-y-2 border-gray-200 mt-4">
+              {/* Rincian Gaji - 2 Kolom Kiri Kanan */}
+              <div className="flex-1 flex gap-12 py-6 border-y border-gray-200 mt-4">
                 {/* Kolom Pemasukan */}
-                <div className="flex-1 border-r-2 border-gray-100 pr-16">
+                <div className="flex-1 border-r border-gray-100 pr-12">
                   <h3 className="font-bold text-slate-900 uppercase text-sm mb-5 tracking-widest">Earnings</h3>
-                  <div className="space-y-4 text-sm">
+                  <div className="space-y-3 text-sm">
                     <div className="flex justify-between items-center">
                       <span className="text-slate-600 font-medium">Base Salary</span>
                       <span className="font-mono font-semibold text-slate-900">{formatCurrency(employee.baseSalary)}</span>
@@ -226,7 +234,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
                 {/* Kolom Potongan */}
                 <div className="flex-1 pl-4">
                   <h3 className="font-bold text-slate-900 uppercase text-sm mb-5 tracking-widest">Deductions</h3>
-                  <div className="space-y-4 text-sm">
+                  <div className="space-y-3 text-sm">
                     {employee.taxDeduction > 0 && (
                       <div className="flex justify-between items-center">
                         <span className="text-slate-600 font-medium">Income Tax</span>
@@ -255,13 +263,13 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
               </div>
 
               {/* Total Take Home Pay */}
-              <div className="pt-8">
-                <div className="bg-green-50 border-2 border-green-200 rounded-lg px-8 py-6 flex items-center justify-between mb-4 shadow-sm">
+              <div className="pt-6">
+                <div className="bg-green-50 border border-green-200 rounded-lg px-8 py-5 flex items-center justify-between mb-2 shadow-sm">
                   <div>
-                    <span className="text-xl font-black text-slate-900 uppercase tracking-widest block">Take Home Pay</span>
-                    <span className="text-sm text-green-700/80 font-bold mt-1 block">{takeHomePercentage}% of gross salary</span>
+                    <span className="text-lg font-bold text-slate-900 uppercase tracking-widest block">Take Home Pay</span>
+                    <span className="text-xs text-green-700/80 font-bold mt-1 block">{takeHomePercentage}% of gross salary</span>
                   </div>
-                  <span className="font-mono text-5xl font-black text-green-700">{formatCurrency(employee.netPay)}</span>
+                  <span className="font-mono text-4xl font-black text-green-700">{formatCurrency(employee.netPay)}</span>
                 </div>
 
                 <div className="text-center py-2">
@@ -271,8 +279,8 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
             </div>
           </div>
 
-          {/* Tombol Print & Download (Otomatis hilang pas ngeprint) */}
-          <div className="print:hidden flex gap-3 justify-end px-10 pb-8 bg-white rounded-b-xl border-t border-gray-100 pt-4">
+          {/* Tombol Print & Download (Sembunyi otomatis saat print via Tailwind print:hidden) */}
+          <div className="print:hidden flex gap-3 justify-end px-8 pb-6 bg-white rounded-b-xl">
             <Button 
               variant="outline" 
               className="text-slate-700 hover:text-slate-900 font-bold"
