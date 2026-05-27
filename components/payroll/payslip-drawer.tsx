@@ -52,40 +52,44 @@ const statusColors: Record<string, { badge: string }> = {
 const landscapePrintStyle = `
   @page {
     size: A4 landscape;
-    margin: 10mm;
-    padding: 0;
+    margin: 8mm;
   }
   
   @media print {
-    * {
+    body, html {
       margin: 0 !important;
       padding: 0 !important;
-      page-break-inside: avoid !important;
-    }
-    
-    html, body {
-      margin: 0 !important;
-      padding: 0 !important;
-      width: 100%;
-      height: 100%;
+      width: 100% !important;
+      height: 100% !important;
       background: white !important;
     }
     
-    /* Dialog and overlay hiding */
+    * {
+      page-break-inside: avoid !important;
+    }
+    
     [role="dialog"],
-    .dialog-overlay,
-    .print:hidden {
+    [class*="dialog"],
+    [class*="overlay"],
+    [class*="DialogContent"],
+    .sr-only {
       display: none !important;
     }
     
     #payslip-content {
-      page-break-inside: avoid !important;
-      page-break-before: avoid !important;
-      page-break-after: avoid !important;
-      orphans: 0 !important;
-      widows: 0 !important;
+      position: static !important;
+      margin: 0 !important;
+      padding: 24px !important;
       width: 100% !important;
       height: auto !important;
+      background: white !important;
+      page-break-inside: avoid !important;
+      page-break-after: avoid !important;
+    }
+    
+    #payslip-content > * {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
     }
   }
 `
@@ -199,12 +203,12 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
             </div>
 
             {/* Main Content - Earnings and Deductions */}
-            <div className="flex-1 flex gap-8 py-4 border-b border-gray-300 overflow-hidden">
+            <div className="flex-1 flex gap-8 py-4 border-b border-gray-300 overflow-hidden print:gap-6">
               {/* Earnings */}
-              <div className="flex-1 border-r border-gray-300 pr-8">
-                <h3 className="font-bold text-slate-900 uppercase text-xs mb-3">Earnings</h3>
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between items-center">
+              <div className="flex-1 border-r border-gray-300 pr-8 print:pr-6 overflow-hidden">
+                <h3 className="font-bold text-slate-900 uppercase text-xs mb-3 print:mb-2">Earnings</h3>
+                <div className="space-y-2 text-xs print:space-y-1">
+                  <div className="flex justify-between items-center print:text-xs print:overflow-hidden print:text-ellipsis">
                     <span className="text-slate-700">Base Salary</span>
                     <span className="font-mono font-semibold text-slate-900">{formatCurrency(employee.baseSalary)}</span>
                   </div>
@@ -234,9 +238,9 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
               </div>
 
               {/* Deductions */}
-              <div className="flex-1 pl-8">
-                <h3 className="font-bold text-slate-900 uppercase text-xs mb-3">Deductions</h3>
-                <div className="space-y-2 text-xs">
+              <div className="flex-1 pl-8 print:pl-6 overflow-hidden">
+                <h3 className="font-bold text-slate-900 uppercase text-xs mb-3 print:mb-2">Deductions</h3>
+                <div className="space-y-2 text-xs print:space-y-1">
                   {employee.taxDeduction > 0 && (
                     <div className="flex justify-between items-center">
                       <span className="text-slate-700">Income Tax</span>
