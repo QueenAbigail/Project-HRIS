@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Download, Printer } from 'lucide-react'
 import { formatCurrency } from '@/lib/currency'
+import html2pdf from 'html2pdf.js'
 
 interface PayslipEmployee {
   id: string
@@ -98,11 +99,13 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
     window.print()
   }
 
-  const handleDownloadPDF = async () => {
+  const handleDownloadPDF = () => {
     try {
-      const html2pdf = await import('html2pdf.js')
       const element = document.getElementById('payslip-print-zone')
-      if (!element) return
+      if (!element) {
+        console.error('[v0] Element not found')
+        return
+      }
 
       const opt = {
         margin: 10,
@@ -112,9 +115,9 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
         jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' },
       }
 
-      html2pdf.default().set(opt).from(element).save()
+      html2pdf().set(opt).from(element).save()
     } catch (error) {
-      console.error('Error generating PDF:', error)
+      console.error('[v0] Error generating PDF:', error)
       alert('Failed to generate PDF. Please try again.')
     }
   }
