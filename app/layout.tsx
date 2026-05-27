@@ -50,9 +50,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning={true}>
-      <head>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-      </head>
       <body className="font-sans antialiased min-h-screen">
         <Providers>
           {children}

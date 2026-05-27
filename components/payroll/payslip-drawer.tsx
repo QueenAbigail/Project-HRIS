@@ -91,6 +91,22 @@ const landscapePrintStyle = `
 export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipDrawerProps) {
   if (!employee) return null
 
+  useEffect(() => {
+    // Load html2pdf library from CDN when component mounts
+    if (typeof (window as any).html2pdf === 'undefined') {
+      const script = document.createElement('script')
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
+      script.async = true
+      script.onload = () => {
+        console.log('[v0] html2pdf library loaded successfully')
+      }
+      script.onerror = () => {
+        console.error('[v0] Failed to load html2pdf library')
+      }
+      document.head.appendChild(script)
+    }
+  }, [])
+
   const statusStyle = statusColors[employee.status]
   const totalGross = employee.baseSalary + employee.overtime + employee.bonus + employee.allowances
   const takeHomePercentage = ((employee.netPay / totalGross) * 100).toFixed(1)
@@ -108,14 +124,14 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
         return
       }
 
-      // Load html2pdf from CDN if not already loaded
+      // Check if html2pdf is loaded
       if (typeof (window as any).html2pdf === 'undefined') {
-        console.error('[v0] html2pdf library not found')
-        alert('PDF library is loading. Please try again in a moment.')
+        console.error('[v0] html2pdf library not loaded yet')
+        alert('PDF library is still loading. Please try again in a moment.')
         return
       }
 
-      const html2pdf = (window as any).html2pdf.jsPDF || (window as any).html2pdf
+      const html2pdf = (window as any).html2pdf
 
       const opt = {
         margin: 8,
@@ -126,7 +142,9 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
       }
 
       console.log('[v0] Generating PDF...')
-      html2pdf.default ? html2pdf.default().set(opt).from(element).save() : html2pdf().set(opt).from(element).save()
+      const method = html2pdf.default ? html2pdf.default() : html2pdf()
+      method.set(opt).from(element).save()
+      console.log('[v0] PDF generation initiated')
     } catch (error) {
       console.error('[v0] Error generating PDF:', error)
       alert(`Failed to generate PDF: ${(error as Error).message}`)
