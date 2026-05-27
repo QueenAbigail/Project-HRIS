@@ -48,39 +48,11 @@ const statusColors: Record<string, { badge: string }> = {
   failed: { badge: 'bg-red-100 text-red-800' },
 }
 
-// Landscape print CSS
+// Landscape print CSS - minimal approach
 const landscapePrintStyle = `
   @page {
     size: A4 landscape;
     margin: 10mm;
-  }
-  
-  @media print {
-    body, html {
-      margin: 0;
-      padding: 0;
-      background: white;
-    }
-    
-    /* Hide dialog wrapper and overlay */
-    [data-testid="radix-dialog-overlay"],
-    .fixed.inset-0,
-    /* Hide print buttons */
-    .print\\:hidden {
-      display: none !important;
-    }
-    
-    /* Show payslip content */
-    #payslip-content {
-      page-break-inside: avoid !important;
-      margin: 0 !important;
-      padding: 20px !important;
-      width: 100% !important;
-      height: auto !important;
-      background: white !important;
-      box-shadow: none !important;
-      border-radius: 0 !important;
-    }
   }
 `
 
