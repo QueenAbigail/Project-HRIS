@@ -52,44 +52,34 @@ const statusColors: Record<string, { badge: string }> = {
 const landscapePrintStyle = `
   @page {
     size: A4 landscape;
-    margin: 8mm;
+    margin: 10mm;
   }
   
   @media print {
     body, html {
-      margin: 0 !important;
-      padding: 0 !important;
-      width: 100% !important;
-      height: 100% !important;
-      background: white !important;
+      margin: 0;
+      padding: 0;
+      background: white;
     }
     
-    * {
-      page-break-inside: avoid !important;
-    }
-    
-    [role="dialog"],
-    [class*="dialog"],
-    [class*="overlay"],
-    [class*="DialogContent"],
-    .sr-only {
+    /* Hide dialog wrapper and overlay */
+    [data-testid="radix-dialog-overlay"],
+    .fixed.inset-0,
+    /* Hide print buttons */
+    .print\\:hidden {
       display: none !important;
     }
     
+    /* Show payslip content */
     #payslip-content {
-      position: static !important;
+      page-break-inside: avoid !important;
       margin: 0 !important;
-      padding: 24px !important;
+      padding: 20px !important;
       width: 100% !important;
       height: auto !important;
       background: white !important;
-      page-break-inside: avoid !important;
-      page-break-after: avoid !important;
-    }
-    
-    #payslip-content > * {
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
     }
   }
 `
