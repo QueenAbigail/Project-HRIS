@@ -51,13 +51,41 @@ const statusColors: Record<string, { badge: string }> = {
 // Landscape print CSS
 const landscapePrintStyle = `
   @page {
-    size: landscape;
+    size: A4 landscape;
     margin: 10mm;
+    padding: 0;
   }
+  
   @media print {
-    body {
-      margin: 0;
-      padding: 0;
+    * {
+      margin: 0 !important;
+      padding: 0 !important;
+      page-break-inside: avoid !important;
+    }
+    
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100%;
+      height: 100%;
+      background: white !important;
+    }
+    
+    /* Dialog and overlay hiding */
+    [role="dialog"],
+    .dialog-overlay,
+    .print:hidden {
+      display: none !important;
+    }
+    
+    #payslip-content {
+      page-break-inside: avoid !important;
+      page-break-before: avoid !important;
+      page-break-after: avoid !important;
+      orphans: 0 !important;
+      widows: 0 !important;
+      width: 100% !important;
+      height: auto !important;
     }
   }
 `
@@ -109,7 +137,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
           {/* White Paper Container */}
           <div
             id="payslip-content"
-            className="w-full h-full bg-white text-slate-900 p-8 print:fixed print:inset-0 print:rounded-none print:shadow-none print:p-10 print:m-0 print:break-inside-avoid overflow-hidden flex flex-col"
+            className="w-full h-full bg-white text-slate-900 p-8 print:fixed print:inset-0 print:rounded-none print:shadow-none print:p-6 print:m-0 print:break-inside-avoid print:overflow-hidden overflow-hidden flex flex-col"
           >
           {/* Watermark Overlay - Grayscale & Ultra Faint */}
           <div
