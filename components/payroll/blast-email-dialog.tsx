@@ -275,18 +275,18 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
               {/* Recipients Table */}
               <div className="border rounded-lg overflow-y-auto flex-1">
                 <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-muted">
-                    <tr className="border-b">
-                      <th className="px-4 py-2 text-left w-8">
+                  <thead className="sticky top-0">
+                    <tr className="border-b bg-muted">
+                      <th className="px-4 py-2 text-left w-8 bg-muted">
                         <Checkbox
                           checked={selectedEmployees.length === filteredEmployees.filter(e => !e.payslipSentThisMonth).length && filteredEmployees.filter(e => !e.payslipSentThisMonth).length > 0}
                           onCheckedChange={toggleAllEmployees}
                         />
                       </th>
-                      <th className="px-4 py-2 text-left font-semibold">Name</th>
-                      <th className="px-4 py-2 text-left font-semibold">Email</th>
-                      <th className="px-4 py-2 text-left font-semibold">Status</th>
-                      <th className="px-4 py-2 text-left font-semibold">Payslip Status</th>
+                      <th className="px-4 py-2 text-left font-semibold bg-muted">Name</th>
+                      <th className="px-4 py-2 text-left font-semibold bg-muted">Email</th>
+                      <th className="px-4 py-2 text-left font-semibold bg-muted">Status</th>
+                      <th className="px-4 py-2 text-left font-semibold bg-muted">Payslip Status</th>
                     </tr>
                   </thead>
                   <tbody>
