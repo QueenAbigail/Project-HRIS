@@ -286,7 +286,7 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                       <th className="px-4 py-2 text-left font-semibold bg-muted">Name</th>
                       <th className="px-4 py-2 text-left font-semibold bg-muted">Email</th>
                       <th className="px-4 py-2 text-left font-semibold bg-muted w-20">Status</th>
-                      <th className="px-4 py-2 text-left font-semibold bg-muted w-32">Payslip Status</th>
+                      <th className="px-4 py-2 text-left font-semibold bg-muted w-24">Sent</th>
                     </tr>
                   </thead>
                   <tbody>
