@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Send, TrendingUp, DollarSign } from 'lucide-react'
+import { Send, TrendingUp, DollarSign, Mail } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -21,11 +21,13 @@ import { Badge } from '@/components/ui/badge'
 import { PayrollChart } from './payroll-chart'
 import { PayrollPayRateDialog } from './payroll-pay-rate-dialog'
 import { EmployeeDebtDialog } from './employee-debt-dialog'
+import { BlastEmailDialog } from './blast-email-dialog'
 
 export function PayrollHeader() {
   const [openTrendDrawer, setOpenTrendDrawer] = useState(false)
   const [openPayRateDialog, setOpenPayRateDialog] = useState(false)
   const [openDebtDialog, setOpenDebtDialog] = useState(false)
+  const [openBlastEmailDialog, setOpenBlastEmailDialog] = useState(false)
   // In production, this would come from your database/backend
   const lastCalculatedTime = new Date(2026, 2, 17, 0, 0, 0).toLocaleDateString('en-US', { 
     month: 'short', 
@@ -92,6 +94,14 @@ export function PayrollHeader() {
           </Button>
           <Button 
             variant="outline"
+            onClick={() => setOpenBlastEmailDialog(true)}
+            className="w-full sm:w-auto gap-2"
+          >
+            <Mail className="size-4" />
+            Blast Email
+          </Button>
+          <Button 
+            variant="outline"
             onClick={() => setOpenTrendDrawer(true)}
             className="w-full sm:w-auto"
           >
@@ -123,6 +133,11 @@ export function PayrollHeader() {
       <EmployeeDebtDialog 
         open={openDebtDialog}
         onOpenChange={setOpenDebtDialog}
+      />
+
+      <BlastEmailDialog 
+        open={openBlastEmailDialog}
+        onOpenChange={setOpenBlastEmailDialog}
       />
     </div>
   )
