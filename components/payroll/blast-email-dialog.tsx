@@ -74,7 +74,9 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
   const [attachPayslip, setAttachPayslip] = useState(true)
   const [isSending, setIsSending] = useState(false)
   const [openRecipientDrawer, setOpenRecipientDrawer] = useState(false)
-  const [selectedEmployees, setSelectedEmployees] = useState<number[]>([])
+  const [selectedEmployees, setSelectedEmployees] = useState<number[]>(
+    mockEmployees.filter(emp => !emp.payslipSentThisMonth).map(emp => emp.id)
+  )
   const [searchQuery, setSearchQuery] = useState('')
 
   const getEmployeesBySite = () => {
