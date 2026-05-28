@@ -45,10 +45,30 @@ const sites = [
 ]
 
 const emailTemplates = [
-  { id: 'payslip', label: 'Payslip Notification' },
-  { id: 'bonus', label: 'Bonus Announcement' },
-  { id: 'deduction', label: 'Deduction Notice' },
-  { id: 'custom', label: 'Custom Message' },
+  {
+    id: 'payslip',
+    label: 'Payslip Notification',
+    subject: 'Your Monthly Payslip - Ready to Download',
+    message: 'Dear Employee,\n\nYour payslip for this month is ready and attached to this email. Please review the details carefully.\n\nIf you have any questions about your compensation, please contact the HR department.\n\nBest regards,\nHuman Resources Team',
+  },
+  {
+    id: 'bonus',
+    label: 'Bonus Announcement',
+    subject: 'Bonus Payment Notification',
+    message: 'Dear Employee,\n\nWe are pleased to inform you that your bonus has been processed and will be transferred to your bank account shortly.\n\nThank you for your hard work and dedication.\n\nBest regards,\nHuman Resources Team',
+  },
+  {
+    id: 'deduction',
+    label: 'Deduction Notice',
+    subject: 'Payroll Deduction Notification',
+    message: 'Dear Employee,\n\nPlease note that a deduction has been applied to your payroll this month. For details about this deduction, please refer to your payslip or contact the HR department.\n\nBest regards,\nHuman Resources Team',
+  },
+  {
+    id: 'custom',
+    label: 'Custom Message',
+    subject: '',
+    message: '',
+  },
 ]
 
 // Mock employee data
@@ -69,6 +89,7 @@ const mockEmployees = [
 
 export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) {
   const [selectedSite, setSelectedSite] = useState('all')
+  const [selectedTemplate, setSelectedTemplate] = useState('custom')
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [attachPayslip, setAttachPayslip] = useState(true)
@@ -78,6 +99,15 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
     mockEmployees.filter(emp => !emp.payslipSentThisMonth).map(emp => emp.id)
   )
   const [searchQuery, setSearchQuery] = useState('')
+
+  const handleTemplateChange = (templateId: string) => {
+    setSelectedTemplate(templateId)
+    const template = emailTemplates.find(t => t.id === templateId)
+    if (template) {
+      setSubject(template.subject)
+      setMessage(template.message)
+    }
+  }
 
   const getEmployeesBySite = () => {
     if (selectedSite === 'all') {
@@ -125,6 +155,7 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
     setIsSending(false)
     onOpenChange(false)
     // Reset form
+    setSelectedTemplate('custom')
     setSubject('')
     setMessage('')
     setSelectedSite('all')
@@ -206,8 +237,25 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
             </div>
           </div>
 
-          {/* Right Column - Subject and Message */}
+          {/* Right Column - Template, Subject and Message */}
           <div className="space-y-4">
+            {/* Email Template */}
+            <div className="space-y-2">
+              <Label htmlFor="template">Email Template</Label>
+              <Select value={selectedTemplate} onValueChange={handleTemplateChange}>
+                <SelectTrigger id="template">
+                  <SelectValue placeholder="Select a template" />
+                </SelectTrigger>
+                <SelectContent>
+                  {emailTemplates.map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Subject */}
             <div className="space-y-2">
               <Label htmlFor="subject">Subject</Label>
@@ -227,7 +275,7 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                 placeholder="Enter your message..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                rows={6}
+                rows={5}
                 className="resize-none"
               />
             </div>
