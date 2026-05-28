@@ -21,7 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Mail, Send, Users } from 'lucide-react'
+import { Mail, Send, Users, ChevronDown, ChevronUp } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 
 interface BlastEmailDialogProps {
   open: boolean
@@ -43,6 +44,22 @@ const emailTemplates = [
   { id: 'custom', label: 'Custom Message' },
 ]
 
+// Mock employee data
+const mockEmployees = [
+  { id: 1, name: 'Michael Chen', email: 'michael.chen@company.com', site: 'jakarta', status: 'Active' },
+  { id: 2, name: 'Sarah Williams', email: 'sarah.williams@company.com', site: 'jakarta', status: 'Active' },
+  { id: 3, name: 'John Rodriguez', email: 'john.rodriguez@company.com', site: 'jakarta', status: 'Pending' },
+  { id: 4, name: 'Emma Johnson', email: 'emma.j@company.com', site: 'jakarta', status: 'Active' },
+  { id: 5, name: 'David Park', email: 'david.park@company.com', site: 'bandung', status: 'Active' },
+  { id: 6, name: 'Lisa Chen', email: 'lisa.chen@company.com', site: 'bandung', status: 'Active' },
+  { id: 7, name: 'Robert Taylor', email: 'robert.taylor@company.com', site: 'bandung', status: 'Inactive' },
+  { id: 8, name: 'Maria Santos', email: 'maria.santos@company.com', site: 'surabaya', status: 'Active' },
+  { id: 9, name: 'James Wilson', email: 'james.wilson@company.com', site: 'surabaya', status: 'Active' },
+  { id: 10, name: 'Anna Lee', email: 'anna.lee@company.com', site: 'surabaya', status: 'Active' },
+  { id: 11, name: 'Carlos Martinez', email: 'carlos.martinez@company.com', site: 'medan', status: 'Active' },
+  { id: 12, name: 'Nina Patel', email: 'nina.patel@company.com', site: 'medan', status: 'Pending' },
+]
+
 export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) {
   const [selectedSite, setSelectedSite] = useState('all')
   const [selectedTemplate, setSelectedTemplate] = useState('payslip')
@@ -50,6 +67,40 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
   const [message, setMessage] = useState('')
   const [attachPayslip, setAttachPayslip] = useState(true)
   const [isSending, setIsSending] = useState(false)
+  const [expandRecipients, setExpandRecipients] = useState(false)
+  const [selectedEmployees, setSelectedEmployees] = useState<number[]>([])
+
+  const getEmployeesBySite = () => {
+    if (selectedSite === 'all') {
+      return mockEmployees
+    }
+    return mockEmployees.filter(emp => emp.site === selectedSite)
+  }
+
+  const employees = getEmployeesBySite()
+
+  const getRecipientCount = () => {
+    if (selectedEmployees.length > 0) {
+      return selectedEmployees.length
+    }
+    return employees.length
+  }
+
+  const toggleEmployeeSelection = (employeeId: number) => {
+    setSelectedEmployees(prev => 
+      prev.includes(employeeId) 
+        ? prev.filter(id => id !== employeeId)
+        : [...prev, employeeId]
+    )
+  }
+
+  const toggleAllEmployees = () => {
+    if (selectedEmployees.length === employees.length) {
+      setSelectedEmployees([])
+    } else {
+      setSelectedEmployees(employees.map(emp => emp.id))
+    }
+  }
 
   const handleSendEmail = async () => {
     setIsSending(true)
@@ -62,18 +113,21 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
     setMessage('')
     setSelectedSite('all')
     setSelectedTemplate('payslip')
+    setSelectedEmployees([])
+    setExpandRecipients(false)
   }
 
-  const getRecipientCount = () => {
-    // Mock data - in production this would come from your backend
-    const counts: Record<string, number> = {
-      all: 12,
-      jakarta: 4,
-      bandung: 3,
-      surabaya: 3,
-      medan: 2,
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'Active':
+        return 'bg-green-100 text-green-800'
+      case 'Pending':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'Inactive':
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
     }
-    return counts[selectedSite] || 0
   }
 
   return (
@@ -111,6 +165,24 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                 <Users className="size-3" />
                 <span>{getRecipientCount()} employee(s) will receive this email</span>
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setExpandRecipients(!expandRecipients)}
+                className="h-6 px-2 text-xs mt-2"
+              >
+                {expandRecipients ? (
+                  <>
+                    <ChevronUp className="size-3 mr-1" />
+                    Hide Recipients
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="size-3 mr-1" />
+                    View Recipients
+                  </>
+                )}
+              </Button>
             </div>
 
             {/* Email Template */}
@@ -170,6 +242,61 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
             </div>
           </div>
         </div>
+
+        {/* Expandable Recipients Table */}
+        {expandRecipients && (
+          <div className="border-t pt-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold">Recipients</h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleAllEmployees}
+                  className="h-7 text-xs"
+                >
+                  {selectedEmployees.length === employees.length ? 'Deselect All' : 'Select All'}
+                </Button>
+              </div>
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-muted border-b">
+                      <th className="px-3 py-2 text-left w-8">
+                        <Checkbox
+                          checked={selectedEmployees.length === employees.length && employees.length > 0}
+                          onCheckedChange={toggleAllEmployees}
+                        />
+                      </th>
+                      <th className="px-3 py-2 text-left font-medium">Name</th>
+                      <th className="px-3 py-2 text-left font-medium">Email</th>
+                      <th className="px-3 py-2 text-left font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {employees.map((employee) => (
+                      <tr key={employee.id} className="border-b hover:bg-muted/50 transition-colors">
+                        <td className="px-3 py-2">
+                          <Checkbox
+                            checked={selectedEmployees.length === 0 || selectedEmployees.includes(employee.id)}
+                            onCheckedChange={() => toggleEmployeeSelection(employee.id)}
+                          />
+                        </td>
+                        <td className="px-3 py-2">{employee.name}</td>
+                        <td className="px-3 py-2 text-xs text-muted-foreground">{employee.email}</td>
+                        <td className="px-3 py-2">
+                          <Badge variant="secondary" className={getStatusBadgeColor(employee.status)}>
+                            {employee.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
