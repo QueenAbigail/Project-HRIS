@@ -266,6 +266,8 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                 placeholder="Enter email subject..."
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
+                disabled={selectedTemplate !== 'custom'}
+                className={selectedTemplate !== 'custom' ? 'opacity-60 cursor-not-allowed' : ''}
               />
             </div>
 
@@ -277,8 +279,9 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                 placeholder="Enter your message..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                disabled={selectedTemplate !== 'custom'}
                 rows={5}
-                className="resize-none"
+                className={`resize-none ${selectedTemplate !== 'custom' ? 'opacity-60 cursor-not-allowed' : ''}`}
               />
             </div>
           </div>
