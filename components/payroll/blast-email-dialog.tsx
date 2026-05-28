@@ -94,10 +94,11 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
   )
 
   const getRecipientCount = () => {
+    const eligibleEmployees = employees.filter(emp => !emp.payslipSentThisMonth)
     if (selectedEmployees.length > 0) {
       return selectedEmployees.length
     }
-    return employees.length
+    return eligibleEmployees.length
   }
 
   const toggleEmployeeSelection = (employeeId: number) => {
