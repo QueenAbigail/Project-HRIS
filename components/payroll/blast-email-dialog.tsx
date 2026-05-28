@@ -53,18 +53,18 @@ const emailTemplates = [
 
 // Mock employee data
 const mockEmployees = [
-  { id: 1, name: 'Michael Chen', email: 'michael.chen@company.com', site: 'jakarta', status: 'Active' },
-  { id: 2, name: 'Sarah Williams', email: 'sarah.williams@company.com', site: 'jakarta', status: 'Active' },
-  { id: 3, name: 'John Rodriguez', email: 'john.rodriguez@company.com', site: 'jakarta', status: 'Pending' },
-  { id: 4, name: 'Emma Johnson', email: 'emma.j@company.com', site: 'jakarta', status: 'Active' },
-  { id: 5, name: 'David Park', email: 'david.park@company.com', site: 'bandung', status: 'Active' },
-  { id: 6, name: 'Lisa Chen', email: 'lisa.chen@company.com', site: 'bandung', status: 'Active' },
-  { id: 7, name: 'Robert Taylor', email: 'robert.taylor@company.com', site: 'bandung', status: 'Inactive' },
-  { id: 8, name: 'Maria Santos', email: 'maria.santos@company.com', site: 'surabaya', status: 'Active' },
-  { id: 9, name: 'James Wilson', email: 'james.wilson@company.com', site: 'surabaya', status: 'Active' },
-  { id: 10, name: 'Anna Lee', email: 'anna.lee@company.com', site: 'surabaya', status: 'Active' },
-  { id: 11, name: 'Carlos Martinez', email: 'carlos.martinez@company.com', site: 'medan', status: 'Active' },
-  { id: 12, name: 'Nina Patel', email: 'nina.patel@company.com', site: 'medan', status: 'Pending' },
+  { id: 1, name: 'Michael Chen', email: 'michael.chen@company.com', site: 'jakarta', status: 'Active', payslipSentThisMonth: true },
+  { id: 2, name: 'Sarah Williams', email: 'sarah.williams@company.com', site: 'jakarta', status: 'Active', payslipSentThisMonth: false },
+  { id: 3, name: 'John Rodriguez', email: 'john.rodriguez@company.com', site: 'jakarta', status: 'Pending', payslipSentThisMonth: true },
+  { id: 4, name: 'Emma Johnson', email: 'emma.j@company.com', site: 'jakarta', status: 'Active', payslipSentThisMonth: false },
+  { id: 5, name: 'David Park', email: 'david.park@company.com', site: 'bandung', status: 'Active', payslipSentThisMonth: false },
+  { id: 6, name: 'Lisa Chen', email: 'lisa.chen@company.com', site: 'bandung', status: 'Active', payslipSentThisMonth: true },
+  { id: 7, name: 'Robert Taylor', email: 'robert.taylor@company.com', site: 'bandung', status: 'Inactive', payslipSentThisMonth: false },
+  { id: 8, name: 'Maria Santos', email: 'maria.santos@company.com', site: 'surabaya', status: 'Active', payslipSentThisMonth: false },
+  { id: 9, name: 'James Wilson', email: 'james.wilson@company.com', site: 'surabaya', status: 'Active', payslipSentThisMonth: true },
+  { id: 10, name: 'Anna Lee', email: 'anna.lee@company.com', site: 'surabaya', status: 'Active', payslipSentThisMonth: false },
+  { id: 11, name: 'Carlos Martinez', email: 'carlos.martinez@company.com', site: 'medan', status: 'Active', payslipSentThisMonth: true },
+  { id: 12, name: 'Nina Patel', email: 'nina.patel@company.com', site: 'medan', status: 'Pending', payslipSentThisMonth: false },
 ]
 
 export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) {
@@ -107,10 +107,11 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
   }
 
   const toggleAllEmployees = () => {
-    if (selectedEmployees.length === employees.length) {
+    const eligibleEmployees = employees.filter(emp => !emp.payslipSentThisMonth)
+    if (selectedEmployees.length === eligibleEmployees.length) {
       setSelectedEmployees([])
     } else {
-      setSelectedEmployees(employees.map(emp => emp.id))
+      setSelectedEmployees(eligibleEmployees.map(emp => emp.id))
     }
   }
 
@@ -278,23 +279,25 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                     <tr className="bg-muted border-b">
                       <th className="px-4 py-2 text-left w-8">
                         <Checkbox
-                          checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
+                          checked={selectedEmployees.length === filteredEmployees.filter(e => !e.payslipSentThisMonth).length && filteredEmployees.filter(e => !e.payslipSentThisMonth).length > 0}
                           onCheckedChange={toggleAllEmployees}
                         />
                       </th>
                       <th className="px-4 py-2 text-left font-semibold">Name</th>
                       <th className="px-4 py-2 text-left font-semibold">Email</th>
                       <th className="px-4 py-2 text-left font-semibold">Status</th>
+                      <th className="px-4 py-2 text-left font-semibold">Payslip Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredEmployees.length > 0 ? (
                       filteredEmployees.map((employee) => (
-                        <tr key={employee.id} className="border-b hover:bg-muted/50 transition-colors">
+                        <tr key={employee.id} className={`border-b hover:bg-muted/50 transition-colors ${employee.payslipSentThisMonth ? 'opacity-60' : ''}`}>
                           <td className="px-4 py-2">
                             <Checkbox
                               checked={selectedEmployees.length === 0 || selectedEmployees.includes(employee.id)}
                               onCheckedChange={() => toggleEmployeeSelection(employee.id)}
+                              disabled={employee.payslipSentThisMonth}
                             />
                           </td>
                           <td className="px-4 py-2">{employee.name}</td>
@@ -304,11 +307,16 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                               {employee.status}
                             </Badge>
                           </td>
+                          <td className="px-4 py-2">
+                            <Badge variant={employee.payslipSentThisMonth ? 'secondary' : 'outline'} className={employee.payslipSentThisMonth ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                              {employee.payslipSentThisMonth ? '✓ Sent' : 'Not Sent'}
+                            </Badge>
+                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
+                        <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                           No employees found
                         </td>
                       </tr>
