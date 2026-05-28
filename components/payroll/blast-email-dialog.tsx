@@ -292,7 +292,7 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                   <tbody>
                     {filteredEmployees.length > 0 ? (
                       filteredEmployees.map((employee) => (
-                        <tr key={employee.id} className={`border-b hover:bg-muted/50 transition-colors ${employee.payslipSentThisMonth ? 'opacity-60' : ''}`}>
+                        <tr key={employee.id} className={`border-b hover:bg-muted/50 transition-colors ${employee.payslipSentThisMonth ? 'bg-muted/30' : ''}`}>
                           <td className="px-4 py-2">
                             <Checkbox
                               checked={selectedEmployees.length === 0 || selectedEmployees.includes(employee.id)}
@@ -300,8 +300,8 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                               disabled={employee.payslipSentThisMonth}
                             />
                           </td>
-                          <td className="px-4 py-2">{employee.name}</td>
-                          <td className="px-4 py-2 text-muted-foreground">{employee.email}</td>
+                          <td className={`px-4 py-2 ${employee.payslipSentThisMonth ? 'line-through text-muted-foreground' : ''}`}>{employee.name}</td>
+                          <td className={`px-4 py-2 ${employee.payslipSentThisMonth ? 'line-through text-muted-foreground' : 'text-muted-foreground'}`}>{employee.email}</td>
                           <td className="px-4 py-2">
                             <Badge variant="secondary" className={getStatusBadgeColor(employee.status)}>
                               {employee.status}
