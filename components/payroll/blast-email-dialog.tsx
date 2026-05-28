@@ -274,10 +274,10 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
 
               {/* Recipients Table */}
               <div className="border rounded-lg overflow-y-auto flex-1">
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0">
-                    <tr className="border-b bg-muted">
-                      <th className="px-4 py-2 text-left w-8 bg-muted">
+                <table className="w-full text-sm table-fixed">
+                  <thead className="sticky top-0 z-10">
+                    <tr className="border-b">
+                      <th className="px-4 py-2 text-left w-12 bg-muted">
                         <Checkbox
                           checked={selectedEmployees.length === filteredEmployees.filter(e => !e.payslipSentThisMonth).length && filteredEmployees.filter(e => !e.payslipSentThisMonth).length > 0}
                           onCheckedChange={toggleAllEmployees}
@@ -285,8 +285,8 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                       </th>
                       <th className="px-4 py-2 text-left font-semibold bg-muted">Name</th>
                       <th className="px-4 py-2 text-left font-semibold bg-muted">Email</th>
-                      <th className="px-4 py-2 text-left font-semibold bg-muted">Status</th>
-                      <th className="px-4 py-2 text-left font-semibold bg-muted">Payslip Status</th>
+                      <th className="px-4 py-2 text-left font-semibold bg-muted w-20">Status</th>
+                      <th className="px-4 py-2 text-left font-semibold bg-muted w-32">Payslip Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -295,7 +295,7 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                         <tr key={employee.id} className={`border-b hover:bg-muted/50 transition-colors ${employee.payslipSentThisMonth ? 'bg-muted/30' : ''}`}>
                           <td className="px-4 py-2">
                             <Checkbox
-                              checked={selectedEmployees.length === 0 || selectedEmployees.includes(employee.id)}
+                              checked={selectedEmployees.includes(employee.id)}
                               onCheckedChange={() => toggleEmployeeSelection(employee.id)}
                               disabled={employee.payslipSentThisMonth}
                             />
