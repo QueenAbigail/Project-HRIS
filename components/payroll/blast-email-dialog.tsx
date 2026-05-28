@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/drawer'
 import { Mail, Send, Users, Search, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { defaultEmailTemplates } from '@/lib/email-templates'
 
 interface BlastEmailDialogProps {
   open: boolean
@@ -42,33 +43,6 @@ const sites = [
   { id: 'bandung', label: 'Bandung Branch' },
   { id: 'surabaya', label: 'Surabaya Branch' },
   { id: 'medan', label: 'Medan Branch' },
-]
-
-const emailTemplates = [
-  {
-    id: 'payslip',
-    label: 'Payslip Notification',
-    subject: 'Your Monthly Payslip - Ready to Download',
-    message: 'Dear Employee,\n\nYour payslip for this month is ready and attached to this email. Please review the details carefully.\n\nIf you have any questions about your compensation, please contact the HR department.\n\nBest regards,\nHuman Resources Team',
-  },
-  {
-    id: 'bonus',
-    label: 'Bonus Announcement',
-    subject: 'Bonus Payment Notification',
-    message: 'Dear Employee,\n\nWe are pleased to inform you that your bonus has been processed and will be transferred to your bank account shortly.\n\nThank you for your hard work and dedication.\n\nBest regards,\nHuman Resources Team',
-  },
-  {
-    id: 'deduction',
-    label: 'Deduction Notice',
-    subject: 'Payroll Deduction Notification',
-    message: 'Dear Employee,\n\nPlease note that a deduction has been applied to your payroll this month. For details about this deduction, please refer to your payslip or contact the HR department.\n\nBest regards,\nHuman Resources Team',
-  },
-  {
-    id: 'custom',
-    label: 'Custom Message',
-    subject: '',
-    message: '',
-  },
 ]
 
 // Mock employee data
@@ -88,7 +62,7 @@ const mockEmployees = [
 ]
 
 export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) {
-  const payslipTemplate = emailTemplates.find(t => t.id === 'payslip')!
+  const payslipTemplate = defaultEmailTemplates.find(t => t.id === 'payslip')!
   
   const [selectedSite, setSelectedSite] = useState('all')
   const [selectedTemplate, setSelectedTemplate] = useState('payslip')
@@ -104,7 +78,7 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
 
   const handleTemplateChange = (templateId: string) => {
     setSelectedTemplate(templateId)
-    const template = emailTemplates.find(t => t.id === templateId)
+    const template = defaultEmailTemplates.find(t => t.id === templateId)
     if (template) {
       setSubject(template.subject)
       setMessage(template.message)
@@ -249,7 +223,7 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                   <SelectValue placeholder="Select a template" />
                 </SelectTrigger>
                 <SelectContent>
-                  {emailTemplates.map((template) => (
+                  {defaultEmailTemplates.map((template) => (
                     <SelectItem key={template.id} value={template.id}>
                       {template.label}
                     </SelectItem>
