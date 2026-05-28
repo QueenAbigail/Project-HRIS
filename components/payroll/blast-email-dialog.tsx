@@ -272,7 +272,7 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
               </div>
 
               {/* Recipients Table */}
-              <div className="border rounded-lg overflow-hidden flex-1 flex flex-col">
+              <div className="border rounded-lg overflow-y-auto flex-1">
                 <table className="w-full text-sm">
                   <thead className="sticky top-0">
                     <tr className="bg-muted border-b">
@@ -287,7 +287,7 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                       <th className="px-4 py-2 text-left font-semibold">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="overflow-y-auto">
+                  <tbody>
                     {filteredEmployees.length > 0 ? (
                       filteredEmployees.map((employee) => (
                         <tr key={employee.id} className="border-b hover:bg-muted/50 transition-colors">
