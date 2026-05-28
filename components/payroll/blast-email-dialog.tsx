@@ -88,10 +88,12 @@ const mockEmployees = [
 ]
 
 export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) {
+  const payslipTemplate = emailTemplates.find(t => t.id === 'payslip')!
+  
   const [selectedSite, setSelectedSite] = useState('all')
-  const [selectedTemplate, setSelectedTemplate] = useState('custom')
-  const [subject, setSubject] = useState('')
-  const [message, setMessage] = useState('')
+  const [selectedTemplate, setSelectedTemplate] = useState('payslip')
+  const [subject, setSubject] = useState(payslipTemplate.subject)
+  const [message, setMessage] = useState(payslipTemplate.message)
   const [attachPayslip, setAttachPayslip] = useState(true)
   const [isSending, setIsSending] = useState(false)
   const [openRecipientDrawer, setOpenRecipientDrawer] = useState(false)
@@ -155,11 +157,11 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
     setIsSending(false)
     onOpenChange(false)
     // Reset form
-    setSelectedTemplate('custom')
-    setSubject('')
-    setMessage('')
+    setSelectedTemplate('payslip')
+    setSubject(payslipTemplate.subject)
+    setMessage(payslipTemplate.message)
     setSelectedSite('all')
-    setSelectedEmployees([])
+    setSelectedEmployees(mockEmployees.filter(emp => !emp.payslipSentThisMonth).map(emp => emp.id))
     setSearchQuery('')
   }
 
