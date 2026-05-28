@@ -21,7 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Mail, Send, Users, ChevronDown, ChevronUp, Search, X } from 'lucide-react'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer'
+import { Mail, Send, Users, Search, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
 interface BlastEmailDialogProps {
@@ -66,7 +73,7 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
   const [message, setMessage] = useState('')
   const [attachPayslip, setAttachPayslip] = useState(true)
   const [isSending, setIsSending] = useState(false)
-  const [expandRecipients, setExpandRecipients] = useState(false)
+  const [openRecipientDrawer, setOpenRecipientDrawer] = useState(false)
   const [selectedEmployees, setSelectedEmployees] = useState<number[]>([])
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -118,7 +125,6 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
     setMessage('')
     setSelectedSite('all')
     setSelectedEmployees([])
-    setExpandRecipients(false)
     setSearchQuery('')
   }
 
@@ -173,20 +179,13 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setExpandRecipients(!expandRecipients)}
+                onClick={() => setOpenRecipientDrawer(true)}
                 className="h-6 px-2 text-xs mt-2"
               >
-                {expandRecipients ? (
-                  <>
-                    <ChevronUp className="size-3 mr-1" />
-                    Hide Recipients
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="size-3 mr-1" />
-                    View Recipients
-                  </>
-                )}
+                <>
+                  <Search className="size-3 mr-1" />
+                  View Recipients
+                </>
               </Button>
             </div>
 
@@ -231,22 +230,17 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
           </div>
         </div>
 
-        {/* Expandable Recipients Table */}
-        {expandRecipients && (
-          <div className="border-t pt-4">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold">Recipients</h4>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleAllEmployees}
-                  className="h-7 text-xs"
-                >
-                  {selectedEmployees.length === employees.length ? 'Deselect All' : 'Select All'}
-                </Button>
-              </div>
+        {/* Recipients Drawer */}
+        <Drawer open={openRecipientDrawer} onOpenChange={setOpenRecipientDrawer}>
+          <DrawerContent className="max-h-[80vh]">
+            <DrawerHeader>
+              <DrawerTitle>Select Recipients</DrawerTitle>
+              <DrawerDescription>
+                View and manage email recipients from the selected site
+              </DrawerDescription>
+            </DrawerHeader>
 
+            <div className="px-4 pb-6 space-y-4">
               {/* Search Input */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -254,7 +248,7 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                   placeholder="Search name or email..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-8 h-8 text-sm"
+                  className="pl-9 pr-8"
                 />
                 {searchQuery && (
                   <button
@@ -266,36 +260,47 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                 )}
               </div>
 
-              {/* Recipients Table with Fixed Height */}
-              <div className="border rounded-lg overflow-hidden max-h-[250px] overflow-y-auto">
-                <table className="w-full text-xs">
+              {/* Select All Button */}
+              <div className="flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleAllEmployees}
+                >
+                  {selectedEmployees.length === employees.length ? 'Deselect All' : 'Select All'}
+                </Button>
+              </div>
+
+              {/* Recipients Table */}
+              <div className="border rounded-lg overflow-hidden max-h-[50vh] overflow-y-auto">
+                <table className="w-full text-sm">
                   <thead className="sticky top-0">
                     <tr className="bg-muted border-b">
-                      <th className="px-3 py-2 text-left w-8">
+                      <th className="px-4 py-3 text-left w-8">
                         <Checkbox
                           checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
                           onCheckedChange={toggleAllEmployees}
                         />
                       </th>
-                      <th className="px-3 py-2 text-left font-medium">Name</th>
-                      <th className="px-3 py-2 text-left font-medium">Email</th>
-                      <th className="px-3 py-2 text-left font-medium">Status</th>
+                      <th className="px-4 py-3 text-left font-semibold">Name</th>
+                      <th className="px-4 py-3 text-left font-semibold">Email</th>
+                      <th className="px-4 py-3 text-left font-semibold">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredEmployees.length > 0 ? (
                       filteredEmployees.map((employee) => (
                         <tr key={employee.id} className="border-b hover:bg-muted/50 transition-colors">
-                          <td className="px-3 py-2">
+                          <td className="px-4 py-3">
                             <Checkbox
                               checked={selectedEmployees.length === 0 || selectedEmployees.includes(employee.id)}
                               onCheckedChange={() => toggleEmployeeSelection(employee.id)}
                             />
                           </td>
-                          <td className="px-3 py-2 truncate">{employee.name}</td>
-                          <td className="px-3 py-2 truncate text-muted-foreground">{employee.email}</td>
-                          <td className="px-3 py-2">
-                            <Badge variant="secondary" className={`text-xs ${getStatusBadgeColor(employee.status)}`}>
+                          <td className="px-4 py-3">{employee.name}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{employee.email}</td>
+                          <td className="px-4 py-3">
+                            <Badge variant="secondary" className={getStatusBadgeColor(employee.status)}>
                               {employee.status}
                             </Badge>
                           </td>
@@ -303,7 +308,7 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={4} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                        <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
                           No employees found
                         </td>
                       </tr>
@@ -312,8 +317,8 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                 </table>
               </div>
             </div>
-          </div>
-        )}
+          </DrawerContent>
+        </Drawer>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
