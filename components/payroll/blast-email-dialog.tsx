@@ -28,12 +28,12 @@ interface BlastEmailDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-const departments = [
-  { id: 'all', label: 'All Departments' },
-  { id: 'field', label: 'Field Security' },
-  { id: 'surveillance', label: 'Surveillance' },
-  { id: 'patrol', label: 'Patrol' },
-  { id: 'admin', label: 'Administration' },
+const sites = [
+  { id: 'all', label: 'All Sites' },
+  { id: 'jakarta', label: 'Jakarta HQ' },
+  { id: 'bandung', label: 'Bandung Branch' },
+  { id: 'surabaya', label: 'Surabaya Branch' },
+  { id: 'medan', label: 'Medan Branch' },
 ]
 
 const emailTemplates = [
@@ -44,7 +44,7 @@ const emailTemplates = [
 ]
 
 export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) {
-  const [selectedDepartment, setSelectedDepartment] = useState('all')
+  const [selectedSite, setSelectedSite] = useState('all')
   const [selectedTemplate, setSelectedTemplate] = useState('payslip')
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
@@ -60,7 +60,7 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
     // Reset form
     setSubject('')
     setMessage('')
-    setSelectedDepartment('all')
+    setSelectedSite('all')
     setSelectedTemplate('payslip')
   }
 
@@ -68,12 +68,12 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
     // Mock data - in production this would come from your backend
     const counts: Record<string, number> = {
       all: 12,
-      field: 4,
-      surveillance: 3,
-      patrol: 3,
-      admin: 2,
+      jakarta: 4,
+      bandung: 3,
+      surabaya: 3,
+      medan: 2,
     }
-    return counts[selectedDepartment] || 0
+    return counts[selectedSite] || 0
   }
 
   return (
@@ -94,15 +94,15 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
           <div className="space-y-4">
             {/* Recipients */}
             <div className="space-y-2">
-              <Label htmlFor="department">Recipients</Label>
-              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                <SelectTrigger id="department">
-                  <SelectValue placeholder="Select department" />
+              <Label htmlFor="site">Recipients</Label>
+              <Select value={selectedSite} onValueChange={setSelectedSite}>
+                <SelectTrigger id="site">
+                  <SelectValue placeholder="Select site" />
                 </SelectTrigger>
                 <SelectContent>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.label}
+                  {sites.map((site) => (
+                    <SelectItem key={site.id} value={site.id}>
+                      {site.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
