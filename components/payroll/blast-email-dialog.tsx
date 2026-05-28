@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Mail, Send, Users, ChevronDown, ChevronUp } from 'lucide-react'
+import { Mail, Send, Users, ChevronDown, ChevronUp, Search, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
 interface BlastEmailDialogProps {
@@ -62,13 +62,13 @@ const mockEmployees = [
 
 export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) {
   const [selectedSite, setSelectedSite] = useState('all')
-  const [selectedTemplate, setSelectedTemplate] = useState('payslip')
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [attachPayslip, setAttachPayslip] = useState(true)
   const [isSending, setIsSending] = useState(false)
   const [expandRecipients, setExpandRecipients] = useState(false)
   const [selectedEmployees, setSelectedEmployees] = useState<number[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
 
   const getEmployeesBySite = () => {
     if (selectedSite === 'all') {
@@ -78,6 +78,11 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
   }
 
   const employees = getEmployeesBySite()
+
+  const filteredEmployees = employees.filter(emp =>
+    emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    emp.email.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   const getRecipientCount = () => {
     if (selectedEmployees.length > 0) {
@@ -112,9 +117,9 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
     setSubject('')
     setMessage('')
     setSelectedSite('all')
-    setSelectedTemplate('payslip')
     setSelectedEmployees([])
     setExpandRecipients(false)
+    setSearchQuery('')
   }
 
   const getStatusBadgeColor = (status: string) => {
@@ -143,8 +148,8 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-6 py-4">
-          {/* Left Column - Recipients and Template */}
+        <div className="grid grid-cols-2 gap-6 py-4 max-h-[400px] overflow-y-auto">
+          {/* Left Column - Recipients */}
           <div className="space-y-4">
             {/* Recipients */}
             <div className="space-y-2">
@@ -185,23 +190,6 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
               </Button>
             </div>
 
-            {/* Email Template */}
-            <div className="space-y-2">
-              <Label htmlFor="template">Email Template</Label>
-              <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                <SelectTrigger id="template">
-                  <SelectValue placeholder="Select template" />
-                </SelectTrigger>
-                <SelectContent>
-                  {emailTemplates.map((template) => (
-                    <SelectItem key={template.id} value={template.id}>
-                      {template.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* Attach Payslip Option */}
             <div className="flex items-center space-x-2 pt-4 border-t">
               <Checkbox
@@ -236,7 +224,7 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                 placeholder="Enter your message..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                rows={8}
+                rows={6}
                 className="resize-none"
               />
             </div>
@@ -258,13 +246,34 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                   {selectedEmployees.length === employees.length ? 'Deselect All' : 'Select All'}
                 </Button>
               </div>
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
+
+              {/* Search Input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search name or email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-8 h-8 text-sm"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 hover:text-muted-foreground"
+                  >
+                    <X className="size-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Recipients Table with Fixed Height */}
+              <div className="border rounded-lg overflow-hidden max-h-[250px] overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0">
                     <tr className="bg-muted border-b">
                       <th className="px-3 py-2 text-left w-8">
                         <Checkbox
-                          checked={selectedEmployees.length === employees.length && employees.length > 0}
+                          checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
                           onCheckedChange={toggleAllEmployees}
                         />
                       </th>
@@ -274,23 +283,31 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
                     </tr>
                   </thead>
                   <tbody>
-                    {employees.map((employee) => (
-                      <tr key={employee.id} className="border-b hover:bg-muted/50 transition-colors">
-                        <td className="px-3 py-2">
-                          <Checkbox
-                            checked={selectedEmployees.length === 0 || selectedEmployees.includes(employee.id)}
-                            onCheckedChange={() => toggleEmployeeSelection(employee.id)}
-                          />
-                        </td>
-                        <td className="px-3 py-2">{employee.name}</td>
-                        <td className="px-3 py-2 text-xs text-muted-foreground">{employee.email}</td>
-                        <td className="px-3 py-2">
-                          <Badge variant="secondary" className={getStatusBadgeColor(employee.status)}>
-                            {employee.status}
-                          </Badge>
+                    {filteredEmployees.length > 0 ? (
+                      filteredEmployees.map((employee) => (
+                        <tr key={employee.id} className="border-b hover:bg-muted/50 transition-colors">
+                          <td className="px-3 py-2">
+                            <Checkbox
+                              checked={selectedEmployees.length === 0 || selectedEmployees.includes(employee.id)}
+                              onCheckedChange={() => toggleEmployeeSelection(employee.id)}
+                            />
+                          </td>
+                          <td className="px-3 py-2 truncate">{employee.name}</td>
+                          <td className="px-3 py-2 truncate text-muted-foreground">{employee.email}</td>
+                          <td className="px-3 py-2">
+                            <Badge variant="secondary" className={`text-xs ${getStatusBadgeColor(employee.status)}`}>
+                              {employee.status}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                          No employees found
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
