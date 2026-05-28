@@ -275,8 +275,8 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
               {/* Recipients Table */}
               <div className="border rounded-lg overflow-y-auto flex-1">
                 <table className="w-full text-sm">
-                  <thead className="sticky top-0">
-                    <tr className="bg-muted border-b">
+                  <thead className="sticky top-0 bg-muted">
+                    <tr className="border-b">
                       <th className="px-4 py-2 text-left w-8">
                         <Checkbox
                           checked={selectedEmployees.length === filteredEmployees.filter(e => !e.payslipSentThisMonth).length && filteredEmployees.filter(e => !e.payslipSentThisMonth).length > 0}
