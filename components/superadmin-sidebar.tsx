@@ -17,6 +17,7 @@ import {
   CalendarDays,
   Smartphone,
   MapPin,
+  Mail,
   Settings,
 } from 'lucide-react'
 
@@ -122,6 +123,11 @@ const adminNavItems = [
     title: 'GPS Locations',
     url: '/superadmin/gps-locations',
     icon: MapPin,
+  },
+  {
+    title: 'Email Templates',
+    url: '/superadmin/email-templates',
+    icon: Mail,
   },
   {
     title: 'Settings',
