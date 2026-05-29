@@ -75,13 +75,14 @@ export function LeaveHeader() {
             Review and manage employee leave requests
           </p>
         </div>
-        <Dialog open={openNewRequest} onOpenChange={setOpenNewRequest}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 size-4" />
-              New Request
-            </Button>
-          </DialogTrigger>
+        <div className="flex flex-col gap-2">
+          <Dialog open={openNewRequest} onOpenChange={setOpenNewRequest}>
+            <DialogTrigger asChild>
+              <Button className="w-full">
+                <Plus className="mr-2 size-4" />
+                New Request
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Submit Leave Request</DialogTitle>
@@ -152,48 +153,10 @@ export function LeaveHeader() {
             </form>
           </DialogContent>
         </Dialog>
-      </div>
-
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <Select defaultValue="all">
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Requests</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select defaultValue="all-types">
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Leave Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all-types">All Types</SelectItem>
-            <SelectItem value="annual">Annual Leave</SelectItem>
-            <SelectItem value="sick">Sick Leave</SelectItem>
-            <SelectItem value="personal">Personal Leave</SelectItem>
-            <SelectItem value="emergency">Emergency</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select defaultValue="all-dept">
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Department" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all-dept">All Departments</SelectItem>
-            <SelectItem value="field">Field Security</SelectItem>
-            <SelectItem value="surveillance">Surveillance</SelectItem>
-            <SelectItem value="patrol">Patrol</SelectItem>
-            <SelectItem value="admin">Administration</SelectItem>
-          </SelectContent>
-        </Select>
 
         <Dialog open={openRequestApproval} onOpenChange={setOpenRequestApproval}>
           <DialogTrigger asChild>
-            <Button variant="outline">
+            <Button variant="outline" className="w-full">
               <CheckCircle2 className="mr-2 size-4" />
               Request Approval
             </Button>
@@ -305,6 +268,45 @@ export function LeaveHeader() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <Select defaultValue="all">
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Requests</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="approved">Approved</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select defaultValue="all-types">
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Leave Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all-types">All Types</SelectItem>
+            <SelectItem value="annual">Annual Leave</SelectItem>
+            <SelectItem value="sick">Sick Leave</SelectItem>
+            <SelectItem value="personal">Personal Leave</SelectItem>
+            <SelectItem value="emergency">Emergency</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select defaultValue="all-dept">
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Department" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all-dept">All Departments</SelectItem>
+            <SelectItem value="field">Field Security</SelectItem>
+            <SelectItem value="surveillance">Surveillance</SelectItem>
+            <SelectItem value="patrol">Patrol</SelectItem>
+            <SelectItem value="admin">Administration</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   )
