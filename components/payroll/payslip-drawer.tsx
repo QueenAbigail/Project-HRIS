@@ -172,11 +172,9 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
           {/* ZONA CETAK - A4 Landscape Half Size (148.5mm x 105mm) Centered */}
           <div
             id="payslip-print-zone"
-            className="relative bg-white text-slate-900 flex flex-col justify-between overflow-hidden"
+            className="relative bg-white text-slate-900 flex flex-col justify-between overflow-hidden w-full"
             style={{ 
               aspectRatio: '297/210',
-              width: '100%',
-              maxWidth: '600px',
               padding: '8px',
               fontSize: '10px'
             }}
