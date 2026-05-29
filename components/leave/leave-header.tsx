@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Plus, Download, Filter } from 'lucide-react'
+import { Plus, Filter } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -54,10 +54,6 @@ export function LeaveHeader() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="mr-2 size-4" />
-            Export
-          </Button>
           <Dialog open={openNewRequest} onOpenChange={setOpenNewRequest}>
             <DialogTrigger asChild>
               <Button>
