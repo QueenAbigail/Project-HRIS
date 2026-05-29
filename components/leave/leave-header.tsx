@@ -309,6 +309,120 @@ export function LeaveHeader() {
             </SelectContent>
           </Select>
         </div>
+        <Dialog open={openRequestApproval} onOpenChange={setOpenRequestApproval}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="w-full sm:w-auto">
+              <CheckCircle2 className="mr-2 size-4" />
+              Request Approval
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Request Leave Approval</DialogTitle>
+              <DialogDescription>
+                Fill in the employee details and leave information to submit for approval. This will be added to the requests table with pending status.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleApprovalSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="employeeName">Employee Name</Label>
+                  <Input
+                    id="employeeName"
+                    name="employeeName"
+                    placeholder="Enter employee name"
+                    value={approvalFormData.employeeName}
+                    onChange={handleApprovalInputChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="employeeId">Employee ID</Label>
+                  <Input
+                    id="employeeId"
+                    name="employeeId"
+                    placeholder="Enter employee ID"
+                    value={approvalFormData.employeeId}
+                    onChange={handleApprovalInputChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="approvalLeaveType">Leave Type</Label>
+                <Select value={approvalFormData.leaveType} onValueChange={(value) => setApprovalFormData(prev => ({ ...prev, leaveType: value }))}>
+                  <SelectTrigger id="approvalLeaveType">
+                    <SelectValue placeholder="Select leave type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="annual">Annual Leave</SelectItem>
+                    <SelectItem value="sick">Sick Leave</SelectItem>
+                    <SelectItem value="personal">Personal Leave</SelectItem>
+                    <SelectItem value="emergency">Emergency</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="approvalStartDate">Start Date</Label>
+                  <Input
+                    id="approvalStartDate"
+                    type="date"
+                    name="startDate"
+                    value={approvalFormData.startDate}
+                    onChange={handleApprovalInputChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="approvalEndDate">End Date</Label>
+                  <Input
+                    id="approvalEndDate"
+                    type="date"
+                    name="endDate"
+                    value={approvalFormData.endDate}
+                    onChange={handleApprovalInputChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="approvalReason">Reason for Leave</Label>
+                <Textarea
+                  id="approvalReason"
+                  name="reason"
+                  placeholder="Provide reason for the leave request..."
+                  value={approvalFormData.reason}
+                  onChange={handleApprovalInputChange}
+                  rows={2}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="attachmentNote">Attachment/Note</Label>
+                <Textarea
+                  id="attachmentNote"
+                  name="attachmentNote"
+                  placeholder="Add any attachments or additional notes..."
+                  value={approvalFormData.attachmentNote}
+                  onChange={handleApprovalInputChange}
+                  rows={2}
+                />
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setOpenRequestApproval(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">Submit for Approval</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
