@@ -32,24 +32,28 @@ export function LeaveHeader() {
     endDate: '',
     reason: '',
   })
-  const [approvalFormData, setApprovalFormData] = useState({
-    employeeName: '',
-    employeeId: '',
-    leaveType: '',
-    startDate: '',
-    endDate: '',
-    reason: '',
-    attachmentNote: '',
+  // Hardcoded approval request data (will be fetched from database later)
+  const [approvalData] = useState({
+    id: 'REQ-001',
+    employeeName: 'Robert Taylor',
+    employeeId: 'EMP-2024-001',
+    department: 'Field Security',
+    leaveType: 'Annual Leave',
+    startDate: 'Apr 1, 2026',
+    endDate: 'Apr 5, 2026',
+    reason: 'Family vacation planned for Easter holidays',
+    formImageUrl: 'https://images.unsplash.com/photo-1586281380349-2be2979c1f90?w=800&q=80', // Placeholder for form picture
+    submittedDate: 'Mar 20, 2026',
+    mobileFormData: {
+      supervisor: 'John Smith',
+      emergencyContact: '+1 (555) 123-4567',
+      notes: 'All tasks delegated to team members',
+    },
   })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-  }
-
-  const handleApprovalInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setApprovalFormData(prev => ({ ...prev, [name]: value }))
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -59,10 +63,13 @@ export function LeaveHeader() {
     setOpenNewRequest(false)
   }
 
-  const handleApprovalSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log('[v0] Approval request submitted:', approvalFormData)
-    setApprovalFormData({ employeeName: '', employeeId: '', leaveType: '', startDate: '', endDate: '', reason: '', attachmentNote: '' })
+  const handleApprove = () => {
+    console.log('[v0] Approval request approved:', approvalData.id)
+    setOpenRequestApproval(false)
+  }
+
+  const handleReject = () => {
+    console.log('[v0] Approval request rejected:', approvalData.id)
     setOpenRequestApproval(false)
   }
 
@@ -201,111 +208,109 @@ export function LeaveHeader() {
               Request Approval
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Request Leave Approval</DialogTitle>
+              <DialogTitle>Review Leave Approval Request</DialogTitle>
               <DialogDescription>
-                Fill in the employee details and leave information to submit for approval. This will be added to the requests table with pending status.
+                Review the submitted leave request form and mobile app data below. Click Approve or Reject to proceed.
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleApprovalSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto">
+            
+            <div className="space-y-6">
+              {/* Form Picture Section */}
+              <div className="space-y-2">
+                <Label>Leave Request Form</Label>
+                <div className="border rounded-lg overflow-hidden bg-muted">
+                  <img 
+                    src={approvalData.formImageUrl} 
+                    alt="Leave request form" 
+                    className="w-full h-auto max-h-96 object-cover"
+                  />
+                </div>
+              </div>
+
+              {/* Employee Information Section */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="employeeName">Employee Name</Label>
-                  <Input
-                    id="employeeName"
-                    name="employeeName"
-                    placeholder="Enter employee name"
-                    value={approvalFormData.employeeName}
-                    onChange={handleApprovalInputChange}
-                    required
-                  />
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Employee Name</Label>
+                  <p className="text-sm font-medium">{approvalData.employeeName}</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="employeeId">Employee ID</Label>
-                  <Input
-                    id="employeeId"
-                    name="employeeId"
-                    placeholder="Enter employee ID"
-                    value={approvalFormData.employeeId}
-                    onChange={handleApprovalInputChange}
-                    required
-                  />
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Employee ID</Label>
+                  <p className="text-sm font-medium">{approvalData.employeeId}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Department</Label>
+                  <p className="text-sm font-medium">{approvalData.department}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Submitted Date</Label>
+                  <p className="text-sm font-medium">{approvalData.submittedDate}</p>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="approvalLeaveType">Leave Type</Label>
-                <Select value={approvalFormData.leaveType} onValueChange={(value) => setApprovalFormData(prev => ({ ...prev, leaveType: value }))}>
-                  <SelectTrigger id="approvalLeaveType">
-                    <SelectValue placeholder="Select leave type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="annual">Annual Leave</SelectItem>
-                    <SelectItem value="sick">Sick Leave</SelectItem>
-                    <SelectItem value="personal">Personal Leave</SelectItem>
-                    <SelectItem value="emergency">Emergency</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="approvalStartDate">Start Date</Label>
-                  <Input
-                    id="approvalStartDate"
-                    type="date"
-                    name="startDate"
-                    value={approvalFormData.startDate}
-                    onChange={handleApprovalInputChange}
-                    required
-                  />
+              {/* Leave Details Section */}
+              <div className="border-t pt-4 space-y-4">
+                <h3 className="font-semibold text-sm">Leave Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Leave Type</Label>
+                    <p className="text-sm font-medium">{approvalData.leaveType}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Period</Label>
+                    <p className="text-sm font-medium">{approvalData.startDate} to {approvalData.endDate}</p>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="approvalEndDate">End Date</Label>
-                  <Input
-                    id="approvalEndDate"
-                    type="date"
-                    name="endDate"
-                    value={approvalFormData.endDate}
-                    onChange={handleApprovalInputChange}
-                    required
-                  />
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Reason for Leave</Label>
+                  <p className="text-sm">{approvalData.reason}</p>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="approvalReason">Reason for Leave</Label>
-                <Textarea
-                  id="approvalReason"
-                  name="reason"
-                  placeholder="Provide reason for the leave request..."
-                  value={approvalFormData.reason}
-                  onChange={handleApprovalInputChange}
-                  rows={2}
-                  required
-                />
+              {/* Mobile App Submitted Data */}
+              <div className="border-t pt-4 space-y-4">
+                <h3 className="font-semibold text-sm">Mobile App Data</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Supervisor</Label>
+                    <p className="text-sm font-medium">{approvalData.mobileFormData.supervisor}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Emergency Contact</Label>
+                    <p className="text-sm font-medium">{approvalData.mobileFormData.emergencyContact}</p>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Notes</Label>
+                  <p className="text-sm">{approvalData.mobileFormData.notes}</p>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="attachmentNote">Attachment/Note</Label>
-                <Textarea
-                  id="attachmentNote"
-                  name="attachmentNote"
-                  placeholder="Add any attachments or additional notes..."
-                  value={approvalFormData.attachmentNote}
-                  onChange={handleApprovalInputChange}
-                  rows={2}
-                />
-              </div>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpenRequestApproval(false)}>
-                  Cancel
+              {/* Action Buttons */}
+              <DialogFooter className="gap-2 flex-row justify-end pt-4 border-t">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setOpenRequestApproval(false)}
+                >
+                  Close
                 </Button>
-                <Button type="submit">Submit for Approval</Button>
+                <Button 
+                  type="button" 
+                  variant="destructive" 
+                  onClick={handleReject}
+                >
+                  Reject
+                </Button>
+                <Button 
+                  type="button" 
+                  onClick={handleApprove}
+                >
+                  Approve
+                </Button>
               </DialogFooter>
-            </form>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
