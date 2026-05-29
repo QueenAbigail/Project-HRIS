@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Plus, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, CheckCircle2, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea'
 export function LeaveHeader() {
   const [openNewRequest, setOpenNewRequest] = useState(false)
   const [openRequestApproval, setOpenRequestApproval] = useState(false)
+  const [openImageZoom, setOpenImageZoom] = useState(false)
   const [currentApprovalIndex, setCurrentApprovalIndex] = useState(0)
   const [formData, setFormData] = useState({
     leaveType: '',
@@ -284,13 +285,17 @@ export function LeaveHeader() {
               {/* Form Picture Section */}
               <div className="space-y-2">
                 <Label>Leave Request Form</Label>
-                <div className="border rounded-lg overflow-hidden bg-muted">
+                <div 
+                  className="border rounded-lg overflow-hidden bg-muted cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => setOpenImageZoom(true)}
+                >
                   <img 
                     src={approvalData.formImageUrl} 
                     alt="Leave request form" 
                     className="w-full h-auto max-h-96 object-cover"
                   />
                 </div>
+                <p className="text-xs text-muted-foreground">Click image to view in full size</p>
               </div>
 
               {/* Employee Information Section */}
@@ -402,6 +407,28 @@ export function LeaveHeader() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Image Zoom Modal */}
+      <Dialog open={openImageZoom} onOpenChange={setOpenImageZoom}>
+        <DialogContent className="max-w-4xl w-full">
+          <DialogHeader className="flex flex-row items-center justify-between space-y-0">
+            <DialogTitle>Leave Request Form - {approvalData.employeeName}</DialogTitle>
+            <button
+              onClick={() => setOpenImageZoom(false)}
+              className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </DialogHeader>
+          <div className="w-full flex justify-center">
+            <img 
+              src={approvalData.formImageUrl} 
+              alt="Leave request form - zoomed" 
+              className="max-w-full max-h-[70vh] object-contain"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
