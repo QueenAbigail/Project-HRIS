@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Plus, CheckCircle2 } from 'lucide-react'
+import { Plus, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -26,30 +26,71 @@ import { Textarea } from '@/components/ui/textarea'
 export function LeaveHeader() {
   const [openNewRequest, setOpenNewRequest] = useState(false)
   const [openRequestApproval, setOpenRequestApproval] = useState(false)
+  const [currentApprovalIndex, setCurrentApprovalIndex] = useState(0)
   const [formData, setFormData] = useState({
     leaveType: '',
     startDate: '',
     endDate: '',
     reason: '',
   })
-  // Hardcoded approval request data (will be fetched from database later)
-  const [approvalData] = useState({
-    id: 'REQ-001',
-    employeeName: 'Robert Taylor',
-    employeeId: 'EMP-2024-001',
-    department: 'Field Security',
-    leaveType: 'Annual Leave',
-    startDate: 'Apr 1, 2026',
-    endDate: 'Apr 5, 2026',
-    reason: 'Family vacation planned for Easter holidays',
-    formImageUrl: 'https://images.unsplash.com/photo-1586281380349-2be2979c1f90?w=800&q=80', // Placeholder for form picture
-    submittedDate: 'Mar 20, 2026',
-    mobileFormData: {
-      supervisor: 'John Smith',
-      emergencyContact: '+1 (555) 123-4567',
-      notes: 'All tasks delegated to team members',
+
+  // Hardcoded multiple approval requests data (will be fetched from database later)
+  const [approvalRequests] = useState([
+    {
+      id: 'REQ-001',
+      employeeName: 'Robert Taylor',
+      employeeId: 'EMP-2024-001',
+      department: 'Field Security',
+      leaveType: 'Annual Leave',
+      startDate: 'Apr 1, 2026',
+      endDate: 'Apr 5, 2026',
+      reason: 'Family vacation planned for Easter holidays',
+      formImageUrl: '/form-placeholder.png',
+      submittedDate: 'Mar 20, 2026',
+      mobileFormData: {
+        supervisor: 'John Smith',
+        emergencyContact: '+1 (555) 123-4567',
+        notes: 'All tasks delegated to team members',
+      },
     },
-  })
+    {
+      id: 'REQ-002',
+      employeeName: 'Jessica Brown',
+      employeeId: 'EMP-2024-002',
+      department: 'Surveillance',
+      leaveType: 'Sick Leave',
+      startDate: 'Mar 31, 2026',
+      endDate: 'Mar 31, 2026',
+      reason: 'Medical appointment and recovery',
+      formImageUrl: '/form-placeholder.png',
+      submittedDate: 'Mar 21, 2026',
+      mobileFormData: {
+        supervisor: 'Maria Garcia',
+        emergencyContact: '+1 (555) 987-6543',
+        notes: 'Doctor certificate provided',
+      },
+    },
+    {
+      id: 'REQ-003',
+      employeeName: 'Michael Chen',
+      employeeId: 'EMP-2024-003',
+      department: 'Patrol',
+      leaveType: 'Personal Leave',
+      startDate: 'Apr 10, 2026',
+      endDate: 'Apr 12, 2026',
+      reason: 'Personal matters requiring attention',
+      formImageUrl: '/form-placeholder.png',
+      submittedDate: 'Mar 22, 2026',
+      mobileFormData: {
+        supervisor: 'David Wilson',
+        emergencyContact: '+1 (555) 456-7890',
+        notes: 'Coverage arranged with Sarah',
+      },
+    },
+  ])
+
+  const approvalData = approvalRequests[currentApprovalIndex]
+  const totalRequests = approvalRequests.length
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -65,12 +106,32 @@ export function LeaveHeader() {
 
   const handleApprove = () => {
     console.log('[v0] Approval request approved:', approvalData.id)
-    setOpenRequestApproval(false)
+    if (currentApprovalIndex < totalRequests - 1) {
+      setCurrentApprovalIndex(currentApprovalIndex + 1)
+    } else {
+      setOpenRequestApproval(false)
+    }
   }
 
   const handleReject = () => {
     console.log('[v0] Approval request rejected:', approvalData.id)
-    setOpenRequestApproval(false)
+    if (currentApprovalIndex < totalRequests - 1) {
+      setCurrentApprovalIndex(currentApprovalIndex + 1)
+    } else {
+      setOpenRequestApproval(false)
+    }
+  }
+
+  const handlePrevious = () => {
+    if (currentApprovalIndex > 0) {
+      setCurrentApprovalIndex(currentApprovalIndex - 1)
+    }
+  }
+
+  const handleNext = () => {
+    if (currentApprovalIndex < totalRequests - 1) {
+      setCurrentApprovalIndex(currentApprovalIndex + 1)
+    }
   }
 
   return (
@@ -214,6 +275,9 @@ export function LeaveHeader() {
               <DialogDescription>
                 Review the submitted leave request form and mobile app data below. Click Approve or Reject to proceed.
               </DialogDescription>
+              <div className="text-xs text-muted-foreground mt-2">
+                Request {currentApprovalIndex + 1} of {totalRequests}
+              </div>
             </DialogHeader>
             
             <div className="space-y-6">
@@ -288,27 +352,51 @@ export function LeaveHeader() {
               </div>
 
               {/* Action Buttons */}
-              <DialogFooter className="gap-2 flex-row justify-end pt-4 border-t">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setOpenRequestApproval(false)}
-                >
-                  Close
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="destructive" 
-                  onClick={handleReject}
-                >
-                  Reject
-                </Button>
-                <Button 
-                  type="button" 
-                  onClick={handleApprove}
-                >
-                  Approve
-                </Button>
+              <DialogFooter className="gap-2 flex-row justify-between pt-4 border-t">
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrevious}
+                    disabled={currentApprovalIndex === 0}
+                  >
+                    <ChevronLeft className="mr-1 size-4" />
+                    Previous
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNext}
+                    disabled={currentApprovalIndex === totalRequests - 1}
+                  >
+                    Next
+                    <ChevronRight className="ml-1 size-4" />
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setOpenRequestApproval(false)}
+                  >
+                    Close
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="destructive" 
+                    onClick={handleReject}
+                  >
+                    Reject
+                  </Button>
+                  <Button 
+                    type="button" 
+                    onClick={handleApprove}
+                  >
+                    Approve
+                  </Button>
+                </div>
               </DialogFooter>
             </div>
           </DialogContent>
