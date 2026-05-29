@@ -166,17 +166,22 @@ export default function PrintQRCodePage() {
           <script src="https://cdn.tailwindcss.com"></script>
           <style>
             @page {
-              size: ${pageSize};
-              margin: 15mm;
+              size: 297mm 420mm; 
+              margin: 10mm;
             }
             
             body {
+              width: 297mm;
+              height: 420mm;
               background-color: white !important;
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
-              margin: 0;
-              padding: 0;
-              font-family: system-ui, -apple-system, sans-serif;
+              overflow: hidden;
+            }
+            
+            #qr-print-zone {
+              width: 100%;
+              height: 100%;
             }
             
             html {
@@ -187,9 +192,8 @@ export default function PrintQRCodePage() {
               page-break-after: always;
               background-color: white;
               margin: 0;
-              padding: 15mm;
+              padding: 10mm;
               width: 100%;
-              min-height: ${layoutSettings.pageSize === 'A3' ? '420mm' : '297mm'};
               box-sizing: border-box;
             }
             
@@ -250,6 +254,8 @@ export default function PrintQRCodePage() {
               body {
                 margin: 0;
                 padding: 0;
+                width: 297mm;
+                height: 420mm;
               }
             }
           </style>
