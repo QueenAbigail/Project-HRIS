@@ -49,7 +49,7 @@ const statusColors: Record<string, { badge: string }> = {
   failed: { badge: 'bg-red-100 text-red-800' },
 }
 
-// CSS Print Super Aman - A4 Landscape
+// CSS Print Super Aman - A4 Landscape Half Size Centered
 const landscapePrintStyle = `
   @page {
     size: 297mm 210mm;
@@ -61,6 +61,9 @@ const landscapePrintStyle = `
       print-color-adjust: exact;
       width: 297mm;
       height: 210mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
     /* 1. Bikin semua elemen di layar jadi tembus pandang (hilang) */
@@ -73,15 +76,13 @@ const landscapePrintStyle = `
       visibility: visible;
     }
     
-    /* 3. Tarik area payslip ke pojok kiri atas kertas biar pas 1 halaman */
+    /* 3. Tampilkan payslip di tengah dengan ukuran 50% */
     #payslip-print-zone {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 297mm;
-      height: 210mm;
-      margin: 0;
-      padding: 10mm;
+      position: relative;
+      width: 148.5mm;
+      height: 105mm;
+      margin: auto;
+      padding: 5mm;
       box-sizing: border-box;
     }
 
@@ -160,7 +161,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
       <style>{landscapePrintStyle}</style>
       <Dialog open={open} onOpenChange={onOpenChange}>
         {/* max-w-5xl akan memaksa modal lebar di layar web */}
-        <DialogContent className="sm:max-w-6xl max-w-[98vw] max-h-[90vh] bg-white p-0 border-none shadow-2xl overflow-hidden print:border-none print:shadow-none">
+        <DialogContent className="sm:max-w-4xl max-w-[95vw] max-h-[90vh] bg-white p-0 border-none shadow-2xl overflow-hidden print:border-none print:shadow-none flex flex-col items-center justify-center">
           <DialogHeader className="sr-only print:hidden">
             <DialogTitle>Pay Slip</DialogTitle>
             <DialogDescription>
@@ -168,15 +169,16 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
             </DialogDescription>
           </DialogHeader>
 
-          {/* ZONA CETAK - A4 Landscape (297mm x 210mm) */}
+          {/* ZONA CETAK - A4 Landscape Half Size (148.5mm x 105mm) Centered */}
           <div
             id="payslip-print-zone"
-            className="relative w-full bg-white text-slate-900 flex flex-col justify-between overflow-hidden"
+            className="relative bg-white text-slate-900 flex flex-col justify-between overflow-hidden"
             style={{ 
               aspectRatio: '297/210',
-              padding: '12px',
-              maxHeight: 'calc(90vh - 80px)',
-              fontSize: '11px'
+              width: '100%',
+              maxWidth: '600px',
+              padding: '8px',
+              fontSize: '10px'
             }}
           >
             {/* Watermark Logo */}
