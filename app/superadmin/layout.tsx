@@ -61,6 +61,7 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
     '/superadmin/schedules': 'Schedules',
     '/superadmin/devices': 'Device Management',
     '/superadmin/gps-locations': 'GPS Locations',
+    '/superadmin/print-qr-code': 'Print QR Code',
     '/superadmin/email-templates': 'Email Templates',
     '/superadmin/settings': 'Settings',
   }

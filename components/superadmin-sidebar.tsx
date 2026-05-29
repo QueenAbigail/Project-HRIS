@@ -19,6 +19,7 @@ import {
   MapPin,
   Mail,
   Settings,
+  QrCode,
 } from 'lucide-react'
 
 import {
@@ -123,6 +124,11 @@ const adminNavItems = [
     title: 'GPS Locations',
     url: '/superadmin/gps-locations',
     icon: MapPin,
+  },
+  {
+    title: 'Print QR Code',
+    url: '/superadmin/print-qr-code',
+    icon: QrCode,
   },
   {
     title: 'Email Templates',
