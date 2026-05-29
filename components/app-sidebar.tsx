@@ -177,9 +177,9 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   return (
     <Sidebar variant="inset" collapsible="icon" className="overflow-hidden">
       <SidebarHeader className="border-b border-sidebar-border overflow-hidden">
-        <SidebarMenu className="flex items-center justify-between gap-2">
-          <SidebarMenuItem className="flex-1 min-w-0">
-            <SidebarMenuButton size="lg" asChild>
+        <SidebarMenu>
+          <SidebarMenuItem className="w-full">
+            <SidebarMenuButton size="lg" asChild className="flex-1">
               <Link href="/dashboard" className="min-w-0">
                 <LogoIcon src={systemSettings.logoUrl || '/icon.svg'} alt={systemSettings.appName} className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground flex-shrink-0" />
                 <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
@@ -189,10 +189,10 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          <SidebarMenuItem className="flex-shrink-0">
+          <SidebarMenuItem className="w-full -mx-2">
             <SidebarMenuButton 
               onClick={toggleSidebar} 
-              className="size-9"
+              className="w-full px-2 h-9"
               title={state === 'expanded' ? 'Collapse sidebar' : 'Expand sidebar'}
             >
               <ChevronLeft className={`size-4 transition-transform duration-300 ${state === 'collapsed' ? 'rotate-180' : ''}`} />

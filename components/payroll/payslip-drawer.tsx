@@ -49,16 +49,21 @@ const statusColors: Record<string, { badge: string }> = {
   failed: { badge: 'bg-red-100 text-red-800' },
 }
 
-// CSS Print Super Aman
+// CSS Print Super Aman - A4 Landscape Half Size Centered
 const landscapePrintStyle = `
   @page {
-    /* Sengaja nggak pakai 'size: landscape' biar dropdown Layout di Chrome muncul */
-    margin: 10mm; 
+    size: 297mm 210mm;
+    margin: 10mm;
   }
   @media print {
     body {
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
+      width: 297mm;
+      height: 210mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
     /* 1. Bikin semua elemen di layar jadi tembus pandang (hilang) */
@@ -71,14 +76,14 @@ const landscapePrintStyle = `
       visibility: visible;
     }
     
-    /* 3. Tarik area payslip ke pojok kiri atas kertas biar pas 1 halaman */
+    /* 3. Tampilkan payslip di tengah dengan ukuran 50% */
     #payslip-print-zone {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-      margin: 0;
-      padding: 0;
+      position: relative;
+      width: 148.5mm;
+      height: 105mm;
+      margin: auto;
+      padding: 5mm;
+      box-sizing: border-box;
     }
 
     /* 4. Sembunyikan tombol 'X' (Close) bawaan Shadcn */
@@ -112,7 +117,49 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
   const takeHomePercentage = ((employee.netPay / totalGross) * 100).toFixed(1)
 
   const handlePrint = () => {
-    window.print()
+    const printContent = document.getElementById('payslip-print-zone');
+    if (!printContent) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Payslip Print</title>
+          <script src="https://cdn.tailwindcss.com"><\/script>
+          <style>
+            @page {
+              size: 210mm 297mm; /* Strict A4 size */
+              margin: 10mm;
+            }
+            body {
+              width: 210mm;
+              min-height: 297mm;
+              background-color: white !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              color: black;
+              font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            }
+            #payslip-print-zone {
+              width: 100%;
+            }
+          </style>
+        </head>
+        <body class="p-8 m-0">
+          ${printContent.outerHTML}
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    }, 700); // 700ms gives Tailwind enough time to render the fonts and layout
   }
 
   const handleDownloadPDF = () => {
@@ -156,7 +203,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
       <style>{landscapePrintStyle}</style>
       <Dialog open={open} onOpenChange={onOpenChange}>
         {/* max-w-5xl akan memaksa modal lebar di layar web */}
-        <DialogContent className="sm:max-w-5xl w-[95vw] bg-white p-0 border-none shadow-2xl overflow-hidden print:border-none print:shadow-none">
+        <DialogContent className="sm:max-w-4xl max-w-[95vw] max-h-[90vh] bg-white p-0 border-none shadow-2xl overflow-hidden print:border-none print:shadow-none flex flex-col items-center justify-center">
           <DialogHeader className="sr-only print:hidden">
             <DialogTitle>Pay Slip</DialogTitle>
             <DialogDescription>
@@ -164,10 +211,15 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
             </DialogDescription>
           </DialogHeader>
 
-          {/* ZONA CETAK - Hanya kotak ini yang akan masuk ke kertas */}
+          {/* ZONA CETAK - A4 Landscape Half Size (148.5mm x 105mm) Centered */}
           <div
             id="payslip-print-zone"
-            className="relative w-full bg-white text-slate-900 p-8 flex flex-col justify-between"
+            className="relative bg-white text-slate-900 flex flex-col justify-between overflow-hidden w-full"
+            style={{ 
+              aspectRatio: '297/210',
+              padding: '8px',
+              fontSize: '10px'
+            }}
           >
             {/* Watermark Logo */}
             <div
@@ -185,126 +237,126 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
             <div className="relative z-10 flex flex-col h-full">
               {/* Header */}
               <div>
-                <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
+                <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-200">
                   <div className="flex-1">
-                    <h1 className="text-2xl font-black text-slate-900">PT Pro Maxima Rajawali</h1>
-                    <div className="flex gap-6 mt-1 text-sm">
+                    <h1 className="text-sm font-black text-slate-900 leading-tight">PT Pro Maxima Rajawali</h1>
+                    <div className="flex gap-3 mt-0.5 text-xs">
                       <span className="text-slate-500 font-bold tracking-widest uppercase">Pay Slip</span>
                       <span className="font-bold text-slate-900">{period}</span>
                     </div>
                   </div>
-                  <Badge className={`${statusStyle.badge} text-sm py-1.5 px-4 h-fit flex-shrink-0 shadow-sm border-none`}>
+                  <Badge className={`${statusStyle.badge} text-xs py-0.5 px-2 h-fit flex-shrink-0 shadow-sm border-none`}>
                     {employee.status.toUpperCase()}
                   </Badge>
                 </div>
 
                 {/* Info Karyawan */}
-                <div className="flex items-center gap-8 py-2 mb-2">
-                  <Avatar className="size-16 flex-shrink-0 border bg-white shadow-sm">
+                <div className="flex items-center gap-2 py-1 mb-1">
+                  <Avatar className="size-12 flex-shrink-0 border bg-white shadow-sm">
                     <AvatarImage src={`/avatars/${employee.id}.jpg`} alt={employee.name} />
-                    <AvatarFallback className="bg-slate-100 text-slate-700 text-lg font-bold">
+                    <AvatarFallback className="bg-slate-100 text-slate-700 text-xs font-bold">
                       {employee.initials}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="grid grid-cols-4 gap-8 text-sm flex-1">
+                  <div className="grid grid-cols-4 gap-2 text-xs flex-1">
                     <div>
-                      <p className="text-slate-400 font-bold mb-1 text-xs tracking-wider">EMPLOYEE NAME</p>
-                      <p className="font-bold text-slate-900 text-base">{employee.name}</p>
+                      <p className="text-slate-400 font-bold mb-0.5 text-[9px] tracking-wider">EMPLOYEE NAME</p>
+                      <p className="font-bold text-slate-900 text-xs leading-tight">{employee.name}</p>
                     </div>
                     <div>
-                      <p className="text-slate-400 font-bold mb-1 text-xs tracking-wider">EMPLOYEE ID</p>
-                      <p className="font-bold text-slate-900 text-base">{employee.id}</p>
+                      <p className="text-slate-400 font-bold mb-0.5 text-[9px] tracking-wider">EMPLOYEE ID</p>
+                      <p className="font-bold text-slate-900 text-xs leading-tight">{employee.id}</p>
                     </div>
                     <div>
-                      <p className="text-slate-400 font-bold mb-1 text-xs tracking-wider">DEPARTMENT</p>
-                      <p className="font-bold text-slate-900 text-base">{employee.department}</p>
+                      <p className="text-slate-400 font-bold mb-0.5 text-[9px] tracking-wider">DEPARTMENT</p>
+                      <p className="font-bold text-slate-900 text-xs leading-tight">{employee.department}</p>
                     </div>
                     <div>
-                      <p className="text-slate-400 font-bold mb-1 text-xs tracking-wider">DAYS WORKED</p>
-                      <p className="font-bold text-slate-900 text-base">{employee.daysWorked} / {employee.totalDays}</p>
+                      <p className="text-slate-400 font-bold mb-0.5 text-[9px] tracking-wider">DAYS WORKED</p>
+                      <p className="font-bold text-slate-900 text-xs leading-tight">{employee.daysWorked} / {employee.totalDays}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Rincian Gaji - 2 Kolom Kiri Kanan */}
-              <div className="flex-1 flex gap-12 py-6 border-y border-gray-200 mt-4">
+              <div className="flex-1 flex gap-4 py-2 border-y border-gray-200 mt-1">
                 {/* Kolom Pemasukan */}
-                <div className="flex-1 border-r border-gray-100 pr-12">
-                  <h3 className="font-bold text-slate-900 uppercase text-sm mb-5 tracking-widest">Earnings</h3>
-                  <div className="space-y-3 text-sm">
+                <div className="flex-1 border-r border-gray-100 pr-4">
+                  <h3 className="font-bold text-slate-900 uppercase text-xs mb-2 tracking-widest leading-tight">Earnings</h3>
+                  <div className="space-y-1 text-xs">
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-600 font-medium">Base Salary</span>
-                      <span className="font-mono font-semibold text-slate-900">{formatCurrency(employee.baseSalary)}</span>
+                      <span className="text-slate-600 font-medium text-xs">Base Salary</span>
+                      <span className="font-mono font-semibold text-slate-900 text-xs">{formatCurrency(employee.baseSalary)}</span>
                     </div>
                     {employee.overtimeHours > 0 && (
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600 font-medium">Overtime ({employee.overtimeHours}h)</span>
-                        <span className="font-mono font-semibold text-green-600">+{formatCurrency(employee.overtime)}</span>
+                        <span className="text-slate-600 font-medium text-xs">Overtime ({employee.overtimeHours}h)</span>
+                        <span className="font-mono font-semibold text-green-600 text-xs">+{formatCurrency(employee.overtime)}</span>
                       </div>
                     )}
                     {employee.bonus > 0 && (
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600 font-medium">Bonus</span>
-                        <span className="font-mono font-semibold text-green-600">+{formatCurrency(employee.bonus)}</span>
+                        <span className="text-slate-600 font-medium text-xs">Bonus</span>
+                        <span className="font-mono font-semibold text-green-600 text-xs">+{formatCurrency(employee.bonus)}</span>
                       </div>
                     )}
                     {employee.allowances > 0 && (
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600 font-medium">Allowances</span>
-                        <span className="font-mono font-semibold text-green-600">+{formatCurrency(employee.allowances)}</span>
+                        <span className="text-slate-600 font-medium text-xs">Allowances</span>
+                        <span className="font-mono font-semibold text-green-600 text-xs">+{formatCurrency(employee.allowances)}</span>
                       </div>
                     )}
                     
-                    <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-200">
-                      <span className="text-slate-900 font-bold text-sm tracking-wider">TOTAL GROSS</span>
-                      <span className="font-mono text-lg font-bold text-green-700">{formatCurrency(totalGross)}</span>
+                    <div className="flex justify-between items-center pt-1 mt-1 border-t border-gray-200">
+                      <span className="text-slate-900 font-bold text-xs tracking-wider">TOTAL GROSS</span>
+                      <span className="font-mono text-xs font-bold text-green-700">{formatCurrency(totalGross)}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Kolom Potongan */}
                 <div className="flex-1 pl-4">
-                  <h3 className="font-bold text-slate-900 uppercase text-sm mb-5 tracking-widest">Deductions</h3>
-                  <div className="space-y-3 text-sm">
+                  <h3 className="font-bold text-slate-900 uppercase text-xs mb-2 tracking-widest leading-tight">Deductions</h3>
+                  <div className="space-y-1 text-xs">
                     {employee.taxDeduction > 0 && (
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600 font-medium">Income Tax</span>
-                        <span className="font-mono font-semibold text-red-600">-{formatCurrency(employee.taxDeduction)}</span>
+                        <span className="text-slate-600 font-medium text-xs">Income Tax</span>
+                        <span className="font-mono font-semibold text-red-600 text-xs">-{formatCurrency(employee.taxDeduction)}</span>
                       </div>
                     )}
                     {employee.insuranceDeduction > 0 && (
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600 font-medium">Insurance</span>
-                        <span className="font-mono font-semibold text-red-600">-{formatCurrency(employee.insuranceDeduction)}</span>
+                        <span className="text-slate-600 font-medium text-xs">Insurance</span>
+                        <span className="font-mono font-semibold text-red-600 text-xs">-{formatCurrency(employee.insuranceDeduction)}</span>
                       </div>
                     )}
                     {employee.otherDeductions > 0 && (
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-600 font-medium">Other Deductions</span>
-                        <span className="font-mono font-semibold text-red-600">-{formatCurrency(employee.otherDeductions)}</span>
+                        <span className="text-slate-600 font-medium text-xs">Other Deductions</span>
+                        <span className="font-mono font-semibold text-red-600 text-xs">-{formatCurrency(employee.otherDeductions)}</span>
                       </div>
                     )}
                     
-                    <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-200">
-                      <span className="text-slate-900 font-bold text-sm tracking-wider">TOTAL DEDUCTIONS</span>
-                      <span className="font-mono text-lg font-bold text-red-700">-{formatCurrency(employee.deductions)}</span>
+                    <div className="flex justify-between items-center pt-1 mt-1 border-t border-gray-200">
+                      <span className="text-slate-900 font-bold text-xs tracking-wider">TOTAL DEDUCTIONS</span>
+                      <span className="font-mono text-xs font-bold text-red-700">-{formatCurrency(employee.deductions)}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Total Take Home Pay */}
-              <div className="pt-6">
-                <div className="bg-green-50 border border-green-200 rounded-lg px-8 py-5 flex items-center justify-between mb-2 shadow-sm">
+              <div className="pt-2">
+                <div className="bg-green-50 border border-green-200 rounded px-4 py-2 flex items-center justify-between mb-1 shadow-sm">
                   <div>
-                    <span className="text-lg font-bold text-slate-900 uppercase tracking-widest block">Take Home Pay</span>
-                    <span className="text-xs text-green-700/80 font-bold mt-1 block">{takeHomePercentage}% of gross salary</span>
+                    <span className="text-xs font-bold text-slate-900 uppercase tracking-widest block leading-tight">Take Home Pay</span>
+                    <span className="text-xs text-green-700/80 font-bold mt-0.5 block">{takeHomePercentage}% of gross salary</span>
                   </div>
-                  <span className="font-mono text-4xl font-black text-green-700">{formatCurrency(employee.netPay)}</span>
+                  <span className="font-mono text-lg font-black text-green-700">{formatCurrency(employee.netPay)}</span>
                 </div>
 
-                <div className="text-center py-2">
+                <div className="text-center py-0.5">
                   <p className="text-xs text-slate-400 font-medium">This is an automated pay slip. Please contact HR for discrepancies.</p>
                 </div>
               </div>
