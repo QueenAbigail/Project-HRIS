@@ -142,7 +142,131 @@ export default function PrintQRCodePage() {
   }
 
   const handlePrint = () => {
-    window.print()
+    const printZone = document.getElementById('qr-print-zone')
+    if (!printZone) {
+      console.error('[v0] Print zone element not found')
+      return
+    }
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      alert('Please allow pop-ups to print QR codes')
+      return
+    }
+
+    const pageSize = layoutSettings.pageSize === 'A3' ? 'A3 portrait' : 'A4 portrait'
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>QR Code Print - ${layoutSettings.pageSize}</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+            @page {
+              size: ${pageSize};
+              margin: 15mm;
+            }
+            
+            body {
+              background-color: white !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              margin: 0;
+              padding: 0;
+              font-family: system-ui, -apple-system, sans-serif;
+            }
+            
+            html {
+              background-color: white;
+            }
+            
+            .print-page {
+              page-break-after: always;
+              background-color: white;
+              margin: 0;
+              padding: 15mm;
+              width: 100%;
+              min-height: ${layoutSettings.pageSize === 'A3' ? '420mm' : '297mm'};
+              box-sizing: border-box;
+            }
+            
+            .print-page:last-child {
+              page-break-after: avoid;
+            }
+            
+            .qr-grid {
+              display: grid;
+              grid-template-columns: repeat(${layoutSettings.cols}, 1fr);
+              gap: ${layoutSettings.spacing === 'gap-3' ? '12px' : layoutSettings.spacing === 'gap-2' ? '8px' : '16px'};
+              width: 100%;
+            }
+            
+            .qr-sticker {
+              border: 1px solid #e5e7eb;
+              border-radius: 4px;
+              padding: 8px;
+              text-align: center;
+              background-color: white;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              aspect-ratio: 1;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            
+            .qr-sticker svg {
+              max-width: 100%;
+              height: auto;
+              margin-bottom: 6px;
+            }
+            
+            .qr-label {
+              font-size: 8pt;
+              line-height: 1.2;
+              word-break: break-word;
+            }
+            
+            .qr-code-name {
+              font-weight: bold;
+              margin-bottom: 2px;
+            }
+            
+            .qr-location-name {
+              font-size: 7pt;
+              color: #6b7280;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              display: -webkit-box;
+              -webkit-line-clamp: 1;
+              -webkit-box-orient: vertical;
+            }
+            
+            @media print {
+              body {
+                margin: 0;
+                padding: 0;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${printZone.outerHTML}
+        </body>
+      </html>
+    `)
+    
+    printWindow.document.close()
+    
+    setTimeout(() => {
+      printWindow.focus()
+      printWindow.print()
+      printWindow.close()
+    }, 500)
   }
 
   const handleDownloadQR = (location: Location) => {
@@ -378,18 +502,19 @@ export default function PrintQRCodePage() {
               }
             `}</style>
 
-            {/* Create pages based on layout */}
-            {Array.from({ length: Math.ceil(selectedLocationData.length / (layoutSettings.cols * layoutSettings.rows)) }).map((_, pageIndex) => {
-              const itemsPerPage = layoutSettings.cols * layoutSettings.rows
-              const pageItems = selectedLocationData.slice(
-                pageIndex * itemsPerPage,
-                (pageIndex + 1) * itemsPerPage
-              )
-              return (
-                <div
-                  key={pageIndex}
-                  className={`print-page border-2 border-dashed rounded-lg mb-4 p-6 print:border-0 print:p-[5mm] print:mb-0 print:rounded-none bg-white`}
-                >
+            <div id="qr-print-zone">
+              {/* Create pages based on layout */}
+              {Array.from({ length: Math.ceil(selectedLocationData.length / (layoutSettings.cols * layoutSettings.rows)) }).map((_, pageIndex) => {
+                const itemsPerPage = layoutSettings.cols * layoutSettings.rows
+                const pageItems = selectedLocationData.slice(
+                  pageIndex * itemsPerPage,
+                  (pageIndex + 1) * itemsPerPage
+                )
+                return (
+                  <div
+                    key={pageIndex}
+                    className={`print-page border-2 border-dashed rounded-lg mb-4 p-6 print:border-0 print:p-[5mm] print:mb-0 print:rounded-none bg-white`}
+                  >
                   <div
                     className={`grid gap-${layoutSettings.spacing === 'gap-3' ? '3' : layoutSettings.spacing === 'gap-2' ? '2' : '4'}`}
                     style={{
@@ -434,6 +559,7 @@ export default function PrintQRCodePage() {
                 </div>
               )
             })}
+            </div>
 
             {/* Screen View Only - Show Download Button */}
             <div className="mt-6 pt-6 border-t space-y-3 print:hidden">
