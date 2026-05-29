@@ -117,7 +117,49 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
   const takeHomePercentage = ((employee.netPay / totalGross) * 100).toFixed(1)
 
   const handlePrint = () => {
-    window.print()
+    const printContent = document.getElementById('payslip-print-zone');
+    if (!printContent) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Payslip Print</title>
+          <script src="https://cdn.tailwindcss.com"><\/script>
+          <style>
+            @page {
+              size: 210mm 297mm; /* Strict A4 size */
+              margin: 10mm;
+            }
+            body {
+              width: 210mm;
+              min-height: 297mm;
+              background-color: white !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              color: black;
+              font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            }
+            #payslip-print-zone {
+              width: 100%;
+            }
+          </style>
+        </head>
+        <body class="p-8 m-0">
+          ${printContent.outerHTML}
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    }, 700); // 700ms gives Tailwind enough time to render the fonts and layout
   }
 
   const handleDownloadPDF = () => {
