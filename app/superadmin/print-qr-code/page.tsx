@@ -21,7 +21,7 @@ import {
 import {
   Checkbox,
 } from '@/components/ui/checkbox'
-import QRCode from 'qrcode.react'
+import { QRCodeCanvas } from 'qrcode.react'
 import { MapPin, Printer, Download, Search, X } from 'lucide-react'
 
 // Mock data matching GPS Locations structure
@@ -312,7 +312,7 @@ export default function PrintQRCodePage() {
                   id={`qr-${location.id}`}
                 >
                   <div className="mb-3">
-                    <QRCode
+                    <QRCodeCanvas
                       value={JSON.stringify({
                         id: location.id,
                         code: location.code,
