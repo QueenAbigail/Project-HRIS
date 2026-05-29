@@ -156,7 +156,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
       <style>{landscapePrintStyle}</style>
       <Dialog open={open} onOpenChange={onOpenChange}>
         {/* max-w-5xl akan memaksa modal lebar di layar web */}
-        <DialogContent className="sm:max-w-5xl w-[95vw] bg-white p-0 border-none shadow-2xl overflow-hidden print:border-none print:shadow-none">
+        <DialogContent className="sm:max-w-4xl max-w-[90vw] max-h-[95vh] bg-white p-0 border-none shadow-2xl overflow-hidden print:border-none print:shadow-none">
           <DialogHeader className="sr-only print:hidden">
             <DialogTitle>Pay Slip</DialogTitle>
             <DialogDescription>
