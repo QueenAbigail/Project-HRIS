@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/checkbox'
 import { QRCodeCanvas } from 'qrcode.react'
 import { MapPin, Printer, Download, Search, X } from 'lucide-react'
+import { Label } from '@/components/ui/label'
 
 // Mock data matching GPS Locations structure
 const mockSites = [
@@ -92,6 +93,7 @@ export default function PrintQRCodePage() {
   const [locationType, setLocationType] = useState('attendance')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedLocations, setSelectedLocations] = useState<number[]>([])
+  const [layoutOption, setLayoutOption] = useState('a3-3x4') // A3: 3 cols x 4 rows, A4: 2 cols x 3 rows
 
   // Get all filtered locations
   const getAllLocations = (): Location[] => {
@@ -156,6 +158,20 @@ export default function PrintQRCodePage() {
       }
     }
   }
+
+  // Get layout settings
+  const getLayoutSettings = () => {
+    if (layoutOption === 'a3-3x4') {
+      return { cols: 3, rows: 4, size: 140, spacing: 'gap-3', pageSize: 'A3' }
+    } else if (layoutOption === 'a3-4x5') {
+      return { cols: 4, rows: 5, size: 110, spacing: 'gap-2', pageSize: 'A3' }
+    } else if (layoutOption === 'a4-2x3') {
+      return { cols: 2, rows: 3, size: 120, spacing: 'gap-4', pageSize: 'A4' }
+    }
+    return { cols: 3, rows: 4, size: 140, spacing: 'gap-3', pageSize: 'A3' }
+  }
+
+  const layoutSettings = getLayoutSettings()
 
   const selectedLocationData = filteredLocations.filter((loc) =>
     selectedLocations.includes(loc.id)
@@ -232,6 +248,34 @@ export default function PrintQRCodePage() {
               </div>
             </div>
           </div>
+
+          {/* Print Layout Options */}
+          <div className="border-t pt-4 mt-4">
+            <Label className="text-sm font-semibold mb-3 block">Print Layout</Label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Button
+                variant={layoutOption === 'a3-3x4' ? 'default' : 'outline'}
+                onClick={() => setLayoutOption('a3-3x4')}
+                className="text-sm"
+              >
+                A3 (3×4 Grid)
+              </Button>
+              <Button
+                variant={layoutOption === 'a3-4x5' ? 'default' : 'outline'}
+                onClick={() => setLayoutOption('a3-4x5')}
+                className="text-sm"
+              >
+                A3 (4×5 Grid)
+              </Button>
+              <Button
+                variant={layoutOption === 'a4-2x3' ? 'default' : 'outline'}
+                onClick={() => setLayoutOption('a4-2x3')}
+                className="text-sm"
+              >
+                A4 (2×3 Grid)
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -292,7 +336,12 @@ export default function PrintQRCodePage() {
       {selectedLocationData.length > 0 && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">QR Code Preview</CardTitle>
+            <div>
+              <CardTitle className="text-lg">QR Code Preview</CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Paper: {layoutSettings.pageSize} | Grid: {layoutSettings.cols}×{layoutSettings.rows} | Total: {selectedLocationData.length} QR codes
+              </p>
+            </div>
             <div className="flex gap-2">
               <Button onClick={handlePrint} className="gap-2">
                 <Printer className="h-4 w-4" />
@@ -301,48 +350,108 @@ export default function PrintQRCodePage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 print:grid-cols-3"
-              id="qr-code-container"
-            >
-              {selectedLocationData.map((location) => (
+            {/* A3/A4 Print-Ready Container */}
+            <style>{`
+              @media print {
+                @page {
+                  size: ${layoutSettings.pageSize === 'A3' ? 'A3' : 'A4'};
+                  margin: 5mm;
+                }
+                body {
+                  margin: 0;
+                  padding: 0;
+                }
+                .print-page {
+                  page-break-after: always;
+                  margin: 0;
+                  padding: 0;
+                  width: 100%;
+                  height: ${layoutSettings.pageSize === 'A3' ? '420mm' : '297mm'};
+                }
+                .print-page:last-child {
+                  page-break-after: avoid;
+                }
+                .qr-sticker {
+                  print-color-adjust: exact;
+                  -webkit-print-color-adjust: exact;
+                }
+              }
+            `}</style>
+
+            {/* Create pages based on layout */}
+            {Array.from({ length: Math.ceil(selectedLocationData.length / (layoutSettings.cols * layoutSettings.rows)) }).map((_, pageIndex) => {
+              const itemsPerPage = layoutSettings.cols * layoutSettings.rows
+              const pageItems = selectedLocationData.slice(
+                pageIndex * itemsPerPage,
+                (pageIndex + 1) * itemsPerPage
+              )
+              return (
                 <div
-                  key={location.id}
-                  className="border rounded-lg p-4 text-center bg-card print:break-inside-avoid"
-                  id={`qr-${location.id}`}
+                  key={pageIndex}
+                  className={`print-page border-2 border-dashed rounded-lg mb-4 p-6 print:border-0 print:p-[5mm] print:mb-0 print:rounded-none bg-white`}
                 >
-                  <div className="mb-3">
-                    <QRCodeCanvas
-                      value={JSON.stringify({
-                        id: location.id,
-                        code: location.code,
-                        name: location.name,
-                        latitude: location.latitude,
-                        longitude: location.longitude,
-                        type: locationType,
-                      })}
-                      size={120}
-                      level="H"
-                      includeMargin={true}
-                    />
+                  <div
+                    className={`grid gap-${layoutSettings.spacing === 'gap-3' ? '3' : layoutSettings.spacing === 'gap-2' ? '2' : '4'}`}
+                    style={{
+                      gridTemplateColumns: `repeat(${layoutSettings.cols}, 1fr)`,
+                      gap: layoutSettings.spacing === 'gap-3' ? '12px' : layoutSettings.spacing === 'gap-2' ? '8px' : '16px',
+                    }}
+                  >
+                    {pageItems.map((location) => (
+                      <div
+                        key={location.id}
+                        className="qr-sticker border rounded-lg p-3 text-center bg-white flex flex-col items-center justify-center print:border print:rounded-md print:p-[4mm]"
+                        id={`qr-${location.id}`}
+                        style={{
+                          width: '100%',
+                          aspectRatio: '1',
+                        }}
+                      >
+                        <div className="mb-2">
+                          <QRCodeCanvas
+                            value={JSON.stringify({
+                              id: location.id,
+                              code: location.code,
+                              name: location.name,
+                              latitude: location.latitude,
+                              longitude: location.longitude,
+                              type: locationType,
+                            })}
+                            size={layoutSettings.size}
+                            level="H"
+                            includeMargin={false}
+                          />
+                        </div>
+                        <div className="text-xs space-y-0.5 w-full print:text-[8pt]">
+                          <div className="font-bold truncate">{location.code}</div>
+                          <div className="text-muted-foreground text-xs line-clamp-1 print:text-[7pt]">
+                            {location.name}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="text-xs space-y-1">
-                    <div className="font-semibold truncate">{location.code}</div>
-                    <div className="text-muted-foreground text-xs line-clamp-2">
-                      {location.name}
-                    </div>
-                  </div>
+                </div>
+              )
+            })}
+
+            {/* Screen View Only - Show Download Button */}
+            <div className="mt-6 pt-6 border-t space-y-3 print:hidden">
+              <p className="text-sm text-muted-foreground">Download individual QR codes:</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                {selectedLocationData.map((location) => (
                   <Button
-                    variant="ghost"
+                    key={location.id}
+                    variant="outline"
                     size="sm"
-                    className="w-full mt-2 text-xs"
+                    className="text-xs"
                     onClick={() => handleDownloadQR(location)}
                   >
                     <Download className="h-3 w-3 mr-1" />
-                    Download
+                    {location.code}
                   </Button>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>
