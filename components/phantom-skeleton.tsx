@@ -30,7 +30,9 @@ export function PhantomSkeleton({
   const attrs: Record<string, any> = {
     animation,
     duration: duration.toString(),
-    style: { display: 'contents' },
+    // When loading, hide the actual content and show skeleton
+    // display: 'contents' allows phantom-ui to measure children without affecting layout
+    style: loading ? { visibility: 'hidden', position: 'absolute', pointerEvents: 'none' } : { display: 'contents' },
   }
 
   // Only add attributes if they have values
