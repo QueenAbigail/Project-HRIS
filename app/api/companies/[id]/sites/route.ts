@@ -4,11 +4,11 @@ import { NextRequest, NextResponse } from 'next/server'
 // POST create new site for a company
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { name, code } = await req.json()
-    const companyId = params.id
+    const { id: companyId } = await params
 
     if (!name || !name.trim() || !code || !code.trim()) {
       return NextResponse.json(
@@ -49,7 +49,7 @@ export async function POST(
 // PUT update site
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { siteId, name, code } = await req.json()
@@ -93,7 +93,7 @@ export async function PUT(
 // DELETE site
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { searchParams } = new URL(req.url)
