@@ -1,14 +1,14 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 
-// GET attendance locations by site
+// GET all attendance locations for a site
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id: siteId } = await params
-    
+
     const locations = await prisma.attendanceLocation.findMany({
       where: { siteId },
       orderBy: { name: 'asc' },
@@ -112,20 +112,6 @@ export async function PUT(
         longitude: true,
         radius: true,
         timezone: true,
-        isActive: true,
-      },
-    })
-        latitude: parseFloat(latitude),
-        longitude: parseFloat(longitude),
-        radius: parseInt(radius),
-        isActive: isActive !== undefined ? isActive : true,
-      },
-      select: {
-        id: true,
-        name: true,
-        latitude: true,
-        longitude: true,
-        radius: true,
         isActive: true,
       },
     })
