@@ -287,14 +287,11 @@ export default function GPSLocationsPage() {
                       </CardHeader>
                       <AccordionContent className="pt-0">
                         <CardContent className="space-y-4">
+                          <Button size="sm" className="gap-1" onClick={() => openAddDialog(site.id)}>
+                            <Plus className="h-4 w-4" />
+                            Add Location
+                          </Button>
                           <Dialog open={isAddDialogOpen && selectedSiteId === site.id} onOpenChange={handleDialogClose}>
-                            <DialogTrigger asChild>
-                              <Button size="sm" className="gap-1" onClick={() => openAddDialog(site.id)}>
-                                <Plus className="h-4 w-4" />
-                                Add Location
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
                               <DialogHeader>
                                 <DialogTitle>{editingLocation ? 'Edit' : 'Add'} Attendance Location</DialogTitle>
                                 <DialogDescription>
@@ -439,14 +436,11 @@ export default function GPSLocationsPage() {
                       </CardHeader>
                       <AccordionContent className="pt-0">
                         <CardContent className="space-y-4">
+                          <Button size="sm" className="gap-1" onClick={() => openAddDialog(site.id)}>
+                            <Plus className="h-4 w-4" />
+                            Add Checkpoint
+                          </Button>
                           <Dialog open={isAddDialogOpen && selectedSiteId === site.id} onOpenChange={handleDialogClose}>
-                            <DialogTrigger asChild>
-                              <Button size="sm" className="gap-1" onClick={() => openAddDialog(site.id)}>
-                                <Plus className="h-4 w-4" />
-                                Add Checkpoint
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
                               <DialogHeader>
                                 <DialogTitle>{editingLocation ? 'Edit' : 'Add'} Patrol Checkpoint</DialogTitle>
                                 <DialogDescription>
