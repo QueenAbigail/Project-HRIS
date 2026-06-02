@@ -249,6 +249,7 @@ model AttendanceLocation {
   radius    Int      // Geofence radius in meters
   latitude  Float    // GPS coordinates for validation
   longitude Float
+  timezone  String   @default("WIB") // Indonesia timezone: WIB, WITA, or WIT
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -266,6 +267,7 @@ model PatrolLocation {
   radius    Int      // Geofence radius in meters
   latitude  Float    // GPS coordinates for validation
   longitude Float
+  timezone  String   @default("WIB") // Indonesia timezone: WIB, WITA, or WIT
   isActive  Boolean  @default(true)
   patrols   Patrol[]
   createdAt DateTime @default(now())

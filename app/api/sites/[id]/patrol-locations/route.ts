@@ -18,6 +18,7 @@ export async function GET(
         latitude: true,
         longitude: true,
         radius: true,
+        timezone: true,
         isActive: true,
       },
     })
@@ -38,10 +39,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { name, latitude, longitude, radius } = await req.json()
+    const { name, latitude, longitude, radius, timezone } = await req.json()
     const { id: siteId } = await params
 
-    if (!name || !latitude || !longitude || !radius) {
+    if (!name || !latitude || !longitude || !radius || !timezone) {
       return NextResponse.json(
         { error: 'All fields are required' },
         { status: 400 }
@@ -55,12 +56,19 @@ export async function POST(
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
         radius: parseInt(radius),
+        timezone,
         isActive: true,
       },
       select: {
         id: true,
         name: true,
         latitude: true,
+        longitude: true,
+        radius: true,
+        timezone: true,
+        isActive: true,
+      },
+    })
         longitude: true,
         radius: true,
         isActive: true,
@@ -83,9 +91,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { locationId, name, latitude, longitude, radius, isActive } = await req.json()
+    const { locationId, name, latitude, longitude, radius, timezone, isActive } = await req.json()
 
-    if (!locationId || !name || latitude === undefined || longitude === undefined || !radius) {
+    if (!locationId || !name || latitude === undefined || longitude === undefined || !radius || !timezone) {
       return NextResponse.json(
         { error: 'All fields are required' },
         { status: 400 }
@@ -96,6 +104,22 @@ export async function PUT(
       where: { id: locationId },
       data: {
         name: name.trim(),
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
+        radius: parseInt(radius),
+        timezone,
+        isActive: isActive ?? true,
+      },
+      select: {
+        id: true,
+        name: true,
+        latitude: true,
+        longitude: true,
+        radius: true,
+        timezone: true,
+        isActive: true,
+      },
+    })
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
         radius: parseInt(radius),

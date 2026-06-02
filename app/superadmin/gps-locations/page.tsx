@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { MapPin, Plus, Edit, Trash2, Building2, Search, X, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
@@ -19,6 +20,7 @@ interface Location {
   latitude: number
   longitude: number
   radius: number
+  timezone: string
   isActive: boolean
 }
 
@@ -46,6 +48,7 @@ export default function GPSLocationsPage() {
     latitude: '',
     longitude: '',
     radius: '50',
+    timezone: 'WIB',
   })
   
   const [editingLocation, setEditingLocation] = useState<Location | null>(null)
@@ -105,7 +108,7 @@ export default function GPSLocationsPage() {
   )
 
   const handleAddLocation = async (type: 'attendance' | 'patrol') => {
-    if (!newLocation.name || !newLocation.latitude || !newLocation.longitude || !selectedSiteId) {
+    if (!newLocation.name || !newLocation.latitude || !newLocation.longitude || !newLocation.timezone || !selectedSiteId) {
       toast({ title: 'Error', description: 'All fields are required', variant: 'destructive' })
       return
     }
@@ -339,6 +342,19 @@ export default function GPSLocationsPage() {
                                     placeholder="50"
                                   />
                                 </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="timezone">Timezone (Indonesia)</Label>
+                                  <Select value={newLocation.timezone} onValueChange={(value) => setNewLocation(prev => ({ ...prev, timezone: value }))}>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="WIB">WIB (UTC+7) - Western Indonesia</SelectItem>
+                                      <SelectItem value="WITA">WITA (UTC+8) - Central Indonesia</SelectItem>
+                                      <SelectItem value="WIT">WIT (UTC+9) - Eastern Indonesia</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                                 <Button onClick={() => handleAddLocation('attendance')} className="w-full" disabled={isSaving}>
                                   {isSaving ? (
                                     <>
@@ -488,6 +504,19 @@ export default function GPSLocationsPage() {
                                     onChange={(e) => setNewLocation(prev => ({ ...prev, radius: e.target.value }))}
                                     placeholder="50"
                                   />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="timezone">Timezone (Indonesia)</Label>
+                                  <Select value={newLocation.timezone} onValueChange={(value) => setNewLocation(prev => ({ ...prev, timezone: value }))}>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="WIB">WIB (UTC+7) - Western Indonesia</SelectItem>
+                                      <SelectItem value="WITA">WITA (UTC+8) - Central Indonesia</SelectItem>
+                                      <SelectItem value="WIT">WIT (UTC+9) - Eastern Indonesia</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 </div>
                                 <Button onClick={() => handleAddLocation('patrol')} className="w-full" disabled={isSaving}>
                                   {isSaving ? (
