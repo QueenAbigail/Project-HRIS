@@ -2,9 +2,9 @@ import { prisma } from '@/lib/prisma'
 import { EmployeesTable } from '@/components/employees/employees-table'
 import { EmployeesHeader } from '@/components/employees/employees-header'
 import { EmployeesStats } from '@/components/employees/employees-stats'
-import { PageLoadingWrapper } from '@/components/page-loading-wrapper'
 import { EmployeesSkeleton } from '@/components/skeletons/employees-skeleton'
 import { format } from 'date-fns'
+import { Suspense } from 'react'
 import type { Employee } from '@/components/employees/employee-profile-sheet'
 
 interface LocationStat {
@@ -208,12 +208,9 @@ export default function EmployeesPage({
   const searchQuery = searchParams.search || ''
 
   return (
-    <PageLoadingWrapper
-      skeleton={<EmployeesSkeleton />}
-      minLoadingTime={500}
-    >
+    <Suspense fallback={<EmployeesSkeleton />}>
       <EmployeesContent searchQuery={searchQuery} />
-    </PageLoadingWrapper>
+    </Suspense>
   )
 }
 

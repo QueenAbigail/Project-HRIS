@@ -1,7 +1,6 @@
 'use client'
 
 import { ReactNode, useState, useEffect } from 'react'
-import { PhantomSkeleton } from './phantom-skeleton'
 
 interface PageLoadingWrapperProps {
   skeleton: ReactNode
@@ -12,7 +11,7 @@ interface PageLoadingWrapperProps {
 export function PageLoadingWrapper({
   skeleton,
   children,
-  minLoadingTime = 400, // Minimum time skeleton shows (in ms)
+  minLoadingTime = 500,
 }: PageLoadingWrapperProps) {
   const [isLoading, setIsLoading] = useState(true)
 
@@ -26,14 +25,15 @@ export function PageLoadingWrapper({
   }, [minLoadingTime])
 
   return (
-    <div>
-      {isLoading ? (
-        <PhantomSkeleton loading={true} animation="shimmer">
+    <>
+      {isLoading && (
+        <div className="animate-pulse">
           {skeleton}
-        </PhantomSkeleton>
-      ) : (
-        children
+        </div>
       )}
-    </div>
+      {!isLoading && (
+        <>{children}</>
+      )}
+    </>
   )
 }
