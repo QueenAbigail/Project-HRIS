@@ -69,6 +69,7 @@ model Site {
   users       User[]
   attendances Attendance[]
   assignments EmployeeShiftAssignment[]
+  attendanceLocations AttendanceLocation[] @relation("SiteAttendanceLocations")
   patrolLocations PatrolLocation[]
   patrols     Patrol[]
   createdAt   DateTime                  @default(now())
@@ -239,13 +240,30 @@ model MasterData {
   @@map("master_data")
 }
 
+// Attendance Location model (specific GPS locations at a site for attendance check-ins)
+model AttendanceLocation {
+  id        String   @id @default(cuid())
+  siteId    String
+  site      Site     @relation("SiteAttendanceLocations", fields: [siteId], references: [id], onDelete: Cascade)
+  name      String   // Name of attendance location (e.g., "Main Entrance", "Security Booth")
+  radius    Int      // Geofence radius in meters
+  latitude  Float    // GPS coordinates for validation
+  longitude Float
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([siteId])
+  @@map("attendance_locations")
+}
+
 // Patrol Location model (specific locations at a site for patrol check-ins)
 model PatrolLocation {
   id        String   @id @default(cuid())
   siteId    String
   site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
   name      String   // Name of patrol location (e.g., "Gate A", "Building 1 Entrance")
-  barcode   String   @unique // Barcode for scanning
+  radius    Int      // Geofence radius in meters
   latitude  Float    // GPS coordinates for validation
   longitude Float
   isActive  Boolean  @default(true)
