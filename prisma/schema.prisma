@@ -64,6 +64,8 @@ model Site {
   name        String
   code        String                    @unique
   totalStaff  Int? // Optional, from stats
+  companyId   String?
+  company     Company?                  @relation(fields: [companyId], references: [id], onDelete: SetNull)
   users       User[]
   attendances Attendance[]
   assignments EmployeeShiftAssignment[]
@@ -73,6 +75,17 @@ model Site {
   updatedAt   DateTime                  @updatedAt
 
   @@map("sites")
+}
+
+// Company model (clients)
+model Company {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  sites     Site[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("companies")
 }
 
 // Shift model (from shifts in constants.ts)
