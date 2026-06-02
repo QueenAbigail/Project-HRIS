@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 
 import { getSystemSettings } from '@/lib/system'
+import '@aejkatappaja/phantom-ui/ssr.css'
 import './globals.css'
 
 const _geist = Geist({ subsets: ['latin'] })
