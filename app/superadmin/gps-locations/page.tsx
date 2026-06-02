@@ -147,7 +147,7 @@ export default function GPSLocationsPage() {
 
       toast({ title: 'Success', description: 'Location saved successfully' })
       setIsAddDialogOpen(false)
-      setNewLocation({ name: '', latitude: '', longitude: '', radius: '50' })
+      setNewLocation({ name: '', latitude: '', longitude: '', radius: '50', timezone: 'WIB' })
       setEditingLocation(null)
       setSelectedSiteId('')
     } catch (error) {

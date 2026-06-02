@@ -24,7 +24,7 @@ export async function GET(
 
     return NextResponse.json(locations)
   } catch (error) {
-    console.error('Error fetching attendance locations:', error)
+    console.error('[v0] Error fetching attendance locations:', error)
     return NextResponse.json(
       { error: 'Failed to fetch attendance locations' },
       { status: 500 }
