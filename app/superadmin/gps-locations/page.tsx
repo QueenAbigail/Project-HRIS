@@ -292,6 +292,7 @@ export default function GPSLocationsPage() {
                             Add Location
                           </Button>
                           <Dialog open={isAddDialogOpen && selectedSiteId === site.id} onOpenChange={handleDialogClose}>
+                            <DialogContent>
                               <DialogHeader>
                                 <DialogTitle>{editingLocation ? 'Edit' : 'Add'} Attendance Location</DialogTitle>
                                 <DialogDescription>
@@ -441,6 +442,7 @@ export default function GPSLocationsPage() {
                             Add Checkpoint
                           </Button>
                           <Dialog open={isAddDialogOpen && selectedSiteId === site.id} onOpenChange={handleDialogClose}>
+                            <DialogContent>
                               <DialogHeader>
                                 <DialogTitle>{editingLocation ? 'Edit' : 'Add'} Patrol Checkpoint</DialogTitle>
                                 <DialogDescription>
