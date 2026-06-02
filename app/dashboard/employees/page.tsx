@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma'
 import { EmployeesTable } from '@/components/employees/employees-table'
 import { EmployeesHeader } from '@/components/employees/employees-header'
 import { EmployeesStats } from '@/components/employees/employees-stats'
+import { PageLoadingWrapper } from '@/components/page-loading-wrapper'
+import { EmployeesSkeleton } from '@/components/skeletons/employees-skeleton'
 import { format } from 'date-fns'
 import type { Employee } from '@/components/employees/employee-profile-sheet'
 
@@ -11,12 +13,11 @@ interface LocationStat {
   count: number
 }
 
-export default async function EmployeesPage({
-  searchParams
+async function EmployeesContent({
+  searchQuery,
 }: {
-  searchParams: { search?: string }
+  searchQuery: string
 }) {
-  const searchQuery = searchParams.search || ''
   const today = new Date()
 
   // Fetch all stats and data in parallel
@@ -196,6 +197,23 @@ export default async function EmployeesPage({
       />
       <EmployeesTable users={employees} />
     </div>
+  )
+}
+
+export default function EmployeesPage({
+  searchParams
+}: {
+  searchParams: { search?: string }
+}) {
+  const searchQuery = searchParams.search || ''
+
+  return (
+    <PageLoadingWrapper
+      skeleton={<EmployeesSkeleton />}
+      minLoadingTime={500}
+    >
+      <EmployeesContent searchQuery={searchQuery} />
+    </PageLoadingWrapper>
   )
 }
 
