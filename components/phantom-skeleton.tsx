@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, ReactNode } from 'react'
+import { useEffect, ReactNode, createElement } from 'react'
 
 interface PhantomSkeletonProps {
   loading: boolean
@@ -26,19 +26,18 @@ export function PhantomSkeleton({
     import('@aejkatappaja/phantom-ui')
   }, [])
 
-  return (
-    <phantom-ui
-      attr:loading={loading ? '' : null}
-      animation={animation}
-      duration={duration.toString()}
-      count={count?.toString()}
-      count-gap={countGap?.toString()}
-      debug={debug ? '' : null}
-      style={{
-        display: 'contents',
-      }}
-    >
-      {children}
-    </phantom-ui>
-  )
+  // Use createElement to avoid JSX namespace issues with Web Components
+  const attrs: Record<string, any> = {
+    animation,
+    duration: duration.toString(),
+    style: { display: 'contents' },
+  }
+
+  // Only add attributes if they have values
+  if (loading) attrs['attr:loading'] = ''
+  if (debug) attrs.debug = ''
+  if (count) attrs.count = count.toString()
+  if (countGap) attrs['count-gap'] = countGap.toString()
+
+  return createElement('phantom-ui', attrs, children)
 }
