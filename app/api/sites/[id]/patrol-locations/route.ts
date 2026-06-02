@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 
-// GET all patrol locations for a site
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -25,7 +24,7 @@ export async function GET(
 
     return NextResponse.json(locations)
   } catch (error) {
-    console.error('[v0] Error fetching patrol locations:', error)
+    console.error('Error fetching patrol locations:', error)
     return NextResponse.json(
       { error: 'Failed to fetch patrol locations' },
       { status: 500 }
@@ -33,7 +32,6 @@ export async function GET(
   }
 }
 
-// POST create new patrol location
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -42,7 +40,7 @@ export async function POST(
     const { name, latitude, longitude, radius, timezone } = await req.json()
     const { id: siteId } = await params
 
-    if (!name || !latitude || !longitude || !radius || !timezone) {
+    if (!name?.trim() || !latitude || !longitude || !radius || !timezone) {
       return NextResponse.json(
         { error: 'All fields are required' },
         { status: 400 }
@@ -57,7 +55,6 @@ export async function POST(
         longitude: parseFloat(longitude),
         radius: parseInt(radius),
         timezone,
-        isActive: true,
       },
       select: {
         id: true,
@@ -72,7 +69,7 @@ export async function POST(
 
     return NextResponse.json(location, { status: 201 })
   } catch (error) {
-    console.error('[v0] Error creating patrol location:', error)
+    console.error('Error creating patrol location:', error)
     return NextResponse.json(
       { error: 'Failed to create patrol location' },
       { status: 500 }
@@ -80,7 +77,6 @@ export async function POST(
   }
 }
 
-// PUT update patrol location
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -88,7 +84,7 @@ export async function PUT(
   try {
     const { locationId, name, latitude, longitude, radius, timezone, isActive } = await req.json()
 
-    if (!locationId || !name || latitude === undefined || longitude === undefined || !radius || !timezone) {
+    if (!locationId || !name?.trim() || latitude === undefined || longitude === undefined || !radius || !timezone) {
       return NextResponse.json(
         { error: 'All fields are required' },
         { status: 400 }
@@ -118,7 +114,7 @@ export async function PUT(
 
     return NextResponse.json(location)
   } catch (error) {
-    console.error('[v0] Error updating patrol location:', error)
+    console.error('Error updating patrol location:', error)
     return NextResponse.json(
       { error: 'Failed to update patrol location' },
       { status: 500 }
@@ -126,7 +122,6 @@ export async function PUT(
   }
 }
 
-// DELETE patrol location
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -148,7 +143,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[v0] Error deleting patrol location:', error)
+    console.error('Error deleting patrol location:', error)
     return NextResponse.json(
       { error: 'Failed to delete patrol location' },
       { status: 500 }
