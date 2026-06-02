@@ -69,11 +69,6 @@ export async function POST(
         isActive: true,
       },
     })
-        longitude: true,
-        radius: true,
-        isActive: true,
-      },
-    })
 
     return NextResponse.json(location, { status: 201 })
   } catch (error) {
