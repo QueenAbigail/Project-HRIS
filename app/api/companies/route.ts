@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 // GET all companies with their sites
 export async function GET() {
   try {
+    console.log('[v0] Fetching companies from database...')
     const companies = await prisma.company.findMany({
       include: {
         sites: {
@@ -16,11 +17,12 @@ export async function GET() {
       },
       orderBy: { name: 'asc' },
     })
+    console.log('[v0] Fetched companies:', companies.length)
     return NextResponse.json(companies)
   } catch (error) {
-    console.error('Error fetching companies:', error)
+    console.error('[v0] Error fetching companies:', error instanceof Error ? error.message : error)
     return NextResponse.json(
-      { error: 'Failed to fetch companies' },
+      { error: 'Failed to fetch companies', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
