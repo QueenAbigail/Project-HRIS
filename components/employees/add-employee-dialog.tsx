@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -41,12 +41,13 @@ interface AddEmployeeDialogProps {
   onImportEmployees?: (employees: any[]) => void
 }
 
+interface Site {
+  id: string
+  name: string
+  code: string
+}
+
 const departments = ['Field Security', 'Surveillance', 'Administration', 'Patrol', 'VIP Protection']
-const locations = [
-  { name: 'Head Office', code: 'HO' },
-  { name: 'Plaza Tower - Downtown', code: 'PT-DT' },
-  { name: 'Riverside Mall', code: 'RM' },
-]
 const positions = ['Security Guard', 'Senior Guard', 'CCTV Operator', 'HR Coordinator']
 
 export function AddEmployeeDialog({ 
@@ -56,6 +57,8 @@ export function AddEmployeeDialog({
   onImportEmployees 
 }: AddEmployeeDialogProps) {
   const [activeTab, setActiveTab] = useState('manual')
+  const [sites, setSites] = useState<Site[]>([])
+  const [loadingSites, setLoadingSites] = useState(false)
   
   // State Import
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -77,7 +80,28 @@ export function AddEmployeeDialog({
     role: 'STAFF', allowMobileAttendance: 'false', allowWebAppAccess: 'false'
   })
 
-  // Reset form
+  // Fetch sites from database
+  useEffect(() => {
+    const fetchSites = async () => {
+      try {
+        setLoadingSites(true)
+        const response = await fetch('/api/sites')
+        if (response.ok) {
+          const data = await response.json()
+          setSites(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch sites:', error)
+      } finally {
+        setLoadingSites(false)
+      }
+    }
+
+    if (open) {
+      fetchSites()
+    }
+  }, [open])
+
   const handleOpenChange = (isOpen: boolean) => {
     onOpenChange(isOpen)
     if (!isOpen) {
@@ -155,10 +179,13 @@ export function AddEmployeeDialog({
   e.preventDefault()
 
   try {
+    // Find the selected site to get its ID
+    const selectedSite = sites.find(site => site.id === formData.location)
+    
     // Kita translate/mapping dulu data dari state lu biar cocok sama maunya backend
     const finalData = {
       ...formData,
-      siteId: formData.location, // Backend butuh siteId, form lu ngirim location
+      siteId: selectedSite?.id || formData.location, // Use site ID from database
       systemRole: formData.role, // Backend butuh systemRole, form lu ngirim role
       dob: formData.birthDate,
       cob: formData.birthCity,
@@ -253,8 +280,10 @@ export function AddEmployeeDialog({
                   <div className="space-y-2">
                     <Label>Location <span className="text-red-500">*</span></Label>
                     <Select value={formData.location} onValueChange={(val) => setFormData({...formData, location: val})}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{locations.map(l => <SelectItem key={l.code} value={l.name}>{l.name}</SelectItem>)}</SelectContent>
+                      <SelectTrigger><SelectValue placeholder={loadingSites ? "Loading sites..." : "Select"} /></SelectTrigger>
+                      <SelectContent>
+                        {sites.map(site => <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>)}
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2"><Label>Join Date <span className="text-red-500">*</span></Label><Input type="date" value={formData.joinDate} onChange={(e) => setFormData({...formData, joinDate: e.target.value})} /></div>
