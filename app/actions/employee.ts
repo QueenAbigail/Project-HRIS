@@ -24,21 +24,54 @@ export async function updateEmployeeAction(userId: string, formData: any) {
       if (authError) throw new Error("Gagal update password: " + authError.message)
     }
 
-    // 2. Buang password dari data biar Prisma nggak error (karena di tabel Prisma ga ada password)
-    const { password, location, locationCode, ...prismaData } = formData
+    // 2. Filter & transform data sesuai Prisma User schema
+    // Remove fields that don't exist in schema & prepare data untuk update
+    const {
+      password,
+      location, // This is siteId from form
+      locationCode,
+      emergencyContact, // Not in schema
+      bankAccount, // Not in schema
+      taxId, // Not in schema
+      ...validData
+    } = formData
 
-    // 3. Update profil sisanya ke Prisma
+    // 3. Transform birthDate dari string "YYYY-MM-DD" ke ISO DateTime
+    const updateData: any = {}
+    
+    // Hanya include fields yang ada di User schema
+    const allowedFields = [
+      'name', 'email', 'personalEmail', 'initials', 'department', 'position', 
+      'status', 'joinDate', 'phoneNumber', 'ktpNumber', 'address', 'birthCity', 
+      'birthDate', 'bpjsNumber', 'gender', 'maritalStatus', 'religion', 'bloodType',
+      'npwpNumber', 'role'
+    ]
+
+    for (const key of allowedFields) {
+      if (key in validData) {
+        // Jika field adalah date, convert ke ISO DateTime format
+        if (key === 'birthDate' && validData[key]) {
+          // Convert "YYYY-MM-DD" to ISO DateTime (add time component)
+          updateData[key] = new Date(validData[key] + 'T00:00:00Z')
+        } else if (key === 'joinDate' && validData[key]) {
+          updateData[key] = new Date(validData[key] + 'T00:00:00Z')
+        } else if (validData[key] !== undefined && validData[key] !== null && validData[key] !== '') {
+          updateData[key] = validData[key]
+        }
+      }
+    }
+
+    // 4. Update profil ke Prisma
     await prisma.user.update({
       where: { id: userId },
       data: {
-        ...prismaData,
-        // Ini buat update relasi lokasi kalau lu ganti assignment-nya
-        // location adalah siteId dari form, locationCode adalah site code
-        site: location ? { connect: { id: location } } : undefined,
+        ...updateData,
+        // Handle site/location update
+        ...(location && { siteId: location }),
       }
     })
 
-    // Biar tabel otomatis refresh nampilin data baru
+    // 5. Refresh tabel
     revalidatePath('/dashboard/employees')
     return { success: true }
     
