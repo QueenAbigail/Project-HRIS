@@ -290,26 +290,18 @@ export function AddEmployeeDialog({
                   <div className="space-y-2">
                     <Label>Department <span className="text-red-500">*</span></Label>
                     <Select value={formData.department} onValueChange={(val) => setFormData({...formData, department: val})}>
-                      <SelectTrigger><SelectValue placeholder={loadingMasterData ? "Loading..." : "Select"} /></SelectTrigger>
+                      <SelectTrigger disabled={loadingMasterData || departments.length === 0}><SelectValue placeholder={loadingMasterData ? "Loading..." : departments.length === 0 ? "No departments available" : "Select"} /></SelectTrigger>
                       <SelectContent>
-                        {departments.length > 0 ? (
-                          departments.map(d => <SelectItem key={d.id} value={d.value}>{d.value}</SelectItem>)
-                        ) : (
-                          <SelectItem value="" disabled>No departments available</SelectItem>
-                        )}
+                        {departments.map(d => <SelectItem key={d.id} value={d.value}>{d.value}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Position <span className="text-red-500">*</span></Label>
                     <Select value={formData.position} onValueChange={(val) => setFormData({...formData, position: val})}>
-                      <SelectTrigger><SelectValue placeholder={loadingMasterData ? "Loading..." : "Select"} /></SelectTrigger>
+                      <SelectTrigger disabled={loadingMasterData || positions.length === 0}><SelectValue placeholder={loadingMasterData ? "Loading..." : positions.length === 0 ? "No positions available" : "Select"} /></SelectTrigger>
                       <SelectContent>
-                        {positions.length > 0 ? (
-                          positions.map(p => <SelectItem key={p.id} value={p.value}>{p.value}</SelectItem>)
-                        ) : (
-                          <SelectItem value="" disabled>No positions available</SelectItem>
-                        )}
+                        {positions.map(p => <SelectItem key={p.id} value={p.value}>{p.value}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
