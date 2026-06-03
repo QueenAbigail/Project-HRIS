@@ -200,18 +200,11 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
 
   const handleSave = async () => {
     try {
-      const siteEntry = sites.find(s => s.id === formData.location)
-      
-      const updatedData = {
-        ...formData,
-        location: siteEntry?.name || employee?.location,
-        locationCode: siteEntry?.code || employee?.locationCode,
-      }
-
-      const result = await updateEmployeeAction(employee!.id, updatedData)
+      // Send formData directly - location is already siteId, no transformation needed
+      const result = await updateEmployeeAction(employee!.id, formData)
       
       if (result.success) {
-        onSave({ ...employee!, ...updatedData })
+        onSave({ ...employee!, ...formData })
         alert("Mantap Can! Data dan Password berhasil diupdate.")
         onOpenChange(false)
       } else {

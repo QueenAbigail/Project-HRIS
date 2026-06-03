@@ -15,7 +15,9 @@ const supabaseAdmin = createClient(
 // ==========================================
 export async function updateEmployeeAction(userId: string, formData: any) {
   try {
-    // 1. Kalau lu ngisi password baru di form, update ke Supabase Auth
+    console.log('[v0] Update employee called with data keys:', Object.keys(formData))
+
+    // 1. Update password if provided
     if (formData.password && formData.password.trim() !== '') {
       const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
         userId,
@@ -24,59 +26,82 @@ export async function updateEmployeeAction(userId: string, formData: any) {
       if (authError) throw new Error("Gagal update password: " + authError.message)
     }
 
-    // 2. Filter & transform data sesuai Prisma User schema
-    // Remove fields that don't exist in schema & prepare data untuk update
-    const {
-      password,
-      location, // This is siteId from form
-      locationCode,
-      emergencyContact, // Not in schema
-      bankAccount, // Not in schema
-      taxId, // Not in schema
-      ...validData
-    } = formData
-
-    // 3. Transform birthDate dari string "YYYY-MM-DD" ke ISO DateTime
+    // 2. Build update data - only include valid schema fields
     const updateData: any = {}
-    
-    // Hanya include fields yang ada di User schema
-    const allowedFields = [
-      'name', 'email', 'personalEmail', 'initials', 'department', 'position', 
-      'status', 'joinDate', 'phoneNumber', 'ktpNumber', 'address', 'birthCity', 
-      'birthDate', 'bpjsNumber', 'gender', 'maritalStatus', 'religion', 'bloodType',
-      'npwpNumber', 'role'
-    ]
 
-    for (const key of allowedFields) {
-      if (key in validData) {
-        // Jika field adalah date, convert ke ISO DateTime format
-        if (key === 'birthDate' && validData[key]) {
-          // Convert "YYYY-MM-DD" to ISO DateTime (add time component)
-          updateData[key] = new Date(validData[key] + 'T00:00:00Z')
-        } else if (key === 'joinDate' && validData[key]) {
-          updateData[key] = new Date(validData[key] + 'T00:00:00Z')
-        } else if (validData[key] !== undefined && validData[key] !== null && validData[key] !== '') {
-          updateData[key] = validData[key]
+    // Map form fields to schema fields with type handling
+    const fieldMap = {
+      name: { field: 'name', type: 'string' },
+      email: { field: 'email', type: 'string' },
+      personalEmail: { field: 'personalEmail', type: 'string' },
+      initials: { field: 'initials', type: 'string' },
+      department: { field: 'department', type: 'string' },
+      position: { field: 'position', type: 'string' },
+      phoneNumber: { field: 'phoneNumber', type: 'string' },
+      ktpNumber: { field: 'ktpNumber', type: 'string' },
+      address: { field: 'address', type: 'string' },
+      birthCity: { field: 'birthCity', type: 'string' },
+      birthDate: { field: 'birthDate', type: 'date' },
+      bpjsNumber: { field: 'bpjsNumber', type: 'string' },
+      gender: { field: 'gender', type: 'string' },
+      maritalStatus: { field: 'maritalStatus', type: 'string' },
+      religion: { field: 'religion', type: 'string' },
+      bloodType: { field: 'bloodType', type: 'string' },
+      npwpNumber: { field: 'npwpNumber', type: 'string' },
+      ktaNumber: { field: 'ktaNumber', type: 'string' },
+      employmentStatus: { field: 'employmentStatus', type: 'string' },
+      joinDate: { field: 'joinDate', type: 'date' },
+      status: { field: 'status', type: 'enum' },
+    }
+
+    // Process each field
+    for (const [formKey, config] of Object.entries(fieldMap)) {
+      const value = formData[formKey]
+      
+      // Skip empty/null values
+      if (value === undefined || value === null || value === '') {
+        continue
+      }
+
+      const { field, type } = config as any
+
+      if (type === 'date' && typeof value === 'string') {
+        // Convert date string to DateTime
+        updateData[field] = new Date(value + 'T00:00:00Z')
+      } else if (type === 'enum') {
+        // Convert status to uppercase enum value
+        const statusValue = value.toUpperCase()
+        if (['ACTIVE', 'INACTIVE', 'SUSPENDED'].includes(statusValue)) {
+          updateData[field] = statusValue
         }
+      } else if (type === 'string' && typeof value === 'string') {
+        // Only add non-empty strings
+        updateData[field] = value.trim()
       }
     }
 
-    // 4. Update profil ke Prisma
-    await prisma.user.update({
+    // 3. Handle location/siteId
+    if (formData.location && formData.location !== '') {
+      updateData.siteId = formData.location
+    }
+
+    console.log('[v0] Prepared updateData:', updateData)
+
+    // 4. Execute update
+    const result = await prisma.user.update({
       where: { id: userId },
-      data: {
-        ...updateData,
-        // Handle site/location update
-        ...(location && { siteId: location }),
-      }
+      data: updateData,
+      select: { id: true, name: true, email: true }
     })
 
-    // 5. Refresh tabel
+    console.log('[v0] Update successful')
+
+    // 5. Refresh
     revalidatePath('/dashboard/employees')
     return { success: true }
     
   } catch (error: any) {
-    console.error("Error update:", error)
+    console.error('[v0] Update error:', error.message)
     return { success: false, error: error.message }
   }
 }
