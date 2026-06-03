@@ -73,11 +73,11 @@ function LogoIcon({ src, alt, className }: { src: string; alt: string; className
   return (
     <div className={className}>
       {src && src !== '/icon.svg' ? (
-        <Image 
-          src={src} 
-          alt={alt} 
-          width={32} 
-          height={32} 
+        <Image
+          src={src}
+          alt={alt}
+          width={32}
+          height={32}
           className="rounded-lg object-cover"
         />
       ) : (
@@ -111,7 +111,7 @@ const mainNavItems = [
   },
   {
     title: 'Payroll',
-    url: '/dashboard/payroll',
+    url: '/payroll',
     icon: Wallet,
   },
   {
@@ -190,8 +190,8 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem className="w-full -mx-2">
-            <SidebarMenuButton 
-              onClick={toggleSidebar} 
+            <SidebarMenuButton
+              onClick={toggleSidebar}
               className="w-full px-2 h-9"
               title={state === 'expanded' ? 'Collapse sidebar' : 'Expand sidebar'}
             >
@@ -278,7 +278,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {mounted && (
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => {
                       const nextTheme = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'
                       setTheme(nextTheme)
@@ -309,7 +309,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   className="text-destructive cursor-pointer"
                   onClick={async () => {
                     toast.success('Successfully logged out', {
