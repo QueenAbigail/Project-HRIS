@@ -33,7 +33,8 @@ export async function updateEmployeeAction(userId: string, formData: any) {
       data: {
         ...prismaData,
         // Ini buat update relasi lokasi kalau lu ganti assignment-nya
-        site: formData.locationCode ? { connect: { code: formData.locationCode } } : undefined,
+        // location adalah siteId dari form, locationCode adalah site code
+        site: location ? { connect: { id: location } } : undefined,
       }
     })
 
