@@ -8,6 +8,11 @@ export async function GET() {
         id: true,
         name: true,
         code: true,
+        company: {
+          select: {
+            name: true
+          }
+        }
       },
       orderBy: {
         name: 'asc'

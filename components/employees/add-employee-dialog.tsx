@@ -45,6 +45,9 @@ interface Site {
   id: string
   name: string
   code: string
+  company?: {
+    name: string
+  } | null
 }
 
 interface MasterDataItem {
@@ -330,7 +333,7 @@ export function AddEmployeeDialog({
                     <Select value={formData.location} onValueChange={(val) => setFormData({...formData, location: val})}>
                       <SelectTrigger><SelectValue placeholder={loadingSites ? "Loading sites..." : "Select"} /></SelectTrigger>
                       <SelectContent>
-                        {sites.map(site => <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>)}
+                        {sites.map(site => <SelectItem key={site.id} value={site.id}>{site.company?.name || 'N/A'} - {site.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>

@@ -62,6 +62,9 @@ interface Site {
   id: string
   name: string
   code: string
+  company?: {
+    name: string
+  } | null
 }
 
 interface EmployeeEditDialogProps {
@@ -380,7 +383,7 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
                       {sites.map((site) => (
                         <SelectItem key={site.id} value={site.id}>
                           <div className="flex items-center justify-between w-full">
-                            <span>{site.name}</span>
+                            <span>{site.company?.name || 'N/A'} - {site.name}</span>
                             <span className="ml-2 text-xs font-mono text-muted-foreground">({site.code})</span>
                           </div>
                         </SelectItem>

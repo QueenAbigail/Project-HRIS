@@ -122,7 +122,12 @@ async function EmployeesContent({
         site: {
           select: {
             name: true,
-            code: true
+            code: true,
+            company: {
+              select: {
+                name: true
+              }
+            }
           }
         }
       }
@@ -152,7 +157,7 @@ async function EmployeesContent({
       position: user.position ?? '',
       status,
       joinDate: user.joinDate ? format(user.joinDate, 'MMM d, yyyy') : '',
-      location: user.site?.name ?? '',
+      location: user.site ? `${user.site.company?.name || 'N/A'} - ${user.site.name}` : '',
       locationCode: user.site?.code ?? '',
       phone: user.phoneNumber ?? '',
       phoneNumber: user.phoneNumber ?? '',
