@@ -19,8 +19,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Download, Eye, Loader2, TrendingUp, TrendingDown } from 'lucide-react'
+import { Download, Eye, Loader2, TrendingUp, TrendingDown, ChevronDown, ChevronRight } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+
+interface SiteDetail {
+  siteId: string
+  siteName: string
+  location: string
+  employees: number
+  payroll: number
+  bonus: number
+  deductions: number
+  netPayroll: number
+}
 
 interface MonthlyRecord {
   id: string
@@ -36,6 +47,7 @@ interface MonthlyRecord {
   averagePerEmployee: number
   status: 'completed' | 'pending' | 'review'
   lastUpdated: string
+  sites?: SiteDetail[]
 }
 
 interface DetailedRecord {
@@ -47,6 +59,30 @@ interface DetailedRecord {
   deductions: number
   tax: number
   netPay: number
+}
+
+// Mock site data for each month
+const mockSiteDetails: Record<string, SiteDetail[]> = {
+  '1': [
+    { siteId: 'S1', siteName: 'Head Office', location: 'Jakarta', employees: 18, payroll: 245000000, bonus: 12000000, deductions: 55000000, netPayroll: 190000000 },
+    { siteId: 'S2', siteName: 'Regional Office', location: 'Surabaya', employees: 15, payroll: 185000000, bonus: 9000000, deductions: 42000000, netPayroll: 143000000 },
+    { siteId: 'S3', siteName: 'Branch Office', location: 'Bandung', employees: 12, payroll: 112890000, bonus: 7000000, deductions: 28000000, netPayroll: 84890000 },
+  ],
+  '2': [
+    { siteId: 'S1', siteName: 'Head Office', location: 'Jakarta', employees: 18, payroll: 235000000, bonus: 0, deductions: 52000000, netPayroll: 183000000 },
+    { siteId: 'S2', siteName: 'Regional Office', location: 'Surabaya', employees: 15, payroll: 175000000, bonus: 0, deductions: 40000000, netPayroll: 135000000 },
+    { siteId: 'S3', siteName: 'Branch Office', location: 'Bandung', employees: 12, payroll: 108000000, bonus: 0, deductions: 27000000, netPayroll: 81000000 },
+  ],
+  '3': [
+    { siteId: 'S1', siteName: 'Head Office', location: 'Jakarta', employees: 18, payroll: 240000000, bonus: 15000000, deductions: 53000000, netPayroll: 187000000 },
+    { siteId: 'S2', siteName: 'Regional Office', location: 'Surabaya', employees: 15, payroll: 180000000, bonus: 12000000, deductions: 41000000, netPayroll: 139000000 },
+    { siteId: 'S3', siteName: 'Branch Office', location: 'Bandung', employees: 11, payroll: 105000000, bonus: 8000000, deductions: 28000000, netPayroll: 77000000 },
+  ],
+  '4': [
+    { siteId: 'S1', siteName: 'Head Office', location: 'Jakarta', employees: 18, payroll: 280000000, bonus: 22000000, deductions: 62000000, netPayroll: 218000000 },
+    { siteId: 'S2', siteName: 'Regional Office', location: 'Surabaya', employees: 15, payroll: 210000000, bonus: 18000000, deductions: 47000000, netPayroll: 163000000 },
+    { siteId: 'S3', siteName: 'Branch Office', location: 'Bandung', employees: 11, payroll: 122000000, bonus: 10000000, deductions: 33000000, netPayroll: 89000000 },
+  ],
 }
 
 // Mock monthly data for PT Pro Maxima Rajawali
@@ -65,6 +101,7 @@ const mockMonthlyRecords: MonthlyRecord[] = [
     averagePerEmployee: 12062000,
     status: 'completed',
     lastUpdated: '2026-03-17 12:00 AM',
+    sites: mockSiteDetails['1'],
   },
   {
     id: '2',
@@ -80,6 +117,7 @@ const mockMonthlyRecords: MonthlyRecord[] = [
     averagePerEmployee: 11511111,
     status: 'completed',
     lastUpdated: '2026-03-01 08:30 AM',
+    sites: mockSiteDetails['2'],
   },
   {
     id: '3',
@@ -95,6 +133,7 @@ const mockMonthlyRecords: MonthlyRecord[] = [
     averagePerEmployee: 11932000,
     status: 'completed',
     lastUpdated: '2026-02-02 10:15 AM',
+    sites: mockSiteDetails['3'],
   },
   {
     id: '4',
@@ -110,20 +149,28 @@ const mockMonthlyRecords: MonthlyRecord[] = [
     averagePerEmployee: 13864000,
     status: 'completed',
     lastUpdated: '2026-01-05 14:20 AM',
+    sites: mockSiteDetails['4'],
   },
 ]
 
+const mockDetailedRecords: Record<string, DetailedRecord[]> = {
+  '1': [
+    { employeeId: 'E001', employeeName: 'Michael Chen', basePay: 12000000, overtime: 1500000, bonus: 500000, deductions: 2500000, tax: 1500000, netPay: 10000000 },
+    { employeeId: 'E002', employeeName: 'Sarah Williams', basePay: 11000000, overtime: 800000, bonus: 400000, deductions: 2200000, tax: 1300000, netPay: 8700000 },
+    { employeeId: 'E003', employeeName: 'David Rodriguez', basePay: 10500000, overtime: 1200000, bonus: 300000, deductions: 2100000, tax: 1200000, netPay: 8700000 },
+  ],
+}
+
 export default function MonthlyRecapPage() {
   const [loading, setLoading] = useState(false)
+  const [expandedMonths, setExpandedMonths] = useState<string[]>(['1'])
   const [selectedRecord, setSelectedRecord] = useState<MonthlyRecord | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [detailedRecords, setDetailedRecords] = useState<DetailedRecord[]>([])
 
-  // Current month is the latest (March 2026)
   const latestRecord = mockMonthlyRecords[0]
   const previousRecord = mockMonthlyRecords[1]
   
-  // Calculate trends
   const payrollTrend = latestRecord.totalPayroll - previousRecord.totalPayroll
   const payrollTrendPercent = ((payrollTrend / previousRecord.totalPayroll) * 100).toFixed(1)
   
@@ -149,6 +196,14 @@ export default function MonthlyRecapPage() {
     completed: 'bg-success/10 text-success border-success/20',
     pending: 'bg-warning/10 text-warning border-warning/20',
     review: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
+  }
+
+  const toggleMonth = (monthId: string) => {
+    setExpandedMonths(prev => 
+      prev.includes(monthId) 
+        ? prev.filter(id => id !== monthId)
+        : [...prev, monthId]
+    )
   }
 
   const handleViewDetails = (record: MonthlyRecord) => {
@@ -290,62 +345,100 @@ export default function MonthlyRecapPage() {
         </Card>
       </div>
 
-      {/* Monthly History Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Monthly History</CardTitle>
-          <CardDescription>
-            Payroll records for PT Pro Maxima Rajawali over the past months
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-lg border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Month</TableHead>
-                  <TableHead className="text-right">Employees</TableHead>
-                  <TableHead className="text-right">Total Payroll</TableHead>
-                  <TableHead className="text-right">Bonus</TableHead>
-                  <TableHead className="text-right">Deductions</TableHead>
-                  <TableHead className="text-right">Net Payroll</TableHead>
-                  <TableHead className="text-right">Avg/Employee</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockMonthlyRecords.map((record) => (
-                  <TableRow key={record.id}>
-                    <TableCell className="font-medium">{record.month}</TableCell>
-                    <TableCell className="text-right text-sm">{record.totalEmployees}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(record.totalPayroll)}</TableCell>
-                    <TableCell className="text-right text-sm text-success">{formatCurrency(record.totalBonus)}</TableCell>
-                    <TableCell className="text-right text-sm text-destructive">{formatCurrency(record.totalDeductions)}</TableCell>
-                    <TableCell className="text-right text-sm font-medium text-success">{formatCurrency(record.netPayroll)}</TableCell>
-                    <TableCell className="text-right text-sm">{formatCurrency(record.averagePerEmployee)}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={statusStyles[record.status]}>
-                        {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewDetails(record)}
-                      >
-                        <Eye className="size-4" />
-                        Details
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Monthly History with Expandable Details */}
+      <div className="space-y-3">
+        {mockMonthlyRecords.map((record) => {
+          const isExpanded = expandedMonths.includes(record.id)
+          
+          return (
+            <Card key={record.id}>
+              <CardHeader>
+                <button
+                  onClick={() => toggleMonth(record.id)}
+                  className="w-full flex items-center justify-between hover:bg-muted/50 p-2 rounded transition-colors"
+                >
+                  <div className="flex items-center gap-3 flex-1">
+                    {isExpanded ? (
+                      <ChevronDown className="size-5 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="size-5 text-muted-foreground" />
+                    )}
+                    <div className="text-left flex-1">
+                      <CardTitle className="text-base">{record.month}</CardTitle>
+                      <CardDescription className="text-xs">
+                        {record.totalEmployees} employees • {formatCurrency(record.totalPayroll)} total payroll
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className={statusStyles[record.status]}>
+                    {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                  </Badge>
+                </button>
+              </CardHeader>
+
+              {isExpanded && (
+                <CardContent className="space-y-4 pt-0">
+                  {/* Month Summary Stats */}
+                  <div className="grid gap-3 md:grid-cols-4 bg-muted/30 p-3 rounded-lg">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Total Payroll</p>
+                      <p className="text-lg font-semibold">{formatCurrency(record.totalPayroll)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Bonus</p>
+                      <p className="text-lg font-semibold text-success">{formatCurrency(record.totalBonus)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Deductions</p>
+                      <p className="text-lg font-semibold text-destructive">{formatCurrency(record.totalDeductions)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Net Payroll</p>
+                      <p className="text-lg font-semibold text-success">{formatCurrency(record.netPayroll)}</p>
+                    </div>
+                  </div>
+
+                  {/* Site Details Table */}
+                  <div>
+                    <h4 className="font-semibold text-sm mb-3">Payroll by Site</h4>
+                    <div className="rounded-lg border overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Site</TableHead>
+                            <TableHead className="text-right">Location</TableHead>
+                            <TableHead className="text-right">Employees</TableHead>
+                            <TableHead className="text-right">Payroll</TableHead>
+                            <TableHead className="text-right">Bonus</TableHead>
+                            <TableHead className="text-right">Deductions</TableHead>
+                            <TableHead className="text-right">Net Payroll</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {record.sites?.map((site) => (
+                            <TableRow key={site.siteId}>
+                              <TableCell className="font-medium text-sm">{site.siteName}</TableCell>
+                              <TableCell className="text-right text-sm">{site.location}</TableCell>
+                              <TableCell className="text-right text-sm">{site.employees}</TableCell>
+                              <TableCell className="text-right text-sm">{formatCurrency(site.payroll)}</TableCell>
+                              <TableCell className="text-right text-sm text-success">{formatCurrency(site.bonus)}</TableCell>
+                              <TableCell className="text-right text-sm text-destructive">{formatCurrency(site.deductions)}</TableCell>
+                              <TableCell className="text-right text-sm font-medium text-success">{formatCurrency(site.netPayroll)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+
+                  {/* Last Updated */}
+                  <div className="text-xs text-muted-foreground">Last updated: {record.lastUpdated}</div>
+                </CardContent>
+              )}
+            </Card>
+          )
+        })}
+      </div>
 
       {/* Details Dialog */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
@@ -359,7 +452,6 @@ export default function MonthlyRecapPage() {
 
           {selectedRecord && (
             <div className="space-y-6">
-              {/* Summary Stats */}
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="p-4 border rounded-lg">
                   <p className="text-sm text-muted-foreground">Total Payroll</p>
@@ -379,7 +471,6 @@ export default function MonthlyRecapPage() {
                 </div>
               </div>
 
-              {/* Employee Details Table */}
               <div>
                 <h3 className="font-semibold mb-4">Employee Breakdown</h3>
                 {loading ? (
@@ -418,7 +509,6 @@ export default function MonthlyRecapPage() {
                 )}
               </div>
 
-              {/* Last Updated Info */}
               <div className="text-xs text-muted-foreground p-4 bg-muted rounded-lg">
                 Last calculated: {selectedRecord.lastUpdated}
               </div>
@@ -428,68 +518,4 @@ export default function MonthlyRecapPage() {
       </Dialog>
     </div>
   )
-}
-
-interface DetailedRecord {
-  employeeId: string
-  employeeName: string
-  basePay: number
-  overtime: number
-  bonus: number
-  deductions: number
-  tax: number
-  netPay: number
-}
-
-// Mock data - will be replaced with API calls
-const mockRecords: CompanyRecord[] = [
-  {
-    id: '1',
-    companyName: 'PT Pro Maxima Rajawali',
-    totalEmployees: 45,
-    totalPayroll: 542890000,
-    totalDeductions: 125000000,
-    totalTax: 75000000,
-    totalInsurance: 35000000,
-    totalBonus: 28000000,
-    netPayroll: 417890000,
-    averagePerEmployee: 12062000,
-    status: 'completed',
-    lastUpdated: '2026-03-17 12:00 AM',
-  },
-  {
-    id: '2',
-    companyName: 'PT Security Solutions',
-    totalEmployees: 28,
-    totalPayroll: 325000000,
-    totalDeductions: 78000000,
-    totalTax: 48000000,
-    totalInsurance: 20000000,
-    totalBonus: 15000000,
-    netPayroll: 247000000,
-    averagePerEmployee: 11607143,
-    status: 'completed',
-    lastUpdated: '2026-03-17 12:00 AM',
-  },
-  {
-    id: '3',
-    companyName: 'PT Facility Management',
-    totalEmployees: 32,
-    totalPayroll: 380000000,
-    totalDeductions: 92000000,
-    totalTax: 58000000,
-    totalInsurance: 24000000,
-    totalBonus: 18000000,
-    netPayroll: 288000000,
-    averagePerEmployee: 11875000,
-    status: 'pending',
-    lastUpdated: '2026-03-16 08:30 AM',
-  },
-]
-
-const mockDetailedRecords: Record<string, DetailedRecord[]> = {
-  '1': [
-    { employeeId: 'E001', employeeName: 'Michael Chen', basePay: 12000000, overtime: 1500000, bonus: 500000, deductions: 2500000, tax: 1500000, netPay: 10000000 },
-    { employeeId: 'E002', employeeName: 'Sarah Williams', basePay: 11000000, overtime: 800000, bonus: 400000, deductions: 2200000, tax: 1300000, netPay: 8700000 },
-  ],
 }
