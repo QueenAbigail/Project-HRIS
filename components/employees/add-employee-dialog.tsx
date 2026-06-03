@@ -47,8 +47,11 @@ interface Site {
   code: string
 }
 
-const departments = ['Field Security', 'Surveillance', 'Administration', 'Patrol', 'VIP Protection']
-const positions = ['Security Guard', 'Senior Guard', 'CCTV Operator', 'HR Coordinator']
+interface MasterDataItem {
+  id: string
+  value: string
+  category: string
+}
 
 export function AddEmployeeDialog({ 
   open, 
@@ -58,7 +61,10 @@ export function AddEmployeeDialog({
 }: AddEmployeeDialogProps) {
   const [activeTab, setActiveTab] = useState('manual')
   const [sites, setSites] = useState<Site[]>([])
+  const [departments, setDepartments] = useState<MasterDataItem[]>([])
+  const [positions, setPositions] = useState<MasterDataItem[]>([])
   const [loadingSites, setLoadingSites] = useState(false)
+  const [loadingMasterData, setLoadingMasterData] = useState(false)
   
   // State Import
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -80,25 +86,43 @@ export function AddEmployeeDialog({
     role: 'STAFF', allowMobileAttendance: 'false', allowWebAppAccess: 'false'
   })
 
-  // Fetch sites from database
+  // Fetch sites and master data from database
   useEffect(() => {
-    const fetchSites = async () => {
+    const fetchData = async () => {
       try {
         setLoadingSites(true)
-        const response = await fetch('/api/sites')
-        if (response.ok) {
-          const data = await response.json()
-          setSites(data)
+        setLoadingMasterData(true)
+        
+        // Fetch sites
+        const sitesResponse = await fetch('/api/sites')
+        if (sitesResponse.ok) {
+          const sitesData = await sitesResponse.json()
+          setSites(sitesData)
+        }
+        
+        // Fetch departments
+        const deptResponse = await fetch('/api/master-data?category=department')
+        if (deptResponse.ok) {
+          const deptData = await deptResponse.json()
+          setDepartments(Array.isArray(deptData) ? deptData : [])
+        }
+        
+        // Fetch positions
+        const posResponse = await fetch('/api/master-data?category=position')
+        if (posResponse.ok) {
+          const posData = await posResponse.json()
+          setPositions(Array.isArray(posData) ? posData : [])
         }
       } catch (error) {
-        console.error('Failed to fetch sites:', error)
+        console.error('[v0] Failed to fetch data:', error)
       } finally {
         setLoadingSites(false)
+        setLoadingMasterData(false)
       }
     }
 
     if (open) {
-      fetchSites()
+      fetchData()
     }
   }, [open])
 
@@ -266,15 +290,27 @@ export function AddEmployeeDialog({
                   <div className="space-y-2">
                     <Label>Department <span className="text-red-500">*</span></Label>
                     <Select value={formData.department} onValueChange={(val) => setFormData({...formData, department: val})}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                      <SelectTrigger><SelectValue placeholder={loadingMasterData ? "Loading..." : "Select"} /></SelectTrigger>
+                      <SelectContent>
+                        {departments.length > 0 ? (
+                          departments.map(d => <SelectItem key={d.id} value={d.value}>{d.value}</SelectItem>)
+                        ) : (
+                          <SelectItem value="" disabled>No departments available</SelectItem>
+                        )}
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Position <span className="text-red-500">*</span></Label>
                     <Select value={formData.position} onValueChange={(val) => setFormData({...formData, position: val})}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{positions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                      <SelectTrigger><SelectValue placeholder={loadingMasterData ? "Loading..." : "Select"} /></SelectTrigger>
+                      <SelectContent>
+                        {positions.length > 0 ? (
+                          positions.map(p => <SelectItem key={p.id} value={p.value}>{p.value}</SelectItem>)
+                        ) : (
+                          <SelectItem value="" disabled>No positions available</SelectItem>
+                        )}
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">

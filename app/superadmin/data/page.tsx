@@ -28,6 +28,8 @@ interface Category {
 export default function DataPage() {
   const { toast } = useToast()
   const [items, setItems] = useState<Record<string, MasterDataItem[]>>({
+    department: [],
+    position: [],
     religion: [],
     maritalStatus: [],
     employmentStatus: [],
@@ -49,6 +51,8 @@ export default function DataPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   const categoryConfig: Category[] = [
+    { title: 'Department', key: 'department' },
+    { title: 'Position', key: 'position' },
     { title: 'Religion', key: 'religion' },
     { title: 'Marital Status', key: 'maritalStatus' },
     { title: 'Employment Status', key: 'employmentStatus' },
@@ -60,7 +64,7 @@ export default function DataPage() {
     const fetchAllCategories = async () => {
       try {
         setIsLoading(true)
-        const categoryKeys = ['religion', 'maritalStatus', 'employmentStatus', 'bloodType']
+        const categoryKeys = ['department', 'position', 'religion', 'maritalStatus', 'employmentStatus', 'bloodType']
         const results: Record<string, MasterDataItem[]> = {}
 
         for (const key of categoryKeys) {
