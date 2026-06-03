@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,7 +19,14 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Download, FileText, TrendingUp } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Download, FileText, TrendingUp, TrendingDown, Eye, Loader2 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
 interface CompanyRecord {
@@ -28,11 +35,27 @@ interface CompanyRecord {
   totalEmployees: number
   totalPayroll: number
   totalDeductions: number
+  totalTax: number
+  totalInsurance: number
+  totalBonus: number
   netPayroll: number
   averagePerEmployee: number
   status: 'completed' | 'pending' | 'review'
+  lastUpdated: string
 }
 
+interface DetailedRecord {
+  employeeId: string
+  employeeName: string
+  basePay: number
+  overtime: number
+  bonus: number
+  deductions: number
+  tax: number
+  netPay: number
+}
+
+// Mock data - will be replaced with API calls
 const mockRecords: CompanyRecord[] = [
   {
     id: '1',
@@ -40,9 +63,13 @@ const mockRecords: CompanyRecord[] = [
     totalEmployees: 45,
     totalPayroll: 542890000,
     totalDeductions: 125000000,
+    totalTax: 75000000,
+    totalInsurance: 35000000,
+    totalBonus: 28000000,
     netPayroll: 417890000,
     averagePerEmployee: 12062000,
     status: 'completed',
+    lastUpdated: '2026-03-17 12:00 AM',
   },
   {
     id: '2',
@@ -50,9 +77,13 @@ const mockRecords: CompanyRecord[] = [
     totalEmployees: 28,
     totalPayroll: 325000000,
     totalDeductions: 78000000,
+    totalTax: 48000000,
+    totalInsurance: 20000000,
+    totalBonus: 15000000,
     netPayroll: 247000000,
     averagePerEmployee: 11607143,
     status: 'completed',
+    lastUpdated: '2026-03-17 12:00 AM',
   },
   {
     id: '3',
@@ -60,68 +91,79 @@ const mockRecords: CompanyRecord[] = [
     totalEmployees: 32,
     totalPayroll: 380000000,
     totalDeductions: 92000000,
+    totalTax: 58000000,
+    totalInsurance: 24000000,
+    totalBonus: 18000000,
     netPayroll: 288000000,
     averagePerEmployee: 11875000,
     status: 'pending',
+    lastUpdated: '2026-03-16 08:30 AM',
   },
 ]
+
+const mockDetailedRecords: Record<string, DetailedRecord[]> = {
+  '1': [
+    { employeeId: 'E001', employeeName: 'Michael Chen', basePay: 12000000, overtime: 1500000, bonus: 500000, deductions: 2500000, tax: 1500000, netPay: 10000000 },
+    { employeeId: 'E002', employeeName: 'Sarah Williams', basePay: 11000000, overtime: 800000, bonus: 400000, deductions: 2200000, tax: 1300000, netPay: 8700000 },
+  ],
+}
 
 export default function MonthlyRecapPage() {
   const [selectedMonth, setSelectedMonth] = useState('march-2026')
   const [selectedCompany, setSelectedCompany] = useState('all')
+  const [loading, setLoading] = useState(false)
+  const [selectedCompanyDetails, setSelectedCompanyDetails] = useState<CompanyRecord | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [detailedRecords, setDetailedRecords] = useState<DetailedRecord[]>([])
 
-  const filteredRecords = selectedCompany === 'all' 
-    ? mockRecords 
+  useEffect(() => {
+    // Simulate loading detailed records when company is selected
+    if (selectedCompanyDetails) {
+      setLoading(true)
+      setTimeout(() => {
+        setDetailedRecords(mockDetailedRecords[selectedCompanyDetails.id] || [])
+        setLoading(false)
+      }, 500)
+    }
+  }, [selectedCompanyDetails])
+
+  const filteredRecords = selectedCompany === 'all'
+    ? mockRecords
     : mockRecords.filter(r => r.id === selectedCompany)
 
   const totalPayroll = filteredRecords.reduce((sum, r) => sum + r.totalPayroll, 0)
   const totalDeductions = filteredRecords.reduce((sum, r) => sum + r.totalDeductions, 0)
   const totalNetPayroll = filteredRecords.reduce((sum, r) => sum + r.netPayroll, 0)
+  const totalBonus = filteredRecords.reduce((sum, r) => sum + r.totalBonus, 0)
   const totalEmployees = filteredRecords.reduce((sum, r) => sum + r.totalEmployees, 0)
 
   const statusStyles = {
-    completed: 'bg-success/10 text-success',
-    pending: 'bg-warning/10 text-warning',
-    review: 'bg-chart-2/10 text-chart-2',
+    completed: 'bg-success/10 text-success border-success/20',
+    pending: 'bg-warning/10 text-warning border-warning/20',
+    review: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
   }
+
+  const handleViewDetails = (record: CompanyRecord) => {
+    setSelectedCompanyDetails(record)
+    setDetailsOpen(true)
+  }
+
+  const months = [
+    { value: 'march-2026', label: 'March 2026' },
+    { value: 'february-2026', label: 'February 2026' },
+    { value: 'january-2026', label: 'January 2026' },
+    { value: 'december-2025', label: 'December 2025' },
+  ]
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Monthly Recap</h1>
-        <p className="text-muted-foreground">
-          Company payroll records and summary reports
-        </p>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex gap-4 flex-1">
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Select month" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="march-2026">March 2026</SelectItem>
-              <SelectItem value="february-2026">February 2026</SelectItem>
-              <SelectItem value="january-2026">January 2026</SelectItem>
-              <SelectItem value="december-2025">December 2025</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Select company" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Companies</SelectItem>
-              {mockRecords.map(record => (
-                <SelectItem key={record.id} value={record.id}>
-                  {record.companyName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Monthly Recap</h1>
+          <p className="text-muted-foreground">
+            Company payroll records and summary reports
+          </p>
         </div>
         <Button className="w-full sm:w-auto">
           <Download className="size-4 mr-2" />
@@ -129,8 +171,37 @@ export default function MonthlyRecapPage() {
         </Button>
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center gap-4">
+        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Select month" />
+          </SelectTrigger>
+          <SelectContent>
+            {months.map(month => (
+              <SelectItem key={month.value} value={month.value}>
+                {month.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Select company" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Companies</SelectItem>
+            {mockRecords.map(record => (
+              <SelectItem key={record.id} value={record.id}>
+                {record.companyName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Total Payroll</CardTitle>
@@ -143,7 +214,17 @@ export default function MonthlyRecapPage() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Deductions</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Bonus</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-success">{formatCurrency(totalBonus)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Included in payroll</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Deductions</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-destructive">{formatCurrency(totalDeductions)}</p>
@@ -177,7 +258,7 @@ export default function MonthlyRecapPage() {
         <CardHeader>
           <CardTitle>Company Records</CardTitle>
           <CardDescription>
-            Detailed payroll summary for {selectedMonth.replace('-', ' ')}
+            Detailed payroll summary for {months.find(m => m.value === selectedMonth)?.label}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -188,6 +269,7 @@ export default function MonthlyRecapPage() {
                   <TableHead>Company Name</TableHead>
                   <TableHead className="text-right">Employees</TableHead>
                   <TableHead className="text-right">Total Payroll</TableHead>
+                  <TableHead className="text-right">Bonus</TableHead>
                   <TableHead className="text-right">Deductions</TableHead>
                   <TableHead className="text-right">Net Payroll</TableHead>
                   <TableHead className="text-right">Avg/Employee</TableHead>
@@ -201,6 +283,7 @@ export default function MonthlyRecapPage() {
                     <TableCell className="font-medium">{record.companyName}</TableCell>
                     <TableCell className="text-right text-sm">{record.totalEmployees}</TableCell>
                     <TableCell className="text-right text-sm">{formatCurrency(record.totalPayroll)}</TableCell>
+                    <TableCell className="text-right text-sm text-success">{formatCurrency(record.totalBonus)}</TableCell>
                     <TableCell className="text-right text-sm text-destructive">{formatCurrency(record.totalDeductions)}</TableCell>
                     <TableCell className="text-right text-sm font-medium text-success">{formatCurrency(record.netPayroll)}</TableCell>
                     <TableCell className="text-right text-sm">{formatCurrency(record.averagePerEmployee)}</TableCell>
@@ -210,9 +293,13 @@ export default function MonthlyRecapPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm">
-                        <FileText className="size-4" />
-                        View
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewDetails(record)}
+                      >
+                        <Eye className="size-4" />
+                        Details
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -222,6 +309,86 @@ export default function MonthlyRecapPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Details Dialog */}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Company Payroll Details</DialogTitle>
+            <DialogDescription>
+              {selectedCompanyDetails?.companyName} - {months.find(m => m.value === selectedMonth)?.label}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedCompanyDetails && (
+            <div className="space-y-6">
+              {/* Summary Stats */}
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="p-4 border rounded-lg">
+                  <p className="text-sm text-muted-foreground">Total Payroll</p>
+                  <p className="text-2xl font-bold mt-2">{formatCurrency(selectedCompanyDetails.totalPayroll)}</p>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <p className="text-sm text-muted-foreground">Tax & Insurance</p>
+                  <p className="text-2xl font-bold mt-2">{formatCurrency(selectedCompanyDetails.totalTax + selectedCompanyDetails.totalInsurance)}</p>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <p className="text-sm text-muted-foreground">Bonus Paid</p>
+                  <p className="text-2xl font-bold text-success mt-2">{formatCurrency(selectedCompanyDetails.totalBonus)}</p>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <p className="text-sm text-muted-foreground">Net Payroll</p>
+                  <p className="text-2xl font-bold text-success mt-2">{formatCurrency(selectedCompanyDetails.netPayroll)}</p>
+                </div>
+              </div>
+
+              {/* Employee Details Table */}
+              <div>
+                <h3 className="font-semibold mb-4">Employee Breakdown</h3>
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="rounded-lg border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Employee</TableHead>
+                          <TableHead className="text-right">Base Pay</TableHead>
+                          <TableHead className="text-right">Overtime</TableHead>
+                          <TableHead className="text-right">Bonus</TableHead>
+                          <TableHead className="text-right">Deductions</TableHead>
+                          <TableHead className="text-right">Tax</TableHead>
+                          <TableHead className="text-right">Net Pay</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {detailedRecords.map((record) => (
+                          <TableRow key={record.employeeId}>
+                            <TableCell className="font-medium">{record.employeeName}</TableCell>
+                            <TableCell className="text-right text-sm">{formatCurrency(record.basePay)}</TableCell>
+                            <TableCell className="text-right text-sm text-success">{formatCurrency(record.overtime)}</TableCell>
+                            <TableCell className="text-right text-sm text-success">{formatCurrency(record.bonus)}</TableCell>
+                            <TableCell className="text-right text-sm text-destructive">{formatCurrency(record.deductions)}</TableCell>
+                            <TableCell className="text-right text-sm">{formatCurrency(record.tax)}</TableCell>
+                            <TableCell className="text-right text-sm font-medium">{formatCurrency(record.netPay)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+
+              {/* Last Updated Info */}
+              <div className="text-xs text-muted-foreground p-4 bg-muted rounded-lg">
+                Last calculated: {selectedCompanyDetails.lastUpdated}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
