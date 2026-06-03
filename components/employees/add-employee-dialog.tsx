@@ -106,7 +106,7 @@ export function AddEmployeeDialog({
         }
         
         // Fetch all master data categories
-        const categories = ['department', 'position', 'employmentStatus', 'maritalStatus', 'religion', 'bloodType', 'certification']
+        const categories = ['department', 'position', 'employmentStatus', 'maritalStatus', 'religion', 'bloodType', 'certificate']
         const responses = await Promise.all(
           categories.map(cat => fetch(`/api/master-data?category=${cat}`))
         )

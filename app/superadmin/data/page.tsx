@@ -30,6 +30,7 @@ export default function DataPage() {
   const [items, setItems] = useState<Record<string, MasterDataItem[]>>({
     department: [],
     position: [],
+    certificate: [],
     religion: [],
     maritalStatus: [],
     employmentStatus: [],
@@ -53,6 +54,7 @@ export default function DataPage() {
   const categoryConfig: Category[] = [
     { title: 'Department', key: 'department' },
     { title: 'Position', key: 'position' },
+    { title: 'Certificate', key: 'certificate' },
     { title: 'Religion', key: 'religion' },
     { title: 'Marital Status', key: 'maritalStatus' },
     { title: 'Employment Status', key: 'employmentStatus' },
@@ -64,7 +66,7 @@ export default function DataPage() {
     const fetchAllCategories = async () => {
       try {
         setIsLoading(true)
-        const categoryKeys = ['department', 'position', 'religion', 'maritalStatus', 'employmentStatus', 'bloodType']
+        const categoryKeys = ['department', 'position', 'certificate', 'religion', 'maritalStatus', 'employmentStatus', 'bloodType']
         const results: Record<string, MasterDataItem[]> = {}
 
         for (const key of categoryKeys) {
