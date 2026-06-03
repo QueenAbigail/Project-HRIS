@@ -98,7 +98,6 @@ export function EmployeesStats({
               >
                 <div>
                   <p className="font-medium text-sm truncate max-w-[120px]">{location.name}</p>
-                  <p className="text-xs text-muted-foreground font-mono">{location.code}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-bold text-primary">{location.count}</p>
