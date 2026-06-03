@@ -113,14 +113,6 @@ const mockMonthlyRecords: MonthlyRecord[] = [
   },
 ]
 
-const mockDetailedRecords: Record<string, DetailedRecord[]> = {
-  '1': [
-    { employeeId: 'E001', employeeName: 'Michael Chen', basePay: 12000000, overtime: 1500000, bonus: 500000, deductions: 2500000, tax: 1500000, netPay: 10000000 },
-    { employeeId: 'E002', employeeName: 'Sarah Williams', basePay: 11000000, overtime: 800000, bonus: 400000, deductions: 2200000, tax: 1300000, netPay: 8700000 },
-    { employeeId: 'E003', employeeName: 'David Rodriguez', basePay: 10500000, overtime: 1200000, bonus: 300000, deductions: 2100000, tax: 1200000, netPay: 8700000 },
-  ],
-}
-
 export default function MonthlyRecapPage() {
   const [loading, setLoading] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<MonthlyRecord | null>(null)
