@@ -243,7 +243,7 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
             </div>
             <div>
               <p className="font-semibold text-lg">{employee.name}</p>
-              <p className="text-xs text-muted-foreground font-mono">{employee.id}</p>
+              <p className="text-xs text-muted-foreground font-mono">{employee.employeeCode || employee.id}</p>
             </div>
           </div>
         </div>
