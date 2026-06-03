@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -71,6 +71,9 @@ export function AddEmployeeDialog({
   const [loadingSites, setLoadingSites] = useState(false)
   const [loadingMasterData, setLoadingMasterData] = useState(false)
   
+  // Cache ref to prevent redundant fetches
+  const dataFetchedRef = useRef(false)
+  
   // State Import
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [importCount, setImportCount] = useState(0)
@@ -91,7 +94,7 @@ export function AddEmployeeDialog({
     role: 'STAFF', allowMobileAttendance: 'false', allowWebAppAccess: 'false'
   })
 
-  // Fetch sites and master data from database
+  // Fetch sites and master data from database (only once due to caching)
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -126,6 +129,9 @@ export function AddEmployeeDialog({
         setReligions(Array.isArray(religionData) ? religionData : [])
         setBloodTypes(Array.isArray(bloodData) ? bloodData : [])
         setCertifications(Array.isArray(certData) ? certData : [])
+        
+        // Mark data as fetched for caching
+        dataFetchedRef.current = true
       } catch (error) {
         console.error('[v0] Failed to fetch data:', error)
       } finally {
@@ -134,7 +140,8 @@ export function AddEmployeeDialog({
       }
     }
 
-    if (open) {
+    // Only fetch if modal opened AND data hasn't been fetched yet
+    if (open && !dataFetchedRef.current) {
       fetchData()
     }
   }, [open])
