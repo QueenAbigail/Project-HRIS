@@ -20,6 +20,8 @@ import {
   MapPin,
   ChevronLeft,
   Monitor,
+  TrendingUp,
+  Zap,
 } from 'lucide-react'
 
 import {
@@ -122,6 +124,24 @@ const mainNavItems = [
   },
 ]
 
+const payrollNavItems = [
+  {
+    title: 'Dashboard',
+    url: '/payroll',
+    icon: LayoutDashboard,
+  },
+  {
+    title: 'Monthly Recap',
+    url: '/payroll/monthly-recap',
+    icon: FileBarChart,
+  },
+  {
+    title: 'Manage Overtime',
+    url: '/payroll/overtime',
+    icon: TrendingUp,
+  },
+]
+
 export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) {
   const pathname = usePathname()
   const router = useRouter()
@@ -173,6 +193,11 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   const displayName = user?.name ?? user?.email ?? 'Unknown User'
   const displayPosition = user?.position ?? 'Staff'
   const initials = user?.name ? (user.name[0]?.toUpperCase() + (user.name[1]?.toUpperCase() || '')) : 'U?'
+  
+  // Determine which menu to show based on the current path
+  const isPayrollPage = pathname.startsWith('/payroll')
+  const navItemsToShow = isPayrollPage ? payrollNavItems : mainNavItems
+  const menuLabel = isPayrollPage ? 'Payroll Menu' : 'Main Menu'
 
   return (
     <Sidebar variant="inset" collapsible="icon" className="overflow-hidden">
@@ -202,10 +227,10 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
       </SidebarHeader>
       <SidebarContent className="[&>[data-radix-scroll-area-viewport]]:overflow-x-hidden">
         <SidebarGroup>
-          <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
+          <SidebarGroupLabel>{menuLabel}</SidebarGroupLabel>
           <SidebarGroupContent className="overflow-x-hidden">
             <SidebarMenu>
-              {mainNavItems.map((item) => (
+              {navItemsToShow.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={pathname === item.url}>
                     <Link href={item.url} className="flex items-center min-w-0 gap-2">
