@@ -1,67 +1,117 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { UserCheck, UserX, Clock, AlertTriangle, CalendarOff, Shield } from 'lucide-react'
-import { getOverallAttendanceStats, getTotalBKOAssignments } from '@/lib/data'
+
+interface AttendanceStatsData {
+  presentToday: number
+  absentToday: number
+  lateCheckIns: number
+  averageLateMinutes: number
+  onLeave: number
+  dayOff: number
+  totalEmployees: number
+  expectedToWork: number
+  attendanceRate: number
+  bkoCount: number
+}
 
 interface AttendanceStatsProps {
   siteId?: string
 }
 
 export function AttendanceStats({ siteId = 'all' }: AttendanceStatsProps) {
-  const overallStats = getOverallAttendanceStats()
-  const bkoAssignments = getTotalBKOAssignments()
+  const [stats, setStats] = useState<AttendanceStatsData | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const stats = [
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const params = new URLSearchParams()
+        if (siteId && siteId !== 'all') {
+          params.append('siteId', siteId)
+        }
+        
+        const response = await fetch(`/api/attendance/stats?${params.toString()}`)
+        if (response.ok) {
+          const data = await response.json()
+          setStats(data)
+        }
+      } catch (error) {
+        console.error('[v0] Failed to fetch attendance stats:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStats()
+  }, [siteId])
+
+  if (loading || !stats) {
+    return (
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        {[...Array(6)].map((_, i) => (
+          <Card key={i} className="bg-card border-border">
+            <CardContent className="p-3">
+              <div className="h-8 bg-muted rounded animate-pulse"></div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
+  const statConfig = [
     {
       title: 'Present',
-      value: overallStats.presentToday,
-      percentage: `${overallStats.attendanceRate}%`,
+      value: stats.presentToday,
+      percentage: `${stats.attendanceRate}%`,
       icon: UserCheck,
       color: 'text-success',
       bgColor: 'bg-success/10',
     },
     {
       title: 'Absent',
-      value: overallStats.absentToday,
-      percentage: `${Math.round((overallStats.absentToday / overallStats.totalEmployees) * 100)}%`,
+      value: stats.absentToday,
+      percentage: `${stats.totalEmployees > 0 ? Math.round((stats.absentToday / stats.totalEmployees) * 100) : 0}%`,
       icon: UserX,
       color: 'text-destructive',
       bgColor: 'bg-destructive/10',
     },
     {
       title: 'Late Arrivals',
-      value: overallStats.lateCheckIns,
-      percentage: `${Math.round((overallStats.lateCheckIns / overallStats.totalEmployees) * 100)}%`,
-      subtext: overallStats.lateCheckIns > 0 ? `Avg: ${overallStats.averageLateMinutes}min late` : undefined,
+      value: stats.lateCheckIns,
+      percentage: `${stats.totalEmployees > 0 ? Math.round((stats.lateCheckIns / stats.totalEmployees) * 100) : 0}%`,
+      subtext: stats.lateCheckIns > 0 ? `Avg: ${stats.averageLateMinutes}min late` : undefined,
       icon: Clock,
       color: 'text-warning',
       bgColor: 'bg-warning/10',
-      highlight: overallStats.lateCheckIns > 0,
+      highlight: stats.lateCheckIns > 0,
     },
     {
       title: 'On Leave',
-      value: overallStats.onLeave,
-      percentage: `${Math.round((overallStats.onLeave / overallStats.totalEmployees) * 100)}%`,
+      value: stats.onLeave,
+      percentage: `${stats.totalEmployees > 0 ? Math.round((stats.onLeave / stats.totalEmployees) * 100) : 0}%`,
       icon: AlertTriangle,
       color: 'text-chart-2',
       bgColor: 'bg-chart-2/10',
     },
     {
       title: 'BKO (Coverage)',
-      value: bkoAssignments,
-      percentage: `${Math.round((bkoAssignments / overallStats.totalEmployees) * 100)}%`,
-      subtext: bkoAssignments > 0 ? `Backup replacements active` : 'No replacements',
+      value: stats.bkoCount,
+      percentage: `${stats.totalEmployees > 0 ? Math.round((stats.bkoCount / stats.totalEmployees) * 100) : 0}%`,
+      subtext: stats.bkoCount > 0 ? `Backup replacements active` : 'No replacements',
       icon: Shield,
       color: 'text-blue-600 dark:text-blue-400',
       bgColor: 'bg-blue-500/10',
-      highlight: bkoAssignments > 0,
+      highlight: stats.bkoCount > 0,
     },
     {
       title: 'Scheduled Off',
-      value: overallStats.dayOff,
-      percentage: `${Math.round((overallStats.dayOff / overallStats.totalEmployees) * 100)}%`,
-      subtext: `${overallStats.expectedToWork} expected today`,
+      value: stats.dayOff,
+      percentage: `${stats.totalEmployees > 0 ? Math.round((stats.dayOff / stats.totalEmployees) * 100) : 0}%`,
+      subtext: `${stats.expectedToWork} expected today`,
       icon: CalendarOff,
       color: 'text-primary/70',
       bgColor: 'bg-primary/10',
@@ -70,7 +120,7 @@ export function AttendanceStats({ siteId = 'all' }: AttendanceStatsProps) {
 
   return (
     <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-      {stats.map((stat) => (
+      {statConfig.map((stat) => (
         <Card 
           key={stat.title} 
           className={`bg-card border-border ${

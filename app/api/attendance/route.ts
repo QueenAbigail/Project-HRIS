@@ -15,30 +15,19 @@ export async function GET(request: NextRequest) {
     
     const siteId = searchParams.get('siteId')
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
-    const userId = searchParams.get('userId')
-    const status = searchParams.get('status')
 
     // Build where clause
-    const where: any = {}
-    
-    if (siteId && siteId !== 'all') {
-      where.locationId = siteId
-    }
-
-    if (date) {
-      const dateObj = new Date(date)
-      where.date = {
-        gte: startOfDay(dateObj),
-        lte: endOfDay(dateObj),
+    const where: any = {
+      date: {
+        gte: startOfDay(new Date(date)),
+        lte: endOfDay(new Date(date)),
       }
     }
-
-    if (userId) {
-      where.userId = userId
-    }
-
-    if (status) {
-      where.status = status
+    
+    if (siteId && siteId !== 'all') {
+      where.location = {
+        id: siteId
+      }
     }
 
     const attendance = await prisma.attendance.findMany({
@@ -52,10 +41,20 @@ export async function GET(request: NextRequest) {
             initials: true,
             department: true,
             position: true,
+            employeeCode: true,
+          }
+        },
+        shift: {
+          select: {
+            id: true,
+            name: true,
+            startTime: true,
+            endTime: true,
           }
         },
         location: {
           select: {
+            id: true,
             name: true,
             code: true,
             company: {
@@ -71,9 +70,64 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(attendance)
+    // Transform to match frontend expectations
+    const formatted = attendance.map((record) => {
+      let status = record.status || 'NOT_CHECKED_IN'
+      let workHours = '--'
+
+      if (record.actualCheckIn && record.actualCheckOut) {
+        const [inH, inM] = record.actualCheckIn.split(':').map(Number)
+        const [outH, outM] = record.actualCheckOut.split(':').map(Number)
+        const totalMinutes = (outH * 60 + outM) - (inH * 60 + inM)
+        const hours = Math.floor(totalMinutes / 60)
+        const minutes = totalMinutes % 60
+        workHours = `${hours}h ${minutes.toString().padStart(2, '0')}m`
+      }
+
+      // Determine status based on check-in data
+      if (!record.actualCheckIn) {
+        status = 'not-checked-in'
+      } else if (status === 'LATE') {
+        status = 'late'
+      } else if (status === 'PRESENT') {
+        status = 'present'
+      } else if (status === 'ABSENT') {
+        status = 'absent'
+      } else {
+        status = 'not-checked-in'
+      }
+
+      return {
+        id: record.id,
+        employeeId: record.userId,
+        employeeName: record.user.name,
+        employeeCode: record.user.employeeCode,
+        initials: record.user.initials,
+        department: record.user.department || '',
+        position: record.user.position || '',
+        location: record.location.company?.name 
+          ? `${record.location.company.name} - ${record.location.name}`
+          : record.location.name,
+        scheduledStart: record.shift?.startTime || record.scheduledStart || '--:--',
+        scheduledEnd: record.shift?.endTime || record.scheduledEnd || '--:--',
+        checkIn: record.actualCheckIn || null,
+        checkOut: record.actualCheckOut || null,
+        status: status as any,
+        lateMinutes: record.lateMinutes || 0,
+        workHours,
+        checkInGps: record.gpsLat && record.gpsLng ? {
+          latitude: record.gpsLat,
+          longitude: record.gpsLng
+        } : null,
+        checkOutGps: null, // Would need to track check-out GPS separately
+        checkInPhotoUrl: record.selfieCheckIn || null,
+        checkOutPhotoUrl: record.selfieCheckOut || null,
+      }
+    })
+
+    return NextResponse.json(formatted)
   } catch (error) {
-    console.error('Error fetching attendance:', error)
+    console.error('[v0] Error fetching attendance:', error)
     return NextResponse.json(
       { error: 'Failed to fetch attendance records' },
       { status: 500 }
