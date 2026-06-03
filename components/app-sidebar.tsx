@@ -226,6 +226,25 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className="[&>[data-radix-scroll-area-viewport]]:overflow-x-hidden">
+        {isPayrollPage && (
+          <>
+            <SidebarGroup>
+              <SidebarGroupContent className="overflow-x-hidden">
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild className="text-primary hover:text-primary hover:bg-primary/10">
+                      <Link href="/dashboard" className="flex items-center gap-2">
+                        <ChevronLeft className="size-4" />
+                        <span>Back to Main Menu</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarSeparator />
+          </>
+        )}
         <SidebarGroup>
           <SidebarGroupLabel>{menuLabel}</SidebarGroupLabel>
           <SidebarGroupContent className="overflow-x-hidden">
