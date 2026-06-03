@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Calendar } from 'lucide-react'
 import {
@@ -20,8 +20,34 @@ import {
 import { AttendanceCalendar } from './attendance-calendar'
 import { MarkAttendanceDialog } from './mark-attendance-dialog'
 
+interface MasterDataItem {
+  id: string
+  value: string
+  category: string
+}
+
 export function AttendanceHeader({ siteId = 'all' }: { siteId?: string }) {
   const [openCalendarSheet, setOpenCalendarSheet] = useState(false)
+  const [departments, setDepartments] = useState<MasterDataItem[]>([])
+  const [loadingDepartments, setLoadingDepartments] = useState(true)
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const response = await fetch('/api/master-data?category=department')
+        if (response.ok) {
+          const data = await response.json()
+          setDepartments(Array.isArray(data) ? data : [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch departments:', error)
+      } finally {
+        setLoadingDepartments(false)
+      }
+    }
+
+    fetchDepartments()
+  }, [])
 
   return (
     <>
@@ -57,14 +83,15 @@ export function AttendanceHeader({ siteId = 'all' }: { siteId?: string }) {
             </Select>
             <Select defaultValue="all">
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Department" />
+                <SelectValue placeholder={loadingDepartments ? "Loading..." : "Department"} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Departments</SelectItem>
-                <SelectItem value="field">Field Security</SelectItem>
-                <SelectItem value="surveillance">Surveillance</SelectItem>
-                <SelectItem value="patrol">Patrol</SelectItem>
-                <SelectItem value="admin">Administration</SelectItem>
+                {departments.map((dept) => (
+                  <SelectItem key={dept.id} value={dept.value}>
+                    {dept.value}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
