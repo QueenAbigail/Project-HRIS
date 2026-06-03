@@ -2,7 +2,9 @@ import { prisma } from '@/lib/prisma'
 import { EmployeesTable } from '@/components/employees/employees-table'
 import { EmployeesHeader } from '@/components/employees/employees-header'
 import { EmployeesStats } from '@/components/employees/employees-stats'
+import { EmployeesSkeleton } from '@/components/skeletons/employees-skeleton'
 import { format } from 'date-fns'
+import { Suspense } from 'react'
 import type { Employee } from '@/components/employees/employee-profile-sheet'
 
 interface LocationStat {
@@ -11,12 +13,11 @@ interface LocationStat {
   count: number
 }
 
-export default async function EmployeesPage({
-  searchParams
+async function EmployeesContent({
+  searchQuery,
 }: {
-  searchParams: { search?: string }
+  searchQuery: string
 }) {
-  const searchQuery = searchParams.search || ''
   const today = new Date()
 
   // Fetch all stats and data in parallel
@@ -121,7 +122,12 @@ export default async function EmployeesPage({
         site: {
           select: {
             name: true,
-            code: true
+            code: true,
+            company: {
+              select: {
+                name: true
+              }
+            }
           }
         }
       }
@@ -151,7 +157,7 @@ export default async function EmployeesPage({
       position: user.position ?? '',
       status,
       joinDate: user.joinDate ? format(user.joinDate, 'MMM d, yyyy') : '',
-      location: user.site?.name ?? '',
+      location: user.site ? `${user.site.company?.name || 'N/A'} - ${user.site.name}` : '',
       locationCode: user.site?.code ?? '',
       phone: user.phoneNumber ?? '',
       phoneNumber: user.phoneNumber ?? '',
@@ -196,6 +202,20 @@ export default async function EmployeesPage({
       />
       <EmployeesTable users={employees} />
     </div>
+  )
+}
+
+export default function EmployeesPage({
+  searchParams
+}: {
+  searchParams: { search?: string }
+}) {
+  const searchQuery = searchParams.search || ''
+
+  return (
+    <Suspense fallback={<EmployeesSkeleton />}>
+      <EmployeesContent searchQuery={searchQuery} />
+    </Suspense>
   )
 }
 

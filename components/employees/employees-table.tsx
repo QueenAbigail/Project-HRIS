@@ -251,7 +251,7 @@ export function EmployeesTable({ users }: EmployeesTableProps) {
                         </Avatar>
                         <div>
                           <p className="font-medium">{employee.name}</p>
-                          <p className="text-xs text-muted-foreground hidden sm:block">{employee.email}</p>
+                          <p className="text-xs text-muted-foreground hidden sm:block">{employee.personalEmail || employee.email}</p>
                         </div>
                       </div>
                     </TableCell>

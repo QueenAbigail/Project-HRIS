@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -9,13 +9,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Plus, MoreVertical, Pencil, Trash2, Search, X } from 'lucide-react'
+import { Plus, MoreVertical, Pencil, Trash2, Search, X, Loader2 } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 
 // Types
-interface CategoryItem {
+interface MasterDataItem {
   id: string
-  name: string
-  abbreviation: string
+  category: string
+  value: string
+  isActive: boolean
 }
 
 interface Category {
@@ -24,7 +26,11 @@ interface Category {
 }
 
 export default function DataPage() {
-  const [categories, setCategories] = useState<Record<string, CategoryItem[]>>({
+  const { toast } = useToast()
+  const [items, setItems] = useState<Record<string, MasterDataItem[]>>({
+    department: [],
+    position: [],
+    certificate: [],
     religion: [],
     maritalStatus: [],
     employmentStatus: [],
@@ -38,86 +44,141 @@ export default function DataPage() {
     bloodType: '',
   })
 
-  const [editingItem, setEditingItem] = useState<CategoryItem | null>(null)
+  const [editingItem, setEditingItem] = useState<MasterDataItem | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>('')
-  const [newItemName, setNewItemName] = useState('')
+  const [newItemValue, setNewItemValue] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   const categoryConfig: Category[] = [
+    { title: 'Department', key: 'department' },
+    { title: 'Position', key: 'position' },
+    { title: 'Certificate', key: 'certificate' },
     { title: 'Religion', key: 'religion' },
     { title: 'Marital Status', key: 'maritalStatus' },
     { title: 'Employment Status', key: 'employmentStatus' },
     { title: 'Blood Type', key: 'bloodType' },
   ]
 
+  // Fetch all categories on mount
+  useEffect(() => {
+    const fetchAllCategories = async () => {
+      try {
+        setIsLoading(true)
+        const categoryKeys = ['department', 'position', 'certificate', 'religion', 'maritalStatus', 'employmentStatus', 'bloodType']
+        const results: Record<string, MasterDataItem[]> = {}
+
+        for (const key of categoryKeys) {
+          const response = await fetch(`/api/master-data?category=${key}`)
+          if (!response.ok) throw new Error(`Failed to fetch ${key}`)
+          results[key] = await response.json()
+        }
+
+        setItems(results)
+      } catch (error) {
+        console.error('[v0] Error fetching master data:', error)
+        toast({ title: 'Error', description: 'Failed to load data', variant: 'destructive' })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchAllCategories()
+  }, [toast])
+
   const handleAddNewEntry = (categoryKey: string) => {
     setSelectedCategory(categoryKey)
     setEditingItem(null)
-    setNewItemName('')
+    setNewItemValue('')
     setIsDialogOpen(true)
   }
 
-  const handleEditItem = (categoryKey: string, item: CategoryItem) => {
+  const handleEditItem = (categoryKey: string, item: MasterDataItem) => {
     setSelectedCategory(categoryKey)
     setEditingItem(item)
-    setNewItemName(item.name)
+    setNewItemValue(item.value)
     setIsDialogOpen(true)
   }
 
-  const handleDeleteItem = (categoryKey: string, itemId: string) => {
-    setCategories((prev) => {
-      const updated = { ...prev }
-      updated[categoryKey] = updated[categoryKey].filter((item) => item.id !== itemId)
-      return updated
-    })
+  const handleDeleteItem = async (categoryKey: string, itemId: string) => {
+    try {
+      const response = await fetch(`/api/master-data?id=${itemId}`, { method: 'DELETE' })
+      if (!response.ok) throw new Error('Failed to delete')
+      setItems(prev => ({
+        ...prev,
+        [categoryKey]: prev[categoryKey].filter(item => item.id !== itemId)
+      }))
+      toast({ title: 'Success', description: 'Entry deleted successfully' })
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to delete entry', variant: 'destructive' })
+    }
   }
 
-  const handleSaveItem = () => {
-    if (!newItemName.trim() || !selectedCategory) return
+  const handleSaveItem = async () => {
+    if (!newItemValue.trim() || !selectedCategory) {
+      toast({ title: 'Error', description: 'Value is required', variant: 'destructive' })
+      return
+    }
 
-    setCategories((prev) => {
-      const updated = { ...prev }
+    setIsSaving(true)
+    try {
       if (editingItem) {
-        const itemIndex = updated[selectedCategory].findIndex((item) => item.id === editingItem.id)
-        if (itemIndex !== -1) {
-          updated[selectedCategory][itemIndex].name = newItemName
-        }
-      } else {
-        const newAbbr = newItemName
-          .split(' ')
-          .map((word) => word[0])
-          .join('')
-          .toUpperCase()
-          .slice(0, 3)
-        updated[selectedCategory].push({
-          id: Date.now().toString(),
-          name: newItemName,
-          abbreviation: newAbbr,
+        const response = await fetch('/api/master-data', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingItem.id, value: newItemValue.trim() })
         })
+        if (!response.ok) throw new Error('Failed to update')
+        const updated = await response.json()
+        setItems(prev => ({
+          ...prev,
+          [selectedCategory]: prev[selectedCategory].map(item => item.id === updated.id ? updated : item)
+        }))
+        toast({ title: 'Success', description: 'Entry updated successfully' })
+      } else {
+        const response = await fetch('/api/master-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category: selectedCategory, value: newItemValue.trim() })
+        })
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to create')
+        }
+        const created = await response.json()
+        setItems(prev => ({
+          ...prev,
+          [selectedCategory]: [...prev[selectedCategory], created].sort((a, b) => a.value.localeCompare(b.value))
+        }))
+        toast({ title: 'Success', description: 'Entry added successfully' })
       }
-      return updated
-    })
 
-    setIsDialogOpen(false)
-    setEditingItem(null)
-    setNewItemName('')
-    setSelectedCategory('')
+      setIsDialogOpen(false)
+      setEditingItem(null)
+      setNewItemValue('')
+      setSelectedCategory('')
+    } catch (error) {
+      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to save', variant: 'destructive' })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleDialogClose = () => {
     setIsDialogOpen(false)
     setEditingItem(null)
-    setNewItemName('')
+    setNewItemValue('')
     setSelectedCategory('')
   }
 
   const getFilteredItems = (categoryKey: string) => {
     const query = searchQueries[categoryKey]?.toLowerCase() || ''
     if (!query) {
-      return categories[categoryKey] || []
+      return items[categoryKey] || []
     }
-    return (categories[categoryKey] || []).filter((item) =>
-      item.name.toLowerCase().includes(query) || item.abbreviation.toLowerCase().includes(query)
+    return (items[categoryKey] || []).filter((item) =>
+      item.value.toLowerCase().includes(query)
     )
   }
 
@@ -127,6 +188,8 @@ export default function DataPage() {
       [categoryKey]: '',
     }))
   }
+
+  if (isLoading) return <div className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
 
   return (
     <div className="space-y-6">
@@ -184,12 +247,7 @@ export default function DataPage() {
                         key={item.id}
                         className="flex items-center justify-between rounded-lg border border-border bg-background p-3 hover:bg-muted transition-colors group w-full"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Badge variant="outline" className="h-8 w-8 flex items-center justify-center rounded-full font-semibold flex-shrink-0 text-xs">
-                            {item.abbreviation}
-                          </Badge>
-                          <span className="text-sm text-foreground truncate">{item.name}</span>
-                        </div>
+                        <span className="text-sm text-foreground truncate">{item.value}</span>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-muted flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -230,17 +288,24 @@ export default function DataPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="item-name">Name</Label>
+              <Label htmlFor="item-value">Value</Label>
               <Input
-                id="item-name"
-                value={newItemName}
-                onChange={(e) => setNewItemName(e.target.value)}
-                placeholder="Enter name"
+                id="item-value"
+                value={newItemValue}
+                onChange={(e) => setNewItemValue(e.target.value)}
+                placeholder="Enter value"
                 onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
               />
             </div>
-            <Button onClick={handleSaveItem} className="w-full">
-              {editingItem ? 'Update' : 'Add'} Entry
+            <Button onClick={handleSaveItem} className="w-full" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {editingItem ? 'Updating...' : 'Adding...'}
+                </>
+              ) : (
+                <>{editingItem ? 'Update' : 'Add'} Entry</>
+              )}
             </Button>
           </div>
         </DialogContent>

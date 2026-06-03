@@ -1,142 +1,218 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Plus, Edit, Trash2, Building2, Search, X } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { MapPin, Plus, Edit, Trash2, Building2, Search, X, Loader2 } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 
-// Shared sites data - synced between attendance and patrol
-const mockSites = [
-  { id: 'all', name: 'All Sites', code: 'ALL' },
-  { id: 'site-1', name: 'Main Gate Site', code: 'MG-01' },
-  { id: 'site-2', name: 'Building A', code: 'BA-01' },
-  { id: 'site-3', name: 'Building B', code: 'BA-02' },
-]
-
-// Mock attendance locations - organized by site
-const mockAttendanceLocations: Record<string, Array<any>> = {
-  'site-1': [
-    { id: 1, name: 'Main Entrance', latitude: '-6.2088', longitude: '106.8456', radius: 50, status: 'Active' },
-    { id: 2, name: 'Back Entrance', latitude: '-6.2095', longitude: '106.8460', radius: 45, status: 'Active' },
-    { id: 3, name: 'Security Booth', latitude: '-6.2100', longitude: '106.8465', radius: 30, status: 'Active' },
-  ],
-  'site-2': [
-    { id: 4, name: 'Building A Lobby', latitude: '-6.2110', longitude: '106.8470', radius: 60, status: 'Active' },
-    { id: 5, name: 'Floor 1 Reception', latitude: '-6.2115', longitude: '106.8475', radius: 40, status: 'Active' },
-  ],
-  'site-3': [
-    { id: 6, name: 'Building B Main', latitude: '-6.2120', longitude: '106.8480', radius: 55, status: 'Active' },
-  ],
+interface Location {
+  id: string
+  name: string
+  latitude: number
+  longitude: number
+  radius: number
+  timezone: string
+  isActive: boolean
 }
 
-// Mock patrol checkpoints - organized by site
-const mockPatrolCheckpoints: Record<string, Array<any>> = {
-  'site-1': Array.from({ length: 17 }, (_, i) => ({
-    id: i + 1000,
-    name: `Checkpoint ${String.fromCharCode(65 + (i % 26))}${Math.floor(i / 26) + 1}`,
-    latitude: String(-6.2088 + (Math.random() * 0.01)).substring(0, 8),
-    longitude: String(106.8456 + (Math.random() * 0.01)).substring(0, 9),
-    radius: 30 + Math.random() * 20,
-    status: Math.random() > 0.1 ? 'Active' : 'Inactive',
-  })),
-  'site-2': Array.from({ length: 12 }, (_, i) => ({
-    id: i + 2000,
-    name: `Building A Check ${i + 1}`,
-    latitude: String(-6.2110 + (Math.random() * 0.01)).substring(0, 8),
-    longitude: String(106.8470 + (Math.random() * 0.01)).substring(0, 9),
-    radius: 25 + Math.random() * 15,
-    status: Math.random() > 0.1 ? 'Active' : 'Inactive',
-  })),
-  'site-3': Array.from({ length: 9 }, (_, i) => ({
-    id: i + 3000,
-    name: `Building B Check ${i + 1}`,
-    latitude: String(-6.2120 + (Math.random() * 0.01)).substring(0, 8),
-    longitude: String(106.8480 + (Math.random() * 0.01)).substring(0, 9),
-    radius: 28 + Math.random() * 18,
-    status: Math.random() > 0.1 ? 'Active' : 'Inactive',
-  })),
+interface Site {
+  id: string
+  name: string
+  code: string
 }
 
 export default function GPSLocationsPage() {
-  const [selectedSite, setSelectedSite] = useState('all')
+  const { toast } = useToast()
+  const [sites, setSites] = useState<Site[]>([])
+  const [attendanceLocations, setAttendanceLocations] = useState<Record<string, Location[]>>({})
+  const [patrolLocations, setPatrolLocations] = useState<Record<string, Location[]>>({})
+  
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState('attendance')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [newLocationData, setNewLocationData] = useState({
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [selectedSiteId, setSelectedSiteId] = useState('')
+  
+  const [newLocation, setNewLocation] = useState({
     name: '',
-    siteId: 'site-1',
     latitude: '',
     longitude: '',
     radius: '50',
+    timezone: 'WIB',
   })
+  
+  const [editingLocation, setEditingLocation] = useState<Location | null>(null)
 
-  // Filter sites based on selection and search
-  const getFilteredSites = () => {
-    let filtered = mockSites.filter((s) => s.id !== 'all')
-    
-    if (selectedSite !== 'all') {
-      filtered = filtered.filter((s) => s.id === selectedSite)
+  // Fetch sites on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetch('/api/companies')
+        if (!response.ok) throw new Error('Failed to fetch companies')
+        const companies = await response.json()
+        
+        // Get all sites from all companies
+        const allSites: Site[] = []
+        for (const company of companies) {
+          if (company.sites) {
+            allSites.push(...company.sites)
+          }
+        }
+        setSites(allSites)
+        
+        // Fetch locations for each site
+        const attendanceData: Record<string, Location[]> = {}
+        const patrolData: Record<string, Location[]> = {}
+        
+        for (const site of allSites) {
+          const [attResp, patrolResp] = await Promise.all([
+            fetch(`/api/sites/${site.id}/attendance-locations`),
+            fetch(`/api/sites/${site.id}/patrol-locations`),
+          ])
+          
+          if (attResp.ok) {
+            attendanceData[site.id] = await attResp.json()
+          }
+          if (patrolResp.ok) {
+            patrolData[site.id] = await patrolResp.json()
+          }
+        }
+        
+        setAttendanceLocations(attendanceData)
+        setPatrolLocations(patrolData)
+      } catch (error) {
+        console.error('[v0] Error fetching GPS data:', error)
+        toast({ title: 'Error', description: 'Failed to load GPS locations', variant: 'destructive' })
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (s) =>
-          s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          s.code.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    fetchData()
+  }, [toast])
+
+  const filteredSites = sites.filter(site =>
+    site.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    site.code.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const handleAddLocation = async (type: 'attendance' | 'patrol') => {
+    if (!newLocation.name || !newLocation.latitude || !newLocation.longitude || !newLocation.timezone || !selectedSiteId) {
+      toast({ title: 'Error', description: 'All fields are required', variant: 'destructive' })
+      return
     }
 
-    return filtered
+    setIsSaving(true)
+    try {
+      const endpoint = `/api/sites/${selectedSiteId}/${type}-locations`
+      const response = await fetch(endpoint, {
+        method: editingLocation ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          editingLocation
+            ? { locationId: editingLocation.id, ...newLocation, radius: parseInt(newLocation.radius) }
+            : { ...newLocation, radius: parseInt(newLocation.radius) }
+        ),
+      })
+
+      if (!response.ok) throw new Error('Failed to save location')
+      const savedLocation = await response.json()
+
+      if (type === 'attendance') {
+        setAttendanceLocations(prev => ({
+          ...prev,
+          [selectedSiteId]: editingLocation
+            ? prev[selectedSiteId].map(l => l.id === editingLocation.id ? savedLocation : l)
+            : [...(prev[selectedSiteId] || []), savedLocation],
+        }))
+      } else {
+        setPatrolLocations(prev => ({
+          ...prev,
+          [selectedSiteId]: editingLocation
+            ? prev[selectedSiteId].map(l => l.id === editingLocation.id ? savedLocation : l)
+            : [...(prev[selectedSiteId] || []), savedLocation],
+        }))
+      }
+
+      toast({ title: 'Success', description: 'Location saved successfully' })
+      setIsAddDialogOpen(false)
+      setNewLocation({ name: '', latitude: '', longitude: '', radius: '50', timezone: 'WIB' })
+      setEditingLocation(null)
+      setSelectedSiteId('')
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to save location', variant: 'destructive' })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
-  // Get locations for a specific site
-  const getAttendanceLocations = (siteId: string) => {
-    return mockAttendanceLocations[siteId] || []
+  const handleDeleteLocation = async (siteId: string, locationId: string, type: 'attendance' | 'patrol') => {
+    try {
+      const response = await fetch(`/api/sites/${siteId}/${type}-locations?locationId=${locationId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) throw new Error('Failed to delete location')
+
+      if (type === 'attendance') {
+        setAttendanceLocations(prev => ({
+          ...prev,
+          [siteId]: prev[siteId].filter(l => l.id !== locationId),
+        }))
+      } else {
+        setPatrolLocations(prev => ({
+          ...prev,
+          [siteId]: prev[siteId].filter(l => l.id !== locationId),
+        }))
+      }
+
+      toast({ title: 'Success', description: 'Location deleted successfully' })
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to delete location', variant: 'destructive' })
+    }
   }
 
-  // Get checkpoints for a specific site
-  const getPatrolCheckpoints = (siteId: string) => {
-    return mockPatrolCheckpoints[siteId] || []
+  const openAddDialog = (siteId: string) => {
+    setSelectedSiteId(siteId)
+    setEditingLocation(null)
+    setNewLocation({ name: '', latitude: '', longitude: '', radius: '50' })
+    setIsAddDialogOpen(true)
   }
 
-  const filteredSites = getFilteredSites()
+  const openEditDialog = (siteId: string, location: Location) => {
+    setSelectedSiteId(siteId)
+    setEditingLocation(location)
+    setNewLocation({
+      name: location.name,
+      latitude: location.latitude.toString(),
+      longitude: location.longitude.toString(),
+      radius: location.radius.toString(),
+    })
+    setIsAddDialogOpen(true)
+  }
+
+  const handleDialogClose = () => {
+    setIsAddDialogOpen(false)
+    setEditingLocation(null)
+    setNewLocation({ name: '', latitude: '', longitude: '', radius: '50' })
+    setSelectedSiteId('')
+  }
+
+  if (isLoading) return <div className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">GPS Locations</h1>
         <p className="text-muted-foreground mt-2">
@@ -144,7 +220,6 @@ export default function GPSLocationsPage() {
         </p>
       </div>
 
-      {/* Site Filter with Search */}
       <div className="flex items-end gap-3">
         <div className="flex-1 max-w-md">
           <label className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2 block">
@@ -170,21 +245,9 @@ export default function GPSLocationsPage() {
             )}
           </div>
         </div>
-        {searchQuery && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setSearchQuery('')
-              setSelectedSite('all')
-            }}
-          >
-            Reset
-          </Button>
-        )}
       </div>
 
-      <Tabs defaultValue="attendance" className="w-full" value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="attendance" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="attendance" className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
@@ -196,33 +259,8 @@ export default function GPSLocationsPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Attendance Tab */}
         <TabsContent value="attendance" className="space-y-4 mt-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Attendance GPS Locations</h2>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="gap-1">
-                  <Plus className="h-4 w-4" />
-                  Add Location
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add Attendance Location</DialogTitle>
-                  <DialogDescription>
-                    Create a new GPS location for attendance tracking
-                  </DialogDescription>
-                </DialogHeader>
-                <AddLocationForm
-                  type="attendance"
-                  onClose={() => setIsAddDialogOpen(false)}
-                  newLocationData={newLocationData}
-                  setNewLocationData={setNewLocationData}
-                />
-              </DialogContent>
-            </Dialog>
-          </div>
+          <h2 className="text-xl font-semibold">Attendance GPS Locations</h2>
 
           {filteredSites.length === 0 ? (
             <Card className="border-border">
@@ -233,7 +271,7 @@ export default function GPSLocationsPage() {
           ) : (
             <Accordion type="single" collapsible className="space-y-3">
               {filteredSites.map((site) => {
-                const locations = getAttendanceLocations(site.id)
+                const locations = attendanceLocations[site.id] || []
                 return (
                   <Card key={site.id} className="border-border">
                     <AccordionItem value={site.id} className="border-0">
@@ -252,8 +290,87 @@ export default function GPSLocationsPage() {
                       </CardHeader>
                       <AccordionContent className="pt-0">
                         <CardContent className="space-y-4">
+                          <Button size="sm" className="gap-1" onClick={() => openAddDialog(site.id)}>
+                            <Plus className="h-4 w-4" />
+                            Add Location
+                          </Button>
+                          <Dialog open={isAddDialogOpen && selectedSiteId === site.id} onOpenChange={handleDialogClose}>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>{editingLocation ? 'Edit' : 'Add'} Attendance Location</DialogTitle>
+                                <DialogDescription>
+                                  {editingLocation ? 'Update the' : 'Create a new'} GPS location for attendance tracking
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="name">Location Name</Label>
+                                  <Input
+                                    id="name"
+                                    value={newLocation.name}
+                                    onChange={(e) => setNewLocation(prev => ({ ...prev, name: e.target.value }))}
+                                    placeholder="e.g., Main Entrance"
+                                  />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="latitude">Latitude</Label>
+                                    <Input
+                                      id="latitude"
+                                      value={newLocation.latitude}
+                                      onChange={(e) => setNewLocation(prev => ({ ...prev, latitude: e.target.value }))}
+                                      placeholder="-6.2088"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="longitude">Longitude</Label>
+                                    <Input
+                                      id="longitude"
+                                      value={newLocation.longitude}
+                                      onChange={(e) => setNewLocation(prev => ({ ...prev, longitude: e.target.value }))}
+                                      placeholder="106.8456"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="radius">Radius (meters)</Label>
+                                  <Input
+                                    id="radius"
+                                    type="number"
+                                    value={newLocation.radius}
+                                    onChange={(e) => setNewLocation(prev => ({ ...prev, radius: e.target.value }))}
+                                    placeholder="50"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="timezone">Timezone (Indonesia)</Label>
+                                  <Select value={newLocation.timezone} onValueChange={(value) => setNewLocation(prev => ({ ...prev, timezone: value }))}>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="WIB">WIB (UTC+7) - Western Indonesia</SelectItem>
+                                      <SelectItem value="WITA">WITA (UTC+8) - Central Indonesia</SelectItem>
+                                      <SelectItem value="WIT">WIT (UTC+9) - Eastern Indonesia</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <Button onClick={() => handleAddLocation('attendance')} className="w-full" disabled={isSaving}>
+                                  {isSaving ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      Saving...
+                                    </>
+                                  ) : (
+                                    <>{editingLocation ? 'Update' : 'Add'} Location</>
+                                  )}
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+
                           {locations.length === 0 ? (
-                            <p className="text-sm text-muted-foreground py-4">No attendance locations configured for this site</p>
+                            <p className="text-sm text-muted-foreground py-4">No attendance locations for this site</p>
                           ) : (
                             <div className="rounded-lg border border-border overflow-hidden">
                               <Table>
@@ -270,21 +387,21 @@ export default function GPSLocationsPage() {
                                   {locations.map((location) => (
                                     <TableRow key={location.id}>
                                       <TableCell className="font-medium">{location.name}</TableCell>
-                                      <TableCell>{location.radius.toFixed(0)}m</TableCell>
+                                      <TableCell>{location.radius}m</TableCell>
                                       <TableCell className="text-xs font-mono text-muted-foreground">
-                                        {location.latitude}, {location.longitude}
+                                        {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
                                       </TableCell>
                                       <TableCell>
-                                        <Badge variant={location.status === 'Active' ? 'default' : 'secondary'}>
-                                          {location.status}
+                                        <Badge variant={location.isActive ? 'default' : 'secondary'}>
+                                          {location.isActive ? 'Active' : 'Inactive'}
                                         </Badge>
                                       </TableCell>
                                       <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-1">
-                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEditDialog(site.id, location)}>
                                             <Edit className="h-4 w-4" />
                                           </Button>
-                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive">
+                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => handleDeleteLocation(site.id, location.id, 'attendance')}>
                                             <Trash2 className="h-4 w-4" />
                                           </Button>
                                         </div>
@@ -305,33 +422,8 @@ export default function GPSLocationsPage() {
           )}
         </TabsContent>
 
-        {/* Patrol Tab */}
         <TabsContent value="patrol" className="space-y-4 mt-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Patrol Checkpoints</h2>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="gap-1">
-                  <Plus className="h-4 w-4" />
-                  Add Checkpoint
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add Patrol Checkpoint</DialogTitle>
-                  <DialogDescription>
-                    Create a new GPS checkpoint for patrol monitoring
-                  </DialogDescription>
-                </DialogHeader>
-                <AddLocationForm
-                  type="patrol"
-                  onClose={() => setIsAddDialogOpen(false)}
-                  newLocationData={newLocationData}
-                  setNewLocationData={setNewLocationData}
-                />
-              </DialogContent>
-            </Dialog>
-          </div>
+          <h2 className="text-xl font-semibold">Patrol Checkpoints</h2>
 
           {filteredSites.length === 0 ? (
             <Card className="border-border">
@@ -342,7 +434,7 @@ export default function GPSLocationsPage() {
           ) : (
             <Accordion type="single" collapsible className="space-y-3">
               {filteredSites.map((site) => {
-                const checkpoints = getPatrolCheckpoints(site.id)
+                const locations = patrolLocations[site.id] || []
                 return (
                   <Card key={site.id} className="border-border">
                     <AccordionItem value={site.id} className="border-0">
@@ -353,7 +445,7 @@ export default function GPSLocationsPage() {
                             <div>
                               <p className="font-semibold">{site.name}</p>
                               <p className="text-xs text-muted-foreground">
-                                {checkpoints.length} checkpoint{checkpoints.length !== 1 ? 's' : ''}
+                                {locations.length} checkpoint{locations.length !== 1 ? 's' : ''}
                               </p>
                             </div>
                           </div>
@@ -361,8 +453,87 @@ export default function GPSLocationsPage() {
                       </CardHeader>
                       <AccordionContent className="pt-0">
                         <CardContent className="space-y-4">
-                          {checkpoints.length === 0 ? (
-                            <p className="text-sm text-muted-foreground py-4">No patrol checkpoints configured for this site</p>
+                          <Button size="sm" className="gap-1" onClick={() => openAddDialog(site.id)}>
+                            <Plus className="h-4 w-4" />
+                            Add Checkpoint
+                          </Button>
+                          <Dialog open={isAddDialogOpen && selectedSiteId === site.id} onOpenChange={handleDialogClose}>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>{editingLocation ? 'Edit' : 'Add'} Patrol Checkpoint</DialogTitle>
+                                <DialogDescription>
+                                  {editingLocation ? 'Update the' : 'Create a new'} GPS checkpoint for patrol monitoring
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="name">Checkpoint Name</Label>
+                                  <Input
+                                    id="name"
+                                    value={newLocation.name}
+                                    onChange={(e) => setNewLocation(prev => ({ ...prev, name: e.target.value }))}
+                                    placeholder="e.g., Gate A"
+                                  />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="latitude">Latitude</Label>
+                                    <Input
+                                      id="latitude"
+                                      value={newLocation.latitude}
+                                      onChange={(e) => setNewLocation(prev => ({ ...prev, latitude: e.target.value }))}
+                                      placeholder="-6.2088"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="longitude">Longitude</Label>
+                                    <Input
+                                      id="longitude"
+                                      value={newLocation.longitude}
+                                      onChange={(e) => setNewLocation(prev => ({ ...prev, longitude: e.target.value }))}
+                                      placeholder="106.8456"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="radius">Radius (meters)</Label>
+                                  <Input
+                                    id="radius"
+                                    type="number"
+                                    value={newLocation.radius}
+                                    onChange={(e) => setNewLocation(prev => ({ ...prev, radius: e.target.value }))}
+                                    placeholder="50"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="timezone">Timezone (Indonesia)</Label>
+                                  <Select value={newLocation.timezone} onValueChange={(value) => setNewLocation(prev => ({ ...prev, timezone: value }))}>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="WIB">WIB (UTC+7) - Western Indonesia</SelectItem>
+                                      <SelectItem value="WITA">WITA (UTC+8) - Central Indonesia</SelectItem>
+                                      <SelectItem value="WIT">WIT (UTC+9) - Eastern Indonesia</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <Button onClick={() => handleAddLocation('patrol')} className="w-full" disabled={isSaving}>
+                                  {isSaving ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      Saving...
+                                    </>
+                                  ) : (
+                                    <>{editingLocation ? 'Update' : 'Add'} Checkpoint</>
+                                  )}
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+
+                          {locations.length === 0 ? (
+                            <p className="text-sm text-muted-foreground py-4">No patrol checkpoints for this site</p>
                           ) : (
                             <div className="rounded-lg border border-border overflow-x-auto">
                               <Table>
@@ -376,24 +547,24 @@ export default function GPSLocationsPage() {
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                  {checkpoints.map((location) => (
+                                  {locations.map((location) => (
                                     <TableRow key={location.id}>
                                       <TableCell className="font-medium">{location.name}</TableCell>
-                                      <TableCell>{location.radius.toFixed(0)}m</TableCell>
+                                      <TableCell>{location.radius}m</TableCell>
                                       <TableCell className="text-xs font-mono text-muted-foreground">
-                                        {location.latitude}, {location.longitude}
+                                        {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
                                       </TableCell>
                                       <TableCell>
-                                        <Badge variant={location.status === 'Active' ? 'default' : 'secondary'}>
-                                          {location.status}
+                                        <Badge variant={location.isActive ? 'default' : 'secondary'}>
+                                          {location.isActive ? 'Active' : 'Inactive'}
                                         </Badge>
                                       </TableCell>
                                       <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-1">
-                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEditDialog(site.id, location)}>
                                             <Edit className="h-4 w-4" />
                                           </Button>
-                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive">
+                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => handleDeleteLocation(site.id, location.id, 'patrol')}>
                                             <Trash2 className="h-4 w-4" />
                                           </Button>
                                         </div>
@@ -414,123 +585,6 @@ export default function GPSLocationsPage() {
           )}
         </TabsContent>
       </Tabs>
-    </div>
-  )
-}
-
-interface AddLocationFormProps {
-  type: 'attendance' | 'patrol'
-  onClose: () => void
-  newLocationData: any
-  setNewLocationData: (data: any) => void
-}
-
-function AddLocationForm({
-  type,
-  onClose,
-  newLocationData,
-  setNewLocationData,
-}: AddLocationFormProps) {
-  const handleAddLocation = () => {
-    if (!newLocationData.name || !newLocationData.latitude || !newLocationData.longitude) {
-      alert('Please fill in all required fields')
-      return
-    }
-    
-    console.log(`[v0] Adding ${type} location:`, newLocationData)
-    
-    // Reset form and close dialog
-    setNewLocationData({
-      name: '',
-      siteId: 'site-1',
-      latitude: '',
-      longitude: '',
-      radius: '50',
-    })
-    onClose()
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="site" className="text-sm font-medium">
-          Site <span className="text-destructive">*</span>
-        </Label>
-        <Select value={newLocationData.siteId} onValueChange={(value) => setNewLocationData({ ...newLocationData, siteId: value })}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {mockSites
-              .filter((s) => s.id !== 'all')
-              .map((site) => (
-                <SelectItem key={site.id} value={site.id}>
-                  {site.name}
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="name" className="text-sm font-medium">
-          {type === 'attendance' ? 'Location Name' : 'Checkpoint Name'} <span className="text-destructive">*</span>
-        </Label>
-        <Input
-          id="name"
-          placeholder={type === 'attendance' ? 'e.g., Main Entrance' : 'e.g., Checkpoint A1'}
-          value={newLocationData.name}
-          onChange={(e) => setNewLocationData({ ...newLocationData, name: e.target.value })}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="latitude" className="text-sm font-medium">
-            Latitude <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="latitude"
-            placeholder="-6.2088"
-            value={newLocationData.latitude}
-            onChange={(e) => setNewLocationData({ ...newLocationData, latitude: e.target.value })}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="longitude" className="text-sm font-medium">
-            Longitude <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="longitude"
-            placeholder="106.8456"
-            value={newLocationData.longitude}
-            onChange={(e) => setNewLocationData({ ...newLocationData, longitude: e.target.value })}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="radius" className="text-sm font-medium">
-          Radius (meters)
-        </Label>
-        <Input
-          id="radius"
-          type="number"
-          placeholder="50"
-          value={newLocationData.radius}
-          onChange={(e) => setNewLocationData({ ...newLocationData, radius: e.target.value })}
-        />
-      </div>
-
-      <div className="flex items-center justify-end gap-3 pt-4">
-        <Button variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button onClick={handleAddLocation} className="gap-1">
-          <Plus className="h-4 w-4" />
-          Add {type === 'attendance' ? 'Location' : 'Checkpoint'}
-        </Button>
-      </div>
     </div>
   )
 }

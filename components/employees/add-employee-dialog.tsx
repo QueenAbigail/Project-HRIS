@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -41,13 +41,20 @@ interface AddEmployeeDialogProps {
   onImportEmployees?: (employees: any[]) => void
 }
 
-const departments = ['Field Security', 'Surveillance', 'Administration', 'Patrol', 'VIP Protection']
-const locations = [
-  { name: 'Head Office', code: 'HO' },
-  { name: 'Plaza Tower - Downtown', code: 'PT-DT' },
-  { name: 'Riverside Mall', code: 'RM' },
-]
-const positions = ['Security Guard', 'Senior Guard', 'CCTV Operator', 'HR Coordinator']
+interface Site {
+  id: string
+  name: string
+  code: string
+  company?: {
+    name: string
+  } | null
+}
+
+interface MasterDataItem {
+  id: string
+  value: string
+  category: string
+}
 
 export function AddEmployeeDialog({ 
   open, 
@@ -56,6 +63,19 @@ export function AddEmployeeDialog({
   onImportEmployees 
 }: AddEmployeeDialogProps) {
   const [activeTab, setActiveTab] = useState('manual')
+  const [sites, setSites] = useState<Site[]>([])
+  const [departments, setDepartments] = useState<MasterDataItem[]>([])
+  const [positions, setPositions] = useState<MasterDataItem[]>([])
+  const [employmentStatuses, setEmploymentStatuses] = useState<MasterDataItem[]>([])
+  const [maritalStatuses, setMaritalStatuses] = useState<MasterDataItem[]>([])
+  const [religions, setReligions] = useState<MasterDataItem[]>([])
+  const [bloodTypes, setBloodTypes] = useState<MasterDataItem[]>([])
+  const [certifications, setCertifications] = useState<MasterDataItem[]>([])
+  const [loadingSites, setLoadingSites] = useState(false)
+  const [loadingMasterData, setLoadingMasterData] = useState(false)
+  
+  // Cache ref to prevent redundant fetches
+  const dataFetchedRef = useRef(false)
   
   // State Import
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -77,7 +97,58 @@ export function AddEmployeeDialog({
     role: 'STAFF', allowMobileAttendance: 'false', allowWebAppAccess: 'false'
   })
 
-  // Reset form
+  // Fetch sites and master data from database (only once due to caching)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoadingSites(true)
+        setLoadingMasterData(true)
+        
+        // Fetch sites
+        const sitesResponse = await fetch('/api/sites')
+        if (sitesResponse.ok) {
+          const sitesData = await sitesResponse.json()
+          setSites(sitesData)
+        }
+        
+        // Fetch all master data categories
+        const categories = ['department', 'position', 'employmentStatus', 'maritalStatus', 'religion', 'bloodType', 'certificate']
+        const responses = await Promise.all(
+          categories.map(cat => fetch(`/api/master-data?category=${cat}`))
+        )
+        
+        const deptData = await responses[0].json()
+        const posData = await responses[1].json()
+        const empStatusData = await responses[2].json()
+        const maritalData = await responses[3].json()
+        const religionData = await responses[4].json()
+        const bloodData = await responses[5].json()
+        const certData = await responses[6].json()
+        
+        setDepartments(Array.isArray(deptData) ? deptData : [])
+        setPositions(Array.isArray(posData) ? posData : [])
+        setEmploymentStatuses(Array.isArray(empStatusData) ? empStatusData : [])
+        setMaritalStatuses(Array.isArray(maritalData) ? maritalData : [])
+        setReligions(Array.isArray(religionData) ? religionData : [])
+        setBloodTypes(Array.isArray(bloodData) ? bloodData : [])
+        setCertifications(Array.isArray(certData) ? certData : [])
+        
+        // Mark data as fetched for caching
+        dataFetchedRef.current = true
+      } catch (error) {
+        console.error('[v0] Failed to fetch data:', error)
+      } finally {
+        setLoadingSites(false)
+        setLoadingMasterData(false)
+      }
+    }
+
+    // Only fetch if modal opened AND data hasn't been fetched yet
+    if (open && !dataFetchedRef.current) {
+      fetchData()
+    }
+  }, [open])
+
   const handleOpenChange = (isOpen: boolean) => {
     onOpenChange(isOpen)
     if (!isOpen) {
@@ -155,10 +226,13 @@ export function AddEmployeeDialog({
   e.preventDefault()
 
   try {
+    // Find the selected site to get its ID
+    const selectedSite = sites.find(site => site.id === formData.location)
+    
     // Kita translate/mapping dulu data dari state lu biar cocok sama maunya backend
     const finalData = {
       ...formData,
-      siteId: formData.location, // Backend butuh siteId, form lu ngirim location
+      siteId: selectedSite?.id || formData.location, // Use site ID from database
       systemRole: formData.role, // Backend butuh systemRole, form lu ngirim role
       dob: formData.birthDate,
       cob: formData.birthCity,
@@ -239,22 +313,28 @@ export function AddEmployeeDialog({
                   <div className="space-y-2">
                     <Label>Department <span className="text-red-500">*</span></Label>
                     <Select value={formData.department} onValueChange={(val) => setFormData({...formData, department: val})}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                      <SelectTrigger disabled={loadingMasterData || departments.length === 0}><SelectValue placeholder={loadingMasterData ? "Loading..." : departments.length === 0 ? "No departments available" : "Select"} /></SelectTrigger>
+                      <SelectContent>
+                        {departments.map(d => <SelectItem key={d.id} value={d.value}>{d.value}</SelectItem>)}
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Position <span className="text-red-500">*</span></Label>
                     <Select value={formData.position} onValueChange={(val) => setFormData({...formData, position: val})}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{positions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                      <SelectTrigger disabled={loadingMasterData || positions.length === 0}><SelectValue placeholder={loadingMasterData ? "Loading..." : positions.length === 0 ? "No positions available" : "Select"} /></SelectTrigger>
+                      <SelectContent>
+                        {positions.map(p => <SelectItem key={p.id} value={p.value}>{p.value}</SelectItem>)}
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Location <span className="text-red-500">*</span></Label>
                     <Select value={formData.location} onValueChange={(val) => setFormData({...formData, location: val})}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>{locations.map(l => <SelectItem key={l.code} value={l.name}>{l.name}</SelectItem>)}</SelectContent>
+                      <SelectTrigger><SelectValue placeholder={loadingSites ? "Loading sites..." : "Select"} /></SelectTrigger>
+                      <SelectContent>
+                        {sites.map(site => <SelectItem key={site.id} value={site.id}>{site.company?.name || 'N/A'} - {site.name}</SelectItem>)}
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2"><Label>Join Date <span className="text-red-500">*</span></Label><Input type="date" value={formData.joinDate} onChange={(e) => setFormData({...formData, joinDate: e.target.value})} /></div>
@@ -289,44 +369,36 @@ export function AddEmployeeDialog({
                   <div className="space-y-2">
                     <Label>Employment Status <span className="text-red-500">*</span></Label>
                     <Select value={formData.employmentStatus} onValueChange={(val) => setFormData({...formData, employmentStatus: val})}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectTrigger disabled={loadingMasterData || employmentStatuses.length === 0}><SelectValue placeholder={loadingMasterData ? "Loading..." : employmentStatuses.length === 0 ? "No data available" : "Select"} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Permanent">Permanent</SelectItem>
-                        <SelectItem value="Contract">Contract</SelectItem>
-                        <SelectItem value="Probation">Probation</SelectItem>
+                        {employmentStatuses.map(item => <SelectItem key={item.id} value={item.value}>{item.value}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Marital Status <span className="text-red-500">*</span></Label>
                     <Select value={formData.maritalStatus} onValueChange={(val) => setFormData({...formData, maritalStatus: val})}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectTrigger disabled={loadingMasterData || maritalStatuses.length === 0}><SelectValue placeholder={loadingMasterData ? "Loading..." : maritalStatuses.length === 0 ? "No data available" : "Select"} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Single">Single</SelectItem>
-                        <SelectItem value="Married">Married</SelectItem>
+                        {maritalStatuses.map(item => <SelectItem key={item.id} value={item.value}>{item.value}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Religion <span className="text-red-500">*</span></Label>
                     <Select value={formData.religion} onValueChange={(val) => setFormData({...formData, religion: val})}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectTrigger disabled={loadingMasterData || religions.length === 0}><SelectValue placeholder={loadingMasterData ? "Loading..." : religions.length === 0 ? "No data available" : "Select"} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Islam">Islam</SelectItem>
-                        <SelectItem value="Christianity">Christianity</SelectItem>
-                        <SelectItem value="Catholicism">Catholicism</SelectItem>
-                        <SelectItem value="Hinduism">Hinduism</SelectItem>
-                        <SelectItem value="Buddhism">Buddhism</SelectItem>
-                        <SelectItem value="Confucianism">Confucianism</SelectItem>
+                        {religions.map(item => <SelectItem key={item.id} value={item.value}>{item.value}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Blood Type</Label>
                     <Select value={formData.bloodType} onValueChange={(val) => setFormData({...formData, bloodType: val})}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectTrigger disabled={loadingMasterData || bloodTypes.length === 0}><SelectValue placeholder={loadingMasterData ? "Loading..." : bloodTypes.length === 0 ? "No data available" : "Select"} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="A">A</SelectItem><SelectItem value="B">B</SelectItem><SelectItem value="AB">AB</SelectItem><SelectItem value="O">O</SelectItem>
+                        {bloodTypes.map(item => <SelectItem key={item.id} value={item.value}>{item.value}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -334,12 +406,9 @@ export function AddEmployeeDialog({
                   <div className="space-y-2">
                     <Label>Certification Level</Label>
                     <Select value={formData.certification} onValueChange={(val) => setFormData({...formData, certification: val})}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectTrigger disabled={loadingMasterData || certifications.length === 0}><SelectValue placeholder={loadingMasterData ? "Loading..." : certifications.length === 0 ? "No data available" : "Select"} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">None / Non-Security</SelectItem>
-                        <SelectItem value="Gada Pratama">Gada Pratama</SelectItem>
-                        <SelectItem value="Gada Madya">Gada Madya</SelectItem>
-                        <SelectItem value="Gada Utama">Gada Utama</SelectItem>
+                        {certifications.map(item => <SelectItem key={item.id} value={item.value}>{item.value}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>

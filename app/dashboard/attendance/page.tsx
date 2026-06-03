@@ -14,18 +14,38 @@ import {
 } from '@/components/ui/select'
 import { Building2 } from 'lucide-react'
 
-// Mock sites - will be replaced with database query
-const mockSites = [
-  { id: 'all', name: 'All Sites' },
-  { id: 'site-1', name: 'Main Gate Site' },
-  { id: 'site-2', name: 'Building A' },
-  { id: 'site-3', name: 'Building B' },
-  { id: 'site-4', name: 'Parking Area' },
-]
+interface Site {
+  id: string
+  name: string
+  company?: {
+    name: string
+  } | null
+}
 
 export default function AttendancePage() {
   const searchParams = useSearchParams()
   const [selectedSite, setSelectedSite] = useState('all')
+  const [sites, setSites] = useState<Site[]>([])
+  const [loadingSites, setLoadingSites] = useState(true)
+
+  // Fetch sites from database
+  useEffect(() => {
+    const fetchSites = async () => {
+      try {
+        const response = await fetch('/api/sites')
+        if (response.ok) {
+          const data = await response.json()
+          setSites(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch sites:', error)
+      } finally {
+        setLoadingSites(false)
+      }
+    }
+
+    fetchSites()
+  }, [])
 
   useEffect(() => {
     // Set site from query parameter if available
@@ -48,12 +68,13 @@ export default function AttendancePage() {
           </label>
           <Select value={selectedSite} onValueChange={setSelectedSite}>
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue placeholder={loadingSites ? 'Loading...' : 'Select site'} />
             </SelectTrigger>
             <SelectContent>
-              {mockSites.map((site) => (
+              <SelectItem value="all">All Sites</SelectItem>
+              {sites.map((site) => (
                 <SelectItem key={site.id} value={site.id}>
-                  {site.name}
+                  {site.company?.name ? `${site.company.name} - ${site.name}` : site.name}
                 </SelectItem>
               ))}
             </SelectContent>

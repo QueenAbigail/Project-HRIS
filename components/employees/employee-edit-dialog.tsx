@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -52,6 +52,21 @@ interface EmployeeEditFormData {
   taxId: string
 }
 
+interface MasterDataItem {
+  id: string
+  value: string
+  category: string
+}
+
+interface Site {
+  id: string
+  name: string
+  code: string
+  company?: {
+    name: string
+  } | null
+}
+
 interface EmployeeEditDialogProps {
   employee: Employee | null
   open: boolean
@@ -59,35 +74,6 @@ interface EmployeeEditDialogProps {
   onSave: (employee: Employee) => void
   currentUserRole?: string
 }
-
-const locations = [
-  { value: 'head-office', label: 'Head Office', code: 'HO' },
-  { value: 'plaza-tower', label: 'Plaza Tower - Downtown', code: 'PT-DT' },
-  { value: 'riverside-mall', label: 'Riverside Mall', code: 'RM' },
-  { value: 'metro-bank', label: 'Metro Bank - Central', code: 'MB-CT' },
-  { value: 'corporate-center', label: 'Corporate Center - North', code: 'CC-N' },
-  { value: 'industrial-park', label: 'Industrial Park - West', code: 'IP-W' },
-]
-
-const departments = [
-  'Field Security',
-  'Surveillance',
-  'Patrol',
-  'Administration',
-  'VIP Protection',
-]
-
-const positions = [
-  'Security Guard',
-  'Senior Guard',
-  'Patrol Lead',
-  'Night Patrol',
-  'Mobile Patrol',
-  'CCTV Operator',
-  'Control Room Lead',
-  'HR Coordinator',
-  'VIP Protection',
-]
 
 export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, currentUserRole }: EmployeeEditDialogProps) {
   const [formData, setFormData] = useState<EmployeeEditFormData>({
@@ -116,12 +102,20 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
     taxId: '',
   })
 
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false)
+  const [sites, setSites] = useState<Site[]>([])
+  const [departments, setDepartments] = useState<MasterDataItem[]>([])
+  const [positions, setPositions] = useState<MasterDataItem[]>([])
+  const [maritalStatuses, setMaritalStatuses] = useState<MasterDataItem[]>([])
+  const [religions, setReligions] = useState<MasterDataItem[]>([])
+  const [bloodTypes, setBloodTypes] = useState<MasterDataItem[]>([])
+  const [loadingData, setLoadingData] = useState(false)
+  const dataFetchedRef = useRef(false)
 
   useEffect(() => {
     if (employee) {
-      const locationEntry = locations.find(l => l.label === employee.location || l.code === employee.locationCode)
-        setFormData({
+      const siteEntry = sites.find(s => s.name === employee.location || s.code === employee.locationCode)
+      setFormData({
         name: employee.name || '',
         email: employee.email || '',
         password: employee.password || '',
@@ -140,48 +134,80 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
         department: employee.department || '',
         position: employee.position || '',
         status: employee.status || '',
-        location: locationEntry?.value || 'head-office',
+        location: siteEntry?.id || '',
         locationCode: employee.locationCode || '',
         emergencyContact: employee.emergencyContact || 'Emergency Contact - +1 (555) 000-0000',
         bankAccount: employee.bankAccount || '**** **** **** 0000',
         taxId: employee.taxId || '***-**-0000',
       })
     }
-  }, [employee])
+  }, [employee, sites])
+
+  // Fetch sites and master data from database (only once due to caching)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoadingData(true)
+
+        // Fetch sites
+        const sitesResponse = await fetch('/api/sites')
+        if (sitesResponse.ok) {
+          const sitesData = await sitesResponse.json()
+          setSites(sitesData)
+        }
+
+        // Fetch all master data categories
+        const categories = ['department', 'position', 'maritalStatus', 'religion', 'bloodType']
+        const responses = await Promise.all(
+          categories.map(cat => fetch(`/api/master-data?category=${cat}`))
+        )
+
+        const deptData = await responses[0].json()
+        const posData = await responses[1].json()
+        const maritalData = await responses[2].json()
+        const religionData = await responses[3].json()
+        const bloodData = await responses[4].json()
+
+        setDepartments(Array.isArray(deptData) ? deptData : [])
+        setPositions(Array.isArray(posData) ? posData : [])
+        setMaritalStatuses(Array.isArray(maritalData) ? maritalData : [])
+        setReligions(Array.isArray(religionData) ? religionData : [])
+        setBloodTypes(Array.isArray(bloodData) ? bloodData : [])
+
+        dataFetchedRef.current = true
+      } catch (error) {
+        console.error('[v0] Failed to fetch data:', error)
+      } finally {
+        setLoadingData(false)
+      }
+    }
+
+    // Only fetch if dialog opened AND data hasn't been fetched yet
+    if (open && !dataFetchedRef.current) {
+      fetchData()
+    }
+  }, [open])
 
   const hasPasswordAccess = currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'HR_ADMIN';
 
   if (!employee) return null
 
   const handleLocationChange = (value: string) => {
-    const locationEntry = locations.find(l => l.value === value)
+    const siteEntry = sites.find(s => s.id === value)
     setFormData(prev => ({
       ...prev,
       location: value,
-      locationCode: locationEntry?.code || '',
+      locationCode: siteEntry?.code || '',
     }))
   }
 
   const handleSave = async () => {
     try {
-      // 1. Cari data lokasi biar label & code-nya sinkron
-      const locationEntry = locations.find(l => l.value === formData.location)
-      
-      // 2. Siapin data yang mau dikirim ke backend
-      const updatedData = {
-        ...formData,
-        location: locationEntry?.label || employee.location,
-        locationCode: locationEntry?.code || employee.locationCode,
-      }
-
-      // 3. Eksekusi Server Action (Mesin backend yang kita bikin di point 1)
-      const result = await updateEmployeeAction(employee.id, updatedData)
+      // Send formData directly - location is already siteId, no transformation needed
+      const result = await updateEmployeeAction(employee!.id, formData)
       
       if (result.success) {
-        // Update UI lokal biar user nggak perlu refresh buat liat perubahan
-        onSave({ ...employee, ...updatedData })
-        
-        // Kasih notif sukses
+        onSave({ ...employee!, ...formData })
         alert("Mantap Can! Data dan Password berhasil diupdate.")
         onOpenChange(false)
       } else {
@@ -217,7 +243,7 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
             </div>
             <div>
               <p className="font-semibold text-lg">{employee.name}</p>
-              <p className="text-xs text-muted-foreground font-mono">{employee.id}</p>
+              <p className="text-xs text-muted-foreground font-mono">{employee.employeeCode || employee.id}</p>
             </div>
           </div>
         </div>
@@ -290,10 +316,11 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
                   <div className="space-y-2">
                     <Label htmlFor="maritalStatus">Marital Status</Label>
                     <Select value={formData.maritalStatus} onValueChange={(value) => setFormData(prev => ({ ...prev, maritalStatus: value }))}>
-                      <SelectTrigger id="maritalStatus"><SelectValue placeholder="Select status" /></SelectTrigger>
+                      <SelectTrigger id="maritalStatus"><SelectValue placeholder={loadingData ? "Loading..." : "Select status"} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Single">Single</SelectItem>
-                        <SelectItem value="Married">Married</SelectItem>
+                        {maritalStatuses.map(item => (
+                          <SelectItem key={item.id} value={item.value}>{item.value}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -304,14 +331,11 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
                   <div className="space-y-2">
                     <Label htmlFor="religion">Religion</Label>
                     <Select value={formData.religion} onValueChange={(value) => setFormData(prev => ({ ...prev, religion: value }))}>
-                      <SelectTrigger id="religion"><SelectValue placeholder="Select religion" /></SelectTrigger>
+                      <SelectTrigger id="religion"><SelectValue placeholder={loadingData ? "Loading..." : "Select religion"} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Islam">Islam</SelectItem>
-                        <SelectItem value="Christianity">Christianity</SelectItem>
-                        <SelectItem value="Catholicism">Catholicism</SelectItem>
-                        <SelectItem value="Hinduism">Hinduism</SelectItem>
-                        <SelectItem value="Buddhism">Buddhism</SelectItem>
-                        <SelectItem value="Confucianism">Confucianism</SelectItem>
+                        {religions.map(item => (
+                          <SelectItem key={item.id} value={item.value}>{item.value}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -326,12 +350,11 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
                   <div className="space-y-2">
                     <Label htmlFor="bloodType">Blood Type</Label>
                     <Select value={formData.bloodType} onValueChange={(value) => setFormData(prev => ({ ...prev, bloodType: value }))}>
-                      <SelectTrigger id="bloodType"><SelectValue placeholder="Select blood type" /></SelectTrigger>
+                      <SelectTrigger id="bloodType"><SelectValue placeholder={loadingData ? "Loading..." : "Select blood type"} /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="A">A</SelectItem>
-                        <SelectItem value="B">B</SelectItem>
-                        <SelectItem value="AB">AB</SelectItem>
-                        <SelectItem value="O">O</SelectItem>
+                        {bloodTypes.map(item => (
+                          <SelectItem key={item.id} value={item.value}>{item.value}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -355,30 +378,30 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
                 <div className="space-y-2">
                   <Label htmlFor="location">Placement Location</Label>
                   <Select value={formData.location} onValueChange={handleLocationChange}>
-                    <SelectTrigger id="location"><SelectValue placeholder="Select location" /></SelectTrigger>
+                    <SelectTrigger id="location"><SelectValue placeholder={loadingData ? "Loading..." : "Select location"} /></SelectTrigger>
                     <SelectContent>
-                      {locations.map((location) => (
-                        <SelectItem key={location.value} value={location.value}>
+                      {sites.map((site) => (
+                        <SelectItem key={site.id} value={site.id}>
                           <div className="flex items-center justify-between w-full">
-                            <span>{location.label}</span>
-                            <span className="ml-2 text-xs font-mono text-muted-foreground">({location.code})</span>
+                            <span>{site.company?.name || 'N/A'} - {site.name}</span>
+                            <span className="ml-2 text-xs font-mono text-muted-foreground">({site.code})</span>
                           </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
-                    Current assignment code: <span className="font-mono">{formData.locationCode || employee.locationCode}</span>
+                    Current assignment code: <span className="font-mono">{formData.locationCode || employee?.locationCode}</span>
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="department">Department</Label>
                     <Select value={formData.department} onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}>
-                      <SelectTrigger id="department"><SelectValue placeholder="Select department" /></SelectTrigger>
+                      <SelectTrigger id="department"><SelectValue placeholder={loadingData ? "Loading..." : "Select department"} /></SelectTrigger>
                       <SelectContent>
-                        {departments.map((dept) => (
-                          <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                        {departments.map(item => (
+                          <SelectItem key={item.id} value={item.value}>{item.value}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -386,10 +409,10 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
                   <div className="space-y-2">
                     <Label htmlFor="position">Position</Label>
                     <Select value={formData.position} onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}>
-                      <SelectTrigger id="position"><SelectValue placeholder="Select position" /></SelectTrigger>
+                      <SelectTrigger id="position"><SelectValue placeholder={loadingData ? "Loading..." : "Select position"} /></SelectTrigger>
                       <SelectContent>
-                        {positions.map((pos) => (
-                          <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+                        {positions.map(item => (
+                          <SelectItem key={item.id} value={item.value}>{item.value}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
