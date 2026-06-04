@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -156,6 +157,7 @@ const mockSiteValidationIssues: SiteValidationIssue[] = [
 ]
 
 export default function PayrollManagementPage() {
+  const router = useRouter()
   const [sitePayrolls, setSitePayrolls] = useState<SitePayroll[]>(mockSitePayrolls)
   const [selectedSite, setSelectedSite] = useState<SitePayroll | null>(mockSitePayrolls[0])
   const [editOpen, setEditOpen] = useState(false)
@@ -348,9 +350,9 @@ export default function PayrollManagementPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setSelectedSite(site)}
+                            onClick={() => router.push(`/payroll/management/${site.siteId}`)}
                           >
-                            View Details
+                            Manage Details
                           </Button>
                         </TableCell>
                       </TableRow>
