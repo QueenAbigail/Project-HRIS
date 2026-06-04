@@ -53,6 +53,7 @@ import {
   Plus,
   AlertCircle,
   Calendar,
+  Upload,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
@@ -169,6 +170,10 @@ export default function SiteManagementPage() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [lockOpen, setLockOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importLoading, setImportLoading] = useState(false)
+  const [importMessage, setImportMessage] = useState('')
 
   const handleEditEmployee = (employee: SiteEmployee) => {
     setEditingEmployee(employee)
@@ -199,6 +204,54 @@ export default function SiteManagementPage() {
       setLoading(false)
       setLockOpen(false)
     }, 1000)
+  }
+
+  const handleImportTimesheet = async () => {
+    if (!importFile) {
+      setImportMessage('Please select a file to import')
+      return
+    }
+
+    setImportLoading(true)
+    setImportMessage('Processing timesheet...')
+
+    // Simulate file processing
+    setTimeout(() => {
+      try {
+        // Mock timesheet parsing
+        const mockTimesheetData = [
+          { employeeId: 'E001', dutyDays: 22, overtime: 15, bonus: 500000 },
+          { employeeId: 'E002', dutyDays: 21, overtime: 8, bonus: 400000 },
+          { employeeId: 'E003', dutyDays: 22, overtime: 12, bonus: 300000 },
+        ]
+
+        // Update employees based on timesheet
+        setEmployees(prev => prev.map(emp => {
+          const timesheetRecord = mockTimesheetData.find(t => t.employeeId === emp.employeeId)
+          if (timesheetRecord) {
+            const overtimeAmount = (emp.baseSalary / 22) * (timesheetRecord.overtime / 8) * 1.5
+            return {
+              ...emp,
+              overtime: overtimeAmount,
+              bonus: timesheetRecord.bonus,
+              netPay: emp.baseSalary + overtimeAmount + timesheetRecord.bonus - emp.deductions,
+            }
+          }
+          return emp
+        }))
+
+        setImportMessage('Timesheet imported successfully! Payroll has been calculated.')
+        setImportFile(null)
+        setImportLoading(false)
+        setTimeout(() => {
+          setImportOpen(false)
+          setImportMessage('')
+        }, 2000)
+      } catch (error) {
+        setImportMessage('Error processing timesheet. Please check the file format.')
+        setImportLoading(false)
+      }
+    }, 1500)
   }
 
   if (!siteInfo) {
@@ -300,9 +353,18 @@ export default function SiteManagementPage() {
         {/* Employee Payroll Tab */}
         <TabsContent value="employees" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Employee Payroll Details</CardTitle>
-              <CardDescription>Edit individual employee payroll for {siteInfo.siteName}</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Employee Payroll Details</CardTitle>
+                <CardDescription>Edit individual employee payroll for {siteInfo.siteName}</CardDescription>
+              </div>
+              <Button
+                onClick={() => setImportOpen(true)}
+                className="gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                Import Timesheet
+              </Button>
             </CardHeader>
             <CardContent>
               <div className="rounded-lg border overflow-x-auto">
@@ -570,6 +632,94 @@ export default function SiteManagementPage() {
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Timesheet Dialog */}
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Import Timesheet</DialogTitle>
+            <DialogDescription>
+              Upload a timesheet file containing employee duty days, overtime hours, and bonus information. The system will automatically calculate payroll based on the imported data.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* File Upload Area */}
+            <div className="border-2 border-dashed rounded-lg p-6 text-center">
+              <input
+                type="file"
+                id="timesheet-file"
+                accept=".csv,.xlsx,.xls"
+                onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                className="hidden"
+              />
+              <label htmlFor="timesheet-file" className="cursor-pointer">
+                <div className="flex flex-col items-center gap-2">
+                  <Upload className="h-8 w-8 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">
+                      {importFile ? importFile.name : 'Click to upload or drag and drop'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">CSV, XLSX, or XLS files supported</p>
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {/* File Format Info */}
+            <div className="bg-muted p-3 rounded-lg text-sm">
+              <p className="font-medium mb-2">Expected file format:</p>
+              <ul className="text-xs space-y-1 ml-4 list-disc">
+                <li>Employee ID or Name</li>
+                <li>Duty Days (working days)</li>
+                <li>Overtime Hours</li>
+                <li>Bonus Amount (optional)</li>
+              </ul>
+            </div>
+
+            {/* Message */}
+            {importMessage && (
+              <div className={`p-3 rounded-lg text-sm ${
+                importMessage.includes('Error') 
+                  ? 'bg-destructive/10 text-destructive' 
+                  : 'bg-success/10 text-success'
+              }`}>
+                {importMessage}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setImportOpen(false)
+                  setImportFile(null)
+                  setImportMessage('')
+                }}
+                disabled={importLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleImportTimesheet}
+                disabled={!importFile || importLoading}
+              >
+                {importLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
