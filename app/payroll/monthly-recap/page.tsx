@@ -597,7 +597,7 @@ export default function MonthlyRecapPage() {
 
       {/* Site Employee Details Dialog */}
       <Dialog open={siteDetailsOpen} onOpenChange={setSiteDetailsOpen}>
-        <DialogContent className="w-max max-w-[95vw] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="!w-fit !max-w-fit max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Site Payroll Details</DialogTitle>
             <DialogDescription>
