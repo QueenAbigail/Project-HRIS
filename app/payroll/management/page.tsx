@@ -23,13 +23,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -41,16 +34,14 @@ import {
 import {
   Calendar,
   Check,
-  Clock,
-  Download,
-  Eye,
   Lock,
   Loader2,
   AlertCircle,
-  TrendingUp,
+  Download,
   Users,
   DollarSign,
   AlertTriangle,
+  FileText,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
@@ -70,21 +61,19 @@ interface PayrollPeriod {
   approvedDate?: string
 }
 
-interface PayrollDifference {
-  employeeId: string
-  employeeName: string
-  department: string
-  previousAmount: number
-  currentAmount: number
-  difference: number
-  percentChange: number
-}
-
 interface PayrollValidationIssue {
   id: string
   severity: 'error' | 'warning'
   message: string
   affectedEmployees?: number
+}
+
+interface CutoffConfig {
+  startDate: string
+  endDate: string
+  processingDeadline: string
+  approvalDeadline: string
+  autoFinalize: boolean
 }
 
 // Mock data - current payroll period
@@ -98,106 +87,77 @@ const currentPayrollPeriod: PayrollPeriod = {
   totalAmount: 1247890000,
   totalDeductions: 295000000,
   netAmount: 952890000,
-  lastUpdated: '2026-03-17 10:30 AM',
-  createdBy: 'Admin User',
+  lastUpdated: '2026-03-31 14:30 PM',
+  createdBy: 'Admin',
 }
 
-// Mock historical periods
-const payrollPeriods: PayrollPeriod[] = [
-  currentPayrollPeriod,
-  {
-    id: '2026-02',
-    month: 'February 2026',
-    cutoffStartDate: '2026-02-01',
-    cutoffEndDate: '2026-02-28',
-    status: 'finalized',
-    totalEmployees: 103,
-    totalAmount: 1203000000,
-    totalDeductions: 285000000,
-    netAmount: 918000000,
-    lastUpdated: '2026-03-01 02:00 AM',
-    createdBy: 'Admin User',
-    approvedBy: 'Finance Manager',
-    approvedDate: '2026-03-01 08:00 AM',
-  },
-  {
-    id: '2026-01',
-    month: 'January 2026',
-    cutoffStartDate: '2026-01-01',
-    cutoffEndDate: '2026-01-31',
-    status: 'finalized',
-    totalEmployees: 102,
-    totalAmount: 1215000000,
-    totalDeductions: 288000000,
-    netAmount: 927000000,
-    lastUpdated: '2026-02-01 02:00 AM',
-    createdBy: 'Admin User',
-    approvedBy: 'Finance Manager',
-    approvedDate: '2026-02-01 08:00 AM',
-  },
-]
-
-// Mock validation issues
+// Mock validation issues for current month
 const mockValidationIssues: PayrollValidationIssue[] = [
   {
     id: 'v1',
     severity: 'error',
-    message: 'Missing attendance data for 3 employees',
-    affectedEmployees: 3,
+    message: 'Missing attendance records for 5 employees',
+    affectedEmployees: 5,
   },
   {
     id: 'v2',
     severity: 'warning',
-    message: 'Overtime rates exceeding budget threshold for 5 employees',
-    affectedEmployees: 5,
+    message: 'Budget exceeded in Security department by 2.5%',
+    affectedEmployees: 12,
   },
   {
     id: 'v3',
     severity: 'warning',
-    message: 'New employees without complete tax documentation',
-    affectedEmployees: 2,
+    message: '3 employees have unsigned contracts for overtime',
+    affectedEmployees: 3,
   },
 ]
 
-// Mock payroll differences
-const mockPayrollDifferences: PayrollDifference[] = [
+// Mock cut-off configuration
+const mockCutoffConfig: CutoffConfig = {
+  startDate: '2026-03-01',
+  endDate: '2026-03-31',
+  processingDeadline: '2026-04-05',
+  approvalDeadline: '2026-04-08',
+  autoFinalize: false,
+}
+
+// Mock payroll adjustments
+const mockPayrollAdjustments = [
   {
-    employeeId: 'E001',
-    employeeName: 'Michael Chen',
-    department: 'Security',
-    previousAmount: 542000000,
-    currentAmount: 545000000,
-    difference: 3000000,
-    percentChange: 0.55,
+    id: 'adj1',
+    employee: 'Michael Chen',
+    department: 'Field Security',
+    type: 'Overtime Adjustment',
+    amount: 1500000,
+    reason: 'Fixed OT - 5 hours',
+    date: '2026-03-31',
   },
   {
-    employeeId: 'E002',
-    employeeName: 'Sarah Williams',
+    id: 'adj2',
+    employee: 'Sarah Williams',
     department: 'Surveillance',
-    previousAmount: 325000000,
-    currentAmount: 328000000,
-    difference: 3000000,
-    percentChange: 0.92,
+    type: 'Bonus',
+    amount: 2000000,
+    reason: 'Performance Bonus',
+    date: '2026-03-30',
   },
   {
-    employeeId: 'E024',
-    employeeName: 'Robert Taylor',
+    id: 'adj3',
+    employee: 'David Rodriguez',
     department: 'Patrol',
-    previousAmount: 380000000,
-    currentAmount: 375000000,
-    difference: -5000000,
-    percentChange: -1.32,
+    type: 'Overtime Adjustment',
+    amount: 2500000,
+    reason: 'National Holiday OT - 8 hours',
+    date: '2026-03-29',
   },
 ]
 
 export default function PayrollManagementPage() {
   const [selectedPeriod, setSelectedPeriod] = useState<PayrollPeriod>(currentPayrollPeriod)
-  const [editOpen, setEditOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [lockOpen, setLockOpen] = useState(false)
   const [approveOpen, setApproveOpen] = useState(false)
-  const [viewDetailsOpen, setViewDetailsOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [detailsLoading, setDetailsLoading] = useState(false)
   const [approverName, setApproverName] = useState('')
 
   const statusStyles = {
@@ -235,14 +195,6 @@ export default function PayrollManagementPage() {
     }, 1000)
   }
 
-  const handleViewDetails = () => {
-    setDetailsLoading(true)
-    setTimeout(() => {
-      setDetailsLoading(false)
-      setViewDetailsOpen(true)
-    }, 500)
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -250,12 +202,12 @@ export default function PayrollManagementPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Payroll Management</h1>
           <p className="text-muted-foreground">
-            Manage and process monthly payroll with cut-off date control
+            Manage current month payroll based on cut-off date
           </p>
         </div>
         <Button variant="outline" className="w-full sm:w-auto">
           <Download className="size-4 mr-2" />
-          Export Report
+          Export Payroll
         </Button>
       </div>
 
@@ -339,7 +291,7 @@ export default function PayrollManagementPage() {
             <div className="flex gap-2 flex-wrap">
               {selectedPeriod.status === 'draft' && (
                 <>
-                  <Button variant="outline" onClick={() => setEditOpen(true)}>Edit Period</Button>
+                  <Button variant="outline">Edit Payroll</Button>
                   <Button onClick={() => setLockOpen(true)}>
                     <Lock className="size-4 mr-2" />
                     Lock & Process
@@ -353,119 +305,31 @@ export default function PayrollManagementPage() {
                 </Button>
               )}
               {selectedPeriod.status === 'finalized' && (
-                <Button variant="outline" disabled>
-                  <Check className="size-4 mr-2" />
-                  Finalized
-                </Button>
+                <Badge variant="outline" className={statusStyles[selectedPeriod.status]}>
+                  ✓ Payroll Finalized
+                </Badge>
               )}
-              <Button variant="outline" onClick={handleViewDetails}>
-                <Eye className="size-4 mr-2" />
-                View Details
-              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Validation Issues and Alerts */}
-      {mockValidationIssues.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-900">
-              <AlertTriangle className="size-5" />
-              Validation Issues ({mockValidationIssues.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {mockValidationIssues.map((issue) => (
-                <div key={issue.id} className="flex items-start gap-3 p-3 bg-white rounded border border-amber-200">
-                  <Badge variant="outline" className={severityStyles[issue.severity]} className="mt-1">
-                    {issue.severity === 'error' ? 'Error' : 'Warning'}
-                  </Badge>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{issue.message}</p>
-                    {issue.affectedEmployees && (
-                      <p className="text-xs text-muted-foreground mt-1">Affects {issue.affectedEmployees} employee(s)</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Tabs for different views */}
-      <Tabs defaultValue="periods" className="w-full">
+      {/* Tabs */}
+      <Tabs defaultValue="adjustments" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="periods">Payroll Periods</TabsTrigger>
-          <TabsTrigger value="differences">Month-over-Month Comparison</TabsTrigger>
+          <TabsTrigger value="adjustments">Payroll Adjustments</TabsTrigger>
+          <TabsTrigger value="validation">Validation Issues</TabsTrigger>
           <TabsTrigger value="cutoff">Cut-off Configuration</TabsTrigger>
         </TabsList>
 
-        {/* Payroll Periods Tab */}
-        <TabsContent value="periods">
+        {/* Payroll Adjustments Tab */}
+        <TabsContent value="adjustments" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Payroll Period History</CardTitle>
-              <CardDescription>View and manage all payroll periods</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-lg border overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Period</TableHead>
-                      <TableHead>Cut-off Dates</TableHead>
-                      <TableHead className="text-right">Employees</TableHead>
-                      <TableHead className="text-right">Gross Amount</TableHead>
-                      <TableHead className="text-right">Deductions</TableHead>
-                      <TableHead className="text-right">Net Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {payrollPeriods.map((period) => (
-                      <TableRow key={period.id} className={period.id === selectedPeriod.id ? 'bg-primary/5' : ''}>
-                        <TableCell className="font-medium">{period.month}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {new Date(period.cutoffStartDate).toLocaleDateString()} - {new Date(period.cutoffEndDate).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="text-right text-sm">{period.totalEmployees}</TableCell>
-                        <TableCell className="text-right text-sm">{formatCurrency(period.totalAmount)}</TableCell>
-                        <TableCell className="text-right text-sm text-destructive">{formatCurrency(period.totalDeductions)}</TableCell>
-                        <TableCell className="text-right text-sm font-medium text-success">{formatCurrency(period.netAmount)}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={statusStyles[period.status]}>
-                            {period.status.charAt(0).toUpperCase() + period.status.slice(1)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedPeriod(period)}
-                          >
-                            View
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Month-over-Month Comparison Tab */}
-        <TabsContent value="differences">
-          <Card>
-            <CardHeader>
-              <CardTitle>Month-over-Month Payroll Comparison</CardTitle>
-              <CardDescription>Identify significant changes in employee payroll amounts</CardDescription>
+              <CardTitle>Current Month Adjustments</CardTitle>
+              <CardDescription>
+                All overtime, bonuses, and other payroll adjustments for March 2026
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="rounded-lg border overflow-x-auto">
@@ -474,35 +338,28 @@ export default function PayrollManagementPage() {
                     <TableRow>
                       <TableHead>Employee</TableHead>
                       <TableHead>Department</TableHead>
-                      <TableHead className="text-right">Previous Month</TableHead>
-                      <TableHead className="text-right">Current Month</TableHead>
-                      <TableHead className="text-right">Difference</TableHead>
-                      <TableHead className="text-right">% Change</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Reason</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockPayrollDifferences.map((diff) => (
-                      <TableRow key={diff.employeeId}>
-                        <TableCell className="font-medium">{diff.employeeName}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{diff.department}</TableCell>
-                        <TableCell className="text-right text-sm">{formatCurrency(diff.previousAmount)}</TableCell>
-                        <TableCell className="text-right text-sm">{formatCurrency(diff.currentAmount)}</TableCell>
-                        <TableCell className="text-right text-sm">
-                          <span className={diff.difference >= 0 ? 'text-success' : 'text-destructive'}>
-                            {diff.difference >= 0 ? '+' : ''}{formatCurrency(diff.difference)}
-                          </span>
+                    {mockPayrollAdjustments.map((adj) => (
+                      <TableRow key={adj.id}>
+                        <TableCell className="font-medium text-sm">{adj.employee}</TableCell>
+                        <TableCell className="text-sm">{adj.department}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {adj.type}
+                          </Badge>
                         </TableCell>
-                        <TableCell className="text-right text-sm">
-                          <div className="flex items-center justify-end gap-1">
-                            {diff.percentChange >= 0 ? (
-                              <TrendingUp className="size-4 text-success" />
-                            ) : (
-                              <TrendingUp className="size-4 text-destructive rotate-180" />
-                            )}
-                            <span className={diff.percentChange >= 0 ? 'text-success' : 'text-destructive'}>
-                              {diff.percentChange >= 0 ? '+' : ''}{diff.percentChange.toFixed(2)}%
-                            </span>
-                          </div>
+                        <TableCell className="text-sm">{adj.reason}</TableCell>
+                        <TableCell className="text-right font-medium text-success">{formatCurrency(adj.amount)}</TableCell>
+                        <TableCell className="text-sm">{new Date(adj.date).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Button variant="outline" size="sm">Edit</Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -513,188 +370,111 @@ export default function PayrollManagementPage() {
           </Card>
         </TabsContent>
 
-        {/* Cut-off Configuration Tab */}
-        <TabsContent value="cutoff">
+        {/* Validation Issues Tab */}
+        <TabsContent value="validation" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Cut-off Date Configuration</CardTitle>
-              <CardDescription>Configure payroll cut-off dates and processing schedule</CardDescription>
+              <CardTitle>Validation Issues</CardTitle>
+              <CardDescription>
+                Issues that need to be resolved before payroll can be finalized
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {mockValidationIssues.length > 0 ? (
+                mockValidationIssues.map((issue) => (
+                  <div
+                    key={issue.id}
+                    className={`p-4 rounded-lg border flex gap-3 items-start ${severityStyles[issue.severity]}`}
+                  >
+                    <div className="pt-0.5">
+                      {issue.severity === 'error' ? (
+                        <AlertCircle className="size-5" />
+                      ) : (
+                        <AlertTriangle className="size-5" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{issue.message}</p>
+                      {issue.affectedEmployees && (
+                        <p className="text-xs mt-1">Affects {issue.affectedEmployees} employee(s)</p>
+                      )}
+                    </div>
+                    <Button variant="outline" size="sm">
+                      Resolve
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <Check className="size-8 text-success mx-auto mb-2" />
+                  <p className="text-muted-foreground">No validation issues detected</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Cut-off Configuration Tab */}
+        <TabsContent value="cutoff" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Cut-off Period Configuration</CardTitle>
+              <CardDescription>
+                Current payroll period cut-off dates and processing deadlines
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2 p-4 border rounded-lg">
-                  <Label className="text-base font-semibold flex items-center gap-2">
-                    <Calendar className="size-4" />
-                    Current Cut-off Period
-                  </Label>
-                  <p className="text-sm text-muted-foreground">Start Date</p>
-                  <p className="text-lg font-semibold">{new Date(selectedPeriod.cutoffStartDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                  <p className="text-sm text-muted-foreground mt-4">End Date</p>
-                  <p className="text-lg font-semibold">{new Date(selectedPeriod.cutoffEndDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Cut-off Start Date</Label>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-lg font-semibold">{new Date(mockCutoffConfig.startDate).toLocaleDateString()}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Payroll period begins</p>
+                  </div>
                 </div>
 
-                <div className="space-y-2 p-4 border rounded-lg bg-muted/30">
-                  <Label className="text-base font-semibold flex items-center gap-2">
-                    <Clock className="size-4" />
-                    Processing Timeline
-                  </Label>
-                  <div className="space-y-2 text-sm mt-4">
-                    <div className="flex justify-between">
-                      <span>Draft Period:</span>
-                      <span className="font-medium">1 - 15</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Processing:</span>
-                      <span className="font-medium">16 - 28</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Approval:</span>
-                      <span className="font-medium">28 - 31</span>
-                    </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Cut-off End Date</Label>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-lg font-semibold">{new Date(mockCutoffConfig.endDate).toLocaleDateString()}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Payroll period ends</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Processing Deadline</Label>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-lg font-semibold">{new Date(mockCutoffConfig.processingDeadline).toLocaleDateString()}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Last day to lock payroll</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Approval Deadline</Label>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-lg font-semibold">{new Date(mockCutoffConfig.approvalDeadline).toLocaleDateString()}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Last day to approve payroll</p>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 border rounded-lg bg-blue-50 border-blue-200">
-                <p className="text-sm text-blue-900">
-                  <strong>Note:</strong> Cut-off dates determine which transactions and timesheets are included in the payroll period. Changes to cut-off dates will affect all subsequent payroll periods.
-                </p>
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-medium">Auto-finalize Payroll</Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {mockCutoffConfig.autoFinalize ? 'Enabled' : 'Disabled'} - payroll will {mockCutoffConfig.autoFinalize ? 'automatically' : 'not automatically'} finalize after approval deadline
+                    </p>
+                  </div>
+                  <Badge variant={mockCutoffConfig.autoFinalize ? 'default' : 'outline'}>
+                    {mockCutoffConfig.autoFinalize ? 'ON' : 'OFF'}
+                  </Badge>
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Edit Period Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Payroll Period</DialogTitle>
-            <DialogDescription>Modify the cut-off dates for this payroll period</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Cut-off Start Date</Label>
-              <Input type="date" defaultValue={selectedPeriod.cutoffStartDate} />
-            </div>
-            <div className="space-y-2">
-              <Label>Cut-off End Date</Label>
-              <Input type="date" defaultValue={selectedPeriod.cutoffEndDate} />
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
-              <Button onClick={() => setEditOpen(false)}>Save Changes</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Lock Payroll Dialog */}
-      <AlertDialog open={lockOpen} onOpenChange={setLockOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Lock & Process Payroll?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will prevent further edits to employee data and move the payroll to processing status. This action cannot be undone immediately.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleLockPayroll} disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="size-4 mr-2 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              'Lock & Process'
-            )}
-          </AlertDialogAction>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Approve Payroll Dialog */}
-      <Dialog open={approveOpen} onOpenChange={setApproveOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Approve & Finalize Payroll</DialogTitle>
-            <DialogDescription>Complete the final approval for this payroll period</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="p-3 bg-muted rounded-lg text-sm">
-              <p className="font-medium">Payroll Summary</p>
-              <p className="text-muted-foreground mt-2">Total Amount: {formatCurrency(selectedPeriod.totalAmount)}</p>
-              <p className="text-muted-foreground">Net Amount: {formatCurrency(selectedPeriod.netAmount)}</p>
-            </div>
-            <div className="space-y-2">
-              <Label>Approver Name</Label>
-              <Input
-                placeholder="Enter your name"
-                value={approverName}
-                onChange={(e) => setApproverName(e.target.value)}
-              />
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setApproveOpen(false)}>Cancel</Button>
-              <Button onClick={handleApprovePayroll} disabled={loading || !approverName}>
-                {loading ? (
-                  <>
-                    <Loader2 className="size-4 mr-2 animate-spin" />
-                    Approving...
-                  </>
-                ) : (
-                  'Approve & Finalize'
-                )}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* View Details Dialog */}
-      <Dialog open={viewDetailsOpen} onOpenChange={setViewDetailsOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Payroll Period Details</DialogTitle>
-            <DialogDescription>{selectedPeriod.month}</DialogDescription>
-          </DialogHeader>
-          {detailsLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="size-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="grid gap-2 text-sm">
-                <div className="flex justify-between border-b pb-2">
-                  <span>Status:</span>
-                  <Badge variant="outline" className={statusStyles[selectedPeriod.status]}>
-                    {selectedPeriod.status.charAt(0).toUpperCase() + selectedPeriod.status.slice(1)}
-                  </Badge>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span>Cut-off Period:</span>
-                  <span>{new Date(selectedPeriod.cutoffStartDate).toLocaleDateString()} - {new Date(selectedPeriod.cutoffEndDate).toLocaleDateString()}</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span>Total Employees:</span>
-                  <span>{selectedPeriod.totalEmployees}</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span>Gross Payroll:</span>
-                  <span className="font-semibold">{formatCurrency(selectedPeriod.totalAmount)}</span>
-                </div>
-                <div className="flex justify-between border-b pb-2">
-                  <span>Deductions:</span>
-                  <span className="text-destructive">{formatCurrency(selectedPeriod.totalDeductions)}</span>
-                </div>
-                <div className="flex justify-between pb-2">
-                  <span>Net Payroll:</span>
-                  <span className="text-success font-semibold">{formatCurrency(selectedPeriod.netAmount)}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
