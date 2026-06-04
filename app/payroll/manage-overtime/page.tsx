@@ -20,8 +20,16 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Plus, Edit2, Trash2, Clock, AlertCircle, GripVertical } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Plus, Edit2, Trash2, Clock, X } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
 // Overtime Types with Rate Multipliers
@@ -99,75 +107,55 @@ const mockOvertimeData: OvertimeRecord[] = [
     hours: 8,
     baseSalary: 11000000,
     hourlyRate: 458333,
-    amount: 3400000,
+    amount: 3640000,
     type: 'replacement',
-    reason: 'BKO - Replacement duty',
+    reason: 'Replacement duty - Employee absent',
     approvalStatus: 'pending',
   },
   {
     id: '3',
     employeeName: 'David Rodriguez',
     employeeCode: 'EC-003',
-    date: '2026-03-20',
+    date: '2026-03-10',
     hours: 12,
     baseSalary: 10500000,
     hourlyRate: 437500,
-    amount: 6570000,
+    amount: 7785000,
     type: 'holiday',
     reason: 'National Holiday - Guarding duty',
     approvalStatus: 'approved',
     approvedBy: 'Jane Smith',
   },
-  {
-    id: '4',
-    employeeName: 'Emily Johnson',
-    employeeCode: 'EC-004',
-    date: '2026-03-17',
-    hours: 4,
-    baseSalary: 9800000,
-    hourlyRate: 408333,
-    amount: 1800000,
-    type: 'fixed',
-    reason: 'Daily work schedule (12h/day)',
-    approvalStatus: 'approved',
-    approvedBy: 'John Doe',
-  },
-  {
-    id: '5',
-    employeeName: 'James Wilson',
-    employeeCode: 'EC-005',
-    date: '2026-03-18',
-    hours: 10,
-    baseSalary: 10200000,
-    hourlyRate: 425000,
-    amount: 4325000,
-    type: 'replacement',
-    reason: 'BKO - Replacement duty',
-    approvalStatus: 'rejected',
-  },
-  {
-    id: '6',
-    employeeName: 'Robert Taylor',
-    employeeCode: 'EC-006',
-    date: '2026-03-21',
-    hours: 8,
-    baseSalary: 9500000,
-    hourlyRate: 395833,
-    amount: 4800000,
-    type: 'holiday',
-    reason: 'National Holiday - Patrolling duty',
-    approvalStatus: 'approved',
-    approvedBy: 'Jane Smith',
-  },
+]
+
+// Mock employees
+const mockEmployees = [
+  { code: 'EC-001', name: 'Michael Chen', baseSalary: 12000000 },
+  { code: 'EC-002', name: 'Sarah Williams', baseSalary: 11000000 },
+  { code: 'EC-003', name: 'David Rodriguez', baseSalary: 10500000 },
+  { code: 'EC-004', name: 'Emily Johnson', baseSalary: 9800000 },
+  { code: 'EC-005', name: 'James Wilson', baseSalary: 10200000 },
 ]
 
 export default function ManageOvertimePage() {
+  const [data, setData] = useState<OvertimeRecord[]>(mockOvertimeData)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
-  const [filterType, setFilterType] = useState<'all' | 'fixed' | 'replacement' | 'holiday'>('all')
+  const [filterType, setFilterType] = useState<string>('all')
   const [activeTab, setActiveTab] = useState('records')
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [formData, setFormData] = useState({
+    employeeCode: '',
+    date: '',
+    hours: '',
+    type: 'fixed' as 'fixed' | 'replacement' | 'holiday',
+    reason: '',
+  })
 
-  const filteredData = mockOvertimeData.filter(record => {
+  // Calculate totals
+  const filteredData = data.filter(record => {
     const matchesSearch = record.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          record.employeeCode.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = filterStatus === 'all' || record.approvalStatus === filterStatus
@@ -180,20 +168,98 @@ export default function ManageOvertimePage() {
   const approvedAmount = filteredData.filter(r => r.approvalStatus === 'approved').reduce((sum, r) => sum + r.amount, 0)
   const pendingAmount = filteredData.filter(r => r.approvalStatus === 'pending').reduce((sum, r) => sum + r.amount, 0)
 
-  const statusStyles = {
-    approved: 'bg-success/10 text-success border-success/20',
-    pending: 'bg-warning/10 text-warning border-warning/20',
-    rejected: 'bg-destructive/10 text-destructive border-destructive/20',
+  const getOvertimeTypeColor = (type: string) => {
+    const typeConfig = overtimeTypes[type as keyof typeof overtimeTypes]
+    return typeConfig?.color || ''
   }
 
-  const typeStyles = {
-    fixed: 'bg-blue-500/10 text-blue-700 border-blue-200',
-    replacement: 'bg-amber-500/10 text-amber-700 border-amber-200',
-    holiday: 'bg-red-500/10 text-red-700 border-red-200',
+  const getOvertimeTypeName = (type: string) => {
+    const typeConfig = overtimeTypes[type as keyof typeof overtimeTypes]
+    return typeConfig?.name || type
   }
 
-  const getTypeLabel = (type: 'fixed' | 'replacement' | 'holiday') => {
-    return overtimeTypes[type].name
+  const handleAddClick = () => {
+    setFormData({
+      employeeCode: '',
+      date: '',
+      hours: '',
+      type: 'fixed',
+      reason: '',
+    })
+    setEditingId(null)
+    setIsAddModalOpen(true)
+  }
+
+  const handleEditClick = (record: OvertimeRecord) => {
+    setFormData({
+      employeeCode: record.employeeCode,
+      date: record.date,
+      hours: record.hours.toString(),
+      type: record.type,
+      reason: record.reason,
+    })
+    setEditingId(record.id)
+    setIsEditModalOpen(true)
+  }
+
+  const handleSaveRecord = () => {
+    const selectedEmployee = mockEmployees.find(e => e.code === formData.employeeCode)
+    if (!selectedEmployee) return
+
+    const hours = parseInt(formData.hours)
+    const hourlyRate = selectedEmployee.baseSalary / 22 / 8
+    
+    // Calculate amount based on type and hours
+    let amount = 0
+    const typeMultipliers = overtimeTypes[formData.type].multipliers
+    for (let i = 0; i < hours; i++) {
+      let multiplier = 1.5
+      for (const m of typeMultipliers) {
+        if (i + 1 >= m.hour) multiplier = m.multiplier
+      }
+      amount += hourlyRate * multiplier
+    }
+
+    if (editingId) {
+      // Update existing record
+      setData(prev => prev.map(record =>
+        record.id === editingId
+          ? {
+              ...record,
+              employeeCode: formData.employeeCode,
+              employeeName: selectedEmployee.name,
+              date: formData.date,
+              hours,
+              hourlyRate,
+              amount,
+              type: formData.type,
+              reason: formData.reason,
+            }
+          : record
+      ))
+      setIsEditModalOpen(false)
+    } else {
+      // Add new record
+      const newRecord: OvertimeRecord = {
+        id: (data.length + 1).toString(),
+        employeeName: selectedEmployee.name,
+        employeeCode: formData.employeeCode,
+        date: formData.date,
+        hours,
+        baseSalary: selectedEmployee.baseSalary,
+        hourlyRate,
+        amount,
+        type: formData.type,
+        reason: formData.reason,
+        approvalStatus: 'pending',
+      }
+      setData([...data, newRecord])
+      setIsAddModalOpen(false)
+    }
+  }
+
+  const handleDeleteRecord = (id: string) => {
+    setData(prev => prev.filter(record => record.id !== id))
   }
 
   return (
@@ -206,7 +272,7 @@ export default function ManageOvertimePage() {
             Manage and track employee overtime across different types
           </p>
         </div>
-        <Button className="w-full sm:w-auto">
+        <Button onClick={handleAddClick} className="w-full sm:w-auto">
           <Plus className="size-4 mr-2" />
           Add Overtime Record
         </Button>
@@ -290,7 +356,7 @@ export default function ManageOvertimePage() {
                     <SelectItem value="rejected">Rejected</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={filterType} onValueChange={(value: any) => setFilterType(value)}>
+                <Select value={filterType} onValueChange={(value) => setFilterType(value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Filter by type" />
                   </SelectTrigger>
@@ -310,60 +376,59 @@ export default function ManageOvertimePage() {
                     <TableRow>
                       <TableHead>Employee</TableHead>
                       <TableHead>Date</TableHead>
-                      <TableHead>Type</TableHead>
                       <TableHead className="text-right">Hours</TableHead>
                       <TableHead className="text-right">Hourly Rate</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>Type</TableHead>
                       <TableHead>Reason</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="w-20">Actions</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredData.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={9} className="text-center py-8">
-                          <AlertCircle className="size-5 mx-auto mb-2 text-muted-foreground" />
-                          <p className="text-muted-foreground">No overtime records found</p>
+                    {filteredData.map((record) => (
+                      <TableRow key={record.id}>
+                        <TableCell className="font-medium">
+                          <div>
+                            <p className="font-semibold">{record.employeeName}</p>
+                            <p className="text-xs text-muted-foreground">{record.employeeCode}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>{new Date(record.date).toLocaleDateString('id-ID')}</TableCell>
+                        <TableCell className="text-right">{record.hours}h</TableCell>
+                        <TableCell className="text-right">{formatCurrency(record.hourlyRate)}</TableCell>
+                        <TableCell className="text-right font-semibold">{formatCurrency(record.amount)}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={getOvertimeTypeColor(record.type)}>
+                            {getOvertimeTypeName(record.type)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">{record.reason}</TableCell>
+                        <TableCell>
+                          <Badge variant={record.approvalStatus === 'approved' ? 'default' : record.approvalStatus === 'pending' ? 'secondary' : 'destructive'}>
+                            {record.approvalStatus}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditClick(record)}
+                            >
+                              <Edit2 className="size-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteRecord(record.id)}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
-                    ) : (
-                      filteredData.map((record) => (
-                        <TableRow key={record.id}>
-                          <TableCell className="font-medium text-sm">
-                            <div>
-                              <p>{record.employeeName}</p>
-                              <p className="text-xs text-muted-foreground">{record.employeeCode}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm">{record.date}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={typeStyles[record.type]}>
-                              {getTypeLabel(record.type)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right text-sm font-medium">{record.hours}h</TableCell>
-                          <TableCell className="text-right text-sm">{formatCurrency(record.hourlyRate)}</TableCell>
-                          <TableCell className="text-right text-sm font-semibold text-success">{formatCurrency(record.amount)}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{record.reason}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={statusStyles[record.approvalStatus]}>
-                              {record.approvalStatus.charAt(0).toUpperCase() + record.approvalStatus.slice(1)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              <Button variant="ghost" size="sm">
-                                <Edit2 className="size-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <Trash2 className="size-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
+                    ))}
                   </TableBody>
                 </Table>
               </div>
@@ -419,6 +484,128 @@ export default function ManageOvertimePage() {
           ))}
         </TabsContent>
       </Tabs>
+
+      {/* Add/Edit Overtime Dialog */}
+      <Dialog open={isAddModalOpen || isEditModalOpen} onOpenChange={(open) => {
+        if (!open) {
+          setIsAddModalOpen(false)
+          setIsEditModalOpen(false)
+        }
+      }}>
+        <DialogContent className="w-[95vw] max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Edit Overtime Record' : 'Add Overtime Record'}</DialogTitle>
+            <DialogDescription>
+              {editingId ? 'Update the overtime details' : 'Create a new overtime record with tiered rate multipliers'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Employee Selection */}
+            <div className="space-y-2">
+              <Label>Employee</Label>
+              <Select value={formData.employeeCode} onValueChange={(value) => setFormData({ ...formData, employeeCode: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select employee" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockEmployees.map(emp => (
+                    <SelectItem key={emp.code} value={emp.code}>
+                      {emp.name} ({emp.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Date */}
+            <div className="space-y-2">
+              <Label>Date</Label>
+              <Input
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              />
+            </div>
+
+            {/* Overtime Type */}
+            <div className="space-y-2">
+              <Label>Overtime Type</Label>
+              <Select value={formData.type} onValueChange={(value: any) => setFormData({ ...formData, type: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fixed">Fixed OT (12h/day vs 8h rule)</SelectItem>
+                  <SelectItem value="replacement">OT Replacement (BKO)</SelectItem>
+                  <SelectItem value="holiday">OT at National Holiday</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {overtimeTypes[formData.type].description}
+              </p>
+            </div>
+
+            {/* Hours */}
+            <div className="space-y-2">
+              <Label>Hours</Label>
+              <Input
+                type="number"
+                min="1"
+                value={formData.hours}
+                onChange={(e) => setFormData({ ...formData, hours: e.target.value })}
+                placeholder="Enter hours"
+              />
+            </div>
+
+            {/* Reason */}
+            <div className="space-y-2">
+              <Label>Reason</Label>
+              <Input
+                value={formData.reason}
+                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                placeholder="Reason for overtime"
+              />
+            </div>
+
+            {/* Rate Info */}
+            {formData.employeeCode && formData.hours && (
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm font-semibold mb-3">Tiered Rate Calculation</p>
+                <div className="space-y-2">
+                  {overtimeTypes[formData.type].multipliers.slice(0, Math.min(parseInt(formData.hours), 4)).map((mult, idx) => {
+                    const employee = mockEmployees.find(e => e.code === formData.employeeCode)
+                    const hourlyRate = employee ? employee.baseSalary / 22 / 8 : 0
+                    const hourAmount = hourlyRate * mult.multiplier
+                    return (
+                      <div key={idx} className="flex justify-between text-xs">
+                        <span>{mult.description}: {mult.multiplier}x</span>
+                        <span>{formatCurrency(hourAmount)}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsAddModalOpen(false)
+                  setIsEditModalOpen(false)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSaveRecord}>
+                {editingId ? 'Update Record' : 'Add Record'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
