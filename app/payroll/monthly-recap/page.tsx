@@ -161,12 +161,74 @@ const mockDetailedRecords: Record<string, DetailedRecord[]> = {
   ],
 }
 
+// Mock employee details per site per month
+const mockSiteEmployeeDetails: Record<string, Record<string, DetailedRecord[]>> = {
+  '1': {
+    'S1': [
+      { employeeId: 'E001', employeeName: 'Michael Chen', basePay: 12000000, overtime: 1500000, bonus: 500000, deductions: 2500000, tax: 1500000, netPay: 10000000 },
+      { employeeId: 'E002', employeeName: 'Sarah Williams', basePay: 11000000, overtime: 800000, bonus: 400000, deductions: 2200000, tax: 1300000, netPay: 8700000 },
+      { employeeId: 'E003', employeeName: 'David Rodriguez', basePay: 10500000, overtime: 1200000, bonus: 300000, deductions: 2100000, tax: 1200000, netPay: 8700000 },
+      { employeeId: 'E004', employeeName: 'Emily Johnson', basePay: 9800000, overtime: 0, bonus: 200000, deductions: 1800000, tax: 1000000, netPay: 7200000 },
+      { employeeId: 'E005', employeeName: 'James Wilson', basePay: 10200000, overtime: 1200000, bonus: 350000, deductions: 2000000, tax: 1200000, netPay: 8550000 },
+      { employeeId: 'E006', employeeName: 'Robert Taylor', basePay: 9500000, overtime: 0, bonus: 150000, deductions: 1700000, tax: 950000, netPay: 7000000 },
+      { employeeId: 'E007', employeeName: 'Anna Martinez', basePay: 10000000, overtime: 900000, bonus: 300000, deductions: 1900000, tax: 1100000, netPay: 8200000 },
+      { employeeId: 'E008', employeeName: 'Chris Anderson', basePay: 11500000, overtime: 1600000, bonus: 450000, deductions: 2300000, tax: 1400000, netPay: 9750000 },
+      { employeeId: 'E009', employeeName: 'Diana Lee', basePay: 10300000, overtime: 700000, bonus: 250000, deductions: 2000000, tax: 1200000, netPay: 8350000 },
+      { employeeId: 'E010', employeeName: 'Edward Brown', basePay: 12500000, overtime: 1800000, bonus: 550000, deductions: 2600000, tax: 1600000, netPay: 10650000 },
+      { employeeId: 'E011', employeeName: 'Fiona Davis', basePay: 9700000, overtime: 500000, bonus: 200000, deductions: 1800000, tax: 950000, netPay: 7650000 },
+      { employeeId: 'E012', employeeName: 'George Wilson', basePay: 10800000, overtime: 1100000, bonus: 400000, deductions: 2100000, tax: 1300000, netPay: 8900000 },
+      { employeeId: 'E013', employeeName: 'Helena Garcia', basePay: 11200000, overtime: 1400000, bonus: 380000, deductions: 2200000, tax: 1350000, netPay: 9430000 },
+      { employeeId: 'E014', employeeName: 'Ivan Rodriguez', basePay: 10100000, overtime: 800000, bonus: 300000, deductions: 1950000, tax: 1150000, netPay: 8300000 },
+      { employeeId: 'E015', employeeName: 'Julia Martinez', basePay: 9900000, overtime: 600000, bonus: 250000, deductions: 1850000, tax: 1050000, netPay: 7850000 },
+      { employeeId: 'E016', employeeName: 'Kevin Thompson', basePay: 11800000, overtime: 1700000, bonus: 500000, deductions: 2400000, tax: 1500000, netPay: 10100000 },
+      { employeeId: 'E017', employeeName: 'Laura Johnson', basePay: 10400000, overtime: 900000, bonus: 320000, deductions: 2050000, tax: 1250000, netPay: 8370000 },
+      { employeeId: 'E018', employeeName: 'Michael Peters', basePay: 12100000, overtime: 1500000, bonus: 480000, deductions: 2400000, tax: 1500000, netPay: 10180000 },
+    ],
+    'S2': [
+      { employeeId: 'E019', employeeName: 'Nina Williamson', basePay: 10600000, overtime: 1000000, bonus: 350000, deductions: 2050000, tax: 1250000, netPay: 8650000 },
+      { employeeId: 'E020', employeeName: 'Oscar Brown', basePay: 11000000, overtime: 1200000, bonus: 400000, deductions: 2150000, tax: 1300000, netPay: 9150000 },
+      { employeeId: 'E021', employeeName: 'Patricia Davis', basePay: 10200000, overtime: 800000, bonus: 300000, deductions: 1950000, tax: 1150000, netPay: 8300000 },
+      { employeeId: 'E022', employeeName: 'Quincy Miller', basePay: 9800000, overtime: 700000, bonus: 250000, deductions: 1850000, tax: 1050000, netPay: 7950000 },
+      { employeeId: 'E023', employeeName: 'Rachel White', basePay: 11300000, overtime: 1300000, bonus: 420000, deductions: 2200000, tax: 1350000, netPay: 9470000 },
+      { employeeId: 'E024', employeeName: 'Samuel Harris', basePay: 10500000, overtime: 900000, bonus: 330000, deductions: 2000000, tax: 1200000, netPay: 8530000 },
+      { employeeId: 'E025', employeeName: 'Tanya Martin', basePay: 10100000, overtime: 800000, bonus: 310000, deductions: 1950000, tax: 1150000, netPay: 8310000 },
+      { employeeId: 'E026', employeeName: 'Ulrich Taylor', basePay: 11600000, overtime: 1400000, bonus: 450000, deductions: 2250000, tax: 1400000, netPay: 9800000 },
+      { employeeId: 'E027', employeeName: 'Victoria Anderson', basePay: 10300000, overtime: 850000, bonus: 320000, deductions: 2000000, tax: 1200000, netPay: 8470000 },
+      { employeeId: 'E028', employeeName: 'William Thomas', basePay: 12000000, overtime: 1500000, bonus: 470000, deductions: 2350000, tax: 1450000, netPay: 10170000 },
+      { employeeId: 'E029', employeeName: 'Xena Jackson', basePay: 10000000, overtime: 700000, bonus: 300000, deductions: 1900000, tax: 1100000, netPay: 8300000 },
+      { employeeId: 'E030', employeeName: 'Yuri Lee', basePay: 10700000, overtime: 1000000, bonus: 360000, deductions: 2070000, tax: 1270000, netPay: 8790000 },
+      { employeeId: 'E031', employeeName: 'Zara Smith', basePay: 10400000, overtime: 900000, bonus: 340000, deductions: 2020000, tax: 1220000, netPay: 8520000 },
+      { employeeId: 'E032', employeeName: 'Aaron Green', basePay: 11200000, overtime: 1200000, bonus: 400000, deductions: 2150000, tax: 1300000, netPay: 9350000 },
+      { employeeId: 'E033', employeeName: 'Bella King', basePay: 10300000, overtime: 850000, bonus: 330000, deductions: 2000000, tax: 1200000, netPay: 8480000 },
+    ],
+    'S3': [
+      { employeeId: 'E034', employeeName: 'Carlos Wright', basePay: 10500000, overtime: 950000, bonus: 340000, deductions: 2020000, tax: 1220000, netPay: 8560000 },
+      { employeeId: 'E035', employeeName: 'Diana Turner', basePay: 10100000, overtime: 800000, bonus: 310000, deductions: 1950000, tax: 1150000, netPay: 8310000 },
+      { employeeId: 'E036', employeeName: 'Ethan Scott', basePay: 11400000, overtime: 1300000, bonus: 430000, deductions: 2200000, tax: 1350000, netPay: 9580000 },
+      { employeeId: 'E037', employeeName: 'Fiona Green', basePay: 10200000, overtime: 850000, bonus: 320000, deductions: 1980000, tax: 1180000, netPay: 8390000 },
+      { employeeId: 'E038', employeeName: 'George Hill', basePay: 10600000, overtime: 1000000, bonus: 350000, deductions: 2050000, tax: 1250000, netPay: 8650000 },
+      { employeeId: 'E039', employeeName: 'Helena Adams', basePay: 11000000, overtime: 1150000, bonus: 390000, deductions: 2120000, tax: 1300000, netPay: 9130000 },
+      { employeeId: 'E040', employeeName: 'Isaac Nelson', basePay: 10300000, overtime: 900000, bonus: 330000, deductions: 2000000, tax: 1200000, netPay: 8430000 },
+      { employeeId: 'E041', employeeName: 'Julia Carter', basePay: 10800000, overtime: 1050000, bonus: 370000, deductions: 2080000, tax: 1280000, netPay: 8940000 },
+      { employeeId: 'E042', employeeName: 'Kevin Mitchell', basePay: 10400000, overtime: 900000, bonus: 340000, deductions: 2020000, tax: 1220000, netPay: 8520000 },
+      { employeeId: 'E043', employeeName: 'Laura Perez', basePay: 11100000, overtime: 1200000, bonus: 400000, deductions: 2150000, tax: 1300000, netPay: 9250000 },
+      { employeeId: 'E044', employeeName: 'Michael Roberts', basePay: 10500000, overtime: 950000, bonus: 345000, deductions: 2030000, tax: 1230000, netPay: 8580000 },
+      { employeeId: 'E045', employeeName: 'Nancy Phillips', basePay: 10700000, overtime: 1050000, bonus: 365000, deductions: 2070000, tax: 1270000, netPay: 8780000 },
+    ],
+  },
+}
+
 export default function MonthlyRecapPage() {
   const [loading, setLoading] = useState(false)
   const [expandedMonths, setExpandedMonths] = useState<string[]>(['1'])
   const [selectedRecord, setSelectedRecord] = useState<MonthlyRecord | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [detailedRecords, setDetailedRecords] = useState<DetailedRecord[]>([])
+  const [selectedSite, setSelectedSite] = useState<SiteDetail | null>(null)
+  const [selectedMonth, setSelectedMonth] = useState<MonthlyRecord | null>(null)
+  const [siteDetailsOpen, setSiteDetailsOpen] = useState(false)
+  const [siteLoading, setSiteLoading] = useState(false)
+  const [siteEmployees, setSiteEmployees] = useState<DetailedRecord[]>([])
 
   const latestRecord = mockMonthlyRecords[0]
   const previousRecord = mockMonthlyRecords[1]
@@ -209,6 +271,18 @@ export default function MonthlyRecapPage() {
   const handleViewDetails = (record: MonthlyRecord) => {
     setSelectedRecord(record)
     setDetailsOpen(true)
+  }
+
+  const handleSiteClick = (site: SiteDetail, month: MonthlyRecord) => {
+    setSelectedSite(site)
+    setSelectedMonth(month)
+    setSiteLoading(true)
+    setTimeout(() => {
+      const employees = mockSiteEmployeeDetails[month.id]?.[site.siteId] || []
+      setSiteEmployees(employees)
+      setSiteLoading(false)
+    }, 500)
+    setSiteDetailsOpen(true)
   }
 
   return (
@@ -416,7 +490,11 @@ export default function MonthlyRecapPage() {
                         </TableHeader>
                         <TableBody>
                           {record.sites?.map((site) => (
-                            <TableRow key={site.siteId}>
+                            <TableRow 
+                              key={site.siteId}
+                              className="cursor-pointer hover:bg-muted/50 transition-colors"
+                              onClick={() => handleSiteClick(site, record)}
+                            >
                               <TableCell className="font-medium text-sm">{site.siteName}</TableCell>
                               <TableCell className="text-right text-sm">{site.location}</TableCell>
                               <TableCell className="text-right text-sm">{site.employees}</TableCell>
@@ -511,6 +589,85 @@ export default function MonthlyRecapPage() {
 
               <div className="text-xs text-muted-foreground p-4 bg-muted rounded-lg">
                 Last calculated: {selectedRecord.lastUpdated}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Site Employee Details Dialog */}
+      <Dialog open={siteDetailsOpen} onOpenChange={setSiteDetailsOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Site Payroll Details</DialogTitle>
+            <DialogDescription>
+              {selectedMonth?.month} • {selectedSite?.siteName} ({selectedSite?.location})
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedSite && selectedMonth && (
+            <div className="space-y-6">
+              {/* Site Summary */}
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="p-4 border rounded-lg">
+                  <p className="text-sm text-muted-foreground">Total Payroll</p>
+                  <p className="text-2xl font-bold mt-2">{formatCurrency(selectedSite.payroll)}</p>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <p className="text-sm text-muted-foreground">Bonus</p>
+                  <p className="text-2xl font-bold text-success mt-2">{formatCurrency(selectedSite.bonus)}</p>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <p className="text-sm text-muted-foreground">Deductions</p>
+                  <p className="text-2xl font-bold text-destructive mt-2">{formatCurrency(selectedSite.deductions)}</p>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <p className="text-sm text-muted-foreground">Net Payroll</p>
+                  <p className="text-2xl font-bold text-success mt-2">{formatCurrency(selectedSite.netPayroll)}</p>
+                </div>
+              </div>
+
+              {/* Employee Details Table */}
+              <div>
+                <h3 className="font-semibold mb-4">Employee Payroll Details ({selectedSite.employees} employees)</h3>
+                {siteLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="rounded-lg border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Employee</TableHead>
+                          <TableHead className="text-right">Days</TableHead>
+                          <TableHead className="text-right">Base Pay</TableHead>
+                          <TableHead className="text-right">OT Hours</TableHead>
+                          <TableHead className="text-right">OT Amount</TableHead>
+                          <TableHead className="text-right">Bonus</TableHead>
+                          <TableHead className="text-right">Deductions</TableHead>
+                          <TableHead className="text-right">Tax</TableHead>
+                          <TableHead className="text-right">Net Pay</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {siteEmployees.map((employee, idx) => (
+                          <TableRow key={employee.employeeId}>
+                            <TableCell className="font-medium text-sm">{employee.employeeName}</TableCell>
+                            <TableCell className="text-right text-sm">22/22</TableCell>
+                            <TableCell className="text-right text-sm">{formatCurrency(employee.basePay)}</TableCell>
+                            <TableCell className="text-right text-sm text-success">{(employee.overtime / 100000).toFixed(1)}h</TableCell>
+                            <TableCell className="text-right text-sm text-success">{formatCurrency(employee.overtime)}</TableCell>
+                            <TableCell className="text-right text-sm text-success">{formatCurrency(employee.bonus)}</TableCell>
+                            <TableCell className="text-right text-sm text-destructive">{formatCurrency(employee.deductions)}</TableCell>
+                            <TableCell className="text-right text-sm">{formatCurrency(employee.tax)}</TableCell>
+                            <TableCell className="text-right text-sm font-medium text-success">{formatCurrency(employee.netPay)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </div>
             </div>
           )}
