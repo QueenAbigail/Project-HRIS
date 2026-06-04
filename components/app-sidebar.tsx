@@ -131,6 +131,11 @@ const payrollNavItems = [
     icon: LayoutDashboard,
   },
   {
+    title: 'Payroll Management',
+    url: '/payroll/management',
+    icon: Wallet,
+  },
+  {
     title: 'Monthly Recap',
     url: '/payroll/monthly-recap',
     icon: FileBarChart,
