@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Plus, Edit2, Trash2, Clock, AlertCircle } from 'lucide-react'
+import { Plus, Edit2, Trash2, Clock, AlertCircle, ChevronRight } from 'lucide-react'
 
 interface OvertimeMultiplier {
   id: string
@@ -50,256 +50,217 @@ const overtimeTypes = [
   {
     id: 'fixed',
     name: 'Fixed OT',
-    description: 'Extra hours beyond 8-hour limit (Personnel working 12h/day)',
-    icon: '⏰',
-    color: 'bg-blue-50 border-blue-200 text-blue-700',
+    description: 'Overtime due to work hour rules (12-hour shifts exceeding 8-hour daily limit)',
+    color: 'bg-blue-50 border-blue-200',
+    textColor: 'text-blue-900',
     badgeColor: 'bg-blue-100 text-blue-800',
+    accentColor: 'text-blue-600',
   },
   {
     id: 'replacement',
     name: 'OT Replacement (BKO)',
-    description: 'Replacement duty when personnel cannot attend',
-    icon: '🔄',
-    color: 'bg-amber-50 border-amber-200 text-amber-700',
+    description: 'Overtime when personnel cannot attend and duty is replaced',
+    color: 'bg-amber-50 border-amber-200',
+    textColor: 'text-amber-900',
     badgeColor: 'bg-amber-100 text-amber-800',
+    accentColor: 'text-amber-600',
   },
   {
     id: 'holiday',
     name: 'OT at National Holiday',
-    description: 'Work during national holidays with higher multiplier',
-    icon: '🎄',
-    color: 'bg-red-50 border-red-200 text-red-700',
+    description: 'Overtime for personnel on duty during national holidays',
+    color: 'bg-red-50 border-red-200',
+    textColor: 'text-red-900',
     badgeColor: 'bg-red-100 text-red-800',
+    accentColor: 'text-red-600',
   },
 ]
 
 export default function OvertimeRulesPage() {
   const [multipliers, setMultipliers] = useState<OvertimeMultiplier[]>(mockOvertimeMultipliers)
-  const [editingMultiplier, setEditingMultiplier] = useState<OvertimeMultiplier | null>(null)
+  const [editingRule, setEditingRule] = useState<OvertimeMultiplier | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
-  const [newHourNumber, setNewHourNumber] = useState('')
-  const [newMultiplier, setNewMultiplier] = useState('')
-  const [addingToType, setAddingToType] = useState<string | null>(null)
+  const [newMultiplier, setNewMultiplier] = useState('1.5')
+  const [newHourNumber, setNewHourNumber] = useState('1')
 
-  const handleEditMultiplier = (multiplier: OvertimeMultiplier) => {
-    setEditingMultiplier(multiplier)
-    setNewHourNumber(multiplier.hourNumber.toString())
-    setNewMultiplier(multiplier.multiplier.toString())
+  const handleAddRule = (overtimeTypeId: string) => {
+    const newRule: OvertimeMultiplier = {
+      id: `temp-${Date.now()}`,
+      overtimeType: overtimeTypeId as 'fixed' | 'replacement' | 'holiday',
+      hourNumber: parseInt(newHourNumber),
+      multiplier: parseFloat(newMultiplier),
+      description: `Hour ${newHourNumber}`,
+    }
+    setMultipliers([...multipliers, newRule])
+    setNewMultiplier('1.5')
+    setNewHourNumber('1')
+  }
+
+  const handleDeleteRule = (id: string) => {
+    setMultipliers(multipliers.filter(m => m.id !== id))
+    setDeleteOpen(false)
+  }
+
+  const handleEditRule = (rule: OvertimeMultiplier) => {
+    setEditingRule(rule)
+    setNewMultiplier(rule.multiplier.toString())
+    setNewHourNumber(rule.hourNumber.toString())
     setEditOpen(true)
   }
 
-  const handleSaveMultiplier = () => {
-    if (!editingMultiplier || !newHourNumber || !newMultiplier) return
-
-    setMultipliers(prev =>
-      prev.map(m =>
-        m.id === editingMultiplier.id
-          ? {
-              ...m,
-              hourNumber: parseInt(newHourNumber),
-              multiplier: parseFloat(newMultiplier),
-              description: `${parseInt(newHourNumber)}${parseInt(newHourNumber) === 1 ? 'st' : parseInt(newHourNumber) === 2 ? 'nd' : parseInt(newHourNumber) === 3 ? 'rd' : 'th'} hour${parseInt(newHourNumber) > 1 ? ' and onwards' : ''}`,
-            }
-          : m
+  const handleSaveEdit = () => {
+    if (editingRule) {
+      setMultipliers(
+        multipliers.map(m =>
+          m.id === editingRule.id
+            ? {
+                ...m,
+                multiplier: parseFloat(newMultiplier),
+                hourNumber: parseInt(newHourNumber),
+                description: `Hour ${newHourNumber}`,
+              }
+            : m
+        )
       )
-    )
-    setEditOpen(false)
-    setEditingMultiplier(null)
-  }
-
-  const handleDeleteMultiplier = (id: string) => {
-    setMultipliers(prev => prev.filter(m => m.id !== id))
-    setDeleteOpen(false)
-    setDeleteTarget(null)
-  }
-
-  const handleAddMultiplier = (overtimeType: string) => {
-    if (!newHourNumber || !newMultiplier) return
-
-    const newId = `new-${Date.now()}`
-    const hourNum = parseInt(newHourNumber)
-    
-    const newMultiplierEntry: OvertimeMultiplier = {
-      id: newId,
-      overtimeType: overtimeType as 'fixed' | 'replacement' | 'holiday',
-      hourNumber: hourNum,
-      multiplier: parseFloat(newMultiplier),
-      description: `${hourNum}${hourNum === 1 ? 'st' : hourNum === 2 ? 'nd' : hourNum === 3 ? 'rd' : 'th'} hour${hourNum > 1 ? ' and onwards' : ''}`,
+      setEditOpen(false)
+      setEditingRule(null)
     }
-
-    setMultipliers(prev => [...prev, newMultiplierEntry])
-    setNewHourNumber('')
-    setNewMultiplier('')
-    setAddingToType(null)
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Manage Overtime</h1>
-        <p className="text-muted-foreground mt-2">
-          Configure overtime rate multipliers for different overtime types
+      <div className="border-b border-border pb-8">
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground mb-2">Overtime Rules</h1>
+        <p className="text-sm text-muted-foreground">
+          Configure overtime multiplier rates for each overtime category. These rules determine how overtime compensation is calculated.
         </p>
       </div>
 
-      {/* Overtime Types Cards */}
-      {overtimeTypes.map(type => {
-        const typeMultipliers = multipliers.filter(m => m.overtimeType === type.id)
+      {/* Overtime Types */}
+      <div className="space-y-6">
+        {overtimeTypes.map(overtimeType => {
+          const rules = multipliers.filter(m => m.overtimeType === overtimeType.id)
 
-        return (
-          <Card key={type.id} className={`border ${type.color}`}>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">{type.icon}</span>
-                  <div>
-                    <CardTitle className="text-xl">{type.name}</CardTitle>
-                    <CardDescription className="mt-1">{type.description}</CardDescription>
+          return (
+            <div key={overtimeType.id} className={`border rounded-lg ${overtimeType.color} transition-colors`}>
+              {/* Header */}
+              <div className={`px-6 py-4 border-b ${overtimeType.color}`}>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h2 className={`text-lg font-semibold ${overtimeType.textColor} mb-1`}>{overtimeType.name}</h2>
+                    <p className={`text-sm ${overtimeType.textColor} opacity-75`}>{overtimeType.description}</p>
+                  </div>
+                  <div className={`text-xs font-medium px-2.5 py-1 rounded-full ${overtimeType.badgeColor}`}>
+                    {rules.length} rule{rules.length !== 1 ? 's' : ''}
                   </div>
                 </div>
-                <Badge variant="outline" className={type.badgeColor}>
-                  {typeMultipliers.length} rules
-                </Badge>
               </div>
-            </CardHeader>
 
-            <CardContent className="space-y-4">
-              {/* Multipliers Table */}
-              {typeMultipliers.length > 0 && (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Hour</TableHead>
-                        <TableHead>Multiplier</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {typeMultipliers
-                        .sort((a, b) => a.hourNumber - b.hourNumber)
-                        .map(multiplier => (
-                          <TableRow key={multiplier.id}>
-                            <TableCell className="font-medium">{multiplier.hourNumber}</TableCell>
-                            <TableCell>
-                              <Badge variant="secondary" className="text-base">
-                                {multiplier.multiplier}x
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{multiplier.description}</TableCell>
-                            <TableCell className="text-right space-x-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditMultiplier(multiplier)}
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setDeleteTarget(multiplier.id)
-                                  setDeleteOpen(true)
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+              {/* Content */}
+              <div className="px-6 py-6">
+                {rules.length > 0 ? (
+                  <div className="space-y-3">
+                    <div className="overflow-hidden rounded-lg border border-border/50">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/40">
+                          <tr>
+                            <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs uppercase tracking-wide">Hour</th>
+                            <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs uppercase tracking-wide">Multiplier</th>
+                            <th className="px-4 py-3 text-left font-medium text-muted-foreground text-xs uppercase tracking-wide">Description</th>
+                            <th className="px-4 py-3 text-right font-medium text-muted-foreground text-xs uppercase tracking-wide">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/50">
+                          {rules.map(rule => (
+                            <tr key={rule.id} className="hover:bg-muted/30 transition-colors">
+                              <td className="px-4 py-3 font-medium text-foreground">{rule.hourNumber}</td>
+                              <td className={`px-4 py-3 font-semibold ${overtimeType.accentColor}`}>
+                                {rule.multiplier}x
+                              </td>
+                              <td className="px-4 py-3 text-muted-foreground">{rule.description}</td>
+                              <td className="px-4 py-3 text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditRule(rule)}
+                                    className="h-8 px-2"
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setDeleteTarget(rule.id)
+                                      setDeleteOpen(true)
+                                    }}
+                                    className="h-8 px-2 text-destructive hover:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
 
-              {/* Add New Multiplier */}
-              {addingToType === type.id ? (
-                <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label htmlFor={`hour-${type.id}`} className="text-sm">
-                        Hour Number
-                      </Label>
-                      <Input
-                        id={`hour-${type.id}`}
-                        type="number"
-                        min="1"
-                        value={newHourNumber}
-                        onChange={e => setNewHourNumber(e.target.value)}
-                        placeholder="e.g., 1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor={`multiplier-${type.id}`} className="text-sm">
-                        Multiplier (x)
-                      </Label>
-                      <Input
-                        id={`multiplier-${type.id}`}
-                        type="number"
-                        step="0.25"
-                        min="0.5"
-                        value={newMultiplier}
-                        onChange={e => setNewMultiplier(e.target.value)}
-                        placeholder="e.g., 1.5"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2 justify-end">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        setAddingToType(null)
-                        setNewHourNumber('')
-                        setNewMultiplier('')
-                      }}
+                      onClick={() => handleAddRule(overtimeType.id)}
+                      className="w-full gap-2 mt-2"
                     >
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleAddMultiplier(type.id)}
-                      disabled={!newHourNumber || !newMultiplier}
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add
+                      <Plus className="h-4 w-4" />
+                      Add Multiplier Rule
                     </Button>
                   </div>
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => setAddingToType(type.id)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Multiplier Rule
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        )
-      })}
+                ) : (
+                  <div className="text-center py-8">
+                    <Clock className={`h-10 w-10 ${overtimeType.textColor} opacity-30 mx-auto mb-2`} />
+                    <p className={`text-sm ${overtimeType.textColor} opacity-60`}>No multiplier rules configured</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAddRule(overtimeType.id)}
+                      className="mt-4 gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Create First Rule
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
 
-      {/* Info Banner */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="pt-6">
+      {/* Guidelines */}
+      <Card className="border-amber-200 bg-amber-50">
+        <CardHeader>
           <div className="flex gap-3">
-            <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-900">
-              <p className="font-medium mb-1">How Multipliers Work</p>
-              <p>
-                Multipliers are applied to the hourly base rate. For example, if an employee's hourly rate is Rp
-                50,000, and they work 3 hours of overtime at 1.5x multiplier, they earn 3 × 50,000 × 1.5 = Rp 225,000
-              </p>
+            <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <CardTitle className="text-amber-900">Configuration Guidelines</CardTitle>
             </div>
           </div>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-amber-900">
+          <p>
+            <span className="font-semibold">Multiplier Calculation:</span> Final overtime pay = Hourly Rate × Multiplier. Multipliers should increase with additional hours to incentivize fair compensation.
+          </p>
+          <p>
+            <span className="font-semibold">Best Practices:</span> Configure rules in ascending order by hour number. Use progressive multipliers (1.5x, 2.0x, 2.5x) to reflect increasing burden of extended work.
+          </p>
+          <p>
+            <span className="font-semibold">National Holiday OT:</span> Typically uses higher multipliers (2.0x+) as employees sacrifice holiday time.
+          </p>
         </CardContent>
       </Card>
 
@@ -307,14 +268,12 @@ export default function OvertimeRulesPage() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Overtime Multiplier</DialogTitle>
-            <DialogDescription>Update the multiplier rate for this overtime hour</DialogDescription>
+            <DialogTitle>Edit Multiplier Rule</DialogTitle>
+            <DialogDescription>Update the overtime multiplier configuration</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-hour" className="text-sm">
-                Hour Number
-              </Label>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-hour">Hour Number</Label>
               <Input
                 id="edit-hour"
                 type="number"
@@ -323,48 +282,42 @@ export default function OvertimeRulesPage() {
                 onChange={e => setNewHourNumber(e.target.value)}
               />
             </div>
-            <div>
-              <Label htmlFor="edit-multiplier" className="text-sm">
-                Multiplier (x)
-              </Label>
+            <div className="space-y-2">
+              <Label htmlFor="edit-multiplier">Multiplier Value</Label>
               <Input
                 id="edit-multiplier"
                 type="number"
-                step="0.25"
+                step="0.1"
                 min="0.5"
                 value={newMultiplier}
                 onChange={e => setNewMultiplier(e.target.value)}
               />
             </div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setEditOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveMultiplier}>Save Changes</Button>
-            </div>
+          </div>
+          <div className="flex gap-3 justify-end">
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit}>Save Changes</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Dialog */}
+      {/* Delete Confirmation */}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Overtime Multiplier</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this multiplier rule? This action cannot be undone.
-            </DialogDescription>
+            <DialogTitle>Delete Rule</DialogTitle>
+            <DialogDescription>Are you sure you want to delete this multiplier rule? This action cannot be undone.</DialogDescription>
           </DialogHeader>
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-3 justify-end">
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={() => {
-                if (deleteTarget) {
-                  handleDeleteMultiplier(deleteTarget)
-                }
+                if (deleteTarget) handleDeleteRule(deleteTarget)
               }}
             >
               Delete
