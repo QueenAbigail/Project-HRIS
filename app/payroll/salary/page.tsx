@@ -130,7 +130,7 @@ const mockSalaryRules: SalaryRule[] = [
     siteName: 'Branch Office',
     position: 'Security Head',
     positionAllowance: 6789000,
-    baseSalary: 11000000,
+    baseSalary: 11200000,
     minimumWage: 4211000,
     effectiveDate: '2026-01-01',
     status: 'active',
@@ -139,8 +139,19 @@ const mockSalaryRules: SalaryRule[] = [
     id: '8',
     siteId: 'S3',
     siteName: 'Branch Office',
+    position: 'Supervisor',
+    positionAllowance: 4789000,
+    baseSalary: 9000000,
+    minimumWage: 4211000,
+    effectiveDate: '2026-01-01',
+    status: 'active',
+  },
+  {
+    id: '9',
+    siteId: 'S3',
+    siteName: 'Branch Office',
     position: 'Guard',
-    positionAllowance: 5989000,
+    positionAllowance: 5789000,
     baseSalary: 10200000,
     minimumWage: 4211000,
     effectiveDate: '2026-01-01',
@@ -148,303 +159,315 @@ const mockSalaryRules: SalaryRule[] = [
   },
 ]
 
-const formatCurrency = (value: number) => {
+function formatCurrency(value: number): string {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
   }).format(value)
 }
 
 export default function ManageSalaryPage() {
+  const [view, setView] = useState<'position' | 'base'>('position')
   const [salaryRules, setSalaryRules] = useState<SalaryRule[]>(mockSalaryRules)
-  const [sites, setSites] = useState<Site[]>(mockSites)
-  const [editingAllowance, setEditingAllowance] = useState<SalaryRule | null>(null)
-  const [editingMinWage, setEditingMinWage] = useState<Site | null>(null)
-  const [editAllowanceOpen, setEditAllowanceOpen] = useState(false)
-  const [editMinWageOpen, setEditMinWageOpen] = useState(false)
+  const [editingRule, setEditingRule] = useState<SalaryRule | null>(null)
+  const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [allowanceValue, setAllowanceValue] = useState('')
-  const [minWageValue, setMinWageValue] = useState('')
+  const [editingMinWage, setEditingMinWage] = useState<{ siteId: string; wage: number } | null>(null)
+  const [minWageEditOpen, setMinWageEditOpen] = useState(false)
 
-  const handleEditAllowance = (rule: SalaryRule) => {
-    setEditingAllowance(rule)
-    setAllowanceValue(rule.positionAllowance.toString())
-    setEditAllowanceOpen(true)
+  const groupedRules = salaryRules.reduce((acc, rule) => {
+    const existing = acc.find(g => g.siteId === rule.siteId)
+    if (existing) {
+      existing.rules.push(rule)
+    } else {
+      acc.push({
+        siteId: rule.siteId,
+        siteName: rule.siteName,
+        location: mockSites.find(s => s.id === rule.siteId)?.location || '',
+        minimumWage: rule.minimumWage,
+        rules: [rule],
+      })
+    }
+    return acc
+  }, [] as Array<{ siteId: string; siteName: string; location: string; minimumWage: number; rules: SalaryRule[] }>)
+
+  const handleEditRule = (rule: SalaryRule) => {
+    setEditingRule(rule)
+    setEditOpen(true)
   }
 
-  const handleSaveAllowance = () => {
-    if (!editingAllowance) return
-    setLoading(true)
-    setTimeout(() => {
-      setSalaryRules(prev => prev.map(rule => 
-        rule.id === editingAllowance.id 
-          ? {
-              ...rule,
-              positionAllowance: parseInt(allowanceValue),
-              baseSalary: rule.minimumWage + parseInt(allowanceValue),
-            }
-          : rule
-      ))
-      setLoading(false)
-      setEditAllowanceOpen(false)
-      setEditingAllowance(null)
-    }, 500)
+  const handleSaveRule = () => {
+    if (editingRule) {
+      setSalaryRules(prev => prev.map(r => r.id === editingRule.id ? editingRule : r))
+      setEditOpen(false)
+      setEditingRule(null)
+    }
   }
 
-  const handleEditMinWage = (site: Site) => {
-    setEditingMinWage(site)
-    setMinWageValue(site.minimumWage.toString())
-    setEditMinWageOpen(true)
+  const handleDeleteRule = (id: string) => {
+    setDeleteTarget(id)
+    setDeleteOpen(true)
+  }
+
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      setSalaryRules(prev => prev.filter(r => r.id !== deleteTarget))
+      setDeleteOpen(false)
+      setDeleteTarget(null)
+    }
+  }
+
+  const handleEditMinWage = (siteId: string, wage: number) => {
+    setEditingMinWage({ siteId, wage })
+    setMinWageEditOpen(true)
   }
 
   const handleSaveMinWage = () => {
-    if (!editingMinWage) return
-    setLoading(true)
-    setTimeout(() => {
-      const newMinWage = parseInt(minWageValue)
-      setSites(prev => prev.map(site => 
-        site.id === editingMinWage.id 
-          ? { ...site, minimumWage: newMinWage }
-          : site
+    if (editingMinWage) {
+      setSalaryRules(prev => prev.map(r => 
+        r.siteId === editingMinWage.siteId 
+          ? { ...r, minimumWage: editingMinWage.wage }
+          : r
       ))
-      setSalaryRules(prev => prev.map(rule =>
-        rule.siteId === editingMinWage.id
-          ? { ...rule, minimumWage: newMinWage, baseSalary: newMinWage + rule.positionAllowance }
-          : rule
-      ))
-      setLoading(false)
-      setEditMinWageOpen(false)
+      setMinWageEditOpen(false)
       setEditingMinWage(null)
-    }, 500)
-  }
-
-  const handleDelete = (id: string) => {
-    setLoading(true)
-    setTimeout(() => {
-      setSalaryRules(prev => prev.filter(rule => rule.id !== id))
-      setLoading(false)
-      setDeleteOpen(false)
-      setDeleteTarget(null)
-    }, 500)
+    }
   }
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Manage Salary</h1>
+        <h1 className="text-3xl font-bold">Manage Salary</h1>
         <p className="text-muted-foreground mt-2">
           Configure base salary by position for each site. All positions start with minimum wage plus position allowance.
         </p>
       </div>
 
-      {/* Sites */}
-      <div className="space-y-6">
-        {mockSites.map((site) => (
-          <Card key={site.id}>
-            {/* Site Header Bar */}
-            <div className="flex items-center border-b bg-muted/30">
-              <div className="flex-1 px-6 py-4 flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                <div>
-                  <h2 className="font-semibold text-lg">{site.name}</h2>
-                  <p className="text-sm text-muted-foreground">{site.location}</p>
-                </div>
-              </div>
-              <div className="border-l border-border h-16 flex items-center px-6">
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Minimum Wage</p>
-                  <p className="font-semibold">{formatCurrency(site.minimumWage)}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Content - Split Layout */}
-            <div className="flex">
-              {/* Left: Position Salary */}
-              <div className="flex-1 border-r">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Position Salary</CardTitle>
-                  <CardDescription>Manage position allowances</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-lg border overflow-hidden">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Position</TableHead>
-                          <TableHead className="text-right">Position Allowance</TableHead>
-                          <TableHead className="text-right">Base Salary</TableHead>
-                          <TableHead className="text-right">Status</TableHead>
-                          <TableHead className="w-20">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {salaryRules
-                          .filter(rule => rule.siteId === site.id)
-                          .map(rule => (
-                            <TableRow key={rule.id}>
-                              <TableCell className="font-medium">{rule.position}</TableCell>
-                              <TableCell className="text-right text-green-600">
-                                {formatCurrency(rule.positionAllowance)}
-                              </TableCell>
-                              <TableCell className="text-right font-semibold">
-                                {formatCurrency(rule.baseSalary)}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Badge variant={rule.status === 'active' ? 'default' : 'secondary'}>
-                                  {rule.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleEditAllowance(rule)}
-                                    className="text-blue-600 hover:text-blue-700"
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setDeleteTarget(rule.id)
-                                      setDeleteOpen(true)
-                                    }}
-                                    className="text-red-600 hover:text-red-700"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </div>
-
-              {/* Right: Manage Base Salary */}
-              <div className="w-80 bg-muted/20 p-6 flex flex-col justify-center">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold mb-4">Manage Base Salary</h3>
-                    <div className="space-y-3">
-                      <div>
-                        <Label className="text-xs text-muted-foreground mb-2 block">Minimum Wage for {site.name}</Label>
-                        <p className="text-sm font-semibold text-primary mb-3">
-                          {formatCurrency(site.minimumWage)}
-                        </p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                          onClick={() => handleEditMinWage(site)}
-                        >
-                          Update Minimum Wage
-                        </Button>
-                      </div>
-                      <div className="pt-3 border-t">
-                        <p className="text-xs text-muted-foreground mb-3">
-                          Base Salary Formula: Minimum Wage + Position Allowance
-                        </p>
-                        <Button
-                          size="sm"
-                          className="w-full gap-2"
-                        >
-                          <Plus className="h-4 w-4" />
-                          Add Position
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        ))}
+      {/* View Selector Bar */}
+      <div className="flex gap-0 border border-border rounded-lg overflow-hidden bg-muted/50">
+        <button
+          onClick={() => setView('position')}
+          className={`flex-1 px-4 py-3 font-medium transition-colors ${
+            view === 'position'
+              ? 'bg-background text-foreground border-r border-border'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Position Salary
+        </button>
+        <button
+          onClick={() => setView('base')}
+          className={`flex-1 px-4 py-3 font-medium transition-colors ${
+            view === 'base'
+              ? 'bg-background text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Manage Base Salary
+        </button>
       </div>
 
-      {/* Edit Allowance Dialog */}
-      <Dialog open={editAllowanceOpen} onOpenChange={setEditAllowanceOpen}>
+      {/* Position Salary View */}
+      {view === 'position' && (
+        <div className="space-y-6">
+          {groupedRules.map((group) => (
+            <Card key={group.siteId}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <MapPin className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <CardTitle>{group.siteName}</CardTitle>
+                      <CardDescription>
+                        {group.location} • Minimum Wage: {formatCurrency(group.minimumWage)}
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <Badge variant="secondary">{group.rules.length} Positions</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-lg border overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Position</TableHead>
+                        <TableHead className="text-right">Min Wage</TableHead>
+                        <TableHead className="text-right">Position Allowance</TableHead>
+                        <TableHead className="text-right">Base Salary</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {group.rules.map((rule) => (
+                        <TableRow key={rule.id}>
+                          <TableCell className="font-medium">{rule.position}</TableCell>
+                          <TableCell className="text-right text-sm">{formatCurrency(rule.minimumWage)}</TableCell>
+                          <TableCell className="text-right text-sm text-success">{formatCurrency(rule.positionAllowance)}</TableCell>
+                          <TableCell className="text-right font-medium">{formatCurrency(rule.baseSalary)}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+                              {rule.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right space-x-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEditRule(rule)}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDeleteRule(rule.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Manage Base Salary View */}
+      {view === 'base' && (
+        <div className="space-y-6">
+          <div className="grid gap-4">
+            {mockSites.map((site) => {
+              const currentMinWage = salaryRules.find(r => r.siteId === site.id)?.minimumWage || site.minimumWage
+              return (
+                <Card key={site.id}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <MapPin className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <CardTitle>{site.name}</CardTitle>
+                          <CardDescription>{site.location}</CardDescription>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => handleEditMinWage(site.id, currentMinWage)}
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                        Set Minimum Wage
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 bg-muted rounded-lg">
+                      <Label className="text-muted-foreground text-xs uppercase tracking-wide">Current Minimum Wage</Label>
+                      <p className="text-3xl font-bold mt-2">{formatCurrency(currentMinWage)}</p>
+                    </div>
+                    <div className="text-sm text-muted-foreground space-y-2">
+                      <p>• All positions at this site will use this minimum wage as their base calculation</p>
+                      <p>• Position allowances are added to this minimum wage to calculate final base salary</p>
+                      <p>• Updating this value will affect all position calculations for {site.name}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Position Allowance Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Position Allowance</DialogTitle>
+            <DialogTitle>Edit Position Salary</DialogTitle>
             <DialogDescription>
-              {editingAllowance?.position} at {editingAllowance?.siteName}
+              Update the position allowance for {editingRule?.position} at {editingRule?.siteName}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Position Allowance</Label>
-              <Input
-                type="number"
-                value={allowanceValue}
-                onChange={(e) => setAllowanceValue(e.target.value)}
-                placeholder="Enter allowance amount"
-                className="mt-2"
-              />
+          {editingRule && (
+            <div className="space-y-4">
+              <div>
+                <Label>Position Allowance</Label>
+                <Input
+                  type="number"
+                  value={editingRule.positionAllowance}
+                  onChange={(e) => {
+                    const newAllowance = parseInt(e.target.value) || 0
+                    setEditingRule({
+                      ...editingRule,
+                      positionAllowance: newAllowance,
+                      baseSalary: editingRule.minimumWage + newAllowance,
+                    })
+                  }}
+                  className="mt-2"
+                />
+              </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Base Salary Calculation:</p>
+                <p className="text-sm font-medium mt-1">
+                  {formatCurrency(editingRule.minimumWage)} + {formatCurrency(editingRule.positionAllowance)} = {formatCurrency(editingRule.baseSalary)}
+                </p>
+              </div>
+              <div className="flex gap-3 justify-end">
+                <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+                <Button onClick={handleSaveRule} className="gap-2">
+                  <Save className="h-4 w-4" />
+                  Save Changes
+                </Button>
+              </div>
             </div>
-            <div className="bg-muted p-3 rounded-lg">
-              <p className="text-sm text-muted-foreground mb-2">Calculated Base Salary:</p>
-              <p className="font-semibold">
-                {formatCurrency((editingAllowance?.minimumWage || 0) + parseInt(allowanceValue || '0'))}
-              </p>
-            </div>
-            <div className="flex gap-3 justify-end">
-              <Button variant="outline" onClick={() => setEditAllowanceOpen(false)} disabled={loading}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveAllowance} disabled={loading}>
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                Save
-              </Button>
-            </div>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
 
       {/* Edit Minimum Wage Dialog */}
-      <Dialog open={editMinWageOpen} onOpenChange={setEditMinWageOpen}>
+      <Dialog open={minWageEditOpen} onOpenChange={setMinWageEditOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Update Minimum Wage</DialogTitle>
             <DialogDescription>
-              {editingMinWage?.name} - {editingMinWage?.location}
+              Set the minimum wage for {editingMinWage && mockSites.find(s => s.id === editingMinWage.siteId)?.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Minimum Wage</Label>
-              <Input
-                type="number"
-                value={minWageValue}
-                onChange={(e) => setMinWageValue(e.target.value)}
-                placeholder="Enter minimum wage"
-                className="mt-2"
-              />
+          {editingMinWage && (
+            <div className="space-y-4">
+              <div>
+                <Label>Minimum Wage</Label>
+                <Input
+                  type="number"
+                  value={editingMinWage.wage}
+                  onChange={(e) => setEditingMinWage({ ...editingMinWage, wage: parseInt(e.target.value) || 0 })}
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  This is the base salary for all positions at this site before position allowance is added.
+                </p>
+              </div>
+              <div className="flex gap-3 justify-end">
+                <Button variant="outline" onClick={() => setMinWageEditOpen(false)}>Cancel</Button>
+                <Button onClick={handleSaveMinWage} className="gap-2">
+                  <Save className="h-4 w-4" />
+                  Update
+                </Button>
+              </div>
             </div>
-            <div className="bg-muted p-3 rounded-lg text-sm">
-              <p className="text-muted-foreground mb-2">This change will update base salary for all positions at this site.</p>
-              <p className="text-xs text-muted-foreground">New Base Salary = {formatCurrency(parseInt(minWageValue || '0'))} + Position Allowance</p>
-            </div>
-            <div className="flex gap-3 justify-end">
-              <Button variant="outline" onClick={() => setEditMinWageOpen(false)} disabled={loading}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveMinWage} disabled={loading}>
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                Update
-              </Button>
-            </div>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -454,13 +477,8 @@ export default function ManageSalaryPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex gap-3 justify-end">
-            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteTarget && handleDelete(deleteTarget)}
-              disabled={loading}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
           </div>
