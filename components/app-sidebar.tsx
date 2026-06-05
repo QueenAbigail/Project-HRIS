@@ -142,14 +142,14 @@ const payrollNavItems = [
     icon: FileBarChart,
   },
   {
+    title: 'Manage Salary',
+    url: '/payroll/salary',
+    icon: DollarSign,
+  },
+  {
     title: 'Manage Overtime',
     url: '/payroll/overtime',
     icon: TrendingUp,
-  },
-  {
-    title: 'Salary',
-    url: '/payroll/salary',
-    icon: DollarSign,
   },
 ]
 
