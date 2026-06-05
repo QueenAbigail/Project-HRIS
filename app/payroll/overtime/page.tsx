@@ -51,28 +51,28 @@ const overtimeTypes = [
     id: 'fixed',
     name: 'Fixed OT',
     description: 'Overtime due to work hour rules (12-hour shifts exceeding 8-hour daily limit)',
-    color: 'bg-blue-50 border-blue-200',
-    textColor: 'text-blue-900',
-    badgeColor: 'bg-blue-100 text-blue-800',
-    accentColor: 'text-blue-600',
+    color: 'border-l-4 border-blue-500 bg-card',
+    badgeColor: 'bg-blue-500/20 text-blue-600 dark:text-blue-400',
+    accentColor: 'text-blue-600 dark:text-blue-400',
+    headerColor: 'text-blue-600 dark:text-blue-400',
   },
   {
     id: 'replacement',
     name: 'OT Replacement (BKO)',
     description: 'Overtime when personnel cannot attend and duty is replaced',
-    color: 'bg-amber-50 border-amber-200',
-    textColor: 'text-amber-900',
-    badgeColor: 'bg-amber-100 text-amber-800',
-    accentColor: 'text-amber-600',
+    color: 'border-l-4 border-amber-500 bg-card',
+    badgeColor: 'bg-amber-500/20 text-amber-600 dark:text-amber-400',
+    accentColor: 'text-amber-600 dark:text-amber-400',
+    headerColor: 'text-amber-600 dark:text-amber-400',
   },
   {
     id: 'holiday',
     name: 'OT at National Holiday',
     description: 'Overtime for personnel on duty during national holidays',
-    color: 'bg-red-50 border-red-200',
-    textColor: 'text-red-900',
-    badgeColor: 'bg-red-100 text-red-800',
-    accentColor: 'text-red-600',
+    color: 'border-l-4 border-red-500 bg-card',
+    badgeColor: 'bg-red-500/20 text-red-600 dark:text-red-400',
+    accentColor: 'text-red-600 dark:text-red-400',
+    headerColor: 'text-red-600 dark:text-red-400',
   },
 ]
 
@@ -150,8 +150,8 @@ export default function OvertimeRulesPage() {
               <div className={`px-6 py-4 border-b ${overtimeType.color}`}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h2 className={`text-lg font-semibold ${overtimeType.textColor} mb-1`}>{overtimeType.name}</h2>
-                    <p className={`text-sm ${overtimeType.textColor} opacity-75`}>{overtimeType.description}</p>
+                    <h2 className={`text-lg font-semibold ${overtimeType.headerColor} mb-1`}>{overtimeType.name}</h2>
+                    <p className="text-sm text-muted-foreground">{overtimeType.description}</p>
                   </div>
                   <div className={`text-xs font-medium px-2.5 py-1 rounded-full ${overtimeType.badgeColor}`}>
                     {rules.length} rule{rules.length !== 1 ? 's' : ''}
