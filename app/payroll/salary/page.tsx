@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 import { Plus, Edit2, Trash2, MapPin, Loader2, Save, X } from 'lucide-react'
 
 interface SalaryRule {
@@ -176,22 +177,39 @@ export default function ManageSalaryPage() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [editingMinWage, setEditingMinWage] = useState<{ siteId: string; wage: number } | null>(null)
   const [minWageEditOpen, setMinWageEditOpen] = useState(false)
+  const [showAllPositions, setShowAllPositions] = useState(false)
 
-  const groupedRules = salaryRules.reduce((acc, rule) => {
-    const existing = acc.find(g => g.siteId === rule.siteId)
-    if (existing) {
-      existing.rules.push(rule)
-    } else {
-      acc.push({
-        siteId: rule.siteId,
-        siteName: rule.siteName,
-        location: mockSites.find(s => s.id === rule.siteId)?.location || '',
-        minimumWage: rule.minimumWage,
-        rules: [rule],
+  const groupedRules = mockSites.map(site => {
+    let rulesForSite = salaryRules.filter(r => r.siteId === site.id)
+    
+    // If showAllPositions is true, add empty rules for positions that don't have entries
+    if (showAllPositions) {
+      const existingPositions = rulesForSite.map(r => r.position)
+      const missingPositions = mockPositions.filter(p => !existingPositions.includes(p))
+      
+      missingPositions.forEach(position => {
+        rulesForSite.push({
+          id: `temp-${site.id}-${position}`,
+          siteId: site.id,
+          siteName: site.name,
+          position,
+          positionAllowance: 0,
+          baseSalary: site.minimumWage,
+          minimumWage: site.minimumWage,
+          effectiveDate: new Date().toISOString().split('T')[0],
+          status: 'active',
+        })
       })
     }
-    return acc
-  }, [] as Array<{ siteId: string; siteName: string; location: string; minimumWage: number; rules: SalaryRule[] }>)
+    
+    return {
+      siteId: site.id,
+      siteName: site.name,
+      location: site.location,
+      minimumWage: site.minimumWage,
+      rules: rulesForSite,
+    }
+  }).filter(group => group.rules.length > 0)
 
   const handleEditRule = (rule: SalaryRule) => {
     setEditingRule(rule)
@@ -246,28 +264,45 @@ export default function ManageSalaryPage() {
         </p>
       </div>
 
-      {/* View Selector Bar */}
-      <div className="flex gap-0 border border-border rounded-lg overflow-hidden bg-muted/50">
-        <button
-          onClick={() => setView('position')}
-          className={`flex-1 px-4 py-3 font-medium transition-colors ${
-            view === 'position'
-              ? 'bg-background text-foreground border-r border-border'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Position Salary
-        </button>
-        <button
-          onClick={() => setView('base')}
-          className={`flex-1 px-4 py-3 font-medium transition-colors ${
-            view === 'base'
-              ? 'bg-background text-foreground'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Manage Base Salary
-        </button>
+      {/* View Selector Bar - Elegant Design */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex gap-0 border border-border rounded-lg overflow-hidden bg-background shadow-sm">
+          <button
+            onClick={() => setView('position')}
+            className={`px-6 py-2.5 font-medium text-sm transition-all ${
+              view === 'position'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:text-foreground bg-muted/20'
+            }`}
+          >
+            Position Salary
+          </button>
+          <div className="w-px bg-border" />
+          <button
+            onClick={() => setView('base')}
+            className={`px-6 py-2.5 font-medium text-sm transition-all ${
+              view === 'base'
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:text-foreground bg-muted/20'
+            }`}
+          >
+            Manage Base Salary
+          </button>
+        </div>
+
+        {/* Show All Positions Toggle - Only visible in Position Salary view */}
+        {view === 'position' && (
+          <div className="flex items-center gap-3 px-4 py-2.5 border border-border rounded-lg bg-muted/30">
+            <Label htmlFor="show-all" className="text-sm font-medium cursor-pointer">
+              Show All Positions
+            </Label>
+            <Switch
+              id="show-all"
+              checked={showAllPositions}
+              onCheckedChange={setShowAllPositions}
+            />
+          </div>
+        )}
       </div>
 
       {/* Position Salary View */}
