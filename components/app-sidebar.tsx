@@ -22,6 +22,7 @@ import {
   Monitor,
   TrendingUp,
   Zap,
+  DollarSign,
 } from 'lucide-react'
 
 import {
@@ -144,6 +145,11 @@ const payrollNavItems = [
     title: 'Manage Overtime',
     url: '/payroll/overtime',
     icon: TrendingUp,
+  },
+  {
+    title: 'Salary',
+    url: '/payroll/salary',
+    icon: DollarSign,
   },
 ]
 
