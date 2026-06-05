@@ -293,7 +293,7 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-<StatsCards stats={overallStats} />
+      <StatsCards stats={overallStats} />
 
       {/* Location-based Attendance Overview */}
       <LocationAttendance locationData={locationStats} />

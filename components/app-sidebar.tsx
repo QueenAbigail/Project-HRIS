@@ -20,6 +20,10 @@ import {
   MapPin,
   ChevronLeft,
   Monitor,
+  TrendingUp,
+  Zap,
+  DollarSign,
+  Minus,
 } from 'lucide-react'
 
 import {
@@ -73,11 +77,11 @@ function LogoIcon({ src, alt, className }: { src: string; alt: string; className
   return (
     <div className={className}>
       {src && src !== '/icon.svg' ? (
-        <Image 
-          src={src} 
-          alt={alt} 
-          width={32} 
-          height={32} 
+        <Image
+          src={src}
+          alt={alt}
+          width={32}
+          height={32}
           className="rounded-lg object-cover"
         />
       ) : (
@@ -111,7 +115,7 @@ const mainNavItems = [
   },
   {
     title: 'Payroll',
-    url: '/dashboard/payroll',
+    url: '/payroll',
     icon: Wallet,
   },
   {
@@ -119,6 +123,39 @@ const mainNavItems = [
     url: '/dashboard/leave',
     icon: CalendarDays,
     badge: 5,
+  },
+]
+
+const payrollNavItems = [
+  {
+    title: 'Dashboard',
+    url: '/payroll',
+    icon: LayoutDashboard,
+  },
+  {
+    title: 'Payroll Management',
+    url: '/payroll/management',
+    icon: Wallet,
+  },
+  {
+    title: 'Monthly Recap',
+    url: '/payroll/monthly-recap',
+    icon: FileBarChart,
+  },
+  {
+    title: 'Manage Salary',
+    url: '/payroll/salary',
+    icon: DollarSign,
+  },
+  {
+    title: 'Manage Overtime',
+    url: '/payroll/overtime',
+    icon: TrendingUp,
+  },
+  {
+    title: 'Manage Deduction',
+    url: '/payroll/deduction',
+    icon: Minus,
   },
 ]
 
@@ -173,6 +210,11 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   const displayName = user?.name ?? user?.email ?? 'Unknown User'
   const displayPosition = user?.position ?? 'Staff'
   const initials = user?.name ? (user.name[0]?.toUpperCase() + (user.name[1]?.toUpperCase() || '')) : 'U?'
+  
+  // Determine which menu to show based on the current path
+  const isPayrollPage = pathname.startsWith('/payroll')
+  const navItemsToShow = isPayrollPage ? payrollNavItems : mainNavItems
+  const menuLabel = isPayrollPage ? 'Payroll Menu' : 'Main Menu'
 
   return (
     <Sidebar variant="inset" collapsible="icon" className="overflow-hidden">
@@ -190,8 +232,8 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem className="w-full -mx-2">
-            <SidebarMenuButton 
-              onClick={toggleSidebar} 
+            <SidebarMenuButton
+              onClick={toggleSidebar}
               className="w-full px-2 h-9"
               title={state === 'expanded' ? 'Collapse sidebar' : 'Expand sidebar'}
             >
@@ -201,11 +243,30 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className="[&>[data-radix-scroll-area-viewport]]:overflow-x-hidden">
+        {isPayrollPage && (
+          <>
+            <SidebarGroup>
+              <SidebarGroupContent className="overflow-x-hidden">
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild className="text-primary hover:text-primary hover:bg-primary/10">
+                      <Link href="/dashboard" className="flex items-center gap-2">
+                        <ChevronLeft className="size-4" />
+                        <span>Back to Main Menu</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarSeparator />
+          </>
+        )}
         <SidebarGroup>
-          <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
+          <SidebarGroupLabel>{menuLabel}</SidebarGroupLabel>
           <SidebarGroupContent className="overflow-x-hidden">
             <SidebarMenu>
-              {mainNavItems.map((item) => (
+              {navItemsToShow.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={pathname === item.url}>
                     <Link href={item.url} className="flex items-center min-w-0 gap-2">
@@ -278,7 +339,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {mounted && (
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => {
                       const nextTheme = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'
                       setTheme(nextTheme)
@@ -309,7 +370,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   className="text-destructive cursor-pointer"
                   onClick={async () => {
                     toast.success('Successfully logged out', {

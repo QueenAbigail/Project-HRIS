@@ -1,10 +1,8 @@
 import { AppSidebar } from "@/components/app-sidebar"
 import { HeaderControls } from "@/components/header-controls"
-import { WelcomeToast } from "@/components/dashboard/welcome-toast"
 import { MobileHeader } from "@/components/mobile-header"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { LoadingProvider } from "@/lib/loading-context"
-
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -17,7 +15,6 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getSystemSettings } from "@/lib/system"
-import Link from "next/link"
 
 interface User {
   name: string | null
@@ -36,7 +33,7 @@ export interface LayoutProps {
   children: React.ReactNode
 }
 
-export default async function DashboardLayout({ children }: LayoutProps) {
+export default async function PayrollLayout({ children }: LayoutProps) {
   const supabase = await createClient()
   const { data: { session } } = await supabase.auth.getSession()
 
@@ -68,27 +65,9 @@ export default async function DashboardLayout({ children }: LayoutProps) {
     systemSettings = null
   }
 
-  const pathNames: Record<string, string> = {
-    '/dashboard': 'Overview',
-    '/dashboard/employees': 'Employees',
-    '/dashboard/attendance': 'Attendance',
-    '/dashboard/patrol': 'Patrol Monitoring',
-    '/payroll': 'Payroll',
-    '/dashboard/leave': 'Leave Management',
-    '/dashboard/shifts': 'Shift Schedule',
-    '/dashboard/reports': 'Reports',
-    '/dashboard/settings': 'Settings',
-    '/superadmin/devices': 'Device Management',
-  }
-
-  const pathname = '/dashboard' // Default since server, or use headers() for real pathname if needed
-
-  const currentPage = pathNames[pathname] || 'Dashboard'
-
   return (
     <LoadingProvider>
       <SidebarProvider>
-        <WelcomeToast userName={user?.name} />
         <AppSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
         <SidebarInset>
           <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card/50 backdrop-blur-sm px-4">
@@ -101,14 +80,10 @@ export default async function DashboardLayout({ children }: LayoutProps) {
                       Dashboard
                     </BreadcrumbLink>
                   </BreadcrumbItem>
-                  {pathname !== '/dashboard' && (
-                    <>
-                      <BreadcrumbSeparator className="hidden md:block" />
-                      <BreadcrumbItem>
-                        <BreadcrumbPage>{currentPage}</BreadcrumbPage>
-                      </BreadcrumbItem>
-                    </>
-                  )}
+                  <BreadcrumbSeparator className="hidden md:block" />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>Payroll</BreadcrumbPage>
+                  </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
             </div>
@@ -122,4 +97,3 @@ export default async function DashboardLayout({ children }: LayoutProps) {
     </LoadingProvider>
   )
 }
-
