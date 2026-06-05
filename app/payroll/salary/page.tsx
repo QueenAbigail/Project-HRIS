@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Tabs, TabsContent, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dialog,
   DialogContent,
@@ -284,9 +284,11 @@ export default function SalaryPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="rules" className="w-full">
-        <TabsTrigger value="rules">Salary Rules</TabsTrigger>
-        <TabsTrigger value="comparison">Site Comparison</TabsTrigger>
-        <TabsTrigger value="guidelines">Guidelines</TabsTrigger>
+        <TabsList>
+          <TabsTrigger value="rules">Salary Rules</TabsTrigger>
+          <TabsTrigger value="comparison">Site Comparison</TabsTrigger>
+          <TabsTrigger value="guidelines">Guidelines</TabsTrigger>
+        </TabsList>
 
         {/* Salary Rules Tab */}
         <TabsContent value="rules">
