@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -57,7 +57,7 @@ import { EmployeeAssignmentTable } from '@/components/shifts/EmployeeAssignmentT
 import { EmployeeSwapDialog } from '@/components/shifts/EmployeeSwapDialog'
 
 // Schedule pattern types
-type PatternType = 'fixed' | 'rotating'
+type PatternType = 'fixed' | 'rotating' | 'modulo'
 type ShiftType = 'morning' | 'night' | 'off'
 
 interface SchedulePattern {
@@ -73,74 +73,61 @@ interface SchedulePattern {
     sequence: { days: number; shiftType: ShiftType }[]
     startDate: string // When the pattern starts
   }
+  // For modulo patterns (e.g., 2222, 222, or custom sequences)
+  moduloPattern?: {
+    sequence: ShiftType[] // Each element represents one day in the cycle (e.g., ['morning', 'morning', 'night', 'night'] for 2-2)
+    startDate: string
+  }
   isActive: boolean
   assignedEmployees: number
 }
 
-// Mock data for schedule patterns
-const initialPatterns: SchedulePattern[] = [
-  {
-    id: 'pattern-1',
-    name: 'Standard Weekday',
-    description: 'Monday to Friday, Morning Shift',
-    type: 'fixed',
-    workingDays: [1, 2, 3, 4, 5],
-    shiftId: 'morning',
-    isActive: true,
-    assignedEmployees: 45,
-  },
-  {
-    id: 'pattern-2',
-    name: '2-2-2 Rotation',
-    description: '2 days morning, 2 days night, 2 days off - rotating',
-    type: 'rotating',
-    rotatingPattern: {
-      sequence: [
-        { days: 2, shiftType: 'morning' },
-        { days: 2, shiftType: 'night' },
-        { days: 2, shiftType: 'off' },
-      ],
-      startDate: '2026-01-01',
-    },
-    isActive: true,
-    assignedEmployees: 28,
-  },
-  {
-    id: 'pattern-3',
-    name: 'Weekend Security',
-    description: 'Saturday and Sunday, Night Shift',
-    type: 'fixed',
-    workingDays: [0, 6],
-    shiftId: 'night',
-    isActive: true,
-    assignedEmployees: 12,
-  },
-]
+// Mock data for schedule patterns - REMOVED, now fetching from database
+// const initialPatterns: SchedulePattern[] = [...]
 
-const shiftOptions = [
-  { id: 'morning', name: 'Morning Shift', startTime: '06:00', endTime: '14:00', icon: Sun },
-  { id: 'day', name: 'Day Shift', startTime: '08:00', endTime: '16:00', icon: Sun },
-  { id: 'evening', name: 'Evening Shift', startTime: '14:00', endTime: '22:00', icon: Sun },
-  { id: 'night', name: 'Night Shift', startTime: '22:00', endTime: '06:00', icon: Moon },
-]
-
-const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-
-const shiftIcons = {
-  morning: Sun,
-  day: Sun,
-  evening: Sunset,
-  night: Moon,
-} as const
-
-export default function SchedulesPage() {
-  const [patterns, setPatterns] = useState<SchedulePattern[]>(initialPatterns)
+export default function SchedulePatternsPage() {
+  const [patterns, setPatterns] = useState<SchedulePattern[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editPattern, setEditPattern] = useState<SchedulePattern | null>(null)
+  const [expandedPattern, setExpandedPattern] = useState<string | null>(null)
   const [activeMainTab, setActiveMainTab] = useState('patterns')
   const [createShiftOpen, setCreateShiftOpen] = useState(false)
   const [swapOpen, setSwapOpen] = useState(false)
-  
+
+  // Fetch patterns from database on component mount
+  useEffect(() => {
+    const fetchPatterns = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const response = await fetch('/api/schedule-patterns')
+        if (!response.ok) {
+          throw new Error('Failed to fetch patterns')
+        }
+        const data = await response.json()
+        // Transform database data to match the interface
+        const transformedData = data.map((p: any) => ({
+          ...p,
+          type: (p.type as string).toLowerCase() as PatternType,
+          workingDays: p.workingDays ? JSON.parse(p.workingDays) : undefined,
+          rotatingPattern: p.rotatingPattern ? JSON.parse(p.rotatingPattern) : undefined,
+          moduloPattern: p.moduloPattern ? JSON.parse(p.moduloPattern) : undefined,
+        }))
+        setPatterns(transformedData)
+      } catch (err) {
+        console.error('[v0] Error fetching patterns:', err)
+        setError('Failed to load patterns')
+        toast.error('Failed to load patterns')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPatterns()
+  }, [])
+
   // Get shifts from store
   const shifts = useSchedulesStore(state => state.shifts)
   const lateCheckIns = getLateCheckIns()
@@ -157,6 +144,7 @@ export default function SchedulesPage() {
       { days: 2, shiftType: 'night' as ShiftType },
       { days: 2, shiftType: 'off' as ShiftType },
     ],
+    moduloSequence: ['morning', 'morning', 'night', 'night'] as ShiftType[],
     startDate: new Date().toISOString().split('T')[0],
   })
 
@@ -172,6 +160,7 @@ export default function SchedulesPage() {
         { days: 2, shiftType: 'night' },
         { days: 2, shiftType: 'off' },
       ],
+      moduloSequence: ['morning', 'morning', 'night', 'night'],
       startDate: new Date().toISOString().split('T')[0],
     })
     setEditPattern(null)
@@ -211,7 +200,30 @@ export default function SchedulesPage() {
     }
   }
 
-  const handleSubmit = () => {
+  const handleModuloSequenceChange = (index: number, value: ShiftType) => {
+    setFormData(prev => ({
+      ...prev,
+      moduloSequence: prev.moduloSequence.map((shift, i) => i === index ? value : shift)
+    }))
+  }
+
+  const addModuloDay = () => {
+    setFormData(prev => ({
+      ...prev,
+      moduloSequence: [...prev.moduloSequence, 'off' as ShiftType]
+    }))
+  }
+
+  const removeModuloDay = (index: number) => {
+    if (formData.moduloSequence.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        moduloSequence: prev.moduloSequence.filter((_, i) => i !== index)
+      }))
+    }
+  }
+
+  const handleSubmit = async () => {
     if (!formData.name.trim()) {
       toast.error('Please enter a pattern name')
       return
@@ -228,31 +240,76 @@ export default function SchedulesPage() {
       return
     }
 
-    const newPattern: SchedulePattern = {
-      id: editPattern?.id || `pattern-${Date.now()}`,
+    if (formData.type === 'modulo' && formData.moduloSequence.length === 0) {
+      toast.error('Modulo pattern must have at least one day')
+      return
+    }
+
+    // Convert type to uppercase for API
+    const typeMap: { [key: string]: string } = {
+      'fixed': 'FIXED',
+      'rotating': 'ROTATING',
+      'modulo': 'MODULO'
+    }
+
+    const newPattern = {
+      id: editPattern?.id,
       name: formData.name,
       description: formData.description || generateDescription(),
-      type: formData.type,
+      type: typeMap[formData.type],
       workingDays: formData.type === 'fixed' ? formData.workingDays : undefined,
       shiftId: formData.type === 'fixed' ? formData.shiftId : undefined,
       rotatingPattern: formData.type === 'rotating' ? {
         sequence: formData.rotatingSequence,
         startDate: formData.startDate,
       } : undefined,
+      moduloPattern: formData.type === 'modulo' ? {
+        sequence: formData.moduloSequence,
+        startDate: formData.startDate,
+      } : undefined,
       isActive: true,
       assignedEmployees: editPattern?.assignedEmployees || 0,
     }
 
-    if (editPattern) {
-      setPatterns(prev => prev.map(p => p.id === editPattern.id ? newPattern : p))
-      toast.success('Schedule pattern updated')
-    } else {
-      setPatterns(prev => [...prev, newPattern])
-      toast.success('Schedule pattern created')
-    }
+    try {
+      const method = editPattern ? 'PUT' : 'POST'
+      const response = await fetch('/api/schedule-patterns', {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newPattern),
+      })
 
-    setCreateDialogOpen(false)
-    resetForm()
+      if (!response.ok) {
+        throw new Error('Failed to save pattern')
+      }
+
+      const savedPattern = await response.json()
+      
+      // Transform the response data
+      const transformedPattern = {
+        ...savedPattern,
+        type: (savedPattern.type as string).toLowerCase() as PatternType,
+        workingDays: savedPattern.workingDays ? JSON.parse(savedPattern.workingDays) : undefined,
+        rotatingPattern: savedPattern.rotatingPattern ? JSON.parse(savedPattern.rotatingPattern) : undefined,
+        moduloPattern: savedPattern.moduloPattern ? JSON.parse(savedPattern.moduloPattern) : undefined,
+      }
+
+      if (editPattern) {
+        setPatterns(prev => prev.map(p => p.id === editPattern.id ? transformedPattern : p))
+        toast.success('Schedule pattern updated')
+      } else {
+        setPatterns(prev => [...prev, transformedPattern])
+        toast.success('Schedule pattern created')
+      }
+
+      setCreateDialogOpen(false)
+      resetForm()
+    } catch (error) {
+      console.error('[v0] Error saving pattern:', error)
+      toast.error('Failed to save pattern')
+    }
   }
 
   const generateDescription = () => {
@@ -260,6 +317,16 @@ export default function SchedulesPage() {
       const days = formData.workingDays.map(d => dayNames[d]).join(', ')
       const shift = shiftOptions.find(s => s.id === formData.shiftId)
       return `${days} - ${shift?.name}`
+    } else if (formData.type === 'modulo') {
+      const pattern = formData.moduloSequence
+        .map((shift, i) => {
+          const first = formData.moduloSequence[i]
+          const count = formData.moduloSequence.slice(i).findIndex(s => s !== first) + 1
+          return count > 1 ? `${count}${shift[0].toUpperCase()}` : shift[0].toUpperCase()
+        })
+        .filter((v, i, arr) => arr.indexOf(v) === i)
+        .join('-')
+      return `Modulo: ${pattern}`
     } else {
       return formData.rotatingSequence
         .map(seq => `${seq.days}d ${seq.shiftType}`)
@@ -280,19 +347,28 @@ export default function SchedulesPage() {
         { days: 2, shiftType: 'night' },
         { days: 2, shiftType: 'off' },
       ],
-      startDate: pattern.rotatingPattern?.startDate || new Date().toISOString().split('T')[0],
+      moduloSequence: pattern.moduloPattern?.sequence || ['morning', 'morning', 'night', 'night'],
+      startDate: pattern.rotatingPattern?.startDate || pattern.moduloPattern?.startDate || new Date().toISOString().split('T')[0],
     })
     setCreateDialogOpen(true)
   }
 
-  const deletePattern = (id: string) => {
-    const pattern = patterns.find(p => p.id === id)
-    if (pattern && pattern.assignedEmployees > 0) {
-      toast.error('Cannot delete pattern with assigned employees')
-      return
+  const deletePattern = async (id: string) => {
+    try {
+      const response = await fetch(`/api/schedule-patterns?id=${id}`, {
+        method: 'DELETE',
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete pattern')
+      }
+
+      setPatterns(prev => prev.filter(p => p.id !== id))
+      toast.success('Schedule pattern deleted')
+    } catch (error) {
+      console.error('[v0] Error deleting pattern:', error)
+      toast.error('Failed to delete pattern')
     }
-    setPatterns(prev => prev.filter(p => p.id !== id))
-    toast.success('Pattern deleted')
   }
 
   const togglePatternActive = (id: string) => {
@@ -326,6 +402,17 @@ export default function SchedulesPage() {
           return seq.shiftType
         }
       }
+    }
+
+    if (pattern.type === 'modulo' && pattern.moduloPattern) {
+      const startDate = new Date(pattern.moduloPattern.startDate)
+      const diffTime = date.getTime() - startDate.getTime()
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+      
+      const cycleLength = pattern.moduloPattern.sequence.length
+      const dayInCycle = ((diffDays % cycleLength) + cycleLength) % cycleLength
+      
+      return pattern.moduloPattern.sequence[dayInCycle]
     }
     
     return null
@@ -392,7 +479,7 @@ export default function SchedulesPage() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -411,6 +498,22 @@ export default function SchedulesPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
+                  <p className="text-sm text-muted-foreground">Fixed Patterns</p>
+                  <p className="text-2xl font-bold">
+                    {patterns.filter(p => p.type === 'fixed').length}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-blue/10 p-3">
+                  <Clock className="size-6 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
                   <p className="text-sm text-muted-foreground">Rotating Patterns</p>
                   <p className="text-2xl font-bold">
                     {patterns.filter(p => p.type === 'rotating').length}
@@ -418,6 +521,22 @@ export default function SchedulesPage() {
                 </div>
                 <div className="rounded-lg bg-warning/10 p-3">
                   <RotateCcw className="size-6 text-warning" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Modulo Patterns</p>
+                  <p className="text-2xl font-bold">
+                    {patterns.filter(p => p.type === 'modulo').length}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-success/10 p-3">
+                  <RotateCcw className="size-6 text-success" />
                 </div>
               </div>
             </CardContent>
@@ -454,6 +573,7 @@ export default function SchedulesPage() {
                 <TabsTrigger value="all">All Patterns</TabsTrigger>
                 <TabsTrigger value="fixed">Fixed</TabsTrigger>
                 <TabsTrigger value="rotating">Rotating</TabsTrigger>
+                <TabsTrigger value="modulo">Modulo</TabsTrigger>
               </TabsList>
 
               <TabsContent value="all">
@@ -477,6 +597,15 @@ export default function SchedulesPage() {
               <TabsContent value="rotating">
                 <PatternList 
                   patterns={patterns.filter(p => p.type === 'rotating')} 
+                  onEdit={openEditDialog} 
+                  onDelete={deletePattern}
+                  onToggle={togglePatternActive}
+                  generatePreview={generatePreview}
+                />
+              </TabsContent>
+              <TabsContent value="modulo">
+                <PatternList 
+                  patterns={patterns.filter(p => p.type === 'modulo')} 
                   onEdit={openEditDialog} 
                   onDelete={deletePattern}
                   onToggle={togglePatternActive}
@@ -677,6 +806,7 @@ export default function SchedulesPage() {
                   <SelectContent>
                     <SelectItem value="fixed">Fixed Weekly</SelectItem>
                     <SelectItem value="rotating">Rotating Pattern</SelectItem>
+                    <SelectItem value="modulo">Modulo Pattern (2-2-2, etc.)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -842,6 +972,102 @@ export default function SchedulesPage() {
                 </div>
               </div>
             )}
+
+            {/* Modulo Pattern Config */}
+            {formData.type === 'modulo' && (
+              <div className="space-y-4 p-4 border border-border rounded-lg">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium">Modulo Pattern (e.g., 2-2-2, 2-2-2-2)</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addModuloDay}
+                  >
+                    <Plus className="mr-1 size-3" />
+                    Add Day
+                  </Button>
+                </div>
+
+                <p className="text-sm text-muted-foreground">
+                  Define a repeating daily pattern. Each day cycles through in order (e.g., 2 mornings, 2 nights, 2 days off).
+                </p>
+
+                <div className="space-y-3">
+                  {formData.moduloSequence.map((shift, index) => (
+                    <div key={index} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                      <span className="text-sm text-muted-foreground w-16">Day {index + 1}</span>
+                      
+                      <Select 
+                        value={shift} 
+                        onValueChange={(v) => handleModuloSequenceChange(index, v as ShiftType)}
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="morning">
+                            <span className="flex items-center gap-2">
+                              <Sun className="size-3 text-warning" />
+                              Morning
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="night">
+                            <span className="flex items-center gap-2">
+                              <Moon className="size-3 text-primary" />
+                              Night
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="off">
+                            <span className="flex items-center gap-2">
+                              <Coffee className="size-3 text-muted-foreground" />
+                              Day Off
+                            </span>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {formData.moduloSequence.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeModuloDay(index)}
+                          className="text-destructive hover:text-destructive ml-auto"
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-4 p-3 bg-primary/5 rounded-lg">
+                  <RotateCcw className="size-5 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">
+                      Cycle Length: {formData.moduloSequence.length} days
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Pattern: {formData.moduloSequence.map(s => s[0].toUpperCase()).join('-')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="moduloStartDate">Pattern Start Date</Label>
+                  <Input
+                    id="moduloStartDate"
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    The date when this cycle begins (Day 1 of the pattern)
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -890,9 +1116,11 @@ function PatternList({ patterns, onEdit, onDelete, onToggle, generatePreview }: 
                 <div className="space-y-2 flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold">{pattern.name}</h3>
-                    <Badge variant={pattern.type === 'rotating' ? 'default' : 'secondary'}>
+                    <Badge variant={pattern.type === 'rotating' ? 'default' : pattern.type === 'modulo' ? 'default' : 'secondary'}>
                       {pattern.type === 'rotating' ? (
                         <><RotateCcw className="size-3 mr-1" /> Rotating</>
+                      ) : pattern.type === 'modulo' ? (
+                        <><RotateCcw className="size-3 mr-1" /> Modulo</>
                       ) : (
                         'Fixed'
                       )}

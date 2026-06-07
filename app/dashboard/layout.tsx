@@ -1,9 +1,16 @@
+export const dynamic = 'force-dynamic'
+
+'use client'
+
 import { AppSidebar } from "@/components/app-sidebar"
 import { HeaderControls } from "@/components/header-controls"
 import { WelcomeToast } from "@/components/dashboard/welcome-toast"
 import { MobileHeader } from "@/components/mobile-header"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { LoadingProvider } from "@/lib/loading-context"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
 import {
   Breadcrumb,
@@ -13,11 +20,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { getSystemSettings } from "@/lib/system"
-import Link from "next/link"
 
 interface User {
   name: string | null
@@ -36,37 +38,46 @@ export interface LayoutProps {
   children: React.ReactNode
 }
 
-export default async function DashboardLayout({ children }: LayoutProps) {
-  const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession()
+export default function DashboardLayout({ children }: LayoutProps) {
+  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null)
+  const [systemSettings, setSystemSettings] = useState<SystemSettings | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  if (!session?.user?.email) {
-    redirect('/')
-  }
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-  let user: User | null = null
-  let systemSettings: SystemSettings | null = null
+        if (sessionError || !session?.user?.email) {
+          router.push('/')
+          return
+        }
 
-  try {
-    user = (await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { 
-        name: true, 
-        position: true, 
-        role: true 
+        // For now, just use the authenticated user's email as basic user data
+        // In a real app, you'd fetch additional user data from your database via a server action
+        setUser({
+          name: session.user.user_metadata?.name || null,
+          email: session.user.email,
+          position: null,
+          role: 'STAFF',
+        })
+        
+        setSystemSettings({
+          appName: 'SecureGuard',
+          appDescription: 'HR Administration',
+        })
+      } catch (error) {
+        console.error('[v0] Error loading user data:', error)
+        router.push('/')
+      } finally {
+        setIsLoading(false)
       }
-    })) as User | null
-  } catch (error) {
-    console.error('[v0] Error fetching user from database:', error)
-    user = null
-  }
+    }
 
-  try {
-    systemSettings = await getSystemSettings()
-  } catch (error) {
-    console.error('[v0] Error fetching system settings:', error)
-    systemSettings = null
-  }
+    loadUserData()
+  }, [router])
 
   const pathNames: Record<string, string> = {
     '/dashboard': 'Overview',
@@ -81,9 +92,22 @@ export default async function DashboardLayout({ children }: LayoutProps) {
     '/superadmin/devices': 'Device Management',
   }
 
-  const pathname = '/dashboard' // Default since server, or use headers() for real pathname if needed
-
+  const pathname = '/dashboard'
   const currentPage = pathNames[pathname] || 'Dashboard'
+
+  if (isLoading) {
+    return (
+      <LoadingProvider>
+        <SidebarProvider>
+          <SidebarInset>
+            <main className="flex-1 overflow-auto p-4 md:p-6 flex items-center justify-center">
+              <div className="text-center">Loading...</div>
+            </main>
+          </SidebarInset>
+        </SidebarProvider>
+      </LoadingProvider>
+    )
+  }
 
   return (
     <LoadingProvider>

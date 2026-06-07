@@ -7,33 +7,15 @@ import type { SystemSettings, User } from '@prisma/client'
 
 export async function getSystemSettings(): Promise<Omit<SystemSettings, 'id'> | null> {
   try {
-    if (!prisma) {
-      console.warn('[v0] Prisma client not available, returning default settings')
-      return {
-        logoUrl: '/logo.png',
-        appName: 'SecureGuard HR',
-        appDescription: 'HR Administration Dashboard'
-      }
-    }
-    
     const settings = await prisma.systemSettings.findFirst()
     return settings ? {
       logoUrl: settings.logoUrl,
       appName: settings.appName,
       appDescription: settings.appDescription,
-    } : {
-      logoUrl: '/logo.png',
-      appName: 'SecureGuard HR',
-      appDescription: 'HR Administration Dashboard'
-    }
+    } : null
   } catch (error) {
     console.error('[v0] Failed to fetch system settings:', error)
-    // Return default settings when database is unavailable
-    return {
-      logoUrl: '/logo.png',
-      appName: 'SecureGuard HR',
-      appDescription: 'HR Administration Dashboard'
-    }
+    return null
   }
 }
 
@@ -43,11 +25,6 @@ export async function getCurrentUserRole(): Promise<string | null> {
     const { data: { session } } = await supabase.auth.getSession()
 
     if (!session?.user?.email) return null
-
-    if (!prisma) {
-      console.warn('[v0] Prisma client not available')
-      return null
-    }
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
