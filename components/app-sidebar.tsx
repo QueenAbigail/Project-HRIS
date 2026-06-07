@@ -186,7 +186,26 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
       }
       loadData()
     } else {
+      setLocalSystemSettings(propSystemSettings)
       setLoading(false)
+    }
+  }, [propSystemSettings])
+
+  // Refetch settings every 5 seconds to catch updates from information page
+  useEffect(() => {
+    if (!propSystemSettings) {
+      const interval = setInterval(async () => {
+        const settings = await fetchSystemSettings()
+        if (settings) {
+          setLocalSystemSettings(prevSettings => 
+            // Only update if something changed
+            JSON.stringify(prevSettings) !== JSON.stringify(settings) 
+              ? settings 
+              : prevSettings
+          )
+        }
+      }, 5000)
+      return () => clearInterval(interval)
     }
   }, [propSystemSettings])
 
