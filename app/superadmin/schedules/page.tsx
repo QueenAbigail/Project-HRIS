@@ -95,6 +95,9 @@ export default function SchedulePatternsPage() {
   const [activeMainTab, setActiveMainTab] = useState('patterns')
   const [createShiftOpen, setCreateShiftOpen] = useState(false)
   const [swapOpen, setSwapOpen] = useState(false)
+
+  // Fetch patterns from database on component mount
+  useEffect(() => {
     const fetchPatterns = async () => {
       try {
         setLoading(true)
@@ -124,14 +127,6 @@ export default function SchedulePatternsPage() {
     fetchPatterns()
   }, [])
 
-  // Rest of component continues...
-
-  const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [editPattern, setEditPattern] = useState<SchedulePattern | null>(null)
-  const [activeMainTab, setActiveMainTab] = useState('patterns')
-  const [createShiftOpen, setCreateShiftOpen] = useState(false)
-  const [swapOpen, setSwapOpen] = useState(false)
-  
   // Get shifts from store
   const shifts = useSchedulesStore(state => state.shifts)
   const lateCheckIns = getLateCheckIns()
