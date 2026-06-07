@@ -37,35 +37,42 @@ export interface LayoutProps {
 }
 
 export default async function DashboardLayout({ children }: LayoutProps) {
-  const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-
-  if (!session?.user?.email) {
-    redirect('/')
-  }
-
+  let supabase;
   let user: User | null = null
   let systemSettings: SystemSettings | null = null
 
   try {
-    user = (await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { 
-        name: true, 
-        position: true, 
-        role: true 
-      }
-    })) as User | null
-  } catch (error) {
-    console.error('[v0] Error fetching user from database:', error)
-    user = null
-  }
+    supabase = await createClient()
+    const { data: { session } } = await supabase.auth.getSession()
 
-  try {
-    systemSettings = await getSystemSettings()
+    if (!session?.user?.email) {
+      redirect('/')
+    }
+
+    try {
+      user = (await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { 
+          name: true, 
+          email: true,
+          position: true, 
+          role: true 
+        }
+      })) as User | null
+    } catch (error) {
+      console.error('[v0] Error fetching user from database:', error)
+      user = null
+    }
+
+    try {
+      systemSettings = await getSystemSettings()
+    } catch (error) {
+      console.error('[v0] Error fetching system settings:', error)
+      systemSettings = null
+    }
   } catch (error) {
-    console.error('[v0] Error fetching system settings:', error)
-    systemSettings = null
+    console.error('[v0] Error in DashboardLayout:', error)
+    redirect('/')
   }
 
   const pathNames: Record<string, string> = {
