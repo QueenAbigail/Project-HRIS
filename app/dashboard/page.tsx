@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic'
-
 import { prisma } from '@/lib/prisma'
 import { StatsCards } from '@/components/dashboard/stats-cards'
 import { AttendanceChart } from '@/components/dashboard/attendance-chart'

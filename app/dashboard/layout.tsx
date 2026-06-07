@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+'use client'
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { HeaderControls } from "@/components/header-controls"
@@ -15,10 +15,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { getSystemSettings } from "@/lib/system"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 
 interface User {
@@ -38,44 +36,35 @@ export interface LayoutProps {
   children: React.ReactNode
 }
 
-export default async function DashboardLayout({ children }: LayoutProps) {
-  let supabase;
-  let user: User | null = null
-  let systemSettings: SystemSettings | null = null
+export default function DashboardLayout({ children }: LayoutProps) {
+  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null)
+  const [systemSettings, setSystemSettings] = useState<SystemSettings | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  try {
-    supabase = await createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-
-    if (!session?.user?.email) {
-      redirect('/')
-    }
-
-    try {
-      user = (await prisma.user.findUnique({
-        where: { email: session.user.email },
-        select: { 
-          name: true, 
-          email: true,
-          position: true, 
-          role: true 
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        // Fetch user session and data from API route instead of server
+        const response = await fetch('/api/dashboard/user')
+        if (!response.ok) {
+          router.push('/')
+          return
         }
-      })) as User | null
-    } catch (error) {
-      console.error('[v0] Error fetching user from database:', error)
-      user = null
+        
+        const data = await response.json()
+        setUser(data.user)
+        setSystemSettings(data.systemSettings)
+      } catch (error) {
+        console.error('[v0] Error loading user data:', error)
+        router.push('/')
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    try {
-      systemSettings = await getSystemSettings()
-    } catch (error) {
-      console.error('[v0] Error fetching system settings:', error)
-      systemSettings = null
-    }
-  } catch (error) {
-    console.error('[v0] Error in DashboardLayout:', error)
-    redirect('/')
-  }
+    loadUserData()
+  }, [router])
 
   const pathNames: Record<string, string> = {
     '/dashboard': 'Overview',
@@ -90,9 +79,22 @@ export default async function DashboardLayout({ children }: LayoutProps) {
     '/superadmin/devices': 'Device Management',
   }
 
-  const pathname = '/dashboard' // Default since server, or use headers() for real pathname if needed
-
+  const pathname = '/dashboard'
   const currentPage = pathNames[pathname] || 'Dashboard'
+
+  if (isLoading) {
+    return (
+      <LoadingProvider>
+        <SidebarProvider>
+          <SidebarInset>
+            <main className="flex-1 overflow-auto p-4 md:p-6 flex items-center justify-center">
+              <div className="text-center">Loading...</div>
+            </main>
+          </SidebarInset>
+        </SidebarProvider>
+      </LoadingProvider>
+    )
+  }
 
   return (
     <LoadingProvider>
