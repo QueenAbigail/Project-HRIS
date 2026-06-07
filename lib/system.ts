@@ -6,14 +6,15 @@ import { createClient } from '@/lib/auth'
 import type { SystemSettings, User } from '@prisma/client'
 
 export async function getSystemSettings(): Promise<Omit<SystemSettings, 'id'> | null> {
+  const defaultSettings = {
+    logoUrl: '/logo.png',
+    appName: 'SecureGuard HR',
+    appDescription: 'HR Administration Dashboard'
+  }
+
   try {
     if (!prisma) {
-      console.warn('[v0] Prisma client not available, returning default settings')
-      return {
-        logoUrl: '/logo.png',
-        appName: 'SecureGuard HR',
-        appDescription: 'HR Administration Dashboard'
-      }
+      return defaultSettings
     }
     
     const settings = await prisma.systemSettings.findFirst()
@@ -21,19 +22,10 @@ export async function getSystemSettings(): Promise<Omit<SystemSettings, 'id'> | 
       logoUrl: settings.logoUrl,
       appName: settings.appName,
       appDescription: settings.appDescription,
-    } : {
-      logoUrl: '/logo.png',
-      appName: 'SecureGuard HR',
-      appDescription: 'HR Administration Dashboard'
-    }
+    } : defaultSettings
   } catch (error) {
-    console.error('[v0] Failed to fetch system settings:', error)
-    // Return default settings when database is unavailable
-    return {
-      logoUrl: '/logo.png',
-      appName: 'SecureGuard HR',
-      appDescription: 'HR Administration Dashboard'
-    }
+    // Silently return defaults on error (e.g., during build when DATABASE_URL is not set)
+    return defaultSettings
   }
 }
 
@@ -45,7 +37,6 @@ export async function getCurrentUserRole(): Promise<string | null> {
     if (!session?.user?.email) return null
 
     if (!prisma) {
-      console.warn('[v0] Prisma client not available')
       return null
     }
 
@@ -56,7 +47,7 @@ export async function getCurrentUserRole(): Promise<string | null> {
 
     return user?.role || null
   } catch (error) {
-    console.error('[v0] Failed to fetch user role:', error)
+    // Silently return null on error
     return null
   }
 }
