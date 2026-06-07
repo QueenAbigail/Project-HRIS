@@ -66,7 +66,7 @@ export default function DataPage() {
     const fetchAllCategories = async () => {
       try {
         setIsLoading(true)
-        const categoryKeys = ['department', 'position', 'certificate', 'religion', 'maritalStatus', 'employmentStatus', 'bloodType']
+        const categoryKeys = ['religion', 'maritalStatus', 'employmentStatus', 'bloodType']
         const results: Record<string, MasterDataItem[]> = {}
 
         for (const key of categoryKeys) {
