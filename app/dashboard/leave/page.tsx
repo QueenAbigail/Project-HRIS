@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { LeaveHeader } from '@/components/leave/leave-header'
 import { LeaveStats } from '@/components/leave/leave-stats'
 import { LeaveRequestsTable } from '@/components/leave/leave-requests-table'
