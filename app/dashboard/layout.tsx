@@ -1,6 +1,6 @@
-export const dynamic = 'force-dynamic'
-
 'use client'
+
+export const dynamic = 'force-dynamic'
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { HeaderControls } from "@/components/header-controls"
@@ -55,15 +55,24 @@ export default function DashboardLayout({ children }: LayoutProps) {
           return
         }
 
-        // For now, just use the authenticated user's email as basic user data
-        // In a real app, you'd fetch additional user data from your database via a server action
+        // Fetch data asli dari tabel 'users'
+        const { data: profile, error: profileError } = await supabase
+          .from('users')
+          .select('role, position')
+          .eq('id', session.user.id)
+          .single()
+
+        if (profileError) {
+          console.error('[Database] Error fetching profile:', profileError)
+        }
+
         setUser({
           name: session.user.user_metadata?.name || null,
           email: session.user.email,
-          position: null,
-          role: 'STAFF',
+          position: profile?.position || null,
+          role: profile?.role || 'STAFF', // Fallback ke STAFF kalau data kosong
         })
-        
+
         setSystemSettings({
           appName: 'SecureGuard',
           appDescription: 'HR Administration',
@@ -146,4 +155,3 @@ export default function DashboardLayout({ children }: LayoutProps) {
     </LoadingProvider>
   )
 }
-

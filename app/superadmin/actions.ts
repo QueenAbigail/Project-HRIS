@@ -55,6 +55,8 @@ export async function updateSettings(formData: FormData) {
 
   // 5. Refresh halaman biar logo & nama langsung ganti
   revalidatePath('/dashboard', 'layout')
+  revalidatePath('/superadmin', 'layout')
+  revalidatePath('/', 'layout')
 }
 
 // Tambahkan ini di bagian paling bawah actions.ts

@@ -143,7 +143,7 @@ export default function ClientPage() {
         const response = await fetch('/api/companies', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
         if (!response.ok) throw new Error('Failed to save')
         const result = await response.json()
-        
+
         if (editingItem) {
           setCompanies(prev => prev.map(c => c.id === editingItem.id ? { ...c, name: newItemName } : c))
         } else {
@@ -156,7 +156,7 @@ export default function ClientPage() {
         const response = await fetch(`/api/companies/${editingCompanyId}/sites`, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
         if (!response.ok) throw new Error('Failed to save')
         const result = await response.json()
-        
+
         setCompanies(prev => prev.map(c => c.id === editingCompanyId ? { ...c, sites: editingItem ? c.sites.map(s => s.id === editingItem.id ? { id: s.id, name: newItemName, code: newItemCode } : s) : [...c.sites, { id: result.id, name: result.name, code: result.code }] } : c))
         toast({ title: 'Success', description: editingItem ? 'Site updated' : 'Site added' })
       }
@@ -338,7 +338,7 @@ export default function ClientPage() {
                   value={newItemCode}
                   onChange={(e) => setNewItemCode(e.target.value.toUpperCase())}
                   placeholder="e.g., HOJ"
-                  maxLength={3}
+                  maxLength={20}
                   onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
                 />
               </div>
