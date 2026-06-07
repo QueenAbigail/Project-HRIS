@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "system_settings" (
+CREATE TABLE IF NOT EXISTS "system_settings" (
     "id" text NOT NULL,
     "logoUrl" text,
     "appName" text NOT NULL DEFAULT 'SecureGuard',
@@ -9,8 +9,8 @@ CREATE TABLE "system_settings" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "system_settings_id_key" ON "system_settings"("id");
+CREATE UNIQUE INDEX IF NOT EXISTS "system_settings_id_key" ON "system_settings"("id");
 
--- Insert default
-INSERT INTO "system_settings" (id, appName, appDescription) VALUES ('default', 'SecureGuard', 'HR Administration') ON CONFLICT (id) DO NOTHING;
+-- Insert default (using lowercase appName as per column definition)
+INSERT INTO "system_settings" (id, "appName", "appDescription") VALUES ('default', 'SecureGuard', 'HR Administration') ON CONFLICT (id) DO NOTHING;
 

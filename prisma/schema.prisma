@@ -99,6 +99,7 @@ model Shift {
   assignments        EmployeeShiftAssignment[]
   Attendance         Attendance[]
   patrols            Patrol[]
+  schedulePatterns   SchedulePattern[]
 
   @@map("shifts")
 }
@@ -340,3 +341,45 @@ model DeviceBinding {
   @@index([deviceId])
   @@map("device_bindings")
 }
+
+// Enums for schedule patterns
+enum PatternType {
+  FIXED
+  ROTATING
+  MODULO
+}
+
+enum ShiftTypePattern {
+  MORNING
+  NIGHT
+  OFF
+}
+
+// Schedule Pattern model - for managing shift schedules
+model SchedulePattern {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        PatternType
+  
+  // For fixed patterns
+  workingDays Json? // [0,1,2,3,4,5,6] as array of ints
+  shiftId     String?
+  shift       Shift?   @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  
+  // For rotating patterns - stored as JSON
+  rotatingPattern Json? // { sequence: [{ days: 2, shiftType: 'morning' }, ...], startDate: '2026-01-01' }
+  
+  // For modulo patterns - stored as JSON
+  moduloPattern Json? // { sequence: ['morning', 'morning', 'night', 'night'], startDate: '2026-01-01' }
+  
+  isActive          Boolean  @default(true)
+  assignedEmployees Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("schedule_patterns")
+}
+
+// Update Shift model to include schedule patterns
+// (Added relation in Shift model below)

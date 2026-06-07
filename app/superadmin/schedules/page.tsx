@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -82,72 +82,50 @@ interface SchedulePattern {
   assignedEmployees: number
 }
 
-// Mock data for schedule patterns
-const initialPatterns: SchedulePattern[] = [
-  {
-    id: 'pattern-1',
-    name: 'Standard Weekday',
-    description: 'Monday to Friday, Morning Shift',
-    type: 'fixed',
-    workingDays: [1, 2, 3, 4, 5],
-    shiftId: 'morning',
-    isActive: true,
-    assignedEmployees: 45,
-  },
-  {
-    id: 'pattern-2',
-    name: '2-2-2-2 (4-day cycle)',
-    description: '2 days morning, 2 days night - modulo pattern',
-    type: 'modulo',
-    moduloPattern: {
-      sequence: ['morning', 'morning', 'night', 'night'],
-      startDate: '2026-01-01',
-    },
-    isActive: true,
-    assignedEmployees: 28,
-  },
-  {
-    id: 'pattern-3',
-    name: '2-2-2 with Weekend Off',
-    description: '2 days morning, 2 days night, 2 days off + weekend - modulo',
-    type: 'modulo',
-    moduloPattern: {
-      sequence: ['morning', 'morning', 'night', 'night', 'off', 'off', 'off', 'off'],
-      startDate: '2026-01-01',
-    },
-    isActive: true,
-    assignedEmployees: 32,
-  },
-  {
-    id: 'pattern-4',
-    name: 'Weekend Security',
-    description: 'Saturday and Sunday, Night Shift',
-    type: 'fixed',
-    workingDays: [0, 6],
-    shiftId: 'night',
-    isActive: true,
-    assignedEmployees: 12,
-  },
-]
+// Mock data for schedule patterns - REMOVED, now fetching from database
+// const initialPatterns: SchedulePattern[] = [...]
 
-const shiftOptions = [
-  { id: 'morning', name: 'Morning Shift', startTime: '06:00', endTime: '14:00', icon: Sun },
-  { id: 'day', name: 'Day Shift', startTime: '08:00', endTime: '16:00', icon: Sun },
-  { id: 'evening', name: 'Evening Shift', startTime: '14:00', endTime: '22:00', icon: Sun },
-  { id: 'night', name: 'Night Shift', startTime: '22:00', endTime: '06:00', icon: Moon },
-]
+export default function SchedulePatternsPage() {
+  const [patterns, setPatterns] = useState<SchedulePattern[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [editPattern, setEditPattern] = useState<SchedulePattern | null>(null)
+  const [expandedPattern, setExpandedPattern] = useState<string | null>(null)
+  const [activeMainTab, setActiveMainTab] = useState('patterns')
+  const [createShiftOpen, setCreateShiftOpen] = useState(false)
+  const [swapOpen, setSwapOpen] = useState(false)
+    const fetchPatterns = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const response = await fetch('/api/schedule-patterns')
+        if (!response.ok) {
+          throw new Error('Failed to fetch patterns')
+        }
+        const data = await response.json()
+        // Transform database data to match the interface
+        const transformedData = data.map((p: any) => ({
+          ...p,
+          workingDays: p.workingDays ? JSON.parse(p.workingDays) : undefined,
+          rotatingPattern: p.rotatingPattern ? JSON.parse(p.rotatingPattern) : undefined,
+          moduloPattern: p.moduloPattern ? JSON.parse(p.moduloPattern) : undefined,
+        }))
+        setPatterns(transformedData)
+      } catch (err) {
+        console.error('[v0] Error fetching patterns:', err)
+        setError('Failed to load patterns')
+        toast.error('Failed to load patterns')
+      } finally {
+        setLoading(false)
+      }
+    }
 
-const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    fetchPatterns()
+  }, [])
 
-const shiftIcons = {
-  morning: Sun,
-  day: Sun,
-  evening: Sunset,
-  night: Moon,
-} as const
+  // Rest of component continues...
 
-export default function SchedulesPage() {
-  const [patterns, setPatterns] = useState<SchedulePattern[]>(initialPatterns)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editPattern, setEditPattern] = useState<SchedulePattern | null>(null)
   const [activeMainTab, setActiveMainTab] = useState('patterns')
@@ -249,7 +227,7 @@ export default function SchedulesPage() {
     }
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.name.trim()) {
       toast.error('Please enter a pattern name')
       return
@@ -271,8 +249,8 @@ export default function SchedulesPage() {
       return
     }
 
-    const newPattern: SchedulePattern = {
-      id: editPattern?.id || `pattern-${Date.now()}`,
+    const newPattern = {
+      id: editPattern?.id,
       name: formData.name,
       description: formData.description || generateDescription(),
       type: formData.type,
@@ -290,16 +268,44 @@ export default function SchedulesPage() {
       assignedEmployees: editPattern?.assignedEmployees || 0,
     }
 
-    if (editPattern) {
-      setPatterns(prev => prev.map(p => p.id === editPattern.id ? newPattern : p))
-      toast.success('Schedule pattern updated')
-    } else {
-      setPatterns(prev => [...prev, newPattern])
-      toast.success('Schedule pattern created')
-    }
+    try {
+      const method = editPattern ? 'PUT' : 'POST'
+      const response = await fetch('/api/schedule-patterns', {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newPattern),
+      })
 
-    setCreateDialogOpen(false)
-    resetForm()
+      if (!response.ok) {
+        throw new Error('Failed to save pattern')
+      }
+
+      const savedPattern = await response.json()
+      
+      // Transform the response data
+      const transformedPattern = {
+        ...savedPattern,
+        workingDays: savedPattern.workingDays ? JSON.parse(savedPattern.workingDays) : undefined,
+        rotatingPattern: savedPattern.rotatingPattern ? JSON.parse(savedPattern.rotatingPattern) : undefined,
+        moduloPattern: savedPattern.moduloPattern ? JSON.parse(savedPattern.moduloPattern) : undefined,
+      }
+
+      if (editPattern) {
+        setPatterns(prev => prev.map(p => p.id === editPattern.id ? transformedPattern : p))
+        toast.success('Schedule pattern updated')
+      } else {
+        setPatterns(prev => [...prev, transformedPattern])
+        toast.success('Schedule pattern created')
+      }
+
+      setCreateDialogOpen(false)
+      resetForm()
+    } catch (error) {
+      console.error('[v0] Error saving pattern:', error)
+      toast.error('Failed to save pattern')
+    }
   }
 
   const generateDescription = () => {
@@ -343,12 +349,23 @@ export default function SchedulesPage() {
     setCreateDialogOpen(true)
   }
 
-  const deletePattern = (id: string) => {
-    const pattern = patterns.find(p => p.id === id)
-    if (pattern && pattern.assignedEmployees > 0) {
-      toast.error('Cannot delete pattern with assigned employees')
-      return
+  const deletePattern = async (id: string) => {
+    try {
+      const response = await fetch(`/api/schedule-patterns?id=${id}`, {
+        method: 'DELETE',
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete pattern')
+      }
+
+      setPatterns(prev => prev.filter(p => p.id !== id))
+      toast.success('Schedule pattern deleted')
+    } catch (error) {
+      console.error('[v0] Error deleting pattern:', error)
+      toast.error('Failed to delete pattern')
     }
+  }
     setPatterns(prev => prev.filter(p => p.id !== id))
     toast.success('Pattern deleted')
   }
