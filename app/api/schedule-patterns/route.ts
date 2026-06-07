@@ -25,13 +25,21 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
+    // Convert type to uppercase for Prisma enum
+    const typeMap: { [key: string]: string } = {
+      'fixed': 'FIXED',
+      'rotating': 'ROTATING',
+      'modulo': 'MODULO'
+    }
+    const patternType = typeMap[body.type.toLowerCase()] || body.type
+
     const pattern = await prisma.schedulePattern.create({
       data: {
         name: body.name,
         description: body.description,
-        type: body.type,
+        type: patternType,
         workingDays: body.workingDays ? JSON.stringify(body.workingDays) : null,
-        shiftId: body.shiftId,
+        shiftId: body.shiftId || null,
         rotatingPattern: body.rotatingPattern ? JSON.stringify(body.rotatingPattern) : null,
         moduloPattern: body.moduloPattern ? JSON.stringify(body.moduloPattern) : null,
         isActive: body.isActive ?? true,
@@ -59,12 +67,20 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Pattern ID is required' }, { status: 400 })
     }
 
+    // Convert type to uppercase for Prisma enum
+    const typeMap: { [key: string]: string } = {
+      'fixed': 'FIXED',
+      'rotating': 'ROTATING',
+      'modulo': 'MODULO'
+    }
+    const patternType = typeMap[body.type.toLowerCase()] || body.type
+
     const pattern = await prisma.schedulePattern.update({
       where: { id },
       data: {
         name: body.name,
         description: body.description,
-        type: body.type,
+        type: patternType,
         workingDays: body.workingDays ? JSON.stringify(body.workingDays) : null,
         shiftId: body.shiftId,
         rotatingPattern: body.rotatingPattern ? JSON.stringify(body.rotatingPattern) : null,

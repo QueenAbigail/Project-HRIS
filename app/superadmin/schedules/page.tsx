@@ -110,6 +110,7 @@ export default function SchedulePatternsPage() {
         // Transform database data to match the interface
         const transformedData = data.map((p: any) => ({
           ...p,
+          type: (p.type as string).toLowerCase() as PatternType,
           workingDays: p.workingDays ? JSON.parse(p.workingDays) : undefined,
           rotatingPattern: p.rotatingPattern ? JSON.parse(p.rotatingPattern) : undefined,
           moduloPattern: p.moduloPattern ? JSON.parse(p.moduloPattern) : undefined,
@@ -244,11 +245,18 @@ export default function SchedulePatternsPage() {
       return
     }
 
+    // Convert type to uppercase for API
+    const typeMap: { [key: string]: string } = {
+      'fixed': 'FIXED',
+      'rotating': 'ROTATING',
+      'modulo': 'MODULO'
+    }
+
     const newPattern = {
       id: editPattern?.id,
       name: formData.name,
       description: formData.description || generateDescription(),
-      type: formData.type,
+      type: typeMap[formData.type],
       workingDays: formData.type === 'fixed' ? formData.workingDays : undefined,
       shiftId: formData.type === 'fixed' ? formData.shiftId : undefined,
       rotatingPattern: formData.type === 'rotating' ? {
@@ -282,6 +290,7 @@ export default function SchedulePatternsPage() {
       // Transform the response data
       const transformedPattern = {
         ...savedPattern,
+        type: (savedPattern.type as string).toLowerCase() as PatternType,
         workingDays: savedPattern.workingDays ? JSON.parse(savedPattern.workingDays) : undefined,
         rotatingPattern: savedPattern.rotatingPattern ? JSON.parse(savedPattern.rotatingPattern) : undefined,
         moduloPattern: savedPattern.moduloPattern ? JSON.parse(savedPattern.moduloPattern) : undefined,
@@ -360,9 +369,6 @@ export default function SchedulePatternsPage() {
       console.error('[v0] Error deleting pattern:', error)
       toast.error('Failed to delete pattern')
     }
-  }
-    setPatterns(prev => prev.filter(p => p.id !== id))
-    toast.success('Pattern deleted')
   }
 
   const togglePatternActive = (id: string) => {
