@@ -49,7 +49,7 @@ export async function middleware(req: NextRequest) {
     }
   )
 
-  /*const {
+  const {
     data: { user },
   } = await supabase.auth.getUser()
  
@@ -62,7 +62,7 @@ export async function middleware(req: NextRequest) {
   if (req.nextUrl.pathname === '/' && user) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
- */
+ 
   return res
 }
 
