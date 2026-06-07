@@ -6,6 +6,9 @@ import { WelcomeToast } from "@/components/dashboard/welcome-toast"
 import { MobileHeader } from "@/components/mobile-header"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { LoadingProvider } from "@/lib/loading-context"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
 import {
   Breadcrumb,
@@ -15,9 +18,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import Link from "next/link"
 
 interface User {
   name: string | null
@@ -45,16 +45,27 @@ export default function DashboardLayout({ children }: LayoutProps) {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        // Fetch user session and data from API route instead of server
-        const response = await fetch('/api/dashboard/user')
-        if (!response.ok) {
+        const supabase = createClient()
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+        if (sessionError || !session?.user?.email) {
           router.push('/')
           return
         }
+
+        // For now, just use the authenticated user's email as basic user data
+        // In a real app, you'd fetch additional user data from your database via a server action
+        setUser({
+          name: session.user.user_metadata?.name || null,
+          email: session.user.email,
+          position: null,
+          role: 'STAFF',
+        })
         
-        const data = await response.json()
-        setUser(data.user)
-        setSystemSettings(data.systemSettings)
+        setSystemSettings({
+          appName: 'SecureGuard',
+          appDescription: 'HR Administration',
+        })
       } catch (error) {
         console.error('[v0] Error loading user data:', error)
         router.push('/')
