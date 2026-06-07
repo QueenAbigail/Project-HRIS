@@ -52,9 +52,6 @@ export default function DataPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   const categoryConfig: Category[] = [
-    { title: 'Department', key: 'department' },
-    { title: 'Position', key: 'position' },
-    { title: 'Certificate', key: 'certificate' },
     { title: 'Religion', key: 'religion' },
     { title: 'Marital Status', key: 'maritalStatus' },
     { title: 'Employment Status', key: 'employmentStatus' },
