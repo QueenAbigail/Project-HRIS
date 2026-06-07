@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { AppSidebar } from "@/components/app-sidebar"
 import { HeaderControls } from "@/components/header-controls"
 import { WelcomeToast } from "@/components/dashboard/welcome-toast"
