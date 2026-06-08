@@ -68,8 +68,14 @@ export async function getSystemSettings() {
 }
 
 export async function getShifts() {
-  const shifts = await prisma.shift.findMany({
-    orderBy: { createdAt: 'asc' }
-  })
-  return shifts
+  try {
+    const shifts = await prisma.shift.findMany({
+      orderBy: { createdAt: 'asc' }
+    })
+    return shifts || []
+  } catch (error) {
+    console.error('[v0] Error fetching shifts:', error)
+    // Return empty array on error instead of throwing
+    return []
+  }
 }

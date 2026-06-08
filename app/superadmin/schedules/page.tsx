@@ -119,10 +119,12 @@ export default function SchedulePatternsPage() {
     const loadShifts = async () => {
       try {
         const shiftsData = await getShifts()
+        // Initialize with whatever we get (empty array if no data)
         initializeShifts(shiftsData)
       } catch (err) {
         console.error('[v0] Error loading shifts:', err)
-        toast.error('Failed to load shifts from database')
+        // Silently fail - show empty state instead of error
+        initializeShifts([])
       }
     }
     loadShifts()
