@@ -120,7 +120,7 @@ export default function SchedulePatternsPage() {
     const loadShifts = async () => {
       try {
         const shiftsData = await getShifts()
-        // Initialize with whatever we get (empty array if no data)
+        console.log('[v0] Loaded shifts from database:', shiftsData)
         initializeShifts(shiftsData)
       } catch (err) {
         console.error('[v0] Error loading shifts:', err)
@@ -734,12 +734,19 @@ export default function SchedulePatternsPage() {
                 <CardDescription>Configure shift times and grace periods</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {shifts.map(shift => (
+                {console.log('[v0] Rendering shifts, count:', shifts.length, 'shifts:', shifts)}
+                {shifts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Clock className="size-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-muted-foreground">No shifts configured. Create a shift to get started.</p>
+                  </div>
+                ) : (
+                  shifts.map(shift => (
                   <div key={shift.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
                     <div className="flex items-center gap-4">
                       <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center">
                         {(() => {
-                          const ShiftIcon = shiftIcons[shift.id as keyof typeof shiftIcons] || Clock
+                          const ShiftIcon = (shiftIcons as Record<string, any>)[shift.id] || Clock
                           return <ShiftIcon className="size-5 text-primary" />
                         })()}
                       </div>
@@ -762,7 +769,8 @@ export default function SchedulePatternsPage() {
                       Edit
                     </Button>
                   </div>
-                ))}
+                  ))
+                )}
               </CardContent>
             </Card>
 
