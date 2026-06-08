@@ -48,7 +48,6 @@ import { useSchedulesStore } from '@/stores/useSchedulesStore'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   formatTime,
-  getLateCheckIns,
   getShiftEmployees,
   getShiftStats,
 } from '@/lib/data'
@@ -164,7 +163,6 @@ export default function SchedulePatternsPage() {
 
   // Get shifts from store
   const shifts = useSchedulesStore(state => state.shifts)
-  const lateCheckIns = getLateCheckIns()
 
   // Form state
   const [formData, setFormData] = useState({
@@ -671,25 +669,6 @@ export default function SchedulePatternsPage() {
             </div>
 
             {/* Late Check-ins Alert */}
-            {lateCheckIns.length > 0 && (
-              <Card className="bg-warning/5 border-warning/30">
-                <CardContent className="flex items-center gap-4 py-4">
-                  <div className="size-10 rounded-lg bg-warning/10 flex items-center justify-center">
-                    <AlertTriangle className="size-5 text-warning" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">
-                      {lateCheckIns.length} late check-ins today
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {lateCheckIns.slice(0, 3).map(l => l.employeeName).join(', ')}
-                      {lateCheckIns.length > 3 && ` and ${lateCheckIns.length - 3} more`}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {/* Shift Overview Cards */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {shifts.map((shift) => {
