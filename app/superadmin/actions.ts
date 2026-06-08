@@ -79,3 +79,69 @@ export async function getShifts() {
     return []
   }
 }
+
+export async function createShift(data: {
+  name: string
+  startTime: string
+  endTime: string
+  gracePeriodMinutes: number
+}) {
+  try {
+    const shift = await prisma.shift.create({
+      data: {
+        name: data.name,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        gracePeriodMinutes: data.gracePeriodMinutes,
+      }
+    })
+    revalidatePath('/superadmin/schedules')
+    return shift
+  } catch (error) {
+    console.error('[v0] Error creating shift:', error)
+    throw new Error('Failed to create shift')
+  }
+}
+
+export async function updateShiftInDb(
+  shiftId: string,
+  data: {
+    name?: string
+    startTime?: string
+    endTime?: string
+    gracePeriodMinutes?: number
+  }
+) {
+  try {
+    const shift = await prisma.shift.update({
+      where: { id: shiftId },
+      data
+    })
+    revalidatePath('/superadmin/schedules')
+    return shift
+  } catch (error) {
+    console.error('[v0] Error updating shift:', error)
+    throw new Error('Failed to update shift')
+  }
+}
+
+export async function deleteShiftFromDb(shiftId: string) {
+  try {
+    // Check if shift has assignments
+    const assignments = await prisma.employeeSchedule.count({
+      where: { shiftId }
+    })
+    
+    if (assignments > 0) {
+      throw new Error('Cannot delete shift with assigned employees')
+    }
+
+    await prisma.shift.delete({
+      where: { id: shiftId }
+    })
+    revalidatePath('/superadmin/schedules')
+  } catch (error) {
+    console.error('[v0] Error deleting shift:', error)
+    throw error
+  }
+}
