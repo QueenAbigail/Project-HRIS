@@ -104,6 +104,7 @@ export function EmployeeAssignmentTable({ }: EmployeeAssignmentTableProps) {
           </div>
         )
       },
+    },
     // Actions
     {
       id: 'actions',
