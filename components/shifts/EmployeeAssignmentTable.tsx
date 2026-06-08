@@ -40,17 +40,17 @@ import { Badge } from '@/components/ui/badge'
 import { ShiftFormDialog } from './ShiftFormDialog'
 import { WorkingDaysSelector } from './WorkingDaysSelector'
 import { EmployeeSwapDialog } from './EmployeeSwapDialog'
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select'
 
-interface EmployeeAssignmentTableProps {}
+interface EmployeeAssignmentTableProps { }
 
-export function EmployeeAssignmentTable({}: EmployeeAssignmentTableProps) {
+export function EmployeeAssignmentTable({ }: EmployeeAssignmentTableProps) {
   const [editShiftOpen, setEditShiftOpen] = useState(false)
   const [swapOpen, setSwapOpen] = useState(false)
   const employees = useEmployeesWithAttendance()
@@ -91,23 +91,26 @@ export function EmployeeAssignmentTable({}: EmployeeAssignmentTableProps) {
     {
       accessorKey: 'workingDays',
       header: 'Days',
-      cell: ({ row }) => (
-        <div className="text-xs">
-          {row.original.workingDays.map(day => (
-            <span key={day} className="mr-1">
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'][day]}
-            </span>
-          ))}
-        </div>
-      )
-    },
+      cell: ({ row }) => {
+        // Amankan nilai workingDays biar nggak crash kalau null
+        const days = Array.isArray(row.original?.workingDays) ? row.original.workingDays : [];
+        return (
+          <div className="text-xs">
+            {days.map(day => (
+              <span key={day} className="mr-1">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'][day]}
+              </span>
+            ))}
+          </div>
+        )
+      },
     // Actions
     {
       id: 'actions',
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <WorkingDaysSelector 
-            employeeId={row.original.employeeId} 
+          <WorkingDaysSelector
+            employeeId={row.original.employeeId}
             currentDays={row.original.workingDays}
           />
           <Select onValueChange={(shiftId) => {
@@ -144,15 +147,15 @@ export function EmployeeAssignmentTable({}: EmployeeAssignmentTableProps) {
           Quick Swap
         </Button>
       </div>
-      
+
       <DataTable columns={columns} data={employees} />
 
-      <ShiftFormDialog 
-        open={editShiftOpen} 
+      <ShiftFormDialog
+        open={editShiftOpen}
         onOpenChange={setEditShiftOpen}
       />
-      <EmployeeSwapDialog 
-        open={swapOpen} 
+      <EmployeeSwapDialog
+        open={swapOpen}
         onOpenChange={setSwapOpen}
       />
     </div>
