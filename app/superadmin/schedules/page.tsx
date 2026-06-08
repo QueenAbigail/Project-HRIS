@@ -70,9 +70,9 @@ const shiftIcons: Record<string, React.ComponentType<any>> = {
 const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
 const shiftOptions = [
-  { id: 'morning', name: 'Morning Shift', startTime: '06:00', endTime: '14:00' },
-  { id: 'night', name: 'Night Shift', startTime: '14:00', endTime: '22:00' },
-  { id: 'off', name: 'Off', startTime: '', endTime: '' },
+  { id: 'morning', name: 'Morning Shift', startTime: '06:00', endTime: '14:00', icon: Sun },
+  { id: 'night', name: 'Night Shift', startTime: '14:00', endTime: '22:00', icon: Moon },
+  { id: 'off', name: 'Off', startTime: '', endTime: '', icon: Coffee },
 ]
 
 interface SchedulePattern {
