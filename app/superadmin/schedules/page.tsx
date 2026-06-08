@@ -26,14 +26,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { 
-  CalendarDays, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Sun, 
-  Moon, 
-  Coffee, 
+import {
+  CalendarDays,
+  Plus,
+  Edit,
+  Trash2,
+  Sun,
+  Moon,
+  Coffee,
   RotateCcw,
   Users,
   Clock,
@@ -46,7 +46,7 @@ import { toast } from 'sonner'
 import { Toaster } from '@/components/ui/sonner'
 import { useSchedulesStore } from '@/stores/useSchedulesStore'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { 
+import {
   formatTime,
   getLateCheckIns,
   getShiftEmployees,
@@ -146,7 +146,7 @@ export default function SchedulePatternsPage() {
   // Get shifts from store
   const shifts = useSchedulesStore(state => state.shifts)
   const lateCheckIns = getLateCheckIns()
-  
+
   // Form state
   const [formData, setFormData] = useState({
     name: '',
@@ -193,7 +193,7 @@ export default function SchedulePatternsPage() {
   const handleSequenceChange = (index: number, field: 'days' | 'shiftType', value: number | ShiftType) => {
     setFormData(prev => ({
       ...prev,
-      rotatingSequence: prev.rotatingSequence.map((seq, i) => 
+      rotatingSequence: prev.rotatingSequence.map((seq, i) =>
         i === index ? { ...seq, [field]: value } : seq
       )
     }))
@@ -301,7 +301,7 @@ export default function SchedulePatternsPage() {
       }
 
       const savedPattern = await response.json()
-      
+
       // Transform the response data
       const transformedPattern = {
         ...savedPattern,
@@ -373,7 +373,7 @@ export default function SchedulePatternsPage() {
       const response = await fetch(`/api/schedule-patterns?id=${id}`, {
         method: 'DELETE',
       })
-      
+
       if (!response.ok) {
         throw new Error('Failed to delete pattern')
       }
@@ -387,7 +387,7 @@ export default function SchedulePatternsPage() {
   }
 
   const togglePatternActive = (id: string) => {
-    setPatterns(prev => prev.map(p => 
+    setPatterns(prev => prev.map(p =>
       p.id === id ? { ...p, isActive: !p.isActive } : p
     ))
   }
@@ -406,7 +406,7 @@ export default function SchedulePatternsPage() {
       const startDate = new Date(pattern.rotatingPattern.startDate)
       const diffTime = date.getTime() - startDate.getTime()
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-      
+
       const cycleDays = pattern.rotatingPattern.sequence.reduce((sum, seq) => sum + seq.days, 0)
       const dayInCycle = ((diffDays % cycleDays) + cycleDays) % cycleDays
 
@@ -423,13 +423,13 @@ export default function SchedulePatternsPage() {
       const startDate = new Date(pattern.moduloPattern.startDate)
       const diffTime = date.getTime() - startDate.getTime()
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-      
+
       const cycleLength = pattern.moduloPattern.sequence.length
       const dayInCycle = ((diffDays % cycleLength) + cycleLength) % cycleLength
-      
+
       return pattern.moduloPattern.sequence[dayInCycle]
     }
-    
+
     return null
   }
 
@@ -495,141 +495,141 @@ export default function SchedulePatternsPage() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Patterns</p>
-                  <p className="text-2xl font-bold">{patterns.length}</p>
-                </div>
-                <div className="rounded-lg bg-primary/10 p-3">
-                  <CalendarDays className="size-6 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Patterns</p>
+                      <p className="text-2xl font-bold">{patterns.length}</p>
+                    </div>
+                    <div className="rounded-lg bg-primary/10 p-3">
+                      <CalendarDays className="size-6 text-primary" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Fixed Patterns</p>
-                  <p className="text-2xl font-bold">
-                    {patterns.filter(p => p.type === 'fixed').length}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-blue/10 p-3">
-                  <Clock className="size-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Fixed Patterns</p>
+                      <p className="text-2xl font-bold">
+                        {patterns.filter(p => p.type === 'fixed').length}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-blue/10 p-3">
+                      <Clock className="size-6 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Rotating Patterns</p>
-                  <p className="text-2xl font-bold">
-                    {patterns.filter(p => p.type === 'rotating').length}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-warning/10 p-3">
-                  <RotateCcw className="size-6 text-warning" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Rotating Patterns</p>
+                      <p className="text-2xl font-bold">
+                        {patterns.filter(p => p.type === 'rotating').length}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-warning/10 p-3">
+                      <RotateCcw className="size-6 text-warning" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Modulo Patterns</p>
-                  <p className="text-2xl font-bold">
-                    {patterns.filter(p => p.type === 'modulo').length}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-success/10 p-3">
-                  <RotateCcw className="size-6 text-success" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Modulo Patterns</p>
+                      <p className="text-2xl font-bold">
+                        {patterns.filter(p => p.type === 'modulo').length}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-success/10 p-3">
+                      <RotateCcw className="size-6 text-success" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Assigned Employees</p>
-                  <p className="text-2xl font-bold">
-                    {patterns.reduce((sum, p) => sum + p.assignedEmployees, 0)}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-success/10 p-3">
-                  <Users className="size-6 text-success" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Assigned Employees</p>
+                      <p className="text-2xl font-bold">
+                        {patterns.reduce((sum, p) => sum + p.assignedEmployees, 0)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-success/10 p-3">
+                      <Users className="size-6 text-success" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
-        {/* Pattern List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Schedule Patterns</CardTitle>
-            <CardDescription>
-              Configure fixed weekly schedules or rotating patterns (e.g., 2 days morning, 2 days night, 2 days off)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="all" className="w-full">
-              <TabsList className="mb-4">
-                <TabsTrigger value="all">All Patterns</TabsTrigger>
-                <TabsTrigger value="fixed">Fixed</TabsTrigger>
-                <TabsTrigger value="rotating">Rotating</TabsTrigger>
-                <TabsTrigger value="modulo">Modulo</TabsTrigger>
-              </TabsList>
+            {/* Pattern List */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Schedule Patterns</CardTitle>
+                <CardDescription>
+                  Configure fixed weekly schedules or rotating patterns (e.g., 2 days morning, 2 days night, 2 days off)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="all" className="w-full">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="all">All Patterns</TabsTrigger>
+                    <TabsTrigger value="fixed">Fixed</TabsTrigger>
+                    <TabsTrigger value="rotating">Rotating</TabsTrigger>
+                    <TabsTrigger value="modulo">Modulo</TabsTrigger>
+                  </TabsList>
 
-              <TabsContent value="all">
-                <PatternList 
-                  patterns={patterns} 
-                  onEdit={openEditDialog} 
-                  onDelete={deletePattern}
-                  onToggle={togglePatternActive}
-                  generatePreview={generatePreview}
-                />
-              </TabsContent>
-              <TabsContent value="fixed">
-                <PatternList 
-                  patterns={patterns.filter(p => p.type === 'fixed')} 
-                  onEdit={openEditDialog} 
-                  onDelete={deletePattern}
-                  onToggle={togglePatternActive}
-                  generatePreview={generatePreview}
-                />
-              </TabsContent>
-              <TabsContent value="rotating">
-                <PatternList 
-                  patterns={patterns.filter(p => p.type === 'rotating')} 
-                  onEdit={openEditDialog} 
-                  onDelete={deletePattern}
-                  onToggle={togglePatternActive}
-                  generatePreview={generatePreview}
-                />
-              </TabsContent>
-              <TabsContent value="modulo">
-                <PatternList 
-                  patterns={patterns.filter(p => p.type === 'modulo')} 
-                  onEdit={openEditDialog} 
-                  onDelete={deletePattern}
-                  onToggle={togglePatternActive}
-                  generatePreview={generatePreview}
-                />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+                  <TabsContent value="all">
+                    <PatternList
+                      patterns={patterns}
+                      onEdit={openEditDialog}
+                      onDelete={deletePattern}
+                      onToggle={togglePatternActive}
+                      generatePreview={generatePreview}
+                    />
+                  </TabsContent>
+                  <TabsContent value="fixed">
+                    <PatternList
+                      patterns={patterns.filter(p => p.type === 'fixed')}
+                      onEdit={openEditDialog}
+                      onDelete={deletePattern}
+                      onToggle={togglePatternActive}
+                      generatePreview={generatePreview}
+                    />
+                  </TabsContent>
+                  <TabsContent value="rotating">
+                    <PatternList
+                      patterns={patterns.filter(p => p.type === 'rotating')}
+                      onEdit={openEditDialog}
+                      onDelete={deletePattern}
+                      onToggle={togglePatternActive}
+                      generatePreview={generatePreview}
+                    />
+                  </TabsContent>
+                  <TabsContent value="modulo">
+                    <PatternList
+                      patterns={patterns.filter(p => p.type === 'modulo')}
+                      onEdit={openEditDialog}
+                      onDelete={deletePattern}
+                      onToggle={togglePatternActive}
+                      generatePreview={generatePreview}
+                    />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Shifts Tab */}
@@ -679,8 +679,8 @@ export default function SchedulePatternsPage() {
                 const hasLate = stats.late > 0
 
                 return (
-                  <Card 
-                    key={shift.id} 
+                  <Card
+                    key={shift.id}
                     className={`cursor-pointer hover:shadow-md transition-shadow ${hasLate ? 'ring-1 ring-warning/50' : ''}`}
                   >
                     <CardHeader className="pb-2">
@@ -759,15 +759,18 @@ export default function SchedulePatternsPage() {
               </CardContent>
             </Card>
 
-            <ShiftFormDialog 
-              open={createShiftOpen} 
+            <ShiftFormDialog
+              open={createShiftOpen}
               onOpenChange={setCreateShiftOpen}
             />
           </TabsContent>
 
           {/* Assignments Tab */}
           <TabsContent value="assignments">
-            <EmployeeAssignmentTable />
+            <EmployeeAssignmentTable
+              employees={getShiftEmployees()}
+              patterns={patterns}
+            />
           </TabsContent>
 
           {/* Swaps Tab */}
@@ -811,8 +814,8 @@ export default function SchedulePatternsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="type">Pattern Type</Label>
-                <Select 
-                  value={formData.type} 
+                <Select
+                  value={formData.type}
                   onValueChange={(v) => setFormData(prev => ({ ...prev, type: v as PatternType }))}
                 >
                   <SelectTrigger>
@@ -841,7 +844,7 @@ export default function SchedulePatternsPage() {
             {formData.type === 'fixed' && (
               <div className="space-y-4 p-4 border border-border rounded-lg">
                 <h3 className="font-medium">Fixed Weekly Schedule</h3>
-                
+
                 <div className="space-y-2">
                   <Label>Working Days</Label>
                   <div className="flex flex-wrap gap-2">
@@ -862,8 +865,8 @@ export default function SchedulePatternsPage() {
 
                 <div className="space-y-2">
                   <Label>Shift Assignment</Label>
-                  <Select 
-                    value={formData.shiftId} 
+                  <Select
+                    value={formData.shiftId}
                     onValueChange={(v) => setFormData(prev => ({ ...prev, shiftId: v }))}
                   >
                     <SelectTrigger>
@@ -904,7 +907,7 @@ export default function SchedulePatternsPage() {
                   {formData.rotatingSequence.map((seq, index) => (
                     <div key={index} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                       <span className="text-sm text-muted-foreground w-16">Step {index + 1}</span>
-                      
+
                       <div className="flex items-center gap-2">
                         <Input
                           type="number"
@@ -917,8 +920,8 @@ export default function SchedulePatternsPage() {
                         <span className="text-sm text-muted-foreground">days</span>
                       </div>
 
-                      <Select 
-                        value={seq.shiftType} 
+                      <Select
+                        value={seq.shiftType}
                         onValueChange={(v) => handleSequenceChange(index, 'shiftType', v as ShiftType)}
                       >
                         <SelectTrigger className="w-32">
@@ -1012,9 +1015,9 @@ export default function SchedulePatternsPage() {
                   {formData.moduloSequence.map((shift, index) => (
                     <div key={index} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                       <span className="text-sm text-muted-foreground w-16">Day {index + 1}</span>
-                      
-                      <Select 
-                        value={shift} 
+
+                      <Select
+                        value={shift}
                         onValueChange={(v) => handleModuloSequenceChange(index, v as ShiftType)}
                       >
                         <SelectTrigger className="w-40">
@@ -1197,9 +1200,9 @@ function PatternList({ patterns, onEdit, onDelete, onToggle, generatePreview }: 
                   <Button variant="ghost" size="sm" onClick={() => onEdit(pattern)}>
                     <Edit className="size-4" />
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="text-destructive hover:text-destructive"
                     onClick={() => onDelete(pattern.id)}
                     disabled={pattern.assignedEmployees > 0}
