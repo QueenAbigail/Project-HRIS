@@ -109,6 +109,8 @@ export default function SchedulePatternsPage() {
   const [expandedPattern, setExpandedPattern] = useState<string | null>(null)
   const [activeMainTab, setActiveMainTab] = useState('patterns')
   const [createShiftOpen, setCreateShiftOpen] = useState(false)
+  const [editShiftOpen, setEditShiftOpen] = useState(false)
+  const [editingShift, setEditingShift] = useState<typeof shifts[0] | null>(null)
   const [swapOpen, setSwapOpen] = useState(false)
 
   // Initialize shifts from database
@@ -748,7 +750,14 @@ export default function SchedulePatternsPage() {
                         </p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        setEditingShift(shift)
+                        setEditShiftOpen(true)
+                      }}
+                    >
                       <Edit className="size-4 mr-2" />
                       Edit
                     </Button>
@@ -760,6 +769,15 @@ export default function SchedulePatternsPage() {
             <ShiftFormDialog
               open={createShiftOpen}
               onOpenChange={setCreateShiftOpen}
+            />
+
+            <ShiftFormDialog
+              shift={editingShift || undefined}
+              open={editShiftOpen}
+              onOpenChange={(open) => {
+                setEditShiftOpen(open)
+                if (!open) setEditingShift(null)
+              }}
             />
           </TabsContent>
 

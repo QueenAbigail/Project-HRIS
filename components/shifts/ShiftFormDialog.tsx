@@ -25,7 +25,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>
 
 interface ShiftFormDialogProps {
-  shift?: Omit<Shift, 'id'>
+  shift?: Shift | Omit<Shift, 'id'>
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -43,9 +43,11 @@ export function ShiftFormDialog({ shift, open, onOpenChange }: ShiftFormDialogPr
   const onSubmit = async (values: FormValues) => {
     setLoading(true)
     try {
-      if (shift) {
-        updateShift(shift.id!, values)
+      if (shift && 'id' in shift) {
+        // Editing an existing shift
+        updateShift(shift.id, values)
       } else {
+        // Creating a new shift
         addShift(values)
       }
       form.reset()
