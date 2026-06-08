@@ -1,9 +1,10 @@
 import { useSchedulesStore } from '@/stores/useSchedulesStore'
+import { useShallow } from 'zustand/react'
 import { locations } from '@/lib/constants'
 import type { EmployeeWithAttendance } from '@/lib/data'
 
 export function useEmployeesWithAttendance(date: Date = new Date()) {
-  return useSchedulesStore(state => {
+  return useSchedulesStore(useShallow(state => {
     const dayOfWeek = date.getDay()
     
     return state.employeeSchedules.map(schedule => {
@@ -50,6 +51,6 @@ export function useEmployeesWithAttendance(date: Date = new Date()) {
         isWorkingToday,
       }
     }).filter(Boolean) as EmployeeWithAttendance[]
-  })
+  }))
 }
 
