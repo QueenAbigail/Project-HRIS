@@ -119,17 +119,10 @@ export default function SchedulePatternsPage() {
   useEffect(() => {
     const loadShifts = async () => {
       try {
-        // Clear old cached data from localStorage to force fresh fetch
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('schedules-storage')
-        }
-        
         const shiftsData = await getShifts()
-        console.log('[v0] Loaded shifts from database:', shiftsData)
         initializeShifts(shiftsData)
       } catch (err) {
         console.error('[v0] Error loading shifts:', err)
-        // Silently fail - show empty state instead of error
         initializeShifts([])
       }
     }

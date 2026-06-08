@@ -158,7 +158,7 @@ export const useSchedulesStore = create<SchedulesState>()(
     }),
     {
       name: 'schedules-storage',
-      partialize: (state) => ({ shifts: state.shifts, employeeSchedules: state.employeeSchedules }) // Persist only schedules, not volatile attendance
+      partialize: (state) => ({ employeeSchedules: state.employeeSchedules }) // Only persist employeeSchedules, NOT shifts (shifts come from DB)
     }
   )
 )
