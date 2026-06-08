@@ -198,7 +198,7 @@ export default function DataPage() {
         {categoryConfig.map((category) => {
           const filteredItems = getFilteredItems(category.key)
           return (
-            <Card key={category.key} className="border border-border bg-card p-6 flex flex-col h-[35vh] overflow-hidden">
+            <Card key={category.key} className="border border-border bg-card p-6 flex flex-col h-[50vh] overflow-hidden">
               <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <h2 className="text-base font-semibold text-card-foreground">{category.title}</h2>
                 <Button
