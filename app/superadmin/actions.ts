@@ -66,3 +66,10 @@ export async function getSystemSettings() {
   })
   return settings
 }
+
+export async function getShifts() {
+  const shifts = await prisma.shift.findMany({
+    orderBy: { createdAt: 'asc' }
+  })
+  return shifts
+}

@@ -58,7 +58,9 @@ async function main() {
 
     console.log(`📝 Creating admin user with email: ${adminEmail}`)
 
-    // 1. Create user in Supabase Auth
+    // 1. Create user in Supabase Auth or get existing
+    let userId: string
+    
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
       email: adminEmail,
       password: adminPassword,
@@ -68,15 +70,27 @@ async function main() {
       },
     })
 
-    if (authError) {
+    if (authError && authError.message.includes('already been registered')) {
+      // User already exists, get by email
+      console.log('ℹ️  Admin user already exists, using existing account')
+      const { data: userList } = await supabase.auth.admin.listUsers()
+      const existingAdminUser = userList?.users?.find((u: any) => u.email === adminEmail)
+      if (existingAdminUser) {
+        userId = existingAdminUser.id
+      } else {
+        throw new Error(`Failed to find existing admin user: ${adminEmail}`)
+      }
+    } else if (authError) {
       throw new Error(`Failed to create auth user: ${authError.message}`)
+    } else {
+      userId = authUser?.user?.id || ''
     }
 
-    if (!authUser?.user?.id) {
+    if (!userId) {
       throw new Error('Failed to get user ID from Supabase Auth')
     }
 
-    console.log(`✅ Auth user created with ID: ${authUser.user.id}`)
+    console.log(`✅ Auth user ready with ID: ${userId}`)
 
     // 2. Get or create a default site for the admin user
     let site = await prisma.site.findFirst({
@@ -96,13 +110,13 @@ async function main() {
 
     // 3. Create corresponding User record in database
     const dbUser = await prisma.user.upsert({
-      where: { id: authUser.user.id },
+      where: { id: userId },
       update: {
         role: 'SUPER_ADMIN',
         status: 'ACTIVE',
       },
       create: {
-        id: authUser.user.id,
+        id: userId,
         name: adminName,
         email: adminEmail,
         role: 'SUPER_ADMIN',
@@ -115,6 +129,24 @@ async function main() {
     })
 
     console.log(`✅ Database user created: ${dbUser.email} with role: ${dbUser.role}`)
+
+    // 4. Create default shifts
+    const shiftsData = [
+      { id: 'morning', name: 'Morning Shift', startTime: '06:00', endTime: '14:00', gracePeriodMinutes: 10 },
+      { id: 'day', name: 'Day Shift', startTime: '08:00', endTime: '16:00', gracePeriodMinutes: 10 },
+      { id: 'evening', name: 'Evening Shift', startTime: '14:00', endTime: '22:00', gracePeriodMinutes: 10 },
+      { id: 'night', name: 'Night Shift', startTime: '22:00', endTime: '06:00', gracePeriodMinutes: 10 },
+    ]
+
+    for (const shiftData of shiftsData) {
+      await prisma.shift.upsert({
+        where: { id: shiftData.id },
+        update: {},
+        create: shiftData,
+      })
+    }
+    console.log(`✅ Created/verified ${shiftsData.length} default shifts`)
+
     console.log(`
 🎉 Seed completed successfully!
 

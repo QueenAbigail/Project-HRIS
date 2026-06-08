@@ -35,6 +35,7 @@ export interface SchedulesState {
   updateEmployeeWorkingDays: (employeeId: string, workingDays: number[]) => void
   swapEmployees: (employeeAId: string, employeeBId: string, autoAdjustAttendance: boolean) => void
   resetToDefaults: () => void
+  initializeShifts: (shiftsData: Shift[]) => void
 }
 
 // Initial state from lib/data.ts
@@ -149,6 +150,10 @@ export const useSchedulesStore = create<SchedulesState>()(
       resetToDefaults: () => {
         set(initialState)
         toast.message('Reset to default schedules')
+      },
+
+      initializeShifts: (shiftsData) => {
+        set({ shifts: shiftsData })
       }
     }),
     {
