@@ -767,10 +767,7 @@ export default function SchedulePatternsPage() {
 
           {/* Assignments Tab */}
           <TabsContent value="assignments">
-            <EmployeeAssignmentTable
-              employees={getShiftEmployees()}
-              patterns={patterns}
-            />
+            <EmployeeAssignmentTable />
           </TabsContent>
 
           {/* Swaps Tab */}
