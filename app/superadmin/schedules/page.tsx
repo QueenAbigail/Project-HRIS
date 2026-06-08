@@ -119,6 +119,11 @@ export default function SchedulePatternsPage() {
   useEffect(() => {
     const loadShifts = async () => {
       try {
+        // Clear old cached data from localStorage to force fresh fetch
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('schedules-storage')
+        }
+        
         const shiftsData = await getShifts()
         console.log('[v0] Loaded shifts from database:', shiftsData)
         initializeShifts(shiftsData)
@@ -734,7 +739,6 @@ export default function SchedulePatternsPage() {
                 <CardDescription>Configure shift times and grace periods</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {console.log('[v0] Rendering shifts, count:', shifts.length, 'shifts:', shifts)}
                 {shifts.length === 0 ? (
                   <div className="text-center py-8">
                     <Clock className="size-8 mx-auto mb-2 text-muted-foreground" />
