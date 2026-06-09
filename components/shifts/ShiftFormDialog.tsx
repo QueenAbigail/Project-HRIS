@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSchedulesStore } from '@/stores/useSchedulesStore'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -39,6 +39,25 @@ export function ShiftFormDialog({ shift, open, onOpenChange }: ShiftFormDialogPr
     resolver: zodResolver(formSchema),
     defaultValues: shift || { name: '', startTime: '', endTime: '', gracePeriodMinutes: 10 }
   })
+
+  // Update form when shift data changes
+  useEffect(() => {
+    if (shift) {
+      form.reset({
+        name: shift.name,
+        startTime: shift.startTime,
+        endTime: shift.endTime,
+        gracePeriodMinutes: shift.gracePeriodMinutes
+      })
+    } else {
+      form.reset({
+        name: '',
+        startTime: '',
+        endTime: '',
+        gracePeriodMinutes: 10
+      })
+    }
+  }, [shift, form])
 
   const onSubmit = async (values: FormValues) => {
     setLoading(true)

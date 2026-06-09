@@ -126,6 +126,10 @@ export async function updateShiftInDb(
 }
 
 export async function deleteShiftFromDb(shiftId: string) {
+  if (!shiftId) {
+    throw new Error('Shift ID is required')
+  }
+  
   try {
     // Check if shift has assignments
     const assignments = await prisma.employeeSchedule.count({
