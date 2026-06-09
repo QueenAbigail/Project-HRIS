@@ -946,24 +946,17 @@ export default function SchedulePatternsPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="morning">
-                            <span className="flex items-center gap-2">
-                              <Sun className="size-3 text-warning" />
-                              Morning
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="night">
-                            <span className="flex items-center gap-2">
-                              <Moon className="size-3 text-primary" />
-                              Night
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="off">
-                            <span className="flex items-center gap-2">
-                              <Coffee className="size-3 text-muted-foreground" />
-                              Day Off
-                            </span>
-                          </SelectItem>
+                          {shifts.map(shift => (
+                            <SelectItem key={shift.id} value={shift.id}>
+                              <span className="flex items-center gap-2">
+                                {(() => {
+                                  const ShiftIcon = (shiftIcons as Record<string, any>)[shift.id] || Clock
+                                  return <ShiftIcon className="size-3" />
+                                })()}
+                                {shift.name}
+                              </span>
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
 
@@ -1042,24 +1035,17 @@ export default function SchedulePatternsPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="morning">
-                            <span className="flex items-center gap-2">
-                              <Sun className="size-3 text-warning" />
-                              Morning
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="night">
-                            <span className="flex items-center gap-2">
-                              <Moon className="size-3 text-primary" />
-                              Night
-                            </span>
-                          </SelectItem>
-                          <SelectItem value="off">
-                            <span className="flex items-center gap-2">
-                              <Coffee className="size-3 text-muted-foreground" />
-                              Day Off
-                            </span>
-                          </SelectItem>
+                          {shifts.map(shiftItem => (
+                            <SelectItem key={shiftItem.id} value={shiftItem.id}>
+                              <span className="flex items-center gap-2">
+                                {(() => {
+                                  const ShiftIcon = (shiftIcons as Record<string, any>)[shiftItem.id] || Clock
+                                  return <ShiftIcon className="size-3" />
+                                })()}
+                                {shiftItem.name}
+                              </span>
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
 
