@@ -957,6 +957,12 @@ export default function SchedulePatternsPage() {
                               </span>
                             </SelectItem>
                           ))}
+                          <SelectItem value="off">
+                            <span className="flex items-center gap-2">
+                              <Coffee className="size-3 text-muted-foreground" />
+                              Day Off
+                            </span>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
 
@@ -1046,6 +1052,12 @@ export default function SchedulePatternsPage() {
                               </span>
                             </SelectItem>
                           ))}
+                          <SelectItem value="off">
+                            <span className="flex items-center gap-2">
+                              <Coffee className="size-3 text-muted-foreground" />
+                              Day Off
+                            </span>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
 
