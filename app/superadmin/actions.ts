@@ -70,7 +70,7 @@ export async function getSystemSettings() {
 export async function getShifts() {
   try {
     const shifts = await prisma.shift.findMany({
-      orderBy: { createdAt: 'asc' }
+      orderBy: { id: 'asc' }
     })
     return shifts || []
   } catch (error) {
