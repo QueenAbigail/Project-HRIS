@@ -154,6 +154,5 @@ export const useSchedulesStore = create<SchedulesState>()(
         set({ shifts: shiftsData })
       }
     })
-  )
 )
 
