@@ -162,6 +162,11 @@ export function ShiftFormDialog({ shift, open, onOpenChange }: ShiftFormDialogPr
                   type="button" 
                   variant="destructive"
                   onClick={async () => {
+                    if (!shift || !('id' in shift) || !shift.id) {
+                      toast.error('Invalid shift data')
+                      return
+                    }
+                    
                     if (!confirm('Are you sure you want to delete this shift?')) return
                     
                     try {
