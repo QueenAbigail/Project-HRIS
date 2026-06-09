@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 import type { StateCreator } from 'zustand'
 // Jalur 1: Narik data dari gudang baru
 import { 
@@ -45,10 +44,9 @@ const initialState = {
   todayAttendance: initialTodayAttendance,
 }
 
-// Create store with persistence
+// Create store without persistence (shifts come from DB, not localStorage)
 export const useSchedulesStore = create<SchedulesState>()(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       ...initialState,
 
       addShift: (newShift) => {
@@ -155,11 +153,7 @@ export const useSchedulesStore = create<SchedulesState>()(
       initializeShifts: (shiftsData) => {
         set({ shifts: shiftsData })
       }
-    }),
-    {
-      name: 'schedules-storage',
-      partialize: (state) => ({ employeeSchedules: state.employeeSchedules }) // Only persist employeeSchedules, NOT shifts (shifts come from DB)
-    }
+    })
   )
 )
 
