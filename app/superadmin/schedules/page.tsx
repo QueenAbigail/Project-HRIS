@@ -993,18 +993,6 @@ export default function SchedulePatternsPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="startDate">Pattern Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    The date when this rotation cycle begins
-                  </p>
-                </div>
               </div>
             )}
 
@@ -1086,19 +1074,6 @@ export default function SchedulePatternsPage() {
                       Pattern: {formData.moduloSequence.map(s => s[0].toUpperCase()).join('-')}
                     </p>
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="moduloStartDate">Pattern Start Date</Label>
-                  <Input
-                    id="moduloStartDate"
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    The date when this cycle begins (Day 1 of the pattern)
-                  </p>
                 </div>
               </div>
             )}
