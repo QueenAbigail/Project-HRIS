@@ -35,6 +35,7 @@ export interface SchedulesState {
   swapEmployees: (employeeAId: string, employeeBId: string, autoAdjustAttendance: boolean) => void
   resetToDefaults: () => void
   initializeShifts: (shiftsData: Shift[]) => void
+  initializeEmployeeSchedules: (schedulesData: EmployeeSchedule[]) => void
 }
 
 // Initial state from lib/data.ts
@@ -152,7 +153,14 @@ export const useSchedulesStore = create<SchedulesState>()(
 
       initializeShifts: (shiftsData) => {
         set({ shifts: shiftsData })
+      },
+
+      initializeEmployeeSchedules: (schedulesData) => {
+        set({ employeeSchedules: schedulesData })
       }
+    })
+  )
+}
     })
 )
 

@@ -54,7 +54,7 @@ import {
 import { ShiftFormDialog } from '@/components/shifts/ShiftFormDialog'
 import { EmployeeAssignmentTable } from '@/components/shifts/EmployeeAssignmentTable'
 import { EmployeeSwapDialog } from '@/components/shifts/EmployeeSwapDialog'
-import { getShifts } from '@/app/superadmin/actions'
+import { getShifts, getEmployeeSchedules } from '@/app/superadmin/actions'
 
 // Schedule pattern types
 type PatternType = 'fixed' | 'rotating' | 'modulo'
@@ -115,6 +115,7 @@ export default function SchedulePatternsPage() {
 
   // Initialize shifts from database
   const initializeShifts = useSchedulesStore(state => state.initializeShifts)
+  const initializeEmployeeSchedules = useSchedulesStore(state => state.initializeEmployeeSchedules)
   
   useEffect(() => {
     const loadShifts = async () => {
@@ -128,6 +129,20 @@ export default function SchedulePatternsPage() {
     }
     loadShifts()
   }, [initializeShifts])
+
+  // Load employee schedules from database
+  useEffect(() => {
+    const loadEmployeeSchedules = async () => {
+      try {
+        const schedulesData = await getEmployeeSchedules()
+        initializeEmployeeSchedules(schedulesData)
+      } catch (err) {
+        console.error('[v0] Error loading employee schedules:', err)
+        initializeEmployeeSchedules([])
+      }
+    }
+    loadEmployeeSchedules()
+  }, [initializeEmployeeSchedules])
 
   // Fetch patterns from database on component mount
   useEffect(() => {

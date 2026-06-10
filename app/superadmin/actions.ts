@@ -80,6 +80,34 @@ export async function getShifts() {
   }
 }
 
+export async function getEmployeeSchedules() {
+  try {
+    const schedules = await prisma.employeeShiftAssignment.findMany({
+      include: {
+        employee: true,
+        shift: true,
+        location: true
+      },
+      orderBy: { employee: { firstName: 'asc' } }
+    })
+    
+    // Transform to match EmployeeSchedule type
+    return schedules.map(schedule => ({
+      employeeId: schedule.employee.id,
+      employeeName: `${schedule.employee.firstName} ${schedule.employee.lastName}`,
+      shiftId: schedule.shift.id,
+      shiftName: schedule.shift.name,
+      locationId: schedule.location.id as any,
+      locationName: schedule.location.name,
+      workingDays: schedule.workingDays || [],
+      initials: `${schedule.employee.firstName[0]}${schedule.employee.lastName[0]}`.toUpperCase()
+    }))
+  } catch (error) {
+    console.error('[v0] Error fetching employee schedules:', error)
+    return []
+  }
+}
+
 export async function createShift(data: {
   name: string
   startTime: string
