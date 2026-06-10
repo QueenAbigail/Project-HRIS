@@ -1145,36 +1145,6 @@ function PatternList({ patterns, onEdit, onDelete, onToggle, generatePreview }: 
                       {pattern.assignedEmployees} employees
                     </span>
                   </div>
-
-                  {/* Schedule Preview */}
-                  <div className="pt-4">
-                    <p className="text-xs text-muted-foreground mb-2">Next 14 days preview:</p>
-                    <div className="flex gap-1 flex-wrap">
-                      {preview.map((day, index) => {
-                        const isToday = index === 0
-                        return (
-                          <div
-                            key={index}
-                            className={`
-                              w-8 h-10 rounded flex flex-col items-center justify-center text-xs
-                              ${day.shift === 'morning' ? 'bg-warning/20 text-warning' : ''}
-                              ${day.shift === 'night' ? 'bg-primary/20 text-primary' : ''}
-                              ${day.shift === 'off' ? 'bg-muted text-muted-foreground' : ''}
-                              ${isToday ? 'ring-2 ring-primary' : ''}
-                            `}
-                            title={`${day.date.toLocaleDateString()} - ${day.shift || 'N/A'}`}
-                          >
-                            <span className="font-medium">
-                              {day.date.getDate()}
-                            </span>
-                            {day.shift === 'morning' && <Sun className="size-3" />}
-                            {day.shift === 'night' && <Moon className="size-3" />}
-                            {day.shift === 'off' && <Coffee className="size-3" />}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
                 </div>
 
                 <div className="flex items-center gap-2">
