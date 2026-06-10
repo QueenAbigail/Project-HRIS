@@ -69,12 +69,35 @@ export function EmployeeAssignmentTable({ }: EmployeeAssignmentTableProps) {
         </div>
       )
     },
-    // Current Shift
+    // Actions - Reassign Shift
+    {
+      id: 'shift-action',
+      header: 'Assign Shift',
+      cell: ({ row }) => (
+        <Select onValueChange={(shiftId) => {
+          if (shiftId) {
+            assignEmployeeShift(row.original.employeeId, shiftId as string, row.original.locationId, row.original.workingDays)
+          }
+        }}>
+          <SelectTrigger className="w-40 h-9">
+            <SelectValue placeholder={row.original.shiftName || "Select Shift"} />
+          </SelectTrigger>
+          <SelectContent>
+            {shifts.map(shift => (
+              <SelectItem key={shift.id} value={shift.id}>
+                {shift.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )
+    },
+    // Current Shift Display
     {
       accessorKey: 'shiftName',
-      header: 'Shift',
+      header: 'Current',
       cell: ({ row }) => (
-        <Badge>{row.original.shiftName}</Badge>
+        <Badge>{row.original.shiftName || 'None'}</Badge>
       )
     },
     // Location
@@ -85,53 +108,37 @@ export function EmployeeAssignmentTable({ }: EmployeeAssignmentTableProps) {
         <Badge variant="secondary">{row.original.locationName}</Badge>
       )
     },
-    // Working Days
+    // Working Days with Editor
     {
       accessorKey: 'workingDays',
-      header: 'Days',
+      header: 'Working Days',
       cell: ({ row }) => {
-        // Amankan nilai workingDays biar nggak crash kalau null
         const days = Array.isArray(row.original?.workingDays) ? row.original.workingDays : [];
         return (
-          <div className="text-xs">
-            {days.map(day => (
-              <span key={day} className="mr-1">
-                {['S', 'M', 'T', 'W', 'T', 'F', 'S'][day]}
-              </span>
-            ))}
+          <div className="flex items-center gap-2">
+            <div className="text-xs flex gap-1">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayLabel, i) => (
+                <span key={i} className={days.includes(i) ? 'font-bold text-primary' : 'text-muted-foreground'}>
+                  {dayLabel}
+                </span>
+              ))}
+            </div>
+            <WorkingDaysSelector
+              employeeId={row.original.employeeId}
+              currentDays={row.original.workingDays}
+            />
           </div>
         )
       },
     },
-    // Actions
+    // Quick Swap
     {
-      id: 'actions',
+      id: 'swap',
+      header: 'Actions',
       cell: ({ row }) => (
-        <div className="flex gap-1">
-          <WorkingDaysSelector
-            employeeId={row.original.employeeId}
-            currentDays={row.original.workingDays}
-          />
-          <Select onValueChange={(shiftId) => {
-            if (shiftId) {
-              assignEmployeeShift(row.original.employeeId, shiftId as string, row.original.locationId, row.original.workingDays)
-            }
-          }}>
-            <SelectTrigger className="w-32 h-9">
-              <SelectValue placeholder="Reassign Shift" />
-            </SelectTrigger>
-            <SelectContent>
-              {shifts.map(shift => (
-                <SelectItem key={shift.id} value={shift.id}>
-                  {shift.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="ghost" size="sm" onClick={() => setSwapOpen(true)}>
-            Swap
-          </Button>
-        </div>
+        <Button variant="ghost" size="sm" onClick={() => setSwapOpen(true)}>
+          Swap
+        </Button>
       )
     }
   ]
