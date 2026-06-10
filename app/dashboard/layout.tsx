@@ -120,7 +120,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
 
   return (
     <LoadingProvider>
-      <SidebarProvider>
+      <SidebarProvider suppressHydrationWarning>
         <WelcomeToast userName={user?.name} />
         <AppSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
         <SidebarInset>
