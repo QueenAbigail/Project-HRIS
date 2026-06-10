@@ -37,7 +37,6 @@ const DataTable = ({ columns, data }: { columns: any[], data: any[] }) => {
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ShiftFormDialog } from './ShiftFormDialog'
 import { WorkingDaysSelector } from './WorkingDaysSelector'
 import { EmployeeSwapDialog } from './EmployeeSwapDialog'
 import {
@@ -51,7 +50,6 @@ import {
 interface EmployeeAssignmentTableProps { }
 
 export function EmployeeAssignmentTable({ }: EmployeeAssignmentTableProps) {
-  const [editShiftOpen, setEditShiftOpen] = useState(false)
   const [swapOpen, setSwapOpen] = useState(false)
   const employees = useEmployeesWithAttendance()
   const shifts = useSchedulesStore(state => state.shifts)
@@ -141,9 +139,6 @@ export function EmployeeAssignmentTable({ }: EmployeeAssignmentTableProps) {
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
-        <Button onClick={() => setEditShiftOpen(true)}>
-          Manage Shifts
-        </Button>
         <Button variant="outline" onClick={() => setSwapOpen(true)}>
           Quick Swap
         </Button>
@@ -151,10 +146,6 @@ export function EmployeeAssignmentTable({ }: EmployeeAssignmentTableProps) {
 
       <DataTable columns={columns} data={employees} />
 
-      <ShiftFormDialog
-        open={editShiftOpen}
-        onOpenChange={setEditShiftOpen}
-      />
       <EmployeeSwapDialog
         open={swapOpen}
         onOpenChange={setSwapOpen}
