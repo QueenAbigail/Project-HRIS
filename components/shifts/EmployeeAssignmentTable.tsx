@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useSchedulesStore } from '@/stores/useSchedulesStore'
 import { useEmployeesWithAttendance } from './hooks'
+import { AddAssignmentDialog } from './AddAssignmentDialog'
 // Custom simple table since no DataTable component
 const DataTable = ({ columns, data }: { columns: any[], data: any[] }) => {
   return (
@@ -51,6 +52,7 @@ interface EmployeeAssignmentTableProps { }
 
 export function EmployeeAssignmentTable({ }: EmployeeAssignmentTableProps) {
   const [swapOpen, setSwapOpen] = useState(false)
+  const [addAssignmentOpen, setAddAssignmentOpen] = useState(false)
   const employees = useEmployeesWithAttendance()
   const shifts = useSchedulesStore(state => state.shifts)
   const assignEmployeeShift = useSchedulesStore(state => state.assignEmployeeShift)
@@ -146,6 +148,9 @@ export function EmployeeAssignmentTable({ }: EmployeeAssignmentTableProps) {
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
+        <Button onClick={() => setAddAssignmentOpen(true)}>
+          + Add Assignment
+        </Button>
         <Button variant="outline" onClick={() => setSwapOpen(true)}>
           Quick Swap
         </Button>
@@ -153,6 +158,11 @@ export function EmployeeAssignmentTable({ }: EmployeeAssignmentTableProps) {
 
       <DataTable columns={columns} data={employees} />
 
+      <AddAssignmentDialog
+        open={addAssignmentOpen}
+        onOpenChange={setAddAssignmentOpen}
+        employees={employees}
+      />
       <EmployeeSwapDialog
         open={swapOpen}
         onOpenChange={setSwapOpen}

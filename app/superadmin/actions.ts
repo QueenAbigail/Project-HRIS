@@ -177,3 +177,44 @@ export async function deleteShiftFromDb(shiftId: string) {
     throw error
   }
 }
+
+export async function assignEmployeeShift(
+  employeeId: string,
+  shiftId: string,
+  locationId: string,
+  workingDays: number[]
+) {
+  try {
+    // Check if employee already has an assignment
+    const existing = await prisma.employeeShiftAssignment.findFirst({
+      where: { employeeId }
+    })
+
+    if (existing) {
+      // Update existing assignment
+      await prisma.employeeShiftAssignment.update({
+        where: { id: existing.id },
+        data: {
+          shiftId,
+          locationId,
+          workingDays
+        }
+      })
+    } else {
+      // Create new assignment
+      await prisma.employeeShiftAssignment.create({
+        data: {
+          employeeId,
+          shiftId,
+          locationId,
+          workingDays
+        }
+      })
+    }
+
+    revalidatePath('/superadmin/schedules')
+  } catch (error) {
+    console.error('[v0] Error assigning employee shift:', error)
+    throw error
+  }
+}
