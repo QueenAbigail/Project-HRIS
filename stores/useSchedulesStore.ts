@@ -1,18 +1,14 @@
 import { create } from 'zustand'
 import type { StateCreator } from 'zustand'
-// Jalur 1: Narik data dari gudang baru
-import { 
+// Import types only, NOT the hardcoded data
+import type { 
   Shift, 
   LocationId, 
   EmployeeSchedule, 
-  AttendanceRecord,
-  shifts as initialShifts,
-  employeeSchedules as initialEmployeeSchedules,
-  locations,
-  todayAttendance as initialTodayAttendance
+  AttendanceRecord
 } from '@/lib/constants'
 
-// Jalur 2: Narik fungsi hitungan dari file lama
+// Import utility functions
 import { 
   calculateLateMinutes,
   formatTime 
@@ -38,11 +34,11 @@ export interface SchedulesState {
   initializeEmployeeSchedules: (schedulesData: EmployeeSchedule[]) => void
 }
 
-// Initial state from lib/data.ts
+// Initial state - starts EMPTY, will be populated from database
 const initialState = {
-  shifts: initialShifts,
-  employeeSchedules: initialEmployeeSchedules,
-  todayAttendance: initialTodayAttendance,
+  shifts: [],
+  employeeSchedules: [],
+  todayAttendance: [],
 }
 
 // Create store without persistence (shifts come from DB, not localStorage)
