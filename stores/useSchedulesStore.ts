@@ -161,7 +161,6 @@ export const useSchedulesStore = create<SchedulesState>()(
     })
   )
 }
-    })
   )
 )
 }
