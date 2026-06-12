@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useSchedulesStore } from '@/stores/useSchedulesStore'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -20,81 +19,60 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { assignEmployeeShift } from '@/app/superadmin/actions'
-import { getEmployeeSchedules } from '@/app/superadmin/actions'
+import { assignPatternToEmployee, getEmployeePatterns } from '@/app/superadmin/actions'
 
 interface AddAssignmentDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   employees: any[]
+  patterns?: any[]
 }
 
 export function AddAssignmentDialog({
   open,
   onOpenChange,
   employees,
+  patterns = [],
 }: AddAssignmentDialogProps) {
   const [selectedEmployee, setSelectedEmployee] = useState('')
-  const [selectedShift, setSelectedShift] = useState('')
-  const [selectedLocation, setSelectedLocation] = useState('')
+  const [selectedPattern, setSelectedPattern] = useState('')
   const [loading, setLoading] = useState(false)
-  
-  const shifts = useSchedulesStore(state => state.shifts)
-  const initializeEmployeeSchedules = useSchedulesStore(state => state.initializeEmployeeSchedules)
-
-  // Get available locations from existing assignments
-  const locations = [
-    { id: 'hq', name: 'Headquarters' },
-    { id: 'branch1', name: 'Branch 1' },
-    { id: 'branch2', name: 'Branch 2' },
-  ]
 
   const handleAssign = async () => {
-    if (!selectedEmployee || !selectedShift || !selectedLocation) {
-      toast.error('Please fill all fields')
+    if (!selectedEmployee || !selectedPattern) {
+      toast.error('Please select both employee and pattern')
       return
     }
 
     try {
       setLoading(true)
       
-      // Call server action to assign employee shift
-      await assignEmployeeShift(
-        selectedEmployee,
-        selectedShift,
-        selectedLocation as any,
-        [0, 1, 2, 3, 4] // Default: Monday to Friday
-      )
+      // Call server action to assign pattern to employee
+      await assignPatternToEmployee(selectedEmployee, selectedPattern)
 
-      // Reload employee schedules from database
-      const updatedSchedules = await getEmployeeSchedules()
-      initializeEmployeeSchedules(updatedSchedules)
-
-      toast.success('Employee shift assigned successfully')
+      toast.success('Pattern assigned successfully to employee')
       setSelectedEmployee('')
-      setSelectedShift('')
-      setSelectedLocation('')
+      setSelectedPattern('')
       onOpenChange(false)
+      
+      // Reload patterns
+      await getEmployeePatterns()
     } catch (error) {
-      console.error('[v0] Error assigning shift:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to assign shift'
+      console.error('[v0] Error assigning pattern:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to assign pattern'
       toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
   }
 
-  // Filter out employees that already have assignments
-  const assignedEmployeeIds = employees.map(e => e.employeeId)
-  const availableEmployees = employees.filter(e => !assignedEmployeeIds.includes(e.employeeId) || !e.shiftName)
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add Employee Shift Assignment</DialogTitle>
+          <DialogTitle>Assign Shift Pattern to Employee</DialogTitle>
           <DialogDescription>
-            Assign a shift and location to an employee
+            Select an employee and assign them a shift pattern. The pattern defines their daily shift schedule.
           </DialogDescription>
         </DialogHeader>
 
@@ -116,47 +94,40 @@ export function AddAssignmentDialog({
             </Select>
           </div>
 
-          {/* Shift Selection */}
+          {/* Pattern Selection */}
           <div className="space-y-2">
-            <Label htmlFor="shift">Shift</Label>
-            <Select value={selectedShift} onValueChange={setSelectedShift}>
-              <SelectTrigger id="shift">
-                <SelectValue placeholder="Select a shift" />
+            <Label htmlFor="pattern">Shift Pattern</Label>
+            <Select value={selectedPattern} onValueChange={setSelectedPattern}>
+              <SelectTrigger id="pattern">
+                <SelectValue placeholder="Select a pattern" />
               </SelectTrigger>
               <SelectContent>
-                {shifts.map((shift) => (
-                  <SelectItem key={shift.id} value={shift.id}>
-                    {shift.name}
+                {patterns && patterns.length > 0 ? (
+                  patterns.map((pattern) => (
+                    <SelectItem key={pattern.id} value={pattern.id}>
+                      {pattern.name} ({pattern.type})
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="_" disabled>
+                    No patterns available
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Location Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
-            <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger id="location">
-                <SelectValue placeholder="Select a location" />
-              </SelectTrigger>
-              <SelectContent>
-                {locations.map((location) => (
-                  <SelectItem key={location.id} value={location.id}>
-                    {location.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            The selected pattern will define the employee&apos;s shift schedule based on the pattern rules (daily shift assignments, working days, etc.)
+          </p>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             Cancel
           </Button>
-          <Button onClick={handleAssign} disabled={loading}>
-            {loading ? 'Assigning...' : 'Assign Shift'}
+          <Button onClick={handleAssign} disabled={loading || !selectedEmployee || !selectedPattern}>
+            {loading ? 'Assigning...' : 'Assign Pattern'}
           </Button>
         </DialogFooter>
       </DialogContent>

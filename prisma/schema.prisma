@@ -69,6 +69,7 @@ model Site {
   users       User[]
   attendances Attendance[]
   assignments EmployeeShiftAssignment[]
+  patternAssignments EmployeePatternAssignment[] @relation("EmployeePatternAssignments")
   attendanceLocations AttendanceLocation[] @relation("SiteAttendanceLocations")
   patrolLocations PatrolLocation[]
   patrols     Patrol[]
@@ -124,6 +125,7 @@ model User {
   leaves                Leave[]                   @relation("LeaveRequester")
   leavesApproved        Leave[]                   @relation("LeaveApprover")
   assignments           EmployeeShiftAssignment[]
+  patternAssignments    EmployeePatternAssignment[] @relation("PatternAssignments")
   patrols               Patrol[]
   deviceBindings        DeviceBinding[]
   createdAt             DateTime                  @default(now())
@@ -375,6 +377,7 @@ model SchedulePattern {
   
   isActive          Boolean  @default(true)
   assignedEmployees Int      @default(0)
+  employeeAssignments EmployeePatternAssignment[]
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -383,3 +386,18 @@ model SchedulePattern {
 
 // Update Shift model to include schedule patterns
 // (Added relation in Shift model below)
+
+// Employee Pattern Assignment - assigns a schedule pattern to an employee
+model EmployeePatternAssignment {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("PatternAssignments", fields: [userId], references: [id], onDelete: Cascade)
+  patternId String
+  pattern   SchedulePattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  siteId    String
+  site      Site     @relation("EmployeePatternAssignments", fields: [siteId], references: [id], onDelete: Cascade)
+  startDate DateTime @default(now())
+  
+  @@unique([userId, siteId])
+  @@map("employee_pattern_assignments")
+}

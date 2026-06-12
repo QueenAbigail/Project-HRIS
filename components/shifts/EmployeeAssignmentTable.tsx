@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSchedulesStore } from '@/stores/useSchedulesStore'
 import { useEmployeesWithAttendance } from './hooks'
 import { AddAssignmentDialog } from './AddAssignmentDialog'
+import { getSchedulePatterns } from '@/app/superadmin/actions'
 // Custom simple table since no DataTable component
 const DataTable = ({ columns, data }: { columns: any[], data: any[] }) => {
   return (
@@ -53,9 +54,24 @@ interface EmployeeAssignmentTableProps { }
 export function EmployeeAssignmentTable({ }: EmployeeAssignmentTableProps) {
   const [swapOpen, setSwapOpen] = useState(false)
   const [addAssignmentOpen, setAddAssignmentOpen] = useState(false)
+  const [patterns, setPatterns] = useState<any[]>([])
+  
   const employees = useEmployeesWithAttendance()
   const shifts = useSchedulesStore(state => state.shifts)
   const assignEmployeeShift = useSchedulesStore(state => state.assignEmployeeShift)
+
+  // Fetch patterns on component mount
+  useEffect(() => {
+    const loadPatterns = async () => {
+      try {
+        const patternsData = await getSchedulePatterns()
+        setPatterns(patternsData)
+      } catch (error) {
+        console.error('[v0] Error loading patterns:', error)
+      }
+    }
+    loadPatterns()
+  }, [])
 
   const columns = [
     // Employee column
@@ -162,6 +178,7 @@ export function EmployeeAssignmentTable({ }: EmployeeAssignmentTableProps) {
         open={addAssignmentOpen}
         onOpenChange={setAddAssignmentOpen}
         employees={employees}
+        patterns={patterns}
       />
       <EmployeeSwapDialog
         open={swapOpen}

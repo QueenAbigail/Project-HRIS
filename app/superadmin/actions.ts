@@ -178,6 +178,75 @@ export async function deleteShiftFromDb(shiftId: string) {
   }
 }
 
+export async function assignPatternToEmployee(
+  userId: string,
+  patternId: string,
+  siteId: string = 'default-site'
+) {
+  try {
+    // Check if employee already has a pattern assignment
+    const existing = await prisma.employeePatternAssignment.findFirst({
+      where: { userId }
+    })
+
+    if (existing) {
+      // Update existing assignment
+      await prisma.employeePatternAssignment.update({
+        where: { id: existing.id },
+        data: {
+          patternId,
+          startDate: new Date()
+        }
+      })
+    } else {
+      // Create new pattern assignment
+      await prisma.employeePatternAssignment.create({
+        data: {
+          userId,
+          patternId,
+          siteId,
+          startDate: new Date()
+        }
+      })
+    }
+
+    revalidatePath('/superadmin/schedules')
+  } catch (error) {
+    console.error('[v0] Error assigning pattern to employee:', error)
+    throw error
+  }
+}
+
+export async function getEmployeePatterns() {
+  try {
+    const assignments = await prisma.employeePatternAssignment.findMany({
+      include: {
+        user: true,
+        pattern: true,
+        site: true
+      }
+    })
+    
+    return assignments || []
+  } catch (error) {
+    console.error('[v0] Error fetching employee patterns:', error)
+    return []
+  }
+}
+
+export async function getSchedulePatterns() {
+  try {
+    const patterns = await prisma.schedulePattern.findMany({
+      orderBy: { createdAt: 'desc' }
+    })
+    
+    return patterns || []
+  } catch (error) {
+    console.error('[v0] Error fetching schedule patterns:', error)
+    return []
+  }
+}
+
 export async function assignEmployeeShift(
   employeeId: string,
   shiftId: string,
