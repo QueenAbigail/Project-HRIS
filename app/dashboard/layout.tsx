@@ -48,90 +48,30 @@ export default function DashboardLayout({ children }: LayoutProps) {
     const loadUserData = async () => {
       try {
         const supabase = createClient()
-        
-        // Step 1: Check session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-        console.log('[v0] SESSION CHECK:', {
-          sessionExists: !!session,
-          sessionUserId: session?.user?.id,
-          sessionUserEmail: session?.user?.email,
-          sessionError: sessionError?.message
-        })
 
         if (sessionError || !session?.user?.email) {
-          console.log('[v0] No valid session found, signing out')
           await supabase.auth.signOut()
           router.push('/')
           return
         }
 
-        // Step 2: Attempt to fetch user profile with ALL columns for debugging
-        console.log('[v0] FETCHING PROFILE - Query params:', {
-          table: 'users',
-          userId: session.user.id,
-          idType: typeof session.user.id
-        })
-
+        // Fetch user data from the users table
         const { data: profile, error: profileError } = await supabase
           .from('users')
-          .select('*') // Fetch ALL columns to debug
+          .select('name, role, position')
           .eq('id', session.user.id)
           .single()
 
-        console.log('[v0] PROFILE QUERY RESULT:', {
-          profileExists: !!profile,
-          profileError: profileError?.message,
-          profileErrorCode: profileError?.code,
-          profileData: profile ? {
-            id: profile.id,
-            email: profile.email,
-            firstName: profile.firstName,
-            lastName: profile.lastName,
-            role: profile.role,
-            position: profile.position,
-            allColumns: Object.keys(profile)
-          } : null
-        })
-
-        // Step 3: Debugging - Temporarily DISABLE redirect if session exists
-        // This allows you to see what's happening in the console
+        // Strict check: if profileError or !profile, sign out and redirect
         if (profileError || !profile) {
-          console.warn('[v0] PROFILE QUERY FAILED - Debugging Mode (NOT redirecting yet)', {
-            reason: profileError ? 'Query error' : 'No profile returned',
-            error: profileError,
-            sessionUserId: session.user.id,
-            suggestion: 'Check RLS policies or if user ID matches users table'
-          })
-
-          // TEMPORARY: Comment out the redirect to debug
-          // Uncomment when debugging is done:
-          // await supabase.auth.signOut()
-          // router.push('/')
-          
-          // For now, use a dummy user to see the dashboard
-          setUser({
-            name: `[DEBUG] ${session.user.email}`,
-            email: session.user.email,
-            position: null,
-            role: 'DEBUG',
-          })
-          setSystemSettings({
-            appName: 'SecureGuard [DEBUG MODE]',
-            appDescription: 'HR Administration',
-          })
-          setIsLoading(false)
+          await supabase.auth.signOut()
+          router.push('/')
           return
         }
 
-        // Step 4: Profile found - use it
-        console.log('[v0] PROFILE FOUND - Setting user data')
-        
-        const fullName = profile.firstName || profile.lastName 
-          ? `${profile.firstName || ''} ${profile.lastName || ''}`.trim()
-          : session.user.email.split('@')[0]
-
         setUser({
-          name: fullName,
+          name: profile.name || session.user.email.split('@')[0],
           email: session.user.email,
           position: profile.position || null,
           role: profile.role,
@@ -141,18 +81,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
           appName: 'SecureGuard',
           appDescription: 'HR Administration',
         })
-
-        console.log('[v0] USER DATA SET SUCCESSFULLY:', {
-          name: fullName,
-          email: session.user.email,
-          role: profile.role
-        })
-
       } catch (error) {
-        console.error('[v0] CRITICAL ERROR in loadUserData:', {
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : null
-        })
         const supabase = createClient()
         await supabase.auth.signOut()
         router.push('/')
