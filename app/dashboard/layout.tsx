@@ -51,6 +51,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
         if (sessionError || !session?.user?.email) {
+          await supabase.auth.signOut()
           router.push('/')
           return
         }
@@ -62,20 +63,24 @@ export default function DashboardLayout({ children }: LayoutProps) {
           .eq('id', session.user.id)
           .single()
 
-        if (profileError) {
-          console.error('[Database] Error fetching profile:', profileError)
+        // Strict check: if profileError or !profile, sign out and redirect
+        if (profileError || !profile) {
+          console.error('[v0] Invalid/stale session - profile not found:', profileError)
+          await supabase.auth.signOut()
+          router.push('/')
+          return
         }
 
         // Combine firstName and lastName for display name
-        const fullName = profile?.firstName || profile?.lastName 
-          ? `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim()
+        const fullName = profile.firstName || profile.lastName 
+          ? `${profile.firstName || ''} ${profile.lastName || ''}`.trim()
           : session.user.email.split('@')[0]
 
         setUser({
           name: fullName,
           email: session.user.email,
-          position: profile?.position || null,
-          role: profile?.role || 'STAFF',
+          position: profile.position || null,
+          role: profile.role,
         })
 
         setSystemSettings({
@@ -84,6 +89,8 @@ export default function DashboardLayout({ children }: LayoutProps) {
         })
       } catch (error) {
         console.error('[v0] Error loading user data:', error)
+        const supabase = createClient()
+        await supabase.auth.signOut()
         router.push('/')
       } finally {
         setIsLoading(false)
