@@ -55,10 +55,10 @@ export default function DashboardLayout({ children }: LayoutProps) {
           return
         }
 
-        // Fetch data asli dari tabel 'users'
+        // Fetch user data from the users table
         const { data: profile, error: profileError } = await supabase
           .from('users')
-          .select('role, position')
+          .select('role, position, firstName, lastName')
           .eq('id', session.user.id)
           .single()
 
@@ -66,11 +66,16 @@ export default function DashboardLayout({ children }: LayoutProps) {
           console.error('[Database] Error fetching profile:', profileError)
         }
 
+        // Combine firstName and lastName for display name
+        const fullName = profile?.firstName || profile?.lastName 
+          ? `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim()
+          : session.user.email.split('@')[0]
+
         setUser({
-          name: session.user.user_metadata?.name || null,
+          name: fullName,
           email: session.user.email,
           position: profile?.position || null,
-          role: profile?.role || 'STAFF', // Fallback ke STAFF kalau data kosong
+          role: profile?.role || 'STAFF',
         })
 
         setSystemSettings({
