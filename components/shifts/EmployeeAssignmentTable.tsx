@@ -65,6 +65,7 @@ export function EmployeeAssignmentTable({ }: EmployeeAssignmentTableProps) {
     const loadPatterns = async () => {
       try {
         const patternsData = await getSchedulePatterns()
+        console.log('[v0] Patterns loaded:', patternsData)
         setPatterns(patternsData)
       } catch (error) {
         console.error('[v0] Error loading patterns:', error)
