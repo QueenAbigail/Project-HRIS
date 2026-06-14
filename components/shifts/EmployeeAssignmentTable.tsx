@@ -60,6 +60,18 @@ export function EmployeeAssignmentTable({ }: EmployeeAssignmentTableProps) {
   const shifts = useSchedulesStore(state => state.shifts)
   const assignEmployeeShift = useSchedulesStore(state => state.assignEmployeeShift)
 
+  // Debug employees
+  useEffect(() => {
+    console.log('[v0] Employees loaded in table:', {
+      count: employees.length,
+      employees: employees.map(e => ({
+        employeeId: e.employeeId,
+        employeeName: e.employeeName,
+        role: e.role
+      }))
+    })
+  }, [employees])
+
   // Fetch patterns on component mount
   useEffect(() => {
     const loadPatterns = async () => {

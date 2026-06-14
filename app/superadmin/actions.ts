@@ -82,28 +82,41 @@ export async function getShifts() {
 
 export async function getEmployeeSchedules() {
   try {
-    const schedules = await prisma.employeeShiftAssignment.findMany({
+    // Fetch from EmployeePatternAssignment table (pattern-based assignments)
+    const patternAssignments = await prisma.employeePatternAssignment.findMany({
       include: {
-        employee: true,
-        shift: true,
-        location: true
+        user: true,
+        pattern: true,
+        site: true
       },
-      orderBy: { employee: { firstName: 'asc' } }
+      orderBy: { user: { name: 'asc' } }
+    })
+    
+    console.log('[v0] Pattern assignments fetched:', {
+      count: patternAssignments.length,
+      assignments: patternAssignments.map(a => ({
+        userId: a.userId,
+        userName: a.user.name,
+        patternName: a.pattern.name
+      }))
     })
     
     // Transform to match EmployeeSchedule type
-    return schedules.map(schedule => ({
-      employeeId: schedule.employee.id,
-      employeeName: `${schedule.employee.firstName} ${schedule.employee.lastName}`,
-      shiftId: schedule.shift.id,
-      shiftName: schedule.shift.name,
-      locationId: schedule.location.id as any,
-      locationName: schedule.location.name,
-      workingDays: schedule.workingDays || [],
-      initials: `${schedule.employee.firstName[0]}${schedule.employee.lastName[0]}`.toUpperCase()
+    return patternAssignments.map(assignment => ({
+      employeeId: assignment.user.id,
+      employeeName: assignment.user.name,
+      shiftId: assignment.pattern.id, // Use pattern ID as shiftId for compatibility
+      shiftName: assignment.pattern.name,
+      locationId: assignment.site.id as any,
+      locationName: assignment.site.name,
+      workingDays: assignment.pattern.workingDays ? (assignment.pattern.workingDays as unknown as number[]) : [],
+      initials: assignment.user.name.split(' ').map(n => n[0]).join('').toUpperCase()
     }))
   } catch (error) {
-    console.error('[v0] Error fetching employee schedules:', error)
+    console.error('[v0] Error fetching employee schedules:', {
+      message: error instanceof Error ? error.message : String(error),
+      error
+    })
     return []
   }
 }
