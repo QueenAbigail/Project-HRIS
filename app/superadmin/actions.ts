@@ -194,7 +194,7 @@ export async function deleteShiftFromDb(shiftId: string) {
 export async function assignPatternToEmployee(
   userId: string,
   patternId: string,
-  siteId: string = 'default-site'
+  siteId?: string
 ) {
   try {
     console.log('[v0] Attempting to assign pattern:', {
@@ -202,6 +202,17 @@ export async function assignPatternToEmployee(
       patternId,
       siteId
     })
+
+    // If no siteId provided, use the first available site
+    let targetSiteId = siteId
+    if (!targetSiteId) {
+      const site = await prisma.site.findFirst()
+      if (!site) {
+        throw new Error('No sites found in database')
+      }
+      targetSiteId = site.id
+      console.log('[v0] Using default site:', site.name)
+    }
 
     // Check if employee already has a pattern assignment
     const existing = await prisma.employeePatternAssignment.findFirst({
@@ -231,7 +242,7 @@ export async function assignPatternToEmployee(
         data: {
           userId,
           patternId,
-          siteId,
+          siteId: targetSiteId,
           startDate: new Date()
         }
       })
