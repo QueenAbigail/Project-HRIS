@@ -197,13 +197,25 @@ export async function assignPatternToEmployee(
   siteId: string = 'default-site'
 ) {
   try {
+    console.log('[v0] Attempting to assign pattern:', {
+      userId,
+      patternId,
+      siteId
+    })
+
     // Check if employee already has a pattern assignment
     const existing = await prisma.employeePatternAssignment.findFirst({
       where: { userId }
     })
 
+    console.log('[v0] Existing assignment check:', {
+      exists: !!existing,
+      existingId: existing?.id
+    })
+
     if (existing) {
       // Update existing assignment
+      console.log('[v0] Updating existing assignment...')
       await prisma.employeePatternAssignment.update({
         where: { id: existing.id },
         data: {
@@ -211,9 +223,11 @@ export async function assignPatternToEmployee(
           startDate: new Date()
         }
       })
+      console.log('[v0] Assignment updated successfully')
     } else {
       // Create new pattern assignment
-      await prisma.employeePatternAssignment.create({
+      console.log('[v0] Creating new assignment...')
+      const newAssignment = await prisma.employeePatternAssignment.create({
         data: {
           userId,
           patternId,
@@ -221,11 +235,16 @@ export async function assignPatternToEmployee(
           startDate: new Date()
         }
       })
+      console.log('[v0] Assignment created successfully:', newAssignment)
     }
 
     revalidatePath('/superadmin/schedules')
+    console.log('[v0] Pattern assignment completed successfully')
   } catch (error) {
-    console.error('[v0] Error assigning pattern to employee:', error)
+    console.error('[v0] Error assigning pattern to employee:', {
+      message: error instanceof Error ? error.message : String(error),
+      error
+    })
     throw error
   }
 }
