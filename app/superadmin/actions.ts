@@ -266,6 +266,48 @@ export async function getEmployeePatterns() {
   }
 }
 
+export async function getAllEmployees() {
+  try {
+    console.log('[v0] Fetching all employees from users table...')
+    const employees = await prisma.user.findMany({
+      where: {
+        role: { in: ['STAFF', 'MANAGER'] } // Only get staff and managers
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        position: true
+      },
+      orderBy: { name: 'asc' }
+    })
+    
+    console.log('[v0] All employees fetched:', {
+      count: employees.length,
+      employees: employees.map(e => ({
+        id: e.id,
+        name: e.name,
+        email: e.email
+      }))
+    })
+    
+    return employees.map(emp => ({
+      employeeId: emp.id,
+      employeeName: emp.name,
+      email: emp.email,
+      role: emp.role,
+      position: emp.position
+    }))
+  } catch (error) {
+    console.error('[v0] Error fetching all employees:', {
+      message: error instanceof Error ? error.message : String(error),
+      error
+    })
+    return []
+  }
+}
+
 export async function getSchedulePatterns() {
   try {
     console.log('[v0] Fetching schedule patterns...')

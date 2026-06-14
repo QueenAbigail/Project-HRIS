@@ -19,24 +19,44 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { assignPatternToEmployee, getEmployeePatterns } from '@/app/superadmin/actions'
+import { assignPatternToEmployee, getAllEmployees } from '@/app/superadmin/actions'
 
 interface AddAssignmentDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  employees: any[]
+  employees?: any[]
   patterns?: any[]
 }
 
 export function AddAssignmentDialog({
   open,
   onOpenChange,
-  employees,
   patterns = [],
 }: AddAssignmentDialogProps) {
   const [selectedEmployee, setSelectedEmployee] = useState('')
   const [selectedPattern, setSelectedPattern] = useState('')
   const [loading, setLoading] = useState(false)
+  const [allEmployees, setAllEmployees] = useState<any[]>([])
+
+  // Fetch all employees when dialog opens
+  useEffect(() => {
+    if (open) {
+      const fetchEmployees = async () => {
+        try {
+          const employeesData = await getAllEmployees()
+          setAllEmployees(employeesData)
+          console.log('[v0] All employees loaded in dialog:', {
+            count: employeesData.length,
+            employees: employeesData.map(e => ({ id: e.employeeId, name: e.employeeName }))
+          })
+        } catch (error) {
+          console.error('[v0] Error loading employees:', error)
+          toast.error('Failed to load employees')
+        }
+      }
+      fetchEmployees()
+    }
+  }, [open])
 
   // Debug: Log patterns when dialog opens
   useEffect(() => {
@@ -69,8 +89,8 @@ export function AddAssignmentDialog({
       setSelectedPattern('')
       onOpenChange(false)
       
-      // Reload patterns
-      await getEmployeePatterns()
+      // Refresh page to show new assignment
+      window.location.reload()
     } catch (error) {
       console.error('[v0] Error assigning pattern:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to assign pattern'
@@ -99,11 +119,17 @@ export function AddAssignmentDialog({
                 <SelectValue placeholder="Select an employee" />
               </SelectTrigger>
               <SelectContent>
-                {employees.map((employee) => (
-                  <SelectItem key={employee.employeeId} value={employee.employeeId}>
-                    {employee.employeeName}
+                {allEmployees.length > 0 ? (
+                  allEmployees.map((employee) => (
+                    <SelectItem key={employee.employeeId} value={employee.employeeId}>
+                      {employee.employeeName}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="_" disabled>
+                    No employees available
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
           </div>
