@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -37,6 +37,20 @@ export function AddAssignmentDialog({
   const [selectedEmployee, setSelectedEmployee] = useState('')
   const [selectedPattern, setSelectedPattern] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Debug: Log patterns when dialog opens
+  useEffect(() => {
+    if (open) {
+      console.log('[v0] Dialog opened with patterns:', {
+        patternsCount: patterns.length,
+        patterns: patterns.map(p => ({
+          id: p.id,
+          name: p.name,
+          type: p.type
+        }))
+      })
+    }
+  }, [open, patterns])
 
   const handleAssign = async () => {
     if (!selectedEmployee || !selectedPattern) {

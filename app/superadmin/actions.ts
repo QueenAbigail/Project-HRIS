@@ -236,13 +236,27 @@ export async function getEmployeePatterns() {
 
 export async function getSchedulePatterns() {
   try {
+    console.log('[v0] Fetching schedule patterns...')
     const patterns = await prisma.schedulePattern.findMany({
       orderBy: { createdAt: 'desc' }
     })
     
+    console.log('[v0] Schedule patterns fetched:', {
+      count: patterns.length,
+      patterns: patterns.map(p => ({
+        id: p.id,
+        name: p.name,
+        type: p.type,
+        description: p.description
+      }))
+    })
+    
     return patterns || []
   } catch (error) {
-    console.error('[v0] Error fetching schedule patterns:', error)
+    console.error('[v0] Error fetching schedule patterns:', {
+      message: error instanceof Error ? error.message : String(error),
+      error: error
+    })
     return []
   }
 }
