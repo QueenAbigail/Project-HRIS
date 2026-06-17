@@ -10,7 +10,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("POSTGRES_PRISMA_URL")
-  directUrl = env("DIRECT_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
 // Enums based on requirements and dummy data
@@ -69,9 +69,11 @@ model Site {
   users       User[]
   attendances Attendance[]
   assignments EmployeeShiftAssignment[]
+  patternAssignments EmployeePatternAssignment[] @relation("EmployeePatternAssignments")
   attendanceLocations AttendanceLocation[] @relation("SiteAttendanceLocations")
   patrolLocations PatrolLocation[]
   patrols     Patrol[]
+  bulkImportRecords BulkImportRecord[] @relation("SiteBulkImports")
   createdAt   DateTime                  @default(now())
   updatedAt   DateTime                  @updatedAt
 
@@ -124,6 +126,8 @@ model User {
   leaves                Leave[]                   @relation("LeaveRequester")
   leavesApproved        Leave[]                   @relation("LeaveApprover")
   assignments           EmployeeShiftAssignment[]
+  patternAssignments    EmployeePatternAssignment[] @relation("PatternAssignments")
+  bulkImports           BulkImportLog[] @relation("BulkImports")
   patrols               Patrol[]
   deviceBindings        DeviceBinding[]
   createdAt             DateTime                  @default(now())
@@ -375,6 +379,7 @@ model SchedulePattern {
   
   isActive          Boolean  @default(true)
   assignedEmployees Int      @default(0)
+  employeeAssignments EmployeePatternAssignment[]
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -383,3 +388,71 @@ model SchedulePattern {
 
 // Update Shift model to include schedule patterns
 // (Added relation in Shift model below)
+
+// Employee Pattern Assignment - assigns a schedule pattern to an employee
+model EmployeePatternAssignment {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("PatternAssignments", fields: [userId], references: [id], onDelete: Cascade)
+  patternId String
+  pattern   SchedulePattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  siteId    String
+  site      Site     @relation("EmployeePatternAssignments", fields: [siteId], references: [id], onDelete: Cascade)
+  startDate DateTime @default(now())
+  endDate   DateTime? // Contract end date - null means ongoing
+  status    String   @default("ACTIVE") // ACTIVE, ENDED, PAUSED
+  createdBy String? // ID of user who made the assignment
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  notes     String? // Optional notes about the assignment
+  
+  // Bulk import tracking
+  bulkImportRecords BulkImportRecord[]
+  
+  @@unique([userId, siteId, startDate])
+  @@map("employee_pattern_assignments")
+}
+
+// Bulk Import Log - tracks all bulk import operations
+model BulkImportLog {
+  id                String   @id @default(cuid())
+  fileName          String   // Original file name (e.g., "employees_patterns_2024.xlsx")
+  importedBy        String   // Admin user ID who performed import
+  importedByUser    User     @relation("BulkImports", fields: [importedBy], references: [id], onDelete: SetNull)
+  totalRows         Int      // Total rows processed from file
+  successCount      Int      // Successfully imported rows
+  errorCount        Int      // Failed rows
+  validationDetails Json     // Detailed validation errors/warnings as JSON
+  status            String   @default("SUCCESS") // SUCCESS, FAILED, PARTIAL
+  createdAt         DateTime @default(now())
+  
+  // Individual import records
+  importRecords     BulkImportRecord[]
+  
+  @@map("bulk_import_logs")
+}
+
+// Individual records from bulk import
+model BulkImportRecord {
+  id              String   @id @default(cuid())
+  bulkImportLogId String
+  bulkImportLog   BulkImportLog @relation(fields: [bulkImportLogId], references: [id], onDelete: Cascade)
+  
+  employeeId      String   // Original employee ID from file
+  employeeName    String?  // Employee name from file (for verification)
+  siteId          String   // Site where assigned
+  site            Site     @relation("SiteBulkImports", fields: [siteId], references: [id], onDelete: Cascade)
+  
+  assignmentId    String?  // Reference to created/updated EmployeePatternAssignment
+  assignment      EmployeePatternAssignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+  
+  startDate       DateTime // Assignment start date
+  endDate         DateTime? // Assignment end date
+  dailySchedule   Json     // Mon-Sun shift schedule from file
+  
+  status          String   @default("SUCCESS") // SUCCESS, ERROR
+  errorMessage    String?  // If status is ERROR, what went wrong
+  createdAt       DateTime @default(now())
+  
+  @@map("bulk_import_records")
+}

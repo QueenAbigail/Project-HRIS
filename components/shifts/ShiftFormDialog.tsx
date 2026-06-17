@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSchedulesStore } from '@/stores/useSchedulesStore'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import { Clock, Trash2 } from 'lucide-react'
 import type { Shift } from '@/lib/constants'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { createShift, updateShiftInDb, deleteShiftFromDb, getShifts } from '@/app/superadmin/actions'
 
 const formSchema = z.object({
   name: z.string().min(1, 'Shift name is required').max(50),
@@ -25,14 +26,13 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>
 
 interface ShiftFormDialogProps {
-  shift?: Omit<Shift, 'id'>
+  shift?: Shift | Omit<Shift, 'id'>
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
 export function ShiftFormDialog({ shift, open, onOpenChange }: ShiftFormDialogProps) {
-  const addShift = useSchedulesStore(state => state.addShift)
-  const updateShift = useSchedulesStore(state => state.updateShift)
+  const initializeShifts = useSchedulesStore(state => state.initializeShifts)
   const [loading, setLoading] = useState(false)
 
   const form = useForm<FormValues>({
@@ -40,18 +40,48 @@ export function ShiftFormDialog({ shift, open, onOpenChange }: ShiftFormDialogPr
     defaultValues: shift || { name: '', startTime: '', endTime: '', gracePeriodMinutes: 10 }
   })
 
+  // Update form when shift data changes
+  useEffect(() => {
+    if (shift) {
+      form.reset({
+        name: shift.name,
+        startTime: shift.startTime,
+        endTime: shift.endTime,
+        gracePeriodMinutes: shift.gracePeriodMinutes
+      })
+    } else {
+      form.reset({
+        name: '',
+        startTime: '',
+        endTime: '',
+        gracePeriodMinutes: 10
+      })
+    }
+  }, [shift, form])
+
   const onSubmit = async (values: FormValues) => {
     setLoading(true)
     try {
-      if (shift) {
-        updateShift(shift.id!, values)
+      if (shift && 'id' in shift) {
+        // Editing an existing shift - call server action
+        await updateShiftInDb(shift.id, values)
+        toast.success('Shift updated successfully')
       } else {
-        addShift(values)
+        // Creating a new shift - call server action
+        await createShift(values)
+        toast.success('Shift created successfully')
       }
+      
+      // Reload shifts from database to update store
+      const updatedShifts = await getShifts()
+      initializeShifts(updatedShifts)
+      
       form.reset()
       onOpenChange(false)
     } catch (error) {
-      toast.error('Failed to save shift')
+      console.error('[v0] Error saving shift:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save shift'
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -127,6 +157,42 @@ export function ShiftFormDialog({ shift, open, onOpenChange }: ShiftFormDialogPr
               )}
             />
             <DialogFooter className="gap-2">
+              {shift && 'id' in shift && (
+                <Button 
+                  type="button" 
+                  variant="destructive"
+                  onClick={async () => {
+                    if (!shift || !('id' in shift) || !shift.id) {
+                      toast.error('Invalid shift data')
+                      return
+                    }
+                    
+                    if (!confirm('Are you sure you want to delete this shift?')) return
+                    
+                    try {
+                      setLoading(true)
+                      await deleteShiftFromDb(shift.id)
+                      
+                      // Reload shifts from database
+                      const updatedShifts = await getShifts()
+                      initializeShifts(updatedShifts)
+                      
+                      toast.success('Shift deleted successfully')
+                      onOpenChange(false)
+                    } catch (error) {
+                      console.error('[v0] Error deleting shift:', error)
+                      const errorMessage = error instanceof Error ? error.message : 'Failed to delete shift'
+                      toast.error(errorMessage)
+                    } finally {
+                      setLoading(false)
+                    }
+                  }}
+                  disabled={loading}
+                >
+                  <Trash2 className="size-4 mr-2" />
+                  Delete
+                </Button>
+              )}
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>

@@ -51,26 +51,30 @@ export default function DashboardLayout({ children }: LayoutProps) {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
         if (sessionError || !session?.user?.email) {
+          await supabase.auth.signOut()
           router.push('/')
           return
         }
 
-        // Fetch data asli dari tabel 'users'
+        // Fetch user data from the users table
         const { data: profile, error: profileError } = await supabase
           .from('users')
-          .select('role, position')
+          .select('name, role, position')
           .eq('id', session.user.id)
           .single()
 
-        if (profileError) {
-          console.error('[Database] Error fetching profile:', profileError)
+        // Strict check: if profileError or !profile, sign out and redirect
+        if (profileError || !profile) {
+          await supabase.auth.signOut()
+          router.push('/')
+          return
         }
 
         setUser({
-          name: session.user.user_metadata?.name || null,
+          name: profile.name || session.user.email.split('@')[0],
           email: session.user.email,
-          position: profile?.position || null,
-          role: profile?.role || 'STAFF', // Fallback ke STAFF kalau data kosong
+          position: profile.position || null,
+          role: profile.role,
         })
 
         setSystemSettings({
@@ -78,7 +82,8 @@ export default function DashboardLayout({ children }: LayoutProps) {
           appDescription: 'HR Administration',
         })
       } catch (error) {
-        console.error('[v0] Error loading user data:', error)
+        const supabase = createClient()
+        await supabase.auth.signOut()
         router.push('/')
       } finally {
         setIsLoading(false)
@@ -120,7 +125,7 @@ export default function DashboardLayout({ children }: LayoutProps) {
 
   return (
     <LoadingProvider>
-      <SidebarProvider>
+      <SidebarProvider suppressHydrationWarning>
         <WelcomeToast userName={user?.name} />
         <AppSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
         <SidebarInset>

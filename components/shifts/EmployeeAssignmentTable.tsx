@@ -1,9 +1,38 @@
 'use client'
 
-import { useState } from 'react'
-import { useSchedulesStore } from '@/stores/useSchedulesStore'
-import { useEmployeesWithAttendance } from './hooks'
-// Custom simple table since no DataTable component
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { toast } from 'sonner'
+import { getPatternAssignments, getSchedulePatterns } from '@/app/superadmin/actions'
+import { AddAssignmentDialog } from './AddAssignmentDialog'
+import { BulkImportDialog } from './BulkImportDialog'
+import { Upload } from 'lucide-react'
+
+interface PatternAssignment {
+  id: string
+  employeeId: string
+  employeeName: string
+  employeeRole: string
+  patternId: string
+  patternName: string
+  patternType: string
+  status: string
+  locationId: string
+  locationName: string
+  startDate: Date
+  endDate: Date | null
+  notes: string | null
+}
+
+// Custom simple table
 const DataTable = ({ columns, data }: { columns: any[], data: any[] }) => {
   return (
     <div className="rounded-md border">
@@ -12,22 +41,30 @@ const DataTable = ({ columns, data }: { columns: any[], data: any[] }) => {
           <thead>
             <tr className="border-b bg-muted/50">
               {columns.map((column) => (
-                <th key={column.accessorKey || column.id} className="h-12 px-4 text-left align-middle font-medium text-sm [&:has([role=checkbox])]:pr-0">
+                <th key={column.id} className="h-12 px-4 text-left align-middle font-medium text-sm">
                   {column.header}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {data.map((row, i) => (
-              <tr key={i} className="hover:bg-muted/50">
-                {columns.map((column) => (
-                  <td key={column.accessorKey || column.id} className="p-4 align-middle whitespace-nowrap text-sm">
-                    {column.cell ? column.cell({ row: { original: row } }) : row[column.accessorKey]}
-                  </td>
-                ))}
+            {data.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} className="p-4 text-center text-muted-foreground">
+                  No assignments found
+                </td>
               </tr>
-            ))}
+            ) : (
+              data.map((row, i) => (
+                <tr key={i} className="hover:bg-muted/50">
+                  {columns.map((column) => (
+                    <td key={column.id} className="p-4 align-middle text-sm">
+                      {column.cell ? column.cell({ row: { original: row } }) : row[column.id]}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -35,127 +72,208 @@ const DataTable = ({ columns, data }: { columns: any[], data: any[] }) => {
   )
 }
 
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { ShiftFormDialog } from './ShiftFormDialog'
-import { WorkingDaysSelector } from './WorkingDaysSelector'
-import { EmployeeSwapDialog } from './EmployeeSwapDialog'
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select'
+export function EmployeeAssignmentTable() {
+  const [assignments, setAssignments] = useState<PatternAssignment[]>([])
+  const [patterns, setPatterns] = useState<any[]>([])
+  const [addAssignmentOpen, setAddAssignmentOpen] = useState(false)
+  const [bulkImportOpen, setBulkImportOpen] = useState(false)
+  const [selectedAssignment, setSelectedAssignment] = useState<PatternAssignment | null>(null)
+  const [editOpen, setEditOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-interface EmployeeAssignmentTableProps {}
+  // Fetch assignments and patterns on mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true)
+        const [assignmentsData, patternsData] = await Promise.all([
+          getPatternAssignments(),
+          getSchedulePatterns()
+        ])
+        setAssignments(assignmentsData)
+        setPatterns(patternsData)
+      } catch (error) {
+        console.error('[v0] Error loading data:', error)
+        toast.error('Failed to load assignments')
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
+  }, [])
 
-export function EmployeeAssignmentTable({}: EmployeeAssignmentTableProps) {
-  const [editShiftOpen, setEditShiftOpen] = useState(false)
-  const [swapOpen, setSwapOpen] = useState(false)
-  const employees = useEmployeesWithAttendance()
-  const shifts = useSchedulesStore(state => state.shifts)
-  const assignEmployeeShift = useSchedulesStore(state => state.assignEmployeeShift)
+  const handleDeleteAssignment = async (assignmentId: string) => {
+    if (!window.confirm('Are you sure you want to remove this pattern assignment?')) {
+      return
+    }
+    // TODO: Implement delete action in server
+    toast.info('Delete functionality coming soon')
+  }
+
+  const formatDate = (date: Date | null) => {
+    if (!date) return 'Ongoing'
+    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status.toUpperCase()) {
+      case 'ACTIVE':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+      case 'ENDED':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+      case 'PAUSED':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
 
   const columns = [
-    // Employee column
     {
-      accessorKey: 'employeeName',
+      id: 'employee',
       header: 'Employee',
-      cell: ({ row }) => (
-        <div className="flex items-center gap-3">
-          <div className="font-medium">{row.original.employeeName}</div>
-          <Badge variant="outline" className="text-xs">
-            {row.original.initials}
-          </Badge>
+      cell: ({ row }: { row: { original: PatternAssignment } }) => (
+        <div>
+          <div className="font-semibold">{row.original.employeeName}</div>
+          <div className="text-xs text-muted-foreground">{row.original.employeeRole}</div>
         </div>
       )
     },
-    // Current Shift
     {
-      accessorKey: 'shiftName',
-      header: 'Shift',
-      cell: ({ row }) => (
-        <Badge>{row.original.shiftName}</Badge>
+      id: 'pattern',
+      header: 'Assigned Pattern',
+      cell: ({ row }: { row: { original: PatternAssignment } }) => (
+        <div>
+          <div className="font-medium">{row.original.patternName}</div>
+          <div className="text-xs text-muted-foreground capitalize">{row.original.patternType}</div>
+        </div>
       )
     },
-    // Location
     {
-      accessorKey: 'locationName',
+      id: 'status',
+      header: 'Status',
+      cell: ({ row }: { row: { original: PatternAssignment } }) => (
+        <Badge className={getStatusColor(row.original.status)}>
+          {row.original.status}
+        </Badge>
+      )
+    },
+    {
+      id: 'location',
       header: 'Location',
-      cell: ({ row }) => (
+      cell: ({ row }: { row: { original: PatternAssignment } }) => (
         <Badge variant="secondary">{row.original.locationName}</Badge>
       )
     },
-    // Working Days
     {
-      accessorKey: 'workingDays',
-      header: 'Days',
-      cell: ({ row }) => (
-        <div className="text-xs">
-          {row.original.workingDays.map(day => (
-            <span key={day} className="mr-1">
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'][day]}
-            </span>
-          ))}
+      id: 'dates',
+      header: 'Assignment Period',
+      cell: ({ row }: { row: { original: PatternAssignment } }) => (
+        <div className="text-sm">
+          <div>{formatDate(row.original.startDate)}</div>
+          {row.original.endDate && (
+            <div className="text-xs text-muted-foreground">to {formatDate(row.original.endDate)}</div>
+          )}
         </div>
       )
     },
-    // Actions
     {
       id: 'actions',
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <WorkingDaysSelector 
-            employeeId={row.original.employeeId} 
-            currentDays={row.original.workingDays}
-          />
-          <Select onValueChange={(shiftId) => {
-            if (shiftId) {
-              assignEmployeeShift(row.original.employeeId, shiftId as string, row.original.locationId, row.original.workingDays)
-            }
-          }}>
-            <SelectTrigger className="w-32 h-9">
-              <SelectValue placeholder="Reassign Shift" />
-            </SelectTrigger>
-            <SelectContent>
-              {shifts.map(shift => (
-                <SelectItem key={shift.id} value={shift.id}>
-                  {shift.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="ghost" size="sm" onClick={() => setSwapOpen(true)}>
-            Swap
+      header: 'Actions',
+      cell: ({ row }: { row: { original: PatternAssignment } }) => (
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSelectedAssignment(row.original)
+              setEditOpen(true)
+            }}
+          >
+            Edit
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive"
+            onClick={() => handleDeleteAssignment(row.original.id)}
+          >
+            Delete
           </Button>
         </div>
       )
     }
   ]
 
+  if (loading) {
+    return <div className="text-center py-8">Loading assignments...</div>
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
-        <Button onClick={() => setEditShiftOpen(true)}>
-          Manage Shifts
-        </Button>
-        <Button variant="outline" onClick={() => setSwapOpen(true)}>
-          Quick Swap
-        </Button>
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="font-semibold">Pattern Assignments</h3>
+          <p className="text-sm text-muted-foreground">{assignments.length} active assignments</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setBulkImportOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Bulk Import
+          </Button>
+          <Button onClick={() => setAddAssignmentOpen(true)}>
+            + Add Assignment
+          </Button>
+        </div>
       </div>
-      
-      <DataTable columns={columns} data={employees} />
 
-      <ShiftFormDialog 
-        open={editShiftOpen} 
-        onOpenChange={setEditShiftOpen}
+      <DataTable columns={columns} data={assignments} />
+
+      <AddAssignmentDialog
+        open={addAssignmentOpen}
+        onOpenChange={setAddAssignmentOpen}
+        patterns={patterns}
       />
-      <EmployeeSwapDialog 
-        open={swapOpen} 
-        onOpenChange={setSwapOpen}
+
+      <BulkImportDialog
+        open={bulkImportOpen}
+        onOpenChange={setBulkImportOpen}
       />
+
+      {/* Edit Assignment Dialog */}
+      {selectedAssignment && (
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Assignment</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Employee</label>
+                <p className="text-sm mt-1">{selectedAssignment.employeeName}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Pattern</label>
+                <p className="text-sm mt-1">{selectedAssignment.patternName}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Status</label>
+                <p className="text-sm mt-1">{selectedAssignment.status}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Notes</label>
+                <p className="text-sm mt-1">{selectedAssignment.notes || 'No notes'}</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditOpen(false)}>
+                Close
+              </Button>
+              <Button disabled>Update (Coming Soon)</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }
-
