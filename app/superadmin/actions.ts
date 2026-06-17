@@ -96,7 +96,7 @@ export async function getEmployeeSchedules() {
     
     // Get first shift as default (since patterns don't have shift mappings yet)
     const defaultShift = await prisma.shift.findFirst({
-      orderBy: { createdAt: 'asc' }
+      orderBy: { id: 'asc' }
     })
     
     if (!defaultShift && patternAssignments.length > 0) {

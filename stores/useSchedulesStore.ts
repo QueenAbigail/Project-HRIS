@@ -140,10 +140,12 @@ export const useSchedulesStore = create<SchedulesState>()((set, get) => ({
   },
 
   initializeShifts: (shiftsData) => {
+    console.log('[v0] Store: initializeShifts called with', shiftsData.length, 'shifts')
     set({ shifts: shiftsData })
   },
 
   initializeEmployeeSchedules: (schedulesData) => {
+    console.log('[v0] Store: initializeEmployeeSchedules called with', schedulesData.length, 'schedules:', schedulesData)
     set({ employeeSchedules: schedulesData })
   }
 }))
