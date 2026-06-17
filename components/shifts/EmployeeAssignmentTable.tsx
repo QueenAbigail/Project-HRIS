@@ -13,6 +13,8 @@ import {
 import { toast } from 'sonner'
 import { getPatternAssignments, getSchedulePatterns } from '@/app/superadmin/actions'
 import { AddAssignmentDialog } from './AddAssignmentDialog'
+import { BulkImportDialog } from './BulkImportDialog'
+import { Upload } from 'lucide-react'
 
 interface PatternAssignment {
   id: string
@@ -74,6 +76,7 @@ export function EmployeeAssignmentTable() {
   const [assignments, setAssignments] = useState<PatternAssignment[]>([])
   const [patterns, setPatterns] = useState<any[]>([])
   const [addAssignmentOpen, setAddAssignmentOpen] = useState(false)
+  const [bulkImportOpen, setBulkImportOpen] = useState(false)
   const [selectedAssignment, setSelectedAssignment] = useState<PatternAssignment | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -213,9 +216,15 @@ export function EmployeeAssignmentTable() {
           <h3 className="font-semibold">Pattern Assignments</h3>
           <p className="text-sm text-muted-foreground">{assignments.length} active assignments</p>
         </div>
-        <Button onClick={() => setAddAssignmentOpen(true)}>
-          + Add Assignment
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setBulkImportOpen(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Bulk Import
+          </Button>
+          <Button onClick={() => setAddAssignmentOpen(true)}>
+            + Add Assignment
+          </Button>
+        </div>
       </div>
 
       <DataTable columns={columns} data={assignments} />
@@ -224,6 +233,11 @@ export function EmployeeAssignmentTable() {
         open={addAssignmentOpen}
         onOpenChange={setAddAssignmentOpen}
         patterns={patterns}
+      />
+
+      <BulkImportDialog
+        open={bulkImportOpen}
+        onOpenChange={setBulkImportOpen}
       />
 
       {/* Edit Assignment Dialog */}

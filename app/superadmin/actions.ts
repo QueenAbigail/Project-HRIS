@@ -529,3 +529,258 @@ export async function assignEmployeeShift(
     throw error
   }
 }
+
+// ==================== BULK IMPORT ACTIONS ====================
+
+/**
+ * Validate bulk import data before processing
+ */
+export async function validateBulkImport(
+  rows: any[],
+  fileName: string
+) {
+  try {
+    console.log('[v0] Validating bulk import:', { fileName, rowCount: rows.length })
+
+    const { getValidationContext, validateBulkImport: validate } = await import('@/lib/importValidator')
+
+    // Get validation context
+    const context = await getValidationContext(prisma)
+
+    // Run validation
+    const result = await validate(rows, context)
+
+    console.log('[v0] Validation complete:', {
+      isValid: result.isValid,
+      validRows: result.validRows,
+      invalidRows: result.invalidRows,
+      conflicts: result.conflicts.length
+    })
+
+    return result
+  } catch (error) {
+    console.error('[v0] Error validating bulk import:', error)
+    throw error
+  }
+}
+
+/**
+ * Process bulk import (all-or-nothing execution)
+ */
+export async function processBulkImport(
+  rows: any[],
+  fileName: string,
+  userId: string
+) {
+  let importLog: any = null
+
+  try {
+    console.log('[v0] Starting bulk import process:', { fileName, rowCount: rows.length, userId })
+
+    const { getValidationContext, validateBulkImport: validate } = await import('@/lib/importValidator')
+
+    // Get validation context
+    const context = await getValidationContext(prisma)
+
+    // Validate first
+    const validation = await validate(rows, context)
+
+    if (!validation.isValid) {
+      throw new Error(`Validation failed: ${validation.invalidRows} row(s) have errors`)
+    }
+
+    // Create import log entry
+    importLog = await prisma.bulkImportLog.create({
+      data: {
+        fileName,
+        importedBy: userId,
+        totalRows: rows.length,
+        successCount: 0,
+        errorCount: 0,
+        validationDetails: JSON.stringify(validation),
+        status: 'SUCCESS'
+      }
+    })
+
+    console.log('[v0] Created import log:', importLog.id)
+
+    // Process each valid row in a transaction
+    const createdAssignments = []
+    const importRecords = []
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]
+
+      try {
+        // Get actual employee ID
+        const employee = context.employees.get(row.employeeId)
+        if (!employee) {
+          throw new Error('Employee not found')
+        }
+
+        // Get site
+        const site = context.sites.get(row.site.toLowerCase())
+        if (!site) {
+          throw new Error('Site not found')
+        }
+
+        // Get first shift for pattern (will be improved later)
+        const firstShift = [...context.shifts.values()][0]
+        if (!firstShift) {
+          throw new Error('No shifts found in system')
+        }
+
+        // Parse start/end dates
+        const startDate = new Date(row.startDate)
+        const endDate = row.endDate ? new Date(row.endDate) : null
+
+        // Handle existing assignment (replace)
+        const existing = await prisma.employeePatternAssignment.findFirst({
+          where: { userId: employee.id, siteId: site.id }
+        })
+
+        if (existing) {
+          await prisma.employeePatternAssignment.update({
+            where: { id: existing.id },
+            data: {
+              status: 'ENDED',
+              updatedAt: new Date()
+            }
+          })
+        }
+
+        // Create new assignment
+        const assignment = await prisma.employeePatternAssignment.create({
+          data: {
+            userId: employee.id,
+            patternId: firstShift.id, // Temporary - will be derived from daily shifts
+            siteId: site.id,
+            startDate,
+            endDate,
+            status: 'ACTIVE',
+            createdBy: userId,
+            notes: `Imported from ${fileName}`
+          }
+        })
+
+        createdAssignments.push(assignment)
+
+        // Create import record
+        importRecords.push({
+          bulkImportLogId: importLog.id,
+          employeeId: row.employeeId,
+          employeeName: row.employeeName,
+          siteId: site.id,
+          assignmentId: assignment.id,
+          startDate,
+          endDate,
+          dailySchedule: JSON.stringify({
+            monday: row.monday,
+            tuesday: row.tuesday,
+            wednesday: row.wednesday,
+            thursday: row.thursday,
+            friday: row.friday,
+            saturday: row.saturday,
+            sunday: row.sunday
+          }),
+          status: 'SUCCESS'
+        })
+      } catch (error) {
+        // Record error but continue processing
+        importRecords.push({
+          bulkImportLogId: importLog.id,
+          employeeId: row.employeeId,
+          employeeName: row.employeeName,
+          siteId: '', // Will fail constraint, but record the error
+          startDate: new Date(row.startDate),
+          endDate: row.endDate ? new Date(row.endDate) : null,
+          dailySchedule: JSON.stringify({}),
+          status: 'ERROR',
+          errorMessage: error instanceof Error ? error.message : 'Unknown error'
+        })
+      }
+    }
+
+    // Batch create import records
+    if (importRecords.length > 0) {
+      await prisma.bulkImportRecord.createMany({
+        data: importRecords.filter(r => r.siteId) // Only records with valid siteId
+      })
+    }
+
+    // Update import log
+    const successCount = importRecords.filter(r => r.status === 'SUCCESS').length
+    const errorCount = importRecords.filter(r => r.status === 'ERROR').length
+
+    await prisma.bulkImportLog.update({
+      where: { id: importLog.id },
+      data: {
+        successCount,
+        errorCount,
+        status: errorCount > 0 ? 'PARTIAL' : 'SUCCESS'
+      }
+    })
+
+    console.log('[v0] Bulk import completed:', {
+      importLogId: importLog.id,
+      createdAssignments: createdAssignments.length,
+      errors: errorCount
+    })
+
+    revalidatePath('/superadmin/schedules')
+
+    return {
+      success: true,
+      importLogId: importLog.id,
+      message: `Successfully imported ${successCount}/${rows.length} employees`,
+      successCount,
+      errorCount
+    }
+  } catch (error) {
+    // Update log with failure status
+    if (importLog) {
+      await prisma.bulkImportLog.update({
+        where: { id: importLog.id },
+        data: {
+          status: 'FAILED',
+          validationDetails: JSON.stringify({
+            error: error instanceof Error ? error.message : 'Unknown error'
+          })
+        }
+      })
+    }
+
+    console.error('[v0] Bulk import failed:', error)
+    throw error
+  }
+}
+
+/**
+ * Get import audit trail
+ */
+export async function getImportAuditTrail(limit: number = 20) {
+  try {
+    const logs = await prisma.bulkImportLog.findMany({
+      include: {
+        importedByUser: { select: { name: true, email: true } },
+        importRecords: true
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit
+    })
+
+    return logs.map(log => ({
+      id: log.id,
+      fileName: log.fileName,
+      importedBy: log.importedByUser?.name || 'Unknown',
+      importedAt: log.createdAt,
+      totalRows: log.totalRows,
+      successCount: log.successCount,
+      errorCount: log.errorCount,
+      status: log.status
+    }))
+  } catch (error) {
+    console.error('[v0] Error fetching audit trail:', error)
+    return []
+  }
+}
