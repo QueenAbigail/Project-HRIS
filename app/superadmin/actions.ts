@@ -80,6 +80,38 @@ export async function getShifts() {
   }
 }
 
+export async function getPatternAssignments() {
+  try {
+    const assignments = await prisma.employeePatternAssignment.findMany({
+      include: {
+        user: { select: { id: true, name: true, role: true, position: true } },
+        pattern: { select: { id: true, name: true, type: true } },
+        site: { select: { id: true, name: true } }
+      },
+      orderBy: { user: { name: 'asc' } }
+    })
+
+    return assignments.map(assignment => ({
+      id: assignment.id,
+      employeeId: assignment.user.id,
+      employeeName: assignment.user.name,
+      employeeRole: assignment.user.role,
+      patternId: assignment.pattern.id,
+      patternName: assignment.pattern.name,
+      patternType: assignment.pattern.type,
+      status: assignment.status,
+      locationId: assignment.site.id,
+      locationName: assignment.site.name,
+      startDate: assignment.startDate,
+      endDate: assignment.endDate,
+      notes: assignment.notes
+    }))
+  } catch (error) {
+    console.error('[v0] Error fetching pattern assignments:', error)
+    return []
+  }
+}
+
 export async function getEmployeeSchedules() {
   try {
     console.log('[v0] Fetching employee schedules...')
