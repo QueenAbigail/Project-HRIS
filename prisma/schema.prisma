@@ -397,7 +397,13 @@ model EmployeePatternAssignment {
   siteId    String
   site      Site     @relation("EmployeePatternAssignments", fields: [siteId], references: [id], onDelete: Cascade)
   startDate DateTime @default(now())
+  endDate   DateTime? // Contract end date - null means ongoing
+  status    String   @default("ACTIVE") // ACTIVE, ENDED, PAUSED
+  createdBy String? // ID of user who made the assignment
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  notes     String? // Optional notes about the assignment
   
-  @@unique([userId, siteId])
+  @@unique([userId, siteId, startDate])
   @@map("employee_pattern_assignments")
 }

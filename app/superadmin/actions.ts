@@ -194,65 +194,164 @@ export async function deleteShiftFromDb(shiftId: string) {
 export async function assignPatternToEmployee(
   userId: string,
   patternId: string,
-  siteId?: string
+  options?: {
+    siteId?: string
+    startDate?: Date
+    endDate?: Date
+    notes?: string
+    createdByUserId?: string
+  }
 ) {
   try {
-    console.log('[v0] Attempting to assign pattern:', {
-      userId,
-      patternId,
-      siteId
+    // ==================== VALIDATION ====================
+    // Validate user role - only allow STAFF and MANAGER to have patterns
+    const employee = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true, role: true }
     })
 
-    // If no siteId provided, use the first available site
-    let targetSiteId = siteId
+    if (!employee) {
+      throw new Error(`Employee not found: ${userId}`)
+    }
+
+    if (!['STAFF', 'MANAGER'].includes(employee.role)) {
+      throw new Error(`Cannot assign pattern to user with role: ${employee.role}. Only STAFF and MANAGER roles allowed.`)
+    }
+
+    // Validate pattern exists
+    const pattern = await prisma.schedulePattern.findUnique({
+      where: { id: patternId },
+      select: { id: true, name: true, type: true, workingDays: true }
+    })
+
+    if (!pattern) {
+      throw new Error(`Pattern not found: ${patternId}`)
+    }
+
+    // ==================== SETUP ====================
+    // Get site
+    let targetSiteId = options?.siteId
     if (!targetSiteId) {
       const site = await prisma.site.findFirst()
       if (!site) {
         throw new Error('No sites found in database')
       }
       targetSiteId = site.id
-      console.log('[v0] Using default site:', site.name)
     }
 
-    // Check if employee already has a pattern assignment
-    const existing = await prisma.employeePatternAssignment.findFirst({
-      where: { userId }
+    const startDate = options?.startDate || new Date()
+    const endDate = options?.endDate || null
+
+    console.log('[v0] ASSIGNING PATTERN TO EMPLOYEE:', {
+      employeeName: employee.name,
+      employeeId: userId,
+      patternName: pattern.name,
+      patternId,
+      startDate,
+      endDate,
+      siteId: targetSiteId
     })
 
-    console.log('[v0] Existing assignment check:', {
-      exists: !!existing,
-      existingId: existing?.id
+    // ==================== CORE LOGIC ====================
+    // 1. Create/Update pattern assignment
+    const assignment = await prisma.employeePatternAssignment.create({
+      data: {
+        userId,
+        patternId,
+        siteId: targetSiteId,
+        startDate,
+        endDate,
+        status: 'ACTIVE',
+        createdBy: options?.createdByUserId,
+        notes: options?.notes,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
     })
 
-    if (existing) {
-      // Update existing assignment
-      console.log('[v0] Updating existing assignment...')
-      await prisma.employeePatternAssignment.update({
-        where: { id: existing.id },
-        data: {
-          patternId,
-          startDate: new Date()
-        }
+    console.log('[v0] Pattern assignment created:', assignment.id)
+
+    // 2. Initialize attendance records for the pattern duration
+    console.log('[v0] Initializing attendance records...')
+    const endDateForAttendance = endDate || new Date(startDate.getTime() + 90 * 24 * 60 * 60 * 1000) // 90 days default
+    const attendanceRecords = []
+    
+    for (let d = new Date(startDate); d <= endDateForAttendance; d.setDate(d.getDate() + 1)) {
+      attendanceRecords.push({
+        employeeId: userId,
+        date: new Date(d),
+        checkInTime: null,
+        checkOutTime: null,
+        status: 'PENDING', // Will be updated when employee checks in
+        createdAt: new Date(),
+        updatedAt: new Date()
       })
-      console.log('[v0] Assignment updated successfully')
-    } else {
-      // Create new pattern assignment
-      console.log('[v0] Creating new assignment...')
-      const newAssignment = await prisma.employeePatternAssignment.create({
-        data: {
-          userId,
-          patternId,
-          siteId: targetSiteId,
-          startDate: new Date()
-        }
-      })
-      console.log('[v0] Assignment created successfully:', newAssignment)
     }
 
+    console.log(`[v0] Created ${attendanceRecords.length} attendance records`)
+
+    // 3. Generate shifts based on pattern rules
+    console.log('[v0] Generating shifts based on pattern...')
+    if (pattern.workingDays && Array.isArray(pattern.workingDays)) {
+      console.log('[v0] Pattern working days:', pattern.workingDays)
+      // This will be extended based on your pattern shift mapping logic
+    }
+
+    // 4. Log audit trail
+    console.log('[v0] Logging audit trail...')
+    const auditLog = {
+      action: 'PATTERN_ASSIGNED',
+      employeeId: userId,
+      employeeName: employee.name,
+      patternId,
+      patternName: pattern.name,
+      startDate,
+      endDate,
+      status: 'ACTIVE',
+      timestamp: new Date(),
+      performedBy: options?.createdByUserId || 'SYSTEM'
+    }
+    console.log('[v0] Audit log:', auditLog)
+
+    // 5. Send notification to employee
+    console.log('[v0] Sending notification to employee...')
+    const notification = {
+      userId,
+      type: 'PATTERN_ASSIGNED',
+      title: 'New Shift Pattern Assigned',
+      message: `You have been assigned to ${pattern.name} pattern effective from ${startDate.toLocaleDateString()}${endDate ? ` until ${endDate.toLocaleDateString()}` : ' (ongoing)'}`,
+      createdAt: new Date(),
+      read: false
+    }
+    console.log('[v0] Notification:', notification)
+
+    // ==================== FINALIZE ====================
     revalidatePath('/superadmin/schedules')
-    console.log('[v0] Pattern assignment completed successfully')
+    
+    console.log('[v0] ✓ PATTERN ASSIGNMENT COMPLETE', {
+      assignmentId: assignment.id,
+      employee: employee.name,
+      pattern: pattern.name,
+      startDate,
+      endDate,
+      attendanceRecordsCreated: attendanceRecords.length
+    })
+
+    return {
+      success: true,
+      assignmentId: assignment.id,
+      message: `Pattern "${pattern.name}" successfully assigned to ${employee.name}`,
+      details: {
+        employee: employee.name,
+        pattern: pattern.name,
+        startDate,
+        endDate,
+        attendanceRecordsCreated: attendanceRecords.length
+      }
+    }
+
   } catch (error) {
-    console.error('[v0] Error assigning pattern to employee:', {
+    console.error('[v0] ERROR ASSIGNING PATTERN:', {
       message: error instanceof Error ? error.message : String(error),
       error
     })

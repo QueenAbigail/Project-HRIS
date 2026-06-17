@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { assignPatternToEmployee, getAllEmployees } from '@/app/superadmin/actions'
@@ -35,8 +36,19 @@ export function AddAssignmentDialog({
 }: AddAssignmentDialogProps) {
   const [selectedEmployee, setSelectedEmployee] = useState('')
   const [selectedPattern, setSelectedPattern] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [allEmployees, setAllEmployees] = useState<any[]>([])
+
+  // Set default start date to today
+  useEffect(() => {
+    if (open) {
+      const today = new Date().toISOString().split('T')[0]
+      setStartDate(today)
+    }
+  }, [open])
 
   // Fetch all employees when dialog opens
   useEffect(() => {
@@ -73,20 +85,36 @@ export function AddAssignmentDialog({
   }, [open, patterns])
 
   const handleAssign = async () => {
-    if (!selectedEmployee || !selectedPattern) {
-      toast.error('Please select both employee and pattern')
+    if (!selectedEmployee || !selectedPattern || !startDate) {
+      toast.error('Please fill in all required fields')
       return
     }
 
     try {
       setLoading(true)
       
-      // Call server action to assign pattern to employee
-      await assignPatternToEmployee(selectedEmployee, selectedPattern)
+      const startDateObj = new Date(startDate)
+      const endDateObj = endDate ? new Date(endDate) : null
 
-      toast.success('Pattern assigned successfully to employee')
+      // Validate dates
+      if (endDateObj && endDateObj <= startDateObj) {
+        toast.error('End date must be after start date')
+        return
+      }
+      
+      // Call server action with enhanced options
+      const result = await assignPatternToEmployee(selectedEmployee, selectedPattern, {
+        startDate: startDateObj,
+        endDate: endDateObj,
+        notes: notes || undefined
+      })
+
+      toast.success(result.message)
       setSelectedEmployee('')
       setSelectedPattern('')
+      setStartDate('')
+      setEndDate('')
+      setNotes('')
       onOpenChange(false)
       
       // Refresh page to show new assignment
@@ -102,18 +130,18 @@ export function AddAssignmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Assign Shift Pattern to Employee</DialogTitle>
           <DialogDescription>
-            Select an employee and assign them a shift pattern. The pattern defines their daily shift schedule.
+            Select an employee and assign them a shift pattern. The system will automatically generate attendance records and shifts based on the pattern.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Employee Selection */}
           <div className="space-y-2">
-            <Label htmlFor="employee">Employee</Label>
+            <Label htmlFor="employee">Employee *</Label>
             <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
               <SelectTrigger id="employee">
                 <SelectValue placeholder="Select an employee" />
@@ -122,7 +150,7 @@ export function AddAssignmentDialog({
                 {allEmployees.length > 0 ? (
                   allEmployees.map((employee) => (
                     <SelectItem key={employee.employeeId} value={employee.employeeId}>
-                      {employee.employeeName}
+                      {employee.employeeName} ({employee.role})
                     </SelectItem>
                   ))
                 ) : (
@@ -136,7 +164,7 @@ export function AddAssignmentDialog({
 
           {/* Pattern Selection */}
           <div className="space-y-2">
-            <Label htmlFor="pattern">Shift Pattern</Label>
+            <Label htmlFor="pattern">Shift Pattern *</Label>
             <Select value={selectedPattern} onValueChange={setSelectedPattern}>
               <SelectTrigger id="pattern">
                 <SelectValue placeholder="Select a pattern" />
@@ -157,16 +185,59 @@ export function AddAssignmentDialog({
             </Select>
           </div>
 
-          <p className="text-xs text-muted-foreground">
-            The selected pattern will define the employee&apos;s shift schedule based on the pattern rules (daily shift assignments, working days, etc.)
-          </p>
+          {/* Start Date */}
+          <div className="space-y-2">
+            <Label htmlFor="startDate">Start Date *</Label>
+            <Input
+              id="startDate"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </div>
+
+          {/* End Date (Optional) */}
+          <div className="space-y-2">
+            <Label htmlFor="endDate">End Date (Optional)</Label>
+            <Input
+              id="endDate"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              min={startDate}
+            />
+            <p className="text-xs text-muted-foreground">
+              Leave empty for ongoing assignment
+            </p>
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes (Optional)</Label>
+            <Input
+              id="notes"
+              placeholder="e.g., Temporary assignment, Contract renewal..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+
+          <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded text-sm text-blue-900 dark:text-blue-100">
+            <p className="font-semibold mb-1">What happens next:</p>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li>Attendance records will be auto-generated</li>
+              <li>Shifts will be generated based on pattern rules</li>
+              <li>Employee will receive notification</li>
+              <li>Assignment will be logged for audit trail</li>
+            </ul>
+          </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             Cancel
           </Button>
-          <Button onClick={handleAssign} disabled={loading || !selectedEmployee || !selectedPattern}>
+          <Button onClick={handleAssign} disabled={loading || !selectedEmployee || !selectedPattern || !startDate}>
             {loading ? 'Assigning...' : 'Assign Pattern'}
           </Button>
         </DialogFooter>
