@@ -82,6 +82,8 @@ export async function getShifts() {
 
 export async function getEmployeeSchedules() {
   try {
+    console.log('[v0] Fetching employee schedules...')
+    
     // Fetch from EmployeePatternAssignment table (pattern-based assignments)
     const patternAssignments = await prisma.employeePatternAssignment.findMany({
       include: {
@@ -92,8 +94,18 @@ export async function getEmployeeSchedules() {
       orderBy: { user: { name: 'asc' } }
     })
     
+    // Get first shift as default (since patterns don't have shift mappings yet)
+    const defaultShift = await prisma.shift.findFirst({
+      orderBy: { createdAt: 'asc' }
+    })
+    
+    if (!defaultShift && patternAssignments.length > 0) {
+      console.warn('[v0] No shifts found in database!')
+    }
+    
     console.log('[v0] Pattern assignments fetched:', {
       count: patternAssignments.length,
+      defaultShiftId: defaultShift?.id,
       assignments: patternAssignments.map(a => ({
         userId: a.userId,
         userName: a.user.name,
@@ -105,8 +117,8 @@ export async function getEmployeeSchedules() {
     return patternAssignments.map(assignment => ({
       employeeId: assignment.user.id,
       employeeName: assignment.user.name,
-      shiftId: assignment.pattern.id, // Use pattern ID as shiftId for compatibility
-      shiftName: assignment.pattern.name,
+      shiftId: defaultShift?.id || '', // Use default shift ID
+      shiftName: defaultShift?.name || assignment.pattern.name, // Fallback to pattern name if no shift
       locationId: assignment.site.id as any,
       locationName: assignment.site.name,
       workingDays: assignment.pattern.workingDays ? (assignment.pattern.workingDays as unknown as number[]) : [],
