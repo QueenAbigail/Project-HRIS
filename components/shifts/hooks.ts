@@ -1,5 +1,4 @@
 import { useSchedulesStore } from '@/stores/useSchedulesStore'
-import { locations } from '@/lib/constants'
 import type { EmployeeWithAttendance } from '@/lib/data'
 
 export function useEmployeesWithAttendance(date: Date = new Date()) {
@@ -13,7 +12,6 @@ export function useEmployeesWithAttendance(date: Date = new Date()) {
   // Transform data outside of Zustand selector to avoid infinite loops
   const employees = employeeSchedules.map((schedule) => {
     const shift = shifts.find((s) => s.id === schedule.shiftId)
-    const location = locations.find((l) => l.id === schedule.locationId)
     const attendance = todayAttendance.find((a) => a.employeeId === schedule.employeeId)
     const isWorkingToday = schedule.workingDays.includes(dayOfWeek)
     
@@ -32,7 +30,8 @@ export function useEmployeesWithAttendance(date: Date = new Date()) {
       status = 'day-off'
     }
     
-    if (!shift || !location) return null
+    // Only require shift - location comes from database
+    if (!shift) return null
     
     return {
       employeeId: schedule.employeeId,
@@ -41,7 +40,7 @@ export function useEmployeesWithAttendance(date: Date = new Date()) {
       department: schedule.department,
       position: schedule.position,
       locationId: schedule.locationId,
-      locationName: location.name,
+      locationName: schedule.locationName, // Use from database instead of constants
       shiftId: schedule.shiftId,
       shiftName: shift.name,
       scheduledStart: shift.startTime,

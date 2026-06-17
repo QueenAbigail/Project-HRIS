@@ -134,12 +134,7 @@ export default function SchedulePatternsPage() {
   useEffect(() => {
     const loadEmployeeSchedules = async () => {
       try {
-        console.log('[v0] Starting to fetch employee schedules...')
         const schedulesData = await getEmployeeSchedules()
-        console.log('[v0] Employee schedules returned from server action:', {
-          count: schedulesData?.length || 0,
-          data: schedulesData
-        })
         initializeEmployeeSchedules(schedulesData)
       } catch (err) {
         console.error('[v0] Error loading employee schedules:', err)
