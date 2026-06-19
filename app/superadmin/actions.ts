@@ -489,6 +489,166 @@ export async function getSchedulePatterns() {
   }
 }
 
+// ==================== DEVICE MANAGEMENT ACTIONS ====================
+
+export async function getDeviceBindings() {
+  try {
+    console.log('[v0] Fetching all device bindings...')
+    
+    const devices = await prisma.deviceBinding.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      },
+      orderBy: { bindDate: 'desc' }
+    })
+
+    const mappedDevices = devices.map(device => ({
+      id: device.id,
+      userId: device.userId,
+      userName: device.user.name,
+      userEmail: device.user.email,
+      deviceId: device.deviceId,
+      deviceName: device.deviceName,
+      deviceType: device.deviceType,
+      appVersion: device.appVersion,
+      bindDate: device.bindDate.toISOString().split('T')[0],
+      lastUsed: device.lastUsed.toISOString().replace('T', ' ').slice(0, 16),
+      isActive: device.isActive
+    }))
+
+    console.log('[v0] Devices fetched:', {
+      count: devices.length,
+      devices: mappedDevices.slice(0, 3) // Log first 3 for brevity
+    })
+
+    return mappedDevices
+  } catch (error) {
+    console.error('[v0] Error fetching device bindings:', {
+      message: error instanceof Error ? error.message : String(error),
+      error
+    })
+    return []
+  }
+}
+
+export async function removeDeviceBinding(deviceId: string) {
+  try {
+    console.log('[v0] Removing device binding:', deviceId)
+
+    const device = await prisma.deviceBinding.findUnique({
+      where: { id: deviceId },
+      include: {
+        user: { select: { name: true, email: true } }
+      }
+    })
+
+    if (!device) {
+      throw new Error('Device binding not found')
+    }
+
+    await prisma.deviceBinding.delete({
+      where: { id: deviceId }
+    })
+
+    console.log('[v0] Device binding removed:', {
+      deviceId,
+      user: device.user.name,
+      deviceName: device.deviceName
+    })
+
+    revalidatePath('/superadmin/devices')
+
+    return {
+      success: true,
+      message: `Device binding for ${device.user.name} has been removed.`
+    }
+  } catch (error) {
+    console.error('[v0] Error removing device binding:', {
+      message: error instanceof Error ? error.message : String(error),
+      error
+    })
+    throw error
+  }
+}
+
+export async function updateDeviceLastUsed(deviceId: string) {
+  try {
+    await prisma.deviceBinding.update({
+      where: { id: deviceId },
+      data: { lastUsed: new Date() }
+    })
+  } catch (error) {
+    console.error('[v0] Error updating device last used:', error)
+    // Don't throw - this is a non-critical update
+  }
+}
+
+export async function createDeviceBinding(data: {
+  userId: string
+  deviceId: string
+  deviceName: string
+  deviceType: 'mobile' | 'app'
+  appVersion?: string
+}) {
+  try {
+    console.log('[v0] Creating device binding:', { deviceId: data.deviceId, userId: data.userId })
+
+    // Check if user already has a device of this type
+    const existing = await prisma.deviceBinding.findFirst({
+      where: {
+        userId: data.userId,
+        deviceType: data.deviceType
+      }
+    })
+
+    if (existing) {
+      throw new Error(`User already has a ${data.deviceType} device bound. Please remove the previous binding first.`)
+    }
+
+    const device = await prisma.deviceBinding.create({
+      data: {
+        userId: data.userId,
+        deviceId: data.deviceId,
+        deviceName: data.deviceName,
+        deviceType: data.deviceType,
+        appVersion: data.appVersion,
+        bindDate: new Date(),
+        lastUsed: new Date(),
+        isActive: true
+      },
+      include: {
+        user: { select: { name: true, email: true } }
+      }
+    })
+
+    console.log('[v0] Device binding created:', {
+      id: device.id,
+      userId: device.userId,
+      deviceId: device.deviceId
+    })
+
+    revalidatePath('/superadmin/devices')
+
+    return {
+      success: true,
+      device,
+      message: `Device "${data.deviceName}" successfully bound to ${device.user.name}`
+    }
+  } catch (error) {
+    console.error('[v0] Error creating device binding:', {
+      message: error instanceof Error ? error.message : String(error),
+      error
+    })
+    throw error
+  }
+}
+
 export async function assignEmployeeShift(
   employeeId: string,
   shiftId: string,
