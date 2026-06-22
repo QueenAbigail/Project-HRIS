@@ -24,7 +24,7 @@ import {
 import { QRCodeCanvas } from 'qrcode.react'
 import { MapPin, Printer, Download, Search, X, Loader2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
-import { getAttendanceLocations, getPatrolLocations, getAllSites, getCompanyInfo } from '@/app/superadmin/actions'
+import { getAttendanceLocations, getPatrolLocations, getAllSites, getSystemSettings } from '@/app/superadmin/actions'
 import { toast } from 'sonner'
 
 interface Location {
@@ -46,9 +46,9 @@ interface Site {
   code: string
 }
 
-interface Company {
-  id: string
-  name: string
+interface AppSettings {
+  appName: string
+  appDescription?: string
 }
 
 export default function PrintQRCodePage() {
@@ -60,7 +60,7 @@ export default function PrintQRCodePage() {
   const [allAttendanceLocations, setAllAttendanceLocations] = useState<Location[]>([])
   const [allPatrolLocations, setAllPatrolLocations] = useState<Location[]>([])
   const [sites, setSites] = useState<Site[]>([])
-  const [company, setCompany] = useState<Company>({ id: '', name: 'Your Company' })
+  const [appSettings, setAppSettings] = useState<AppSettings>({ appName: 'Your Company' })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -70,16 +70,16 @@ export default function PrintQRCodePage() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [attendance, patrol, allSites, companyInfo] = await Promise.all([
+      const [attendance, patrol, allSites, settings] = await Promise.all([
         getAttendanceLocations(),
         getPatrolLocations(),
         getAllSites(),
-        getCompanyInfo()
+        getSystemSettings()
       ])
       
       setAllAttendanceLocations(attendance)
       setAllPatrolLocations(patrol)
-      setCompany(companyInfo)
+      setAppSettings(settings || { appName: 'Your Company' })
       
       // Add 'All Sites' option at the beginning
       setSites([
@@ -533,9 +533,9 @@ export default function PrintQRCodePage() {
                           aspectRatio: '1',
                         }}
                       >
-                        {/* Company Name Header */}
+                        {/* App Name Header */}
                         <div className="text-[6pt] font-semibold text-gray-700 mb-1 truncate w-full print:text-[5pt] tracking-tight">
-                          {company.name}
+                          {appSettings.appName}
                         </div>
                         
                         {/* QR Code */}
