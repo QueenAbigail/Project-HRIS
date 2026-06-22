@@ -17,20 +17,51 @@ export async function updateSettings(formData: FormData) {
     const fileName = `${Date.now()}.${fileExt}`
     const filePath = `logos/${fileName}`
 
-    const { error } = await supabase.storage
-      .from('logos')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: true,
-      })
+    try {
+      // Try to upload to the logos bucket
+      const { error } = await supabase.storage
+        .from('logos')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true,
+        })
 
-    if (error) throw new Error(error.message)
+      if (error) {
+        // If bucket doesn't exist, create it first
+        if (error.message.includes('not found') || error.message.includes('Bucket not found')) {
+          console.log('[v0] Creating logos bucket...')
+          
+          // Create the bucket
+          await supabase.storage.createBucket('logos', {
+            public: true,
+            fileSizeLimit: 5242880, // 5MB
+          })
+          
+          console.log('[v0] Logos bucket created successfully')
+          
+          // Try uploading again
+          const { error: retryError } = await supabase.storage
+            .from('logos')
+            .upload(filePath, file, {
+              cacheControl: '3600',
+              upsert: true,
+            })
+          
+          if (retryError) throw new Error(retryError.message)
+        } else {
+          throw new Error(error.message)
+        }
+      }
 
-    const { data } = supabase.storage
-      .from('logos')
-      .getPublicUrl(filePath)
-      
-    logoUrl = data.publicUrl
+      const { data } = supabase.storage
+        .from('logos')
+        .getPublicUrl(filePath)
+        
+      logoUrl = data.publicUrl
+    } catch (error) {
+      console.error('[v0] Error uploading logo:', error)
+      throw error
+    }
   }
 
   // 3. Ambil teks dari form
