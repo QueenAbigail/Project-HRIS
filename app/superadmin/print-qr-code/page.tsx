@@ -24,7 +24,7 @@ import {
 import { QRCodeCanvas } from 'qrcode.react'
 import { MapPin, Printer, Download, Search, X, Loader2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
-import { getAttendanceLocations, getPatrolLocations, getAllSites } from '@/app/superadmin/actions'
+import { getAttendanceLocations, getPatrolLocations, getAllSites, getCompanyInfo } from '@/app/superadmin/actions'
 import { toast } from 'sonner'
 
 interface Location {
@@ -46,6 +46,11 @@ interface Site {
   code: string
 }
 
+interface Company {
+  id: string
+  name: string
+}
+
 export default function PrintQRCodePage() {
   const [selectedSite, setSelectedSite] = useState('all')
   const [locationType, setLocationType] = useState('attendance')
@@ -55,6 +60,7 @@ export default function PrintQRCodePage() {
   const [allAttendanceLocations, setAllAttendanceLocations] = useState<Location[]>([])
   const [allPatrolLocations, setAllPatrolLocations] = useState<Location[]>([])
   const [sites, setSites] = useState<Site[]>([])
+  const [company, setCompany] = useState<Company>({ id: '', name: 'Your Company' })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -64,14 +70,16 @@ export default function PrintQRCodePage() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [attendance, patrol, allSites] = await Promise.all([
+      const [attendance, patrol, allSites, companyInfo] = await Promise.all([
         getAttendanceLocations(),
         getPatrolLocations(),
-        getAllSites()
+        getAllSites(),
+        getCompanyInfo()
       ])
       
       setAllAttendanceLocations(attendance)
       setAllPatrolLocations(patrol)
+      setCompany(companyInfo)
       
       // Add 'All Sites' option at the beginning
       setSites([
@@ -265,7 +273,7 @@ export default function PrintQRCodePage() {
         const url = canvas.toDataURL('image/png')
         const link = document.createElement('a')
         link.href = url
-        link.download = `${location.code}-QR.png`
+        link.download = `${location.siteName}-${location.name}-${location.code}-QR.png`
         link.click()
       }
     }
@@ -525,7 +533,13 @@ export default function PrintQRCodePage() {
                           aspectRatio: '1',
                         }}
                       >
-                        <div className="mb-2">
+                        {/* Company Name Header */}
+                        <div className="text-[6pt] font-semibold text-gray-700 mb-1 truncate w-full print:text-[5pt] tracking-tight">
+                          {company.name}
+                        </div>
+                        
+                        {/* QR Code */}
+                        <div className="mb-1.5 flex-grow flex items-center justify-center">
                           <QRCodeCanvas
                             value={JSON.stringify({
                               id: location.id,
@@ -540,9 +554,13 @@ export default function PrintQRCodePage() {
                             includeMargin={false}
                           />
                         </div>
+                        
+                        {/* Site Name Label */}
                         <div className="text-xs space-y-0.5 w-full print:text-[8pt]">
-                          <div className="font-bold truncate">{location.code}</div>
-                          <div className="text-muted-foreground text-xs line-clamp-1 print:text-[7pt]">
+                          <div className="font-semibold text-gray-800 truncate text-[7pt]">
+                            {location.siteName}
+                          </div>
+                          <div className="text-gray-600 text-[6pt] line-clamp-1 print:text-[6pt]">
                             {location.name}
                           </div>
                         </div>
@@ -565,9 +583,10 @@ export default function PrintQRCodePage() {
                     size="sm"
                     className="text-xs"
                     onClick={() => handleDownloadQR(location)}
+                    title={`${location.siteName} - ${location.name}`}
                   >
                     <Download className="h-3 w-3 mr-1" />
-                    {location.code}
+                    {location.siteName}
                   </Button>
                 ))}
               </div>

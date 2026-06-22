@@ -809,6 +809,27 @@ export async function getAllSites() {
   }
 }
 
+export async function getCompanyInfo() {
+  try {
+    console.log('[v0] Fetching company info')
+
+    const company = await prisma.company.findFirst({
+      select: { id: true, name: true }
+    })
+
+    if (!company) {
+      console.warn('[v0] No company found in database')
+      return { id: '', name: 'Your Company' }
+    }
+
+    console.log('[v0] Company info fetched:', { name: company.name })
+    return company
+  } catch (error) {
+    console.error('[v0] Error fetching company info:', error)
+    return { id: '', name: 'Your Company' }
+  }
+}
+
 /**
  * Process bulk import (all-or-nothing execution)
  */
