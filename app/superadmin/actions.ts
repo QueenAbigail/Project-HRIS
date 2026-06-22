@@ -39,7 +39,15 @@ export async function updateSettings(formData: FormData) {
         statusCode: (error as any).statusCode
       })
       
-      throw new Error(`Failed to upload logo: ${error.message}. Please ensure the 'logos' bucket exists in your Supabase Storage and is set to public.`)
+      // RLS error - provide helpful guidance
+      if (error.message.includes('row-level security')) {
+        console.warn('[v0] RLS policy blocks upload. Please go to Supabase Dashboard:')
+        console.warn('[v0] 1. Storage > logos bucket > Policies')
+        console.warn('[v0] 2. Enable "Allow insert for authenticated users"')
+        console.warn('[v0] 3. Or disable RLS for development/testing')
+      }
+      
+      throw new Error(`Logo upload failed: ${error.message}. Go to Supabase Dashboard > Storage > logos > Policies and adjust RLS settings.`)
     }
 
     console.log('[v0] Upload successful:', data)
@@ -52,17 +60,17 @@ export async function updateSettings(formData: FormData) {
     console.log('[v0] Logo URL:', logoUrl)
   }
 
-  // 3. Ambil teks dari form
+  // 3. Get text from form
   const appName = formData.get('appName') as string
   const appDescription = formData.get('appDescription') as string
 
-  // 4. Save ke Database pakai Prisma (karena kita pakai schema.prisma)
+  // 4. Save to Database with Prisma
   await prisma.systemSettings.upsert({
     where: { id: 'default' },
     update: {
       appName,
       appDescription,
-      ...(logoUrl && { logoUrl }), // Kalau logo kosong, jangan ditimpa
+      ...(logoUrl && { logoUrl }), // Only update logoUrl if a new one was uploaded
     },
     create: {
       id: 'default',
@@ -72,7 +80,7 @@ export async function updateSettings(formData: FormData) {
     }
   })
 
-  // 5. Refresh halaman biar logo & nama langsung ganti
+  // 5. Revalidate paths so changes appear immediately
   revalidatePath('/dashboard', 'layout')
   revalidatePath('/superadmin', 'layout')
   revalidatePath('/', 'layout')
