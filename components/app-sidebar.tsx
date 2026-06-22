@@ -24,6 +24,7 @@ import {
   Zap,
   DollarSign,
   Minus,
+  Mail,
 } from 'lucide-react'
 
 import {
@@ -159,6 +160,64 @@ const payrollNavItems = [
   },
 ]
 
+const adminNavItems = [
+  {
+    title: 'Dashboard',
+    url: '/superadmin',
+    icon: LayoutDashboard,
+  },
+  {
+    title: 'Information',
+    url: '/superadmin/information',
+    icon: Settings,
+  },
+  {
+    title: 'Client',
+    url: '/superadmin/client',
+    icon: Users,
+  },
+  {
+    title: 'Structure',
+    url: '/superadmin/structure',
+    icon: FileBarChart,
+  },
+  {
+    title: 'Data',
+    url: '/superadmin/data',
+    icon: FileBarChart,
+  },
+  {
+    title: 'Schedules',
+    url: '/superadmin/schedules',
+    icon: CalendarDays,
+  },
+  {
+    title: 'Device Management',
+    url: '/superadmin/devices',
+    icon: Bell,
+  },
+  {
+    title: 'GPS Locations',
+    url: '/superadmin/gps-locations',
+    icon: MapPin,
+  },
+  {
+    title: 'Print QR Code',
+    url: '/superadmin/print-qr-code',
+    icon: Zap,
+  },
+  {
+    title: 'Email Templates',
+    url: '/superadmin/email-templates',
+    icon: Mail,
+  },
+  {
+    title: 'Settings',
+    url: '/superadmin/settings',
+    icon: Settings,
+  },
+]
+
 export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) {
   const pathname = usePathname()
   const router = useRouter()
@@ -232,8 +291,18 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   
   // Determine which menu to show based on the current path
   const isPayrollPage = pathname.startsWith('/payroll')
-  const navItemsToShow = isPayrollPage ? payrollNavItems : mainNavItems
-  const menuLabel = isPayrollPage ? 'Payroll Menu' : 'Main Menu'
+  const isAdminPage = pathname.startsWith('/superadmin')
+  
+  let navItemsToShow = mainNavItems
+  let menuLabel = 'Main Menu'
+  
+  if (isPayrollPage) {
+    navItemsToShow = payrollNavItems
+    menuLabel = 'Payroll Menu'
+  } else if (isAdminPage) {
+    navItemsToShow = adminNavItems
+    menuLabel = 'Admin Dashboard'
+  }
 
   return (
     <Sidebar variant="inset" collapsible="icon" className="overflow-hidden">
@@ -262,7 +331,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className="[&>[data-radix-scroll-area-viewport]]:overflow-x-hidden">
-        {isPayrollPage && (
+        {(isPayrollPage || isAdminPage) && (
           <>
             <SidebarGroup>
               <SidebarGroupContent className="overflow-x-hidden">
