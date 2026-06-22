@@ -311,7 +311,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
           <SidebarMenuItem className="w-full">
             <SidebarMenuButton size="lg" asChild className="flex-1">
               <Link href="/dashboard" className="min-w-0">
-                <LogoIcon src={systemSettings.logoUrl || '/icon.svg'} alt={systemSettings.appName} className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground flex-shrink-0" />
+                <LogoIcon src={systemSettings.logoUrl || '/icon.svg'} alt={systemSettings.appName} className="flex aspect-square size-8 items-center justify-center flex-shrink-0" />
                 <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
                   <span className="truncate font-semibold">{systemSettings.appName}</span>
                   <span className="truncate text-xs text-muted-foreground">{systemSettings.appDescription}</span>
