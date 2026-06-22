@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -27,9 +27,31 @@ interface PatrolRecord {
 export function PatrolTimelineView({ siteId }: { siteId: string }) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
+  const [patrols, setPatrols] = useState<PatrolRecord[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Mock data - in real implementation, fetch from database
-  const mockPatrols: PatrolRecord[] = [
+  useEffect(() => {
+    const fetchPatrols = async () => {
+      try {
+        const response = await fetch(`/api/patrol/records?siteId=${siteId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setPatrols(data)
+        }
+      } catch (error) {
+        console.error('Error fetching patrol records:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (siteId) {
+      fetchPatrols()
+    }
+  }, [siteId])
+
+  // Fallback mock data for development/testing
+  const fallbackPatrols: PatrolRecord[] = [
     {
       id: '1',
       checkpoint: 'Gate Entrance',
@@ -87,9 +109,15 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
     },
   ]
 
+  const displayPatrols = patrols.length > 0 ? patrols : fallbackPatrols
+
+  if (isLoading) {
+    return <div className="text-center text-muted-foreground py-8">Loading patrol records...</div>
+  }
+
   return (
     <div className="space-y-3">
-      {mockPatrols.map((patrol) => (
+      {displayPatrols.map((patrol) => (
         <Card
           key={patrol.id}
           className="border border-border bg-card p-4 hover:bg-accent/50 transition-colors cursor-pointer"

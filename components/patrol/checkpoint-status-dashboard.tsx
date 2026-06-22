@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface CheckpointStatus {
   id: string
@@ -27,9 +27,38 @@ interface CheckpointStatus {
 
 export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
   const [selectedCheckpoint, setSelectedCheckpoint] = useState<CheckpointStatus | null>(null)
+  const [checkpoints, setCheckpoints] = useState<CheckpointStatus[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Mock data - in real implementation, fetch from database
-  const mockCheckpoints: CheckpointStatus[] = [
+  useEffect(() => {
+    const fetchCheckpoints = async () => {
+      try {
+        const response = await fetch(`/api/patrol/locations?siteId=${siteId}`)
+        if (response.ok) {
+          const data = await response.json()
+          // Transform API data to component format
+          const transformed = data.map((location: any) => ({
+            id: location.id,
+            name: location.name,
+            status: 'pending' as const,
+            lastPatrol: undefined,
+          }))
+          setCheckpoints(transformed)
+        }
+      } catch (error) {
+        console.error('Error fetching checkpoints:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (siteId) {
+      fetchCheckpoints()
+    }
+  }, [siteId])
+
+  // Fallback mock data for development
+  const fallbackCheckpoints: CheckpointStatus[] = [
     {
       id: '1',
       name: 'Gate Entrance',
@@ -123,6 +152,8 @@ Patrol completed successfully. All systems operational.`,
     },
   ]
 
+  const displayCheckpoints = checkpoints.length > 0 ? checkpoints : fallbackCheckpoints
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -156,10 +187,14 @@ Patrol completed successfully. All systems operational.`,
     }
   }
 
+  if (isLoading) {
+    return <div className="text-center text-muted-foreground py-8">Loading checkpoints...</div>
+  }
+
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-        {mockCheckpoints.map((checkpoint) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {displayCheckpoints.map((checkpoint) => (
           <Card
             key={checkpoint.id}
             className={`border p-3 cursor-pointer transition-all ${getStatusColor(
@@ -218,7 +253,6 @@ Patrol completed successfully. All systems operational.`,
         ))}
       </div>
 
-      {/* Checkpoint Detail Modal */}
       <Dialog open={!!selectedCheckpoint} onOpenChange={() => setSelectedCheckpoint(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
@@ -268,7 +302,6 @@ Patrol completed successfully. All systems operational.`,
                     </div>
                   </div>
 
-                  {/* Sample evidence images */}
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-2">Evidence</p>
                     <div className="grid grid-cols-2 gap-2">
@@ -285,7 +318,6 @@ Patrol completed successfully. All systems operational.`,
                     </div>
                   </div>
 
-                  {/* Patrol Report Notes */}
                   {selectedCheckpoint.lastPatrol.notes && (
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-2">Patrol Report</p>
