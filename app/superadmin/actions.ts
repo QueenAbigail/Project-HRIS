@@ -5,63 +5,51 @@ import { createClient } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 export async function updateSettings(formData: FormData) {
-  // 1. Panggil Supabase secara resmi
+  // 1. Call Supabase
   const supabase = await createClient()
 
   const file = formData.get('logo') as File | null
   let logoUrl = null
 
-  // 2. Kalau ada file foto, upload ke Supabase Storage
+  // 2. If file exists, upload to Supabase Storage
   if (file && file.size > 0) {
+    console.log('[v0] Uploading logo file:', { fileName: file.name, size: file.size })
+    
     const fileExt = file.name.split('.').pop()
     const fileName = `${Date.now()}.${fileExt}`
     const filePath = `logos/${fileName}`
 
-    try {
-      // Try to upload to the logos bucket
-      const { error } = await supabase.storage
-        .from('logos')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true,
-        })
+    // Convert File to ArrayBuffer for Supabase
+    const arrayBuffer = await file.arrayBuffer()
+    
+    console.log('[v0] Uploading to path:', filePath)
+    
+    const { data, error } = await supabase.storage
+      .from('logos')
+      .upload(filePath, arrayBuffer, {
+        contentType: file.type,
+        cacheControl: '3600',
+        upsert: true,
+      })
 
-      if (error) {
-        // If bucket doesn't exist, create it first
-        if (error.message.includes('not found') || error.message.includes('Bucket not found')) {
-          console.log('[v0] Creating logos bucket...')
-          
-          // Create the bucket
-          await supabase.storage.createBucket('logos', {
-            public: true,
-            fileSizeLimit: 5242880, // 5MB
-          })
-          
-          console.log('[v0] Logos bucket created successfully')
-          
-          // Try uploading again
-          const { error: retryError } = await supabase.storage
-            .from('logos')
-            .upload(filePath, file, {
-              cacheControl: '3600',
-              upsert: true,
-            })
-          
-          if (retryError) throw new Error(retryError.message)
-        } else {
-          throw new Error(error.message)
-        }
-      }
-
-      const { data } = supabase.storage
-        .from('logos')
-        .getPublicUrl(filePath)
-        
-      logoUrl = data.publicUrl
-    } catch (error) {
-      console.error('[v0] Error uploading logo:', error)
-      throw error
+    if (error) {
+      console.error('[v0] Upload error details:', {
+        message: error.message,
+        status: error.status,
+        statusCode: (error as any).statusCode
+      })
+      
+      throw new Error(`Failed to upload logo: ${error.message}. Please ensure the 'logos' bucket exists in your Supabase Storage and is set to public.`)
     }
+
+    console.log('[v0] Upload successful:', data)
+
+    const { data: publicUrlData } = supabase.storage
+      .from('logos')
+      .getPublicUrl(filePath)
+      
+    logoUrl = publicUrlData.publicUrl
+    console.log('[v0] Logo URL:', logoUrl)
   }
 
   // 3. Ambil teks dari form
