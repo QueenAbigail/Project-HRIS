@@ -1,12 +1,12 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/auth'
+import { createAdminClient } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 export async function updateSettings(formData: FormData) {
-  // 1. Call Supabase
-  const supabase = await createClient()
+  // 1. Call Supabase Admin Client (for file upload with full permissions)
+  const supabase = await createAdminClient()
 
   const file = formData.get('logo') as File | null
   let logoUrl = null
@@ -36,18 +36,8 @@ export async function updateSettings(formData: FormData) {
       console.error('[v0] Upload error details:', {
         message: error.message,
         status: error.status,
-        statusCode: (error as any).statusCode
       })
-      
-      // RLS error - provide helpful guidance
-      if (error.message.includes('row-level security')) {
-        console.warn('[v0] RLS policy blocks upload. Please go to Supabase Dashboard:')
-        console.warn('[v0] 1. Storage > logos bucket > Policies')
-        console.warn('[v0] 2. Enable "Allow insert for authenticated users"')
-        console.warn('[v0] 3. Or disable RLS for development/testing')
-      }
-      
-      throw new Error(`Logo upload failed: ${error.message}. Go to Supabase Dashboard > Storage > logos > Policies and adjust RLS settings.`)
+      throw new Error(`Logo upload failed: ${error.message}`)
     }
 
     console.log('[v0] Upload successful:', data)
