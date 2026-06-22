@@ -38,6 +38,8 @@ interface Location {
   siteId: string
   siteName: string
   siteCode: string
+  clientCompanyId?: string
+  clientCompanyName?: string
 }
 
 interface Site {
@@ -533,9 +535,14 @@ export default function PrintQRCodePage() {
                           aspectRatio: '1',
                         }}
                       >
-                        {/* App Name Header */}
-                        <div className="text-[6pt] font-semibold text-gray-700 mb-1 truncate w-full print:text-[5pt] tracking-tight">
+                        {/* Service Provider Name (Header) */}
+                        <div className="text-[5pt] font-semibold text-gray-600 mb-0.5 truncate w-full print:text-[4pt] tracking-tight">
                           {appSettings.appName}
+                        </div>
+                        
+                        {/* Client Company Name */}
+                        <div className="text-[6pt] font-bold text-gray-900 mb-1 truncate w-full print:text-[5pt]">
+                          {location.clientCompanyName || location.siteName}
                         </div>
                         
                         {/* QR Code */}
@@ -548,6 +555,8 @@ export default function PrintQRCodePage() {
                               latitude: location.latitude,
                               longitude: location.longitude,
                               type: locationType,
+                              site: location.siteName,
+                              company: location.clientCompanyName
                             })}
                             size={layoutSettings.size}
                             level="H"
@@ -555,12 +564,12 @@ export default function PrintQRCodePage() {
                           />
                         </div>
                         
-                        {/* Site Name Label */}
+                        {/* Location Details Label */}
                         <div className="text-xs space-y-0.5 w-full print:text-[8pt]">
-                          <div className="font-semibold text-gray-800 truncate text-[7pt]">
+                          <div className="font-semibold text-gray-800 truncate text-[6pt]">
                             {location.siteName}
                           </div>
-                          <div className="text-gray-600 text-[6pt] line-clamp-1 print:text-[6pt]">
+                          <div className="text-gray-600 text-[5pt] line-clamp-1 print:text-[5pt]">
                             {location.name}
                           </div>
                         </div>

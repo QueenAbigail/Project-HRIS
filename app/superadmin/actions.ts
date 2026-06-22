@@ -733,7 +733,14 @@ export async function getAttendanceLocations(siteId?: string) {
     const locations = await prisma.attendanceLocation.findMany({
       where: siteId ? { siteId } : {},
       include: {
-        site: { select: { id: true, name: true, code: true } }
+        site: { 
+          select: { 
+            id: true, 
+            name: true, 
+            code: true,
+            company: { select: { id: true, name: true } }
+          } 
+        }
       },
       orderBy: { name: 'asc' }
     })
@@ -748,7 +755,9 @@ export async function getAttendanceLocations(siteId?: string) {
       status: loc.isActive ? 'Active' : 'Inactive',
       siteId: loc.siteId,
       siteName: loc.site.name,
-      siteCode: loc.site.code
+      siteCode: loc.site.code,
+      clientCompanyId: loc.site.company?.id,
+      clientCompanyName: loc.site.company?.name || 'N/A'
     }))
 
     console.log('[v0] Attendance locations fetched:', { count: locations.length })
@@ -766,7 +775,14 @@ export async function getPatrolLocations(siteId?: string) {
     const locations = await prisma.patrolLocation.findMany({
       where: siteId ? { siteId } : {},
       include: {
-        site: { select: { id: true, name: true, code: true } }
+        site: { 
+          select: { 
+            id: true, 
+            name: true, 
+            code: true,
+            company: { select: { id: true, name: true } }
+          } 
+        }
       },
       orderBy: { name: 'asc' }
     })
@@ -781,7 +797,9 @@ export async function getPatrolLocations(siteId?: string) {
       status: loc.isActive ? 'Active' : 'Inactive',
       siteId: loc.siteId,
       siteName: loc.site.name,
-      siteCode: loc.site.code
+      siteCode: loc.site.code,
+      clientCompanyId: loc.site.company?.id,
+      clientCompanyName: loc.site.company?.name || 'N/A'
     }))
 
     console.log('[v0] Patrol locations fetched:', { count: locations.length })
