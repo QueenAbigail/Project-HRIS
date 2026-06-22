@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,95 +22,77 @@ import {
   Checkbox,
 } from '@/components/ui/checkbox'
 import { QRCodeCanvas } from 'qrcode.react'
-import { MapPin, Printer, Download, Search, X } from 'lucide-react'
+import { MapPin, Printer, Download, Search, X, Loader2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
-
-// Mock data matching GPS Locations structure
-const mockSites = [
-  { id: 'all', name: 'All Sites', code: 'ALL' },
-  { id: 'site-1', name: 'Main Gate Site', code: 'MG-01' },
-  { id: 'site-2', name: 'Building A', code: 'BA-01' },
-  { id: 'site-3', name: 'Building B', code: 'BA-02' },
-]
-
-const mockAttendanceLocations: Record<string, Array<any>> = {
-  'site-1': [
-    { id: 1, name: 'Main Entrance', latitude: '-6.2088', longitude: '106.8456', radius: 50, status: 'Active', code: 'MG-ATT-01' },
-    { id: 2, name: 'Back Entrance', latitude: '-6.2095', longitude: '106.8460', radius: 45, status: 'Active', code: 'MG-ATT-02' },
-    { id: 3, name: 'Security Booth', latitude: '-6.2100', longitude: '106.8465', radius: 30, status: 'Active', code: 'MG-ATT-03' },
-  ],
-  'site-2': [
-    { id: 4, name: 'Building A Lobby', latitude: '-6.2110', longitude: '106.8470', radius: 60, status: 'Active', code: 'BA-ATT-01' },
-    { id: 5, name: 'Floor 1 Reception', latitude: '-6.2115', longitude: '106.8475', radius: 40, status: 'Active', code: 'BA-ATT-02' },
-  ],
-  'site-3': [
-    { id: 6, name: 'Building B Main', latitude: '-6.2120', longitude: '106.8480', radius: 55, status: 'Active', code: 'BB-ATT-01' },
-  ],
-}
-
-const mockPatrolCheckpoints: Record<string, Array<any>> = {
-  'site-1': Array.from({ length: 6 }, (_, i) => ({
-    id: i + 1000,
-    name: `Checkpoint ${String.fromCharCode(65 + i)}`,
-    latitude: String(-6.2088 + (Math.random() * 0.01)).substring(0, 8),
-    longitude: String(106.8456 + (Math.random() * 0.01)).substring(0, 9),
-    radius: 30 + Math.random() * 20,
-    status: 'Active',
-    code: `MG-PAT-${String(i + 1).padStart(2, '0')}`,
-  })),
-  'site-2': Array.from({ length: 5 }, (_, i) => ({
-    id: i + 2000,
-    name: `Building A Check ${i + 1}`,
-    latitude: String(-6.2110 + (Math.random() * 0.01)).substring(0, 8),
-    longitude: String(106.8470 + (Math.random() * 0.01)).substring(0, 9),
-    radius: 25 + Math.random() * 15,
-    status: 'Active',
-    code: `BA-PAT-${String(i + 1).padStart(2, '0')}`,
-  })),
-  'site-3': Array.from({ length: 4 }, (_, i) => ({
-    id: i + 3000,
-    name: `Building B Check ${i + 1}`,
-    latitude: String(-6.2120 + (Math.random() * 0.01)).substring(0, 8),
-    longitude: String(106.8480 + (Math.random() * 0.01)).substring(0, 9),
-    radius: 28 + Math.random() * 18,
-    status: 'Active',
-    code: `BB-PAT-${String(i + 1).padStart(2, '0')}`,
-  })),
-}
+import { getAttendanceLocations, getPatrolLocations, getAllSites } from '@/app/superadmin/actions'
+import { toast } from 'sonner'
 
 interface Location {
-  id: number
+  id: string
   name: string
   code: string
   latitude: string
   longitude: string
   radius: number
   status: string
+  siteId: string
+  siteName: string
+  siteCode: string
+}
+
+interface Site {
+  id: string
+  name: string
+  code: string
 }
 
 export default function PrintQRCodePage() {
   const [selectedSite, setSelectedSite] = useState('all')
   const [locationType, setLocationType] = useState('attendance')
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedLocations, setSelectedLocations] = useState<number[]>([])
-  const [layoutOption, setLayoutOption] = useState('a3-3x4') // A3: 3 cols x 4 rows, A4: 2 cols x 3 rows
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([])
+  const [layoutOption, setLayoutOption] = useState('a3-3x4')
+  const [allAttendanceLocations, setAllAttendanceLocations] = useState<Location[]>([])
+  const [allPatrolLocations, setAllPatrolLocations] = useState<Location[]>([])
+  const [sites, setSites] = useState<Site[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      const [attendance, patrol, allSites] = await Promise.all([
+        getAttendanceLocations(),
+        getPatrolLocations(),
+        getAllSites()
+      ])
+      
+      setAllAttendanceLocations(attendance)
+      setAllPatrolLocations(patrol)
+      
+      // Add 'All Sites' option at the beginning
+      setSites([
+        { id: 'all', name: 'All Sites', code: 'ALL' },
+        ...allSites
+      ])
+    } catch (error) {
+      console.error('[v0] Error loading locations:', error)
+      toast.error('Failed to load locations')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Get all filtered locations
   const getAllLocations = (): Location[] => {
-    let locations: Location[] = []
+    let locations: Location[] = locationType === 'attendance' ? allAttendanceLocations : allPatrolLocations
 
-    if (selectedSite === 'all') {
-      Object.entries(locationType === 'attendance' ? mockAttendanceLocations : mockPatrolCheckpoints).forEach(
-        ([_siteId, siteLocations]) => {
-          locations = [...locations, ...siteLocations]
-        }
-      )
-    } else {
-      const siteLocations =
-        locationType === 'attendance'
-          ? mockAttendanceLocations[selectedSite] || []
-          : mockPatrolCheckpoints[selectedSite] || []
-      locations = siteLocations
+    // Filter by site
+    if (selectedSite !== 'all') {
+      locations = locations.filter(loc => loc.siteId === selectedSite)
     }
 
     // Filter by search
@@ -127,7 +109,7 @@ export default function PrintQRCodePage() {
 
   const filteredLocations = getAllLocations()
 
-  const toggleLocationSelection = (id: number) => {
+  const toggleLocationSelection = (id: string) => {
     setSelectedLocations((prev) =>
       prev.includes(id) ? prev.filter((locId) => locId !== id) : [...prev, id]
     )
@@ -341,12 +323,12 @@ export default function PrintQRCodePage() {
             {/* Site Selection */}
             <div className="space-y-2">
               <label className="text-sm font-semibold">Site</label>
-              <Select value={selectedSite} onValueChange={setSelectedSite}>
+              <Select value={selectedSite} onValueChange={setSelectedSite} disabled={loading}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockSites.map((site) => (
+                  {sites.map((site) => (
                     <SelectItem key={site.id} value={site.id}>
                       {site.name}
                     </SelectItem>
@@ -431,7 +413,12 @@ export default function PrintQRCodePage() {
           </Button>
         </CardHeader>
         <CardContent>
-          {filteredLocations.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-muted-foreground" />
+              <p className="text-muted-foreground">Loading locations...</p>
+            </div>
+          ) : filteredLocations.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">No locations found</p>
             </div>

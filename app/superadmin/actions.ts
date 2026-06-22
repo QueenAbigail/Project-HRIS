@@ -719,8 +719,93 @@ export async function validateBulkImport(
 
     return result
   } catch (error) {
-    console.error('[v0] Error validating bulk import:', error)
+    console.error('[v0] Error processing bulk import:', error)
     throw error
+  }
+}
+
+// ==================== QR CODE / LOCATION ACTIONS ====================
+
+export async function getAttendanceLocations(siteId?: string) {
+  try {
+    console.log('[v0] Fetching attendance locations', { siteId: siteId || 'all' })
+
+    const locations = await prisma.attendanceLocation.findMany({
+      where: siteId ? { siteId } : {},
+      include: {
+        site: { select: { id: true, name: true, code: true } }
+      },
+      orderBy: { name: 'asc' }
+    })
+
+    const mapped = locations.map((loc, idx) => ({
+      id: loc.id,
+      name: loc.name,
+      code: `${loc.site.code}-ATT-${String(idx + 1).padStart(2, '0')}`,
+      latitude: String(loc.latitude),
+      longitude: String(loc.longitude),
+      radius: loc.radius,
+      status: loc.isActive ? 'Active' : 'Inactive',
+      siteId: loc.siteId,
+      siteName: loc.site.name,
+      siteCode: loc.site.code
+    }))
+
+    console.log('[v0] Attendance locations fetched:', { count: locations.length })
+    return mapped
+  } catch (error) {
+    console.error('[v0] Error fetching attendance locations:', error)
+    return []
+  }
+}
+
+export async function getPatrolLocations(siteId?: string) {
+  try {
+    console.log('[v0] Fetching patrol locations', { siteId: siteId || 'all' })
+
+    const locations = await prisma.patrolLocation.findMany({
+      where: siteId ? { siteId } : {},
+      include: {
+        site: { select: { id: true, name: true, code: true } }
+      },
+      orderBy: { name: 'asc' }
+    })
+
+    const mapped = locations.map((loc, idx) => ({
+      id: loc.id,
+      name: loc.name,
+      code: `${loc.site.code}-PAT-${String(idx + 1).padStart(2, '0')}`,
+      latitude: String(loc.latitude),
+      longitude: String(loc.longitude),
+      radius: loc.radius,
+      status: loc.isActive ? 'Active' : 'Inactive',
+      siteId: loc.siteId,
+      siteName: loc.site.name,
+      siteCode: loc.site.code
+    }))
+
+    console.log('[v0] Patrol locations fetched:', { count: locations.length })
+    return mapped
+  } catch (error) {
+    console.error('[v0] Error fetching patrol locations:', error)
+    return []
+  }
+}
+
+export async function getAllSites() {
+  try {
+    console.log('[v0] Fetching all sites for location grouping')
+
+    const sites = await prisma.site.findMany({
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, code: true }
+    })
+
+    console.log('[v0] Sites fetched:', { count: sites.length })
+    return sites
+  } catch (error) {
+    console.error('[v0] Error fetching sites:', error)
+    return []
   }
 }
 
