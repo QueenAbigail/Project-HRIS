@@ -7,7 +7,8 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { LayoutDashboard, LogIn, UserPlus, AlertTriangle, Clock, AlertCircle, Eye, Search, X } from 'lucide-react'
+import { LayoutDashboard, LogIn, UserPlus, AlertTriangle, Clock, AlertCircle, Eye, Search, X, RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface LoginActivity {
   id: string
@@ -131,6 +132,31 @@ export default function DashboardPage() {
   const [filterDate, setFilterDate] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'week' | 'month'>('all')
+  const [isGeneratingAttendance, setIsGeneratingAttendance] = useState(false)
+
+  const handleGenerateAttendance = async () => {
+    setIsGeneratingAttendance(true)
+    try {
+      const response = await fetch('/api/attendance/generate-today', {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to generate attendance')
+        return
+      }
+
+      const data = await response.json()
+      toast.success(data.message)
+      console.log('[v0] Attendance generation details:', data.details)
+    } catch (error) {
+      console.error('[v0] Error triggering attendance generation:', error)
+      toast.error('Failed to generate attendance records')
+    } finally {
+      setIsGeneratingAttendance(false)
+    }
+  }
 
   // Error counts
   const errorCounts = {
@@ -200,12 +226,25 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center space-x-4">
-        <LayoutDashboard className="size-8 text-primary" />
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">Monitor system activity and user operations</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <LayoutDashboard className="size-8 text-primary" />
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground">Monitor system activity and user operations</p>
+          </div>
         </div>
+        <Button
+          onClick={handleGenerateAttendance}
+          disabled={isGeneratingAttendance}
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          title="Generate pending attendance records for today based on assignments"
+        >
+          <RefreshCw className={`size-4 ${isGeneratingAttendance ? 'animate-spin' : ''}`} />
+          {isGeneratingAttendance ? 'Generating...' : 'Generate Attendance'}
+        </Button>
       </div>
 
       {/* Error Summary Cards */}
