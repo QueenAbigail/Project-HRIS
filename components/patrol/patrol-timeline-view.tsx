@@ -50,74 +50,22 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
     }
   }, [siteId])
 
-  // Fallback mock data for development/testing
-  const fallbackPatrols: PatrolRecord[] = [
-    {
-      id: '1',
-      checkpoint: 'Gate Entrance',
-      officer: 'John Doe',
-      timestamp: '09:30 AM',
-      date: 'Today',
-      gpsStatus: 'verified',
-      photos: 2,
-      description: 'Gate secure, no issues detected. All barriers intact.',
-      evidence: [
-        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
-        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
-      ],
-    },
-    {
-      id: '2',
-      checkpoint: 'Perimeter North',
-      officer: 'Jane Smith',
-      timestamp: '09:15 AM',
-      date: 'Today',
-      gpsStatus: 'verified',
-      photos: 1,
-      description: 'Perimeter fence checked. Minor debris cleared.',
-      evidence: [
-        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
-      ],
-    },
-    {
-      id: '3',
-      checkpoint: 'Back Gate',
-      officer: 'Bob Johnson',
-      timestamp: '09:00 AM',
-      date: 'Today',
-      gpsStatus: 'verified',
-      photos: 3,
-      description: 'All systems normal. Gate functioning properly.',
-      evidence: [
-        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
-        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
-        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
-      ],
-    },
-    {
-      id: '4',
-      checkpoint: 'Perimeter South',
-      officer: 'Alice Brown',
-      timestamp: '08:45 AM',
-      date: 'Today',
-      gpsStatus: 'unverified',
-      photos: 1,
-      description: 'Quick check completed.',
-      evidence: [
-        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
-      ],
-    },
-  ]
-
-  const displayPatrols = patrols.length > 0 ? patrols : fallbackPatrols
-
   if (isLoading) {
     return <div className="text-center text-muted-foreground py-8">Loading patrol records...</div>
   }
 
+  if (patrols.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-12">
+        <p>No patrol records found for this site.</p>
+        <p className="text-sm mt-2">Patrol records will appear here as officers complete their rounds.</p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3">
-      {displayPatrols.map((patrol) => (
+      {patrols.map((patrol) => (
         <Card
           key={patrol.id}
           className="border border-border bg-card p-4 hover:bg-accent/50 transition-colors cursor-pointer"
