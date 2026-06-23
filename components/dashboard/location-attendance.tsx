@@ -1,14 +1,36 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { MapPin, Users, UserCheck, UserX, Clock, AlertTriangle, CalendarOff } from 'lucide-react'
-// import { getLocationAttendanceStats, getOverallAttendanceStats } from '@/lib/data'
+import { MapPin, Users, UserCheck, UserX, Clock, AlertTriangle, CalendarOff, ChevronDown } from 'lucide-react'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
+
+interface CompanyAttendanceData {
+  companyId: string
+  companyName: string
+  totalStaff: number
+  present: number
+  absent: number
+  late: number
+  lateMinutesTotal: number
+  notCheckedIn: number
+  onLeave: number
+  dayOff: number
+  expectedToWork: number
+  attendanceRate: number
+  sites: Array<any>
+}
 
 interface LocationAttendanceProps {
-  locationData?: Array<any>
+  locationData?: CompanyAttendanceData[]
 }
 
 export function LocationAttendance({ locationData }: LocationAttendanceProps) {
@@ -39,15 +61,16 @@ export function LocationAttendance({ locationData }: LocationAttendanceProps) {
     );
   }
 
+  // Calculate totals from all companies
   const totals = {
-    totalStaff: locationData.reduce((acc, loc) => acc + loc.totalStaff, 0),
-    present: locationData.reduce((acc, loc) => acc + loc.present + loc.late, 0),
-    absent: locationData.reduce((acc, loc) => acc + loc.absent, 0),
-    late: locationData.reduce((acc, loc) => acc + loc.late, 0),
-    notCheckedIn: locationData.reduce((acc, loc) => acc + loc.notCheckedIn, 0),
-    onLeave: locationData.reduce((acc, loc) => acc + loc.onLeave, 0),
-    dayOff: locationData.reduce((acc, loc) => acc + loc.dayOff, 0),
-    expectedToWork: locationData.reduce((acc, loc) => acc + loc.expectedToWork, 0),
+    totalStaff: locationData.reduce((acc, company) => acc + company.totalStaff, 0),
+    present: locationData.reduce((acc, company) => acc + company.present + company.late, 0),
+    absent: locationData.reduce((acc, company) => acc + company.absent, 0),
+    late: locationData.reduce((acc, company) => acc + company.late, 0),
+    notCheckedIn: locationData.reduce((acc, company) => acc + company.notCheckedIn, 0),
+    onLeave: locationData.reduce((acc, company) => acc + company.onLeave, 0),
+    dayOff: locationData.reduce((acc, company) => acc + company.dayOff, 0),
+    expectedToWork: locationData.reduce((acc, company) => acc + company.expectedToWork, 0),
   }
 
   return (
@@ -159,97 +182,136 @@ export function LocationAttendance({ locationData }: LocationAttendanceProps) {
           </div>
         )}
 
-        {/* Location Breakdown */}
-        <div className="space-y-3">
-{locationData.map((location) => {
-            const attendanceRate = location.attendanceRate
-            const hasLateCheckIns = location.late > 0
-            const hasDayOff = location.dayOff > 0
+        {/* Location Breakdown by Company */}
+        <Accordion type="single" collapsible className="w-full">
+          {locationData.map((company) => {
+            const companyAttendanceRate = company.attendanceRate
+            const companyHasLateCheckIns = company.late > 0
+
             return (
-              <button
-                onClick={() => handleLocationClick(location.locationId)}
-                key={location.locationId}
-                className={`w-full text-left p-4 rounded-lg border bg-secondary/20 hover:bg-secondary/40 hover:border-primary/50 transition-all cursor-pointer ${
-                  hasLateCheckIns ? 'border-warning/30' : 'border-border'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="size-8 rounded bg-muted flex items-center justify-center">
-                      <MapPin className="size-4 text-muted-foreground" />
+              <AccordionItem key={company.companyId} value={company.companyId} className="border-b">
+                <AccordionTrigger className="hover:no-underline p-4 rounded-lg hover:bg-muted/50">
+                  <div className="flex items-center justify-between w-full gap-4">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="size-8 rounded bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <MapPin className="size-4 text-primary" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-semibold">{company.companyName}</p>
+                        <p className="text-xs text-muted-foreground">{company.sites.length} location{company.sites.length !== 1 ? 's' : ''}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">{location.locationName}</p>
-                      <p className="text-xs text-muted-foreground font-mono">{location.locationId}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {hasDayOff && (
-                      <Badge 
-                        variant="outline" 
-                        className="bg-primary/10 text-primary/70 border-primary/20"
-                      >
-                        {location.dayOff} day off
-                      </Badge>
-                    )}
-                    {hasLateCheckIns && (
-                      <Badge 
-                        variant="outline" 
-                        className="bg-warning/10 text-warning border-warning/20"
-                      >
-                        {location.late} late
-                      </Badge>
-                    )}
-                    <Badge
-                      variant="outline"
-                      className={
-                        attendanceRate >= 90
-                          ? 'bg-success/10 text-success border-success/20'
-                          : attendanceRate >= 75
-                          ? 'bg-warning/10 text-warning border-warning/20'
-                          : 'bg-destructive/10 text-destructive border-destructive/20'
-                      }
-                    >
-                      {attendanceRate}% Present
-                    </Badge>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Progress value={attendanceRate} className="h-2" />
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-muted-foreground">
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span className="flex items-center gap-1">
-                        <UserCheck className="size-3 text-success" />
-                        {location.present} on-time
-                      </span>
-                      {hasLateCheckIns && (
-                        <span className="flex items-center gap-1">
-                          <AlertTriangle className="size-3 text-warning" />
-                          {location.late} late ({location.lateMinutesTotal}min)
-                        </span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {companyHasLateCheckIns && (
+                        <Badge 
+                          variant="outline" 
+                          className="bg-warning/10 text-warning border-warning/20"
+                        >
+                          {company.late} late
+                        </Badge>
                       )}
-                      <span className="flex items-center gap-1">
-                        <UserX className="size-3 text-destructive" />
-                        {location.absent} absent
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="size-3 text-muted-foreground" />
-                        {location.notCheckedIn} pending
-                      </span>
-                      {hasDayOff && (
-                        <span className="flex items-center gap-1">
-                          <CalendarOff className="size-3 text-primary/70" />
-                          {location.dayOff} off
-                        </span>
-                      )}
+                      <Badge
+                        variant="outline"
+                        className={
+                          companyAttendanceRate >= 90
+                            ? 'bg-success/10 text-success border-success/20'
+                            : companyAttendanceRate >= 75
+                            ? 'bg-warning/10 text-warning border-warning/20'
+                            : 'bg-destructive/10 text-destructive border-destructive/20'
+                        }
+                      >
+                        {companyAttendanceRate}% Present
+                      </Badge>
                     </div>
-                    <span className="text-right">{location.expectedToWork} expected / {location.totalStaff} total</span>
                   </div>
-                </div>
-              </button>
+                </AccordionTrigger>
+                <AccordionContent className="pb-0">
+                  <div className="space-y-3 p-4 pt-0">
+                    {/* Company Summary Stats */}
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 p-3 rounded-lg bg-muted/30 border border-border/50 mb-4">
+                      <div>
+                        <p className="text-2xl font-bold text-foreground">{company.present}</p>
+                        <p className="text-xs text-muted-foreground">Present</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-warning">{company.late}</p>
+                        <p className="text-xs text-muted-foreground">Late</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold text-destructive">{company.absent}</p>
+                        <p className="text-xs text-muted-foreground">Absent</p>
+                      </div>
+                      <div className="hidden sm:block">
+                        <p className="text-2xl font-bold text-muted-foreground">{company.dayOff}</p>
+                        <p className="text-xs text-muted-foreground">Day Off</p>
+                      </div>
+                    </div>
+
+                    {/* Individual Sites */}
+                    <div className="space-y-2">
+                      {company.sites.map((site) => {
+                        const hasLateCheckIns = site.late > 0
+                        const hasDayOff = site.dayOff > 0
+                        return (
+                          <button
+                            onClick={() => handleLocationClick(site.locationId)}
+                            key={site.locationId}
+                            className={`w-full text-left p-3 rounded-lg border bg-secondary/20 hover:bg-secondary/40 hover:border-primary/50 transition-all cursor-pointer ${
+                              hasLateCheckIns ? 'border-warning/30' : 'border-border'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <MapPin className="size-3 text-muted-foreground flex-shrink-0" />
+                                <div>
+                                  <p className="font-medium text-sm">{site.locationName}</p>
+                                  <p className="text-xs text-muted-foreground">{site.locationId}</p>
+                                </div>
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className={
+                                  site.attendanceRate >= 90
+                                    ? 'bg-success/10 text-success border-success/20 text-xs'
+                                    : site.attendanceRate >= 75
+                                    ? 'bg-warning/10 text-warning border-warning/20 text-xs'
+                                    : 'bg-destructive/10 text-destructive border-destructive/20 text-xs'
+                                }
+                              >
+                                {site.attendanceRate}%
+                              </Badge>
+                            </div>
+                            <Progress value={site.attendanceRate} className="h-1.5" />
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-2">
+                              <span className="flex items-center gap-1">
+                                <UserCheck className="size-2" />
+                                {site.present}
+                              </span>
+                              {hasLateCheckIns && (
+                                <span className="flex items-center gap-1 text-warning">
+                                  <AlertTriangle className="size-2" />
+                                  {site.late}
+                                </span>
+                              )}
+                              <span className="flex items-center gap-1">
+                                <UserX className="size-2" />
+                                {site.absent}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="size-2" />
+                                {site.notCheckedIn}
+                              </span>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
             )
           })}
-        </div>
+        </Accordion>
       </CardContent>
     </Card>
   )

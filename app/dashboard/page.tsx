@@ -18,6 +18,7 @@ export default async function DashboardPage() {
   const weekAgo = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
 
   const [
+    companies,
     sites,
     shifts,
     users,
@@ -26,7 +27,8 @@ export default async function DashboardPage() {
     recentLeaves,
     assignments
   ] = await Promise.all([
-    prisma.site.findMany(),
+    prisma.company.findMany(),
+    prisma.site.findMany({ include: { company: true } }),
     prisma.shift.findMany(),
     prisma.user.findMany({ include: { site: true } }),
     prisma.attendance.findMany({
@@ -133,35 +135,84 @@ export default async function DashboardPage() {
     }))
     .sort((a, b) => b.lateMinutes - a.lateMinutes as any);
 
-  // locationStats
-  const locationStats = sites.map((site) => {
-    const siteAtt = todayAttendances.filter((a) => a.locationId === site.id);
-    const lateR = siteAtt.filter((a) => a.status === 'LATE');
-    const lateCount = lateR.length;
-    const lateMinutesTotal = lateR.reduce((sum, a) => sum + a.lateMinutes, 0);
-    const totalStaff = usersBySite[site.id] || 0;
-    const dayOff = dayOffBySite[site.id] || 0;
-    const expectedToWork = Math.max(0, totalStaff - dayOff);
-    const present = siteAtt.filter((a) => a.status === 'PRESENT').length;
-    const absent = siteAtt.filter((a) => a.status === 'ABSENT').length;
-    const notCheckedIn = siteAtt.filter((a) => a.status === 'NOT_CHECKED_IN').length;
-    const onLeave = recentLeaves.filter((l) => l.requester?.siteId === site.id).length;
-    const attendanceRate = expectedToWork > 0 ? Math.round(((present + lateCount) / expectedToWork) * 100) : 100;
+  // locationStats grouped by company
+  const locationStatsByCompany = companies.map((company) => {
+    // Get all sites for this company
+    const companySites = sites.filter((s) => s.companyId === company.id);
+    
+    // Get aggregated stats for all sites in this company
+    let companyTotalStaff = 0;
+    let companyDayOff = 0;
+    let companyPresent = 0;
+    let companyAbsent = 0;
+    let companyLate = 0;
+    let companyLateMinutesTotal = 0;
+    let companyNotCheckedIn = 0;
+    let companyOnLeave = 0;
+
+    // Calculate site-level stats
+    const siteStats = companySites.map((site) => {
+      const siteAtt = todayAttendances.filter((a) => a.locationId === site.id);
+      const lateR = siteAtt.filter((a) => a.status === 'LATE');
+      const lateCount = lateR.length;
+      const lateMinutesTotal = lateR.reduce((sum, a) => sum + a.lateMinutes, 0);
+      const totalStaff = usersBySite[site.id] || 0;
+      const dayOff = dayOffBySite[site.id] || 0;
+      const expectedToWork = Math.max(0, totalStaff - dayOff);
+      const present = siteAtt.filter((a) => a.status === 'PRESENT').length;
+      const absent = siteAtt.filter((a) => a.status === 'ABSENT').length;
+      const notCheckedIn = siteAtt.filter((a) => a.status === 'NOT_CHECKED_IN').length;
+      const onLeave = recentLeaves.filter((l) => l.requester?.siteId === site.id).length;
+      const attendanceRate = expectedToWork > 0 ? Math.round(((present + lateCount) / expectedToWork) * 100) : 100;
+
+      // Accumulate for company totals
+      companyTotalStaff += totalStaff;
+      companyDayOff += dayOff;
+      companyPresent += present;
+      companyAbsent += absent;
+      companyLate += lateCount;
+      companyLateMinutesTotal += lateMinutesTotal;
+      companyNotCheckedIn += notCheckedIn;
+      companyOnLeave += onLeave;
+
+      return {
+        locationId: site.code || site.id.slice(0, 6).toUpperCase(),
+        locationName: site.name,
+        totalStaff,
+        present,
+        absent,
+        late: lateCount,
+        lateMinutesTotal,
+        notCheckedIn,
+        onLeave,
+        dayOff,
+        expectedToWork,
+        attendanceRate,
+      };
+    });
+
+    // Calculate company-level attendance rate
+    const companyExpectedToWork = Math.max(0, companyTotalStaff - companyDayOff);
+    const companyAttendanceRate = companyExpectedToWork > 0 ? Math.round(((companyPresent + companyLate) / companyExpectedToWork) * 100) : 100;
+
     return {
-      locationId: site.code || site.id.slice(0, 6).toUpperCase(),
-      locationName: site.name,
-      totalStaff,
-      present,
-      absent,
-      late: lateCount,
-      lateMinutesTotal,
-      notCheckedIn,
-      onLeave,
-      dayOff,
-      expectedToWork,
-      attendanceRate,
+      companyId: company.id,
+      companyName: company.name,
+      totalStaff: companyTotalStaff,
+      present: companyPresent,
+      absent: companyAbsent,
+      late: companyLate,
+      lateMinutesTotal: companyLateMinutesTotal,
+      notCheckedIn: companyNotCheckedIn,
+      onLeave: companyOnLeave,
+      dayOff: companyDayOff,
+      expectedToWork: companyExpectedToWork,
+      attendanceRate: companyAttendanceRate,
+      sites: siteStats,
     };
   });
+
+  const locationStats = locationStatsByCompany.flatMap((c) => c.sites);
 
   // overallStats
   const overallDayOff = Object.values(dayOffBySite).reduce((sum, count) => sum + (count as number), 0);
@@ -298,7 +349,7 @@ export default async function DashboardPage() {
       <StatsCards stats={overallStats} />
 
       {/* Location-based Attendance Overview */}
-      <LocationAttendance locationData={locationStats} />
+      <LocationAttendance locationData={locationStatsByCompany} />
 
       <div className="grid gap-6 lg:grid-cols-7">
         <div className="lg:col-span-4">
