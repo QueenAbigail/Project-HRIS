@@ -1141,7 +1141,7 @@ export async function generateTodayAttendanceRecords() {
         where: {
           userId: assignment.userId,
           locationId: userSiteId,
-          attendanceDate: {
+          date: {
             gte: today,
             lt: tomorrow
           }
@@ -1163,19 +1163,16 @@ export async function generateTodayAttendanceRecords() {
         continue
       }
 
-      // Create attendance record with PENDING status
+      // Create attendance record with NOT_CHECKED_IN status
       // Uses user's primary site (user.siteId) as single source of truth
       console.log('[v0] Creating attendance record for:', { userId: assignment.userId, locationId: userSiteId })
       await prisma.attendance.create({
         data: {
           userId: assignment.userId,
           locationId: userSiteId,
-          attendanceDate: today,
-          status: 'PENDING', // Will be updated to PRESENT/LATE when they check in
-          checkInTime: null,
-          checkOutTime: null,
-          lateMinutes: 0,
-          createdAt: new Date()
+          date: today,
+          status: 'NOT_CHECKED_IN', // Will be updated to PRESENT/LATE when they check in
+          lateMinutes: 0
         }
       })
 
