@@ -1,49 +1,66 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/auth'
+import { createAdminClient } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 export async function updateSettings(formData: FormData) {
-  // 1. Panggil Supabase secara resmi
-  const supabase = await createClient()
+  // 1. Call Supabase Admin Client (for file upload with full permissions)
+  const supabase = await createAdminClient()
 
   const file = formData.get('logo') as File | null
   let logoUrl = null
 
-  // 2. Kalau ada file foto, upload ke Supabase Storage
+  // 2. If file exists, upload to Supabase Storage
   if (file && file.size > 0) {
+    console.log('[v0] Uploading logo file:', { fileName: file.name, size: file.size })
+    
     const fileExt = file.name.split('.').pop()
     const fileName = `${Date.now()}.${fileExt}`
     const filePath = `logos/${fileName}`
 
-    const { error } = await supabase.storage
+    // Convert File to ArrayBuffer for Supabase
+    const arrayBuffer = await file.arrayBuffer()
+    
+    console.log('[v0] Uploading to path:', filePath)
+    
+    const { data, error } = await supabase.storage
       .from('logos')
-      .upload(filePath, file, {
+      .upload(filePath, arrayBuffer, {
+        contentType: file.type,
         cacheControl: '3600',
         upsert: true,
       })
 
-    if (error) throw new Error(error.message)
+    if (error) {
+      console.error('[v0] Upload error details:', {
+        message: error.message,
+        status: error.status,
+      })
+      throw new Error(`Logo upload failed: ${error.message}`)
+    }
 
-    const { data } = supabase.storage
+    console.log('[v0] Upload successful:', data)
+
+    const { data: publicUrlData } = supabase.storage
       .from('logos')
       .getPublicUrl(filePath)
       
-    logoUrl = data.publicUrl
+    logoUrl = publicUrlData.publicUrl
+    console.log('[v0] Logo URL:', logoUrl)
   }
 
-  // 3. Ambil teks dari form
+  // 3. Get text from form
   const appName = formData.get('appName') as string
   const appDescription = formData.get('appDescription') as string
 
-  // 4. Save ke Database pakai Prisma (karena kita pakai schema.prisma)
+  // 4. Save to Database with Prisma
   await prisma.systemSettings.upsert({
     where: { id: 'default' },
     update: {
       appName,
       appDescription,
-      ...(logoUrl && { logoUrl }), // Kalau logo kosong, jangan ditimpa
+      ...(logoUrl && { logoUrl }), // Only update logoUrl if a new one was uploaded
     },
     create: {
       id: 'default',
@@ -53,7 +70,7 @@ export async function updateSettings(formData: FormData) {
     }
   })
 
-  // 5. Refresh halaman biar logo & nama langsung ganti
+  // 5. Revalidate paths so changes appear immediately
   revalidatePath('/dashboard', 'layout')
   revalidatePath('/superadmin', 'layout')
   revalidatePath('/', 'layout')
@@ -489,6 +506,166 @@ export async function getSchedulePatterns() {
   }
 }
 
+// ==================== DEVICE MANAGEMENT ACTIONS ====================
+
+export async function getDeviceBindings() {
+  try {
+    console.log('[v0] Fetching all device bindings...')
+    
+    const devices = await prisma.deviceBinding.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      },
+      orderBy: { bindDate: 'desc' }
+    })
+
+    const mappedDevices = devices.map(device => ({
+      id: device.id,
+      userId: device.userId,
+      userName: device.user.name,
+      userEmail: device.user.email,
+      deviceId: device.deviceId,
+      deviceName: device.deviceName,
+      deviceType: device.deviceType,
+      appVersion: device.appVersion,
+      bindDate: device.bindDate.toISOString().split('T')[0],
+      lastUsed: device.lastUsed.toISOString().replace('T', ' ').slice(0, 16),
+      isActive: device.isActive
+    }))
+
+    console.log('[v0] Devices fetched:', {
+      count: devices.length,
+      devices: mappedDevices.slice(0, 3) // Log first 3 for brevity
+    })
+
+    return mappedDevices
+  } catch (error) {
+    console.error('[v0] Error fetching device bindings:', {
+      message: error instanceof Error ? error.message : String(error),
+      error
+    })
+    return []
+  }
+}
+
+export async function removeDeviceBinding(deviceId: string) {
+  try {
+    console.log('[v0] Removing device binding:', deviceId)
+
+    const device = await prisma.deviceBinding.findUnique({
+      where: { id: deviceId },
+      include: {
+        user: { select: { name: true, email: true } }
+      }
+    })
+
+    if (!device) {
+      throw new Error('Device binding not found')
+    }
+
+    await prisma.deviceBinding.delete({
+      where: { id: deviceId }
+    })
+
+    console.log('[v0] Device binding removed:', {
+      deviceId,
+      user: device.user.name,
+      deviceName: device.deviceName
+    })
+
+    revalidatePath('/superadmin/devices')
+
+    return {
+      success: true,
+      message: `Device binding for ${device.user.name} has been removed.`
+    }
+  } catch (error) {
+    console.error('[v0] Error removing device binding:', {
+      message: error instanceof Error ? error.message : String(error),
+      error
+    })
+    throw error
+  }
+}
+
+export async function updateDeviceLastUsed(deviceId: string) {
+  try {
+    await prisma.deviceBinding.update({
+      where: { id: deviceId },
+      data: { lastUsed: new Date() }
+    })
+  } catch (error) {
+    console.error('[v0] Error updating device last used:', error)
+    // Don't throw - this is a non-critical update
+  }
+}
+
+export async function createDeviceBinding(data: {
+  userId: string
+  deviceId: string
+  deviceName: string
+  deviceType: 'mobile' | 'app'
+  appVersion?: string
+}) {
+  try {
+    console.log('[v0] Creating device binding:', { deviceId: data.deviceId, userId: data.userId })
+
+    // Check if user already has a device of this type
+    const existing = await prisma.deviceBinding.findFirst({
+      where: {
+        userId: data.userId,
+        deviceType: data.deviceType
+      }
+    })
+
+    if (existing) {
+      throw new Error(`User already has a ${data.deviceType} device bound. Please remove the previous binding first.`)
+    }
+
+    const device = await prisma.deviceBinding.create({
+      data: {
+        userId: data.userId,
+        deviceId: data.deviceId,
+        deviceName: data.deviceName,
+        deviceType: data.deviceType,
+        appVersion: data.appVersion,
+        bindDate: new Date(),
+        lastUsed: new Date(),
+        isActive: true
+      },
+      include: {
+        user: { select: { name: true, email: true } }
+      }
+    })
+
+    console.log('[v0] Device binding created:', {
+      id: device.id,
+      userId: device.userId,
+      deviceId: device.deviceId
+    })
+
+    revalidatePath('/superadmin/devices')
+
+    return {
+      success: true,
+      device,
+      message: `Device "${data.deviceName}" successfully bound to ${device.user.name}`
+    }
+  } catch (error) {
+    console.error('[v0] Error creating device binding:', {
+      message: error instanceof Error ? error.message : String(error),
+      error
+    })
+    throw error
+  }
+}
+
 export async function assignEmployeeShift(
   employeeId: string,
   shiftId: string,
@@ -559,8 +736,132 @@ export async function validateBulkImport(
 
     return result
   } catch (error) {
-    console.error('[v0] Error validating bulk import:', error)
+    console.error('[v0] Error processing bulk import:', error)
     throw error
+  }
+}
+
+// ==================== QR CODE / LOCATION ACTIONS ====================
+
+export async function getAttendanceLocations(siteId?: string) {
+  try {
+    console.log('[v0] Fetching attendance locations', { siteId: siteId || 'all' })
+
+    const locations = await prisma.attendanceLocation.findMany({
+      where: siteId ? { siteId } : {},
+      include: {
+        site: { 
+          select: { 
+            id: true, 
+            name: true, 
+            code: true,
+            company: { select: { id: true, name: true } }
+          } 
+        }
+      },
+      orderBy: { name: 'asc' }
+    })
+
+    const mapped = locations.map((loc, idx) => ({
+      id: loc.id,
+      name: loc.name,
+      code: `${loc.site.code}-ATT-${String(idx + 1).padStart(2, '0')}`,
+      latitude: String(loc.latitude),
+      longitude: String(loc.longitude),
+      radius: loc.radius,
+      status: loc.isActive ? 'Active' : 'Inactive',
+      siteId: loc.siteId,
+      siteName: loc.site.name,
+      siteCode: loc.site.code,
+      clientCompanyId: loc.site.company?.id,
+      clientCompanyName: loc.site.company?.name || 'N/A'
+    }))
+
+    console.log('[v0] Attendance locations fetched:', { count: locations.length })
+    return mapped
+  } catch (error) {
+    console.error('[v0] Error fetching attendance locations:', error)
+    return []
+  }
+}
+
+export async function getPatrolLocations(siteId?: string) {
+  try {
+    console.log('[v0] Fetching patrol locations', { siteId: siteId || 'all' })
+
+    const locations = await prisma.patrolLocation.findMany({
+      where: siteId ? { siteId } : {},
+      include: {
+        site: { 
+          select: { 
+            id: true, 
+            name: true, 
+            code: true,
+            company: { select: { id: true, name: true } }
+          } 
+        }
+      },
+      orderBy: { name: 'asc' }
+    })
+
+    const mapped = locations.map((loc, idx) => ({
+      id: loc.id,
+      name: loc.name,
+      code: `${loc.site.code}-PAT-${String(idx + 1).padStart(2, '0')}`,
+      latitude: String(loc.latitude),
+      longitude: String(loc.longitude),
+      radius: loc.radius,
+      status: loc.isActive ? 'Active' : 'Inactive',
+      siteId: loc.siteId,
+      siteName: loc.site.name,
+      siteCode: loc.site.code,
+      clientCompanyId: loc.site.company?.id,
+      clientCompanyName: loc.site.company?.name || 'N/A'
+    }))
+
+    console.log('[v0] Patrol locations fetched:', { count: locations.length })
+    return mapped
+  } catch (error) {
+    console.error('[v0] Error fetching patrol locations:', error)
+    return []
+  }
+}
+
+export async function getAllSites() {
+  try {
+    console.log('[v0] Fetching all sites for location grouping')
+
+    const sites = await prisma.site.findMany({
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, code: true }
+    })
+
+    console.log('[v0] Sites fetched:', { count: sites.length })
+    return sites
+  } catch (error) {
+    console.error('[v0] Error fetching sites:', error)
+    return []
+  }
+}
+
+export async function getCompanyInfo() {
+  try {
+    console.log('[v0] Fetching company info')
+
+    const company = await prisma.company.findFirst({
+      select: { id: true, name: true }
+    })
+
+    if (!company) {
+      console.warn('[v0] No company found in database')
+      return { id: '', name: 'Your Company' }
+    }
+
+    console.log('[v0] Company info fetched:', { name: company.name })
+    return company
+  } catch (error) {
+    console.error('[v0] Error fetching company info:', error)
+    return { id: '', name: 'Your Company' }
   }
 }
 
@@ -782,5 +1083,117 @@ export async function getImportAuditTrail(limit: number = 20) {
   } catch (error) {
     console.error('[v0] Error fetching audit trail:', error)
     return []
+  }
+}
+
+
+// Auto-generate expected attendance records for today based on assignments
+export async function generateTodayAttendanceRecords() {
+  try {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    console.log('[v0] Starting attendance generation for date:', today)
+
+    // Find all active assignments that cover today
+    const activeAssignments = await prisma.employeePatternAssignment.findMany({
+      where: {
+        status: 'ACTIVE',
+        startDate: { lte: today },
+        OR: [
+          { endDate: null },
+          { endDate: { gte: today } }
+        ]
+      },
+      include: {
+        user: true,
+        site: true,
+        pattern: true
+      }
+    })
+
+    console.log('[v0] Found active assignments:', activeAssignments.length)
+
+    let createdCount = 0
+    let skippedCount = 0
+
+    for (const assignment of activeAssignments) {
+      // Use user's primary site (siteId) as source of truth
+      const userSiteId = assignment.user.siteId
+      
+      console.log('[v0] Processing assignment:', {
+        userId: assignment.userId,
+        userName: assignment.user.name,
+        userSiteId: userSiteId,
+        patternName: assignment.pattern.name
+      })
+      
+      if (!userSiteId) {
+        console.log('[v0] Skipping - user has no site assigned:', assignment.userId)
+        skippedCount++
+        continue // Skip if user has no primary site assigned
+      }
+
+      // Check if attendance record already exists for today
+      const existingAttendance = await prisma.attendance.findFirst({
+        where: {
+          userId: assignment.userId,
+          locationId: userSiteId,
+          date: {
+            gte: today,
+            lt: tomorrow
+          }
+        }
+      })
+
+      if (existingAttendance) {
+        skippedCount++
+        continue
+      }
+
+      // Determine if user is scheduled for today based on pattern
+      const dayOfWeek = today.getDay()
+      const workingDays = assignment.pattern.workingDays as number[] || []
+      
+      // Skip if pattern specifies working days and today is not a working day
+      if (workingDays.length > 0 && !workingDays.includes(dayOfWeek)) {
+        skippedCount++
+        continue
+      }
+
+      // Create attendance record with NOT_CHECKED_IN status
+      // Uses user's primary site (user.siteId) as single source of truth
+      console.log('[v0] Creating attendance record for:', { userId: assignment.userId, locationId: userSiteId })
+      await prisma.attendance.create({
+        data: {
+          userId: assignment.userId,
+          locationId: userSiteId,
+          date: today,
+          status: 'NOT_CHECKED_IN', // Will be updated to PRESENT/LATE when they check in
+          lateMinutes: 0
+        }
+      })
+
+      console.log('[v0] Attendance record created successfully')
+      createdCount++
+    }
+
+    revalidatePath('/dashboard/attendance')
+    revalidatePath('/dashboard')
+
+    return {
+      success: true,
+      message: `Generated ${createdCount} attendance records for today`,
+      details: {
+        created: createdCount,
+        skipped: skippedCount,
+        total: activeAssignments.length
+      }
+    }
+  } catch (error) {
+    console.error('[v0] Error generating attendance records:', error)
+    throw error
   }
 }

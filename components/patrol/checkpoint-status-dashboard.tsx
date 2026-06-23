@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface CheckpointStatus {
   id: string
@@ -27,101 +27,37 @@ interface CheckpointStatus {
 
 export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
   const [selectedCheckpoint, setSelectedCheckpoint] = useState<CheckpointStatus | null>(null)
+  const [checkpoints, setCheckpoints] = useState<CheckpointStatus[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Mock data - in real implementation, fetch from database
-  const mockCheckpoints: CheckpointStatus[] = [
-    {
-      id: '1',
-      name: 'Gate Entrance',
-      lastPatrol: {
-        officer: 'John Doe',
-        time: '09:30 AM',
-        gpsVerified: true,
-        photosCount: 2,
-        notes: 'Gate entrance secure. All locks functioning properly. No suspicious activity detected.',
-      },
-      status: 'completed',
-    },
-    {
-      id: '2',
-      name: 'Perimeter North',
-      lastPatrol: {
-        officer: 'Jane Smith',
-        time: '09:15 AM',
-        gpsVerified: true,
-        photosCount: 6,
-        notes: `Completed comprehensive north perimeter patrol at 09:15 AM.
+  useEffect(() => {
+    const fetchCheckpoints = async () => {
+      try {
+        const response = await fetch(`/api/patrol/locations?siteId=${siteId}`)
+        if (response.ok) {
+          const data = await response.json()
+          // Transform API data to component format
+          const transformed = data.map((location: any) => ({
+            id: location.id,
+            name: location.name,
+            status: 'pending' as const,
+            lastPatrol: undefined,
+          }))
+          setCheckpoints(transformed)
+        }
+      } catch (error) {
+        console.error('Error fetching checkpoints:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
 
-FENCE CONDITION:
-- Full length fence inspected from west to east (2.4 km)
-- All fence panels intact with no visible damage or rust
-- Top rails secure and properly fastened
-- No gaps or holes detected along entire fence line
-- All tie-downs secured properly
+    if (siteId) {
+      fetchCheckpoints()
+    }
+  }, [siteId])
 
-SECURITY FEATURES:
-- Motion sensors on north section tested and functioning
-- Security cameras at checkpoints 2A and 2B operational
-- Alarm system indicators showing green status
-- No tampering or attempted breaches observed
-
-AREA PERIMETER:
-- Cleared vegetation around fence line (5m radius)
-- No debris or foreign objects near perimeter
-- Drainage systems clear and functioning properly
-- Boundary markers visible and in good condition
-
-WILDLIFE/ENVIRONMENTAL:
-- No animal intrusions detected
-- Weather conditions: Clear and dry
-- Ground stable with no erosion issues
-- Night lighting system functional
-
-ADDITIONAL OBSERVATIONS:
-- North gate lock mechanism checked and working smoothly
-- Emergency access point clearly marked and accessible
-- All safety signage visible and legible
-- No unusual activity or security concerns noted
-
-Patrol completed successfully. All systems operational.`,
-      },
-      status: 'completed',
-    },
-    {
-      id: '3',
-      name: 'Perimeter South',
-      status: 'pending',
-    },
-    {
-      id: '4',
-      name: 'Back Gate',
-      lastPatrol: {
-        officer: 'Bob Johnson',
-        time: '09:00 AM',
-        gpsVerified: true,
-        photosCount: 3,
-        notes: 'Back gate secured and locked. Hinges checked and functioning normally. Area around gate cleared.',
-      },
-      status: 'completed',
-    },
-    {
-      id: '5',
-      name: 'Parking Area',
-      lastPatrol: {
-        officer: 'Charlie Davis',
-        time: '08:15 AM',
-        gpsVerified: false,
-        photosCount: 1,
-        notes: 'Parking area patrol completed. 5 vehicles present, all parked in designated zones. No security concerns.',
-      },
-      status: 'overdue',
-    },
-    {
-      id: '6',
-      name: 'Loading Dock',
-      status: 'pending',
-    },
-  ]
+  const displayCheckpoints = checkpoints
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -156,10 +92,24 @@ Patrol completed successfully. All systems operational.`,
     }
   }
 
+  if (isLoading) {
+    return <div className="text-center text-muted-foreground py-8">Loading checkpoints...</div>
+  }
+
+  if (displayCheckpoints.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-12">
+        <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
+        <p>No patrol locations found for this site.</p>
+        <p className="text-sm mt-2">Create patrol locations in the admin panel to get started.</p>
+      </div>
+    )
+  }
+
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-        {mockCheckpoints.map((checkpoint) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {displayCheckpoints.map((checkpoint) => (
           <Card
             key={checkpoint.id}
             className={`border p-3 cursor-pointer transition-all ${getStatusColor(
@@ -218,7 +168,6 @@ Patrol completed successfully. All systems operational.`,
         ))}
       </div>
 
-      {/* Checkpoint Detail Modal */}
       <Dialog open={!!selectedCheckpoint} onOpenChange={() => setSelectedCheckpoint(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
@@ -268,7 +217,6 @@ Patrol completed successfully. All systems operational.`,
                     </div>
                   </div>
 
-                  {/* Sample evidence images */}
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-2">Evidence</p>
                     <div className="grid grid-cols-2 gap-2">
@@ -285,7 +233,6 @@ Patrol completed successfully. All systems operational.`,
                     </div>
                   </div>
 
-                  {/* Patrol Report Notes */}
                   {selectedCheckpoint.lastPatrol.notes && (
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-2">Patrol Report</p>

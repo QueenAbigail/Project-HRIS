@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -27,69 +27,45 @@ interface PatrolRecord {
 export function PatrolTimelineView({ siteId }: { siteId: string }) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
+  const [patrols, setPatrols] = useState<PatrolRecord[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Mock data - in real implementation, fetch from database
-  const mockPatrols: PatrolRecord[] = [
-    {
-      id: '1',
-      checkpoint: 'Gate Entrance',
-      officer: 'John Doe',
-      timestamp: '09:30 AM',
-      date: 'Today',
-      gpsStatus: 'verified',
-      photos: 2,
-      description: 'Gate secure, no issues detected. All barriers intact.',
-      evidence: [
-        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
-        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
-      ],
-    },
-    {
-      id: '2',
-      checkpoint: 'Perimeter North',
-      officer: 'Jane Smith',
-      timestamp: '09:15 AM',
-      date: 'Today',
-      gpsStatus: 'verified',
-      photos: 1,
-      description: 'Perimeter fence checked. Minor debris cleared.',
-      evidence: [
-        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
-      ],
-    },
-    {
-      id: '3',
-      checkpoint: 'Back Gate',
-      officer: 'Bob Johnson',
-      timestamp: '09:00 AM',
-      date: 'Today',
-      gpsStatus: 'verified',
-      photos: 3,
-      description: 'All systems normal. Gate functioning properly.',
-      evidence: [
-        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
-        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
-        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
-      ],
-    },
-    {
-      id: '4',
-      checkpoint: 'Perimeter South',
-      officer: 'Alice Brown',
-      timestamp: '08:45 AM',
-      date: 'Today',
-      gpsStatus: 'unverified',
-      photos: 1,
-      description: 'Quick check completed.',
-      evidence: [
-        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop',
-      ],
-    },
-  ]
+  useEffect(() => {
+    const fetchPatrols = async () => {
+      try {
+        const response = await fetch(`/api/patrol/records?siteId=${siteId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setPatrols(data)
+        }
+      } catch (error) {
+        console.error('Error fetching patrol records:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (siteId) {
+      fetchPatrols()
+    }
+  }, [siteId])
+
+  if (isLoading) {
+    return <div className="text-center text-muted-foreground py-8">Loading patrol records...</div>
+  }
+
+  if (patrols.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-12">
+        <p>No patrol records found for this site.</p>
+        <p className="text-sm mt-2">Patrol records will appear here as officers complete their rounds.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-3">
-      {mockPatrols.map((patrol) => (
+      {patrols.map((patrol) => (
         <Card
           key={patrol.id}
           className="border border-border bg-card p-4 hover:bg-accent/50 transition-colors cursor-pointer"

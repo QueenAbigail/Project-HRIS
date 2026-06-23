@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
@@ -10,11 +11,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
+
 import { toast } from 'sonner'
 import { getPatternAssignments, getSchedulePatterns } from '@/app/superadmin/actions'
 import { AddAssignmentDialog } from './AddAssignmentDialog'
 import { BulkImportDialog } from './BulkImportDialog'
-import { Upload } from 'lucide-react'
+import { Upload, Search, X } from 'lucide-react'
 
 interface PatternAssignment {
   id: string
@@ -72,6 +74,13 @@ const DataTable = ({ columns, data }: { columns: any[], data: any[] }) => {
   )
 }
 
+interface FilterState {
+  searchText: string
+  status: string
+  location: string
+  patternType: string
+}
+
 export function EmployeeAssignmentTable() {
   const [assignments, setAssignments] = useState<PatternAssignment[]>([])
   const [patterns, setPatterns] = useState<any[]>([])
@@ -80,18 +89,28 @@ export function EmployeeAssignmentTable() {
   const [selectedAssignment, setSelectedAssignment] = useState<PatternAssignment | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [filters, setFilters] = useState<FilterState>({
+    searchText: '',
+    status: '',
+    location: '',
+    patternType: '',
+  })
 
   // Fetch assignments and patterns on mount
   useEffect(() => {
     const loadData = async () => {
       try {
-        setLoading(true)
         const [assignmentsData, patternsData] = await Promise.all([
           getPatternAssignments(),
           getSchedulePatterns()
         ])
+
         setAssignments(assignmentsData)
         setPatterns(patternsData)
+        console.log('[v0] Data loaded successfully:', {
+          assignments: assignmentsData.length,
+          patterns: patternsData.length
+        })
       } catch (error) {
         console.error('[v0] Error loading data:', error)
         toast.error('Failed to load assignments')
@@ -127,6 +146,37 @@ export function EmployeeAssignmentTable() {
         return 'bg-gray-100 text-gray-800'
     }
   }
+
+  // Get unique values for filter dropdowns
+  const uniqueStatuses = Array.from(new Set(assignments.map(a => a.status)))
+  const uniqueLocations = Array.from(new Set(assignments.map(a => a.locationName)))
+  const uniquePatternTypes = Array.from(new Set(assignments.map(a => a.patternType)))
+
+  // Filter assignments based on active filters
+  const filteredAssignments = assignments.filter(assignment => {
+    const matchesSearch = !filters.searchText || 
+      assignment.employeeName.toLowerCase().includes(filters.searchText.toLowerCase()) ||
+      assignment.patternName.toLowerCase().includes(filters.searchText.toLowerCase())
+    
+    const matchesStatus = filters.status === 'all' || !filters.status || assignment.status === filters.status
+    const matchesLocation = filters.location === 'all' || !filters.location || assignment.locationName === filters.location
+    const matchesPatternType = filters.patternType === 'all' || !filters.patternType || assignment.patternType === filters.patternType
+
+    return matchesSearch && matchesStatus && matchesLocation && matchesPatternType
+  })
+
+  // Clear all filters
+  const clearFilters = () => {
+    setFilters({
+      searchText: '',
+      status: '',
+      location: '',
+      patternType: '',
+    })
+  }
+
+  // Check if any filters are active
+  const hasActiveFilters = Object.values(filters).some(value => value !== '' && value !== 'all')
 
   const columns = [
     {
@@ -185,12 +235,10 @@ export function EmployeeAssignmentTable() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
-              setSelectedAssignment(row.original)
-              setEditOpen(true)
-            }}
+            disabled
+            title="Edit employee site on Employee page instead"
           >
-            Edit
+            View
           </Button>
           <Button
             variant="ghost"
@@ -214,7 +262,9 @@ export function EmployeeAssignmentTable() {
       <div className="flex justify-between items-center">
         <div>
           <h3 className="font-semibold">Pattern Assignments</h3>
-          <p className="text-sm text-muted-foreground">{assignments.length} active assignments</p>
+          <p className="text-sm text-muted-foreground">
+            {filteredAssignments.length} of {assignments.length} assignments
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setBulkImportOpen(true)}>
@@ -227,7 +277,83 @@ export function EmployeeAssignmentTable() {
         </div>
       </div>
 
-      <DataTable columns={columns} data={assignments} />
+      {/* Filter Section */}
+      <div className="bg-muted/30 rounded-lg p-4 border">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Filters</span>
+          </div>
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="h-8 px-3"
+            >
+              <X className="h-3 w-3 mr-1" />
+              Clear All
+            </Button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Search Input */}
+          <Input
+            placeholder="Search employee or pattern..."
+            value={filters.searchText}
+            onChange={(e) => setFilters(prev => ({ ...prev, searchText: e.target.value }))}
+            className="h-9"
+          />
+
+          {/* Status Filter */}
+          <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              {uniqueStatuses.sort().map(status => (
+                <SelectItem key={status} value={status}>
+                  {status}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Location Filter */}
+          <Select value={filters.location} onValueChange={(value) => setFilters(prev => ({ ...prev, location: value }))}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="All Locations" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Locations</SelectItem>
+              {uniqueLocations.sort().map(location => (
+                <SelectItem key={location} value={location}>
+                  {location}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Pattern Type Filter */}
+          <Select value={filters.patternType} onValueChange={(value) => setFilters(prev => ({ ...prev, patternType: value }))}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="All Pattern Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Pattern Types</SelectItem>
+              {uniquePatternTypes.sort().map(type => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <DataTable columns={columns} data={filteredAssignments} />
 
       <AddAssignmentDialog
         open={addAssignmentOpen}
@@ -240,40 +366,7 @@ export function EmployeeAssignmentTable() {
         onOpenChange={setBulkImportOpen}
       />
 
-      {/* Edit Assignment Dialog */}
-      {selectedAssignment && (
-        <Dialog open={editOpen} onOpenChange={setEditOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Assignment</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Employee</label>
-                <p className="text-sm mt-1">{selectedAssignment.employeeName}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Pattern</label>
-                <p className="text-sm mt-1">{selectedAssignment.patternName}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Status</label>
-                <p className="text-sm mt-1">{selectedAssignment.status}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Notes</label>
-                <p className="text-sm mt-1">{selectedAssignment.notes || 'No notes'}</p>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setEditOpen(false)}>
-                Close
-              </Button>
-              <Button disabled>Update (Coming Soon)</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+
     </div>
   )
 }

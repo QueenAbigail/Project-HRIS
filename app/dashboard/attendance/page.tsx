@@ -12,7 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Building2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Building2, RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface Site {
   id: string
@@ -27,6 +29,38 @@ export default function AttendancePage() {
   const [selectedSite, setSelectedSite] = useState('all')
   const [sites, setSites] = useState<Site[]>([])
   const [loadingSites, setLoadingSites] = useState(true)
+  const [isGeneratingAttendance, setIsGeneratingAttendance] = useState(false)
+
+  const handleGenerateAttendance = async () => {
+    setIsGeneratingAttendance(true)
+    try {
+      const response = await fetch('/api/attendance/generate-today', {
+        method: 'POST',
+        headers: {
+          'authorization': `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || 'development-secret'}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to generate attendance')
+        console.error('[v0] Generation failed:', error)
+        return
+      }
+
+      const data = await response.json()
+      toast.success(data.message)
+      console.log('[v0] Attendance generation details:', data.details)
+      // Refresh the attendance table
+      window.location.reload()
+    } catch (error) {
+      console.error('[v0] Error triggering attendance generation:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to generate attendance records')
+    } finally {
+      setIsGeneratingAttendance(false)
+    }
+  }
 
   // Fetch sites from database
   useEffect(() => {
@@ -59,8 +93,8 @@ export default function AttendancePage() {
     <div className="space-y-6">
       <AttendanceHeader siteId={selectedSite} />
 
-      {/* Site Filter */}
-      <div className="flex items-end gap-4">
+      {/* Site Filter & Generate Button */}
+      <div className="flex items-end gap-4 justify-between">
         <div className="flex-1 max-w-xs">
           <label className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2 block">
             <Building2 className="h-4 w-4" />
@@ -80,6 +114,17 @@ export default function AttendancePage() {
             </SelectContent>
           </Select>
         </div>
+        <Button
+          onClick={handleGenerateAttendance}
+          disabled={isGeneratingAttendance}
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          title="Generate pending attendance records for today based on assignments"
+        >
+          <RefreshCw className={`size-4 ${isGeneratingAttendance ? 'animate-spin' : ''}`} />
+          {isGeneratingAttendance ? 'Generating...' : 'Generate Today'}
+        </Button>
       </div>
 
       <AttendanceStats siteId={selectedSite} />

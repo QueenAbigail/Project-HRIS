@@ -1,4 +1,4 @@
-import { SuperadminSidebar } from "@/components/superadmin-sidebar"
+import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { UnauthorizedAccess } from "@/components/superadmin/unauthorized-access"
@@ -73,7 +73,7 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
     <>
       <UnauthorizedAccess userRole={user?.role || null} />
       <SidebarProvider>
-        <SuperadminSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
+        <AppSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
         <SidebarInset>
         <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border bg-card/50 backdrop-blur-sm px-4">
           <div className="flex items-center gap-2">
