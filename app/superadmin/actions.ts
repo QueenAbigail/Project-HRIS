@@ -1085,3 +1085,128 @@ export async function getImportAuditTrail(limit: number = 20) {
     return []
   }
 }
+
+// Update existing pattern assignment (e.g., change location/site)
+export async function updatePatternAssignment(
+  assignmentId: string,
+  data: {
+    siteId?: string
+    status?: string
+    endDate?: Date | null
+    notes?: string
+  }
+) {
+  try {
+    const assignment = await prisma.employeePatternAssignment.update({
+      where: { id: assignmentId },
+      data,
+      include: {
+        user: true,
+        pattern: true,
+        site: true
+      }
+    })
+
+    revalidatePath('/superadmin/schedules')
+    
+    return {
+      success: true,
+      message: 'Assignment updated successfully',
+      assignment
+    }
+  } catch (error) {
+    console.error('[v0] Error updating assignment:', error)
+    throw error
+  }
+}
+
+// Auto-generate expected attendance records for today based on assignments
+export async function generateTodayAttendanceRecords() {
+  try {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    // Find all active assignments that cover today
+    const activeAssignments = await prisma.employeePatternAssignment.findMany({
+      where: {
+        status: 'ACTIVE',
+        startDate: { lte: today },
+        OR: [
+          { endDate: null },
+          { endDate: { gte: today } }
+        ]
+      },
+      include: {
+        user: true,
+        site: true,
+        pattern: true
+      }
+    })
+
+    let createdCount = 0
+    let skippedCount = 0
+
+    for (const assignment of activeAssignments) {
+      // Check if attendance record already exists for today
+      const existingAttendance = await prisma.attendance.findFirst({
+        where: {
+          userId: assignment.userId,
+          locationId: assignment.siteId,
+          attendanceDate: {
+            gte: today,
+            lt: tomorrow
+          }
+        }
+      })
+
+      if (existingAttendance) {
+        skippedCount++
+        continue
+      }
+
+      // Determine if user is scheduled for today based on pattern
+      const dayOfWeek = today.getDay()
+      const workingDays = assignment.pattern.workingDays as number[] || []
+      
+      // Skip if pattern specifies working days and today is not a working day
+      if (workingDays.length > 0 && !workingDays.includes(dayOfWeek)) {
+        skippedCount++
+        continue
+      }
+
+      // Create attendance record with PENDING status
+      await prisma.attendance.create({
+        data: {
+          userId: assignment.userId,
+          locationId: assignment.siteId,
+          attendanceDate: today,
+          status: 'PENDING', // Will be updated to PRESENT/LATE when they check in
+          checkInTime: null,
+          checkOutTime: null,
+          lateMinutes: 0,
+          createdAt: new Date()
+        }
+      })
+
+      createdCount++
+    }
+
+    revalidatePath('/dashboard/attendance')
+    revalidatePath('/dashboard')
+
+    return {
+      success: true,
+      message: `Generated ${createdCount} attendance records for today`,
+      details: {
+        created: createdCount,
+        skipped: skippedCount,
+        total: activeAssignments.length
+      }
+    }
+  } catch (error) {
+    console.error('[v0] Error generating attendance records:', error)
+    throw error
+  }
+}

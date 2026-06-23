@@ -94,6 +94,9 @@ export function EmployeeAssignmentTable() {
   const [bulkImportOpen, setBulkImportOpen] = useState(false)
   const [selectedAssignment, setSelectedAssignment] = useState<PatternAssignment | null>(null)
   const [editOpen, setEditOpen] = useState(false)
+  const [editingAssignment, setEditingAssignment] = useState<PatternAssignment | null>(null)
+  const [editingLocation, setEditingLocation] = useState<string>('')
+  const [sites, setSites] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<FilterState>({
     searchText: '',
@@ -106,13 +109,20 @@ export function EmployeeAssignmentTable() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        setLoading(true)
-        const [assignmentsData, patternsData] = await Promise.all([
+        const [assignmentsData, patternsData, sitesData] = await Promise.all([
           getPatternAssignments(),
-          getSchedulePatterns()
+          getSchedulePatterns(),
+          fetch('/api/sites').then(res => res.json()).catch(() => [])
         ])
+
         setAssignments(assignmentsData)
         setPatterns(patternsData)
+        setSites(sitesData)
+        console.log('[v0] Data loaded successfully:', {
+          assignments: assignmentsData.length,
+          patterns: patternsData.length,
+          sites: sitesData.length
+        })
       } catch (error) {
         console.error('[v0] Error loading data:', error)
         toast.error('Failed to load assignments')
@@ -238,7 +248,8 @@ export function EmployeeAssignmentTable() {
             variant="ghost"
             size="sm"
             onClick={() => {
-              setSelectedAssignment(row.original)
+              setEditingAssignment(row.original)
+              setEditingLocation(row.original.locationId)
               setEditOpen(true)
             }}
           >
@@ -380,26 +391,56 @@ export function EmployeeAssignmentTable() {
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium">Employee</label>
-                <p className="text-sm mt-1">{selectedAssignment.employeeName}</p>
+                <p className="text-sm mt-1 p-2 bg-muted rounded">{editingAssignment.employeeName}</p>
               </div>
               <div>
                 <label className="text-sm font-medium">Pattern</label>
-                <p className="text-sm mt-1">{selectedAssignment.patternName}</p>
+                <p className="text-sm mt-1 p-2 bg-muted rounded">{editingAssignment.patternName}</p>
+              </div>
+              <div>
+                <label htmlFor="location" className="text-sm font-medium">Location</label>
+                <Select value={editingLocation} onValueChange={setEditingLocation}>
+                  <SelectTrigger id="location">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sites.map((site) => (
+                      <SelectItem key={site.id} value={site.id}>
+                        {site.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-sm font-medium">Status</label>
-                <p className="text-sm mt-1">{selectedAssignment.status}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Notes</label>
-                <p className="text-sm mt-1">{selectedAssignment.notes || 'No notes'}</p>
+                <p className="text-sm mt-1 p-2 bg-muted rounded">{editingAssignment.status}</p>
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setEditOpen(false)}>
-                Close
+                Cancel
               </Button>
-              <Button disabled>Update (Coming Soon)</Button>
+              <Button 
+                onClick={async () => {
+                  try {
+                    const { updatePatternAssignment } = await import('@/app/superadmin/actions')
+                    await updatePatternAssignment(editingAssignment.id, {
+                      siteId: editingLocation
+                    })
+                    toast.success('Location updated successfully')
+                    setEditOpen(false)
+                    // Refresh assignments
+                    const result = await getPatternAssignments()
+                    setAssignments(result)
+                  } catch (error) {
+                    console.error('Error updating assignment:', error)
+                    toast.error('Failed to update location')
+                  }
+                }}
+              >
+                Update Location
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
