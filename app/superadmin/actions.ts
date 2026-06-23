@@ -1086,39 +1086,6 @@ export async function getImportAuditTrail(limit: number = 20) {
   }
 }
 
-// Update existing pattern assignment (e.g., change location/site)
-export async function updatePatternAssignment(
-  assignmentId: string,
-  data: {
-    siteId?: string
-    status?: string
-    endDate?: Date | null
-    notes?: string
-  }
-) {
-  try {
-    const assignment = await prisma.employeePatternAssignment.update({
-      where: { id: assignmentId },
-      data,
-      include: {
-        user: true,
-        pattern: true,
-        site: true
-      }
-    })
-
-    revalidatePath('/superadmin/schedules')
-    
-    return {
-      success: true,
-      message: 'Assignment updated successfully',
-      assignment
-    }
-  } catch (error) {
-    console.error('[v0] Error updating assignment:', error)
-    throw error
-  }
-}
 
 // Auto-generate expected attendance records for today based on assignments
 export async function generateTodayAttendanceRecords() {
@@ -1149,11 +1116,19 @@ export async function generateTodayAttendanceRecords() {
     let skippedCount = 0
 
     for (const assignment of activeAssignments) {
+      // Use user's primary site (siteId) as source of truth
+      const userSiteId = assignment.user.siteId
+      
+      if (!userSiteId) {
+        skippedCount++
+        continue // Skip if user has no primary site assigned
+      }
+
       // Check if attendance record already exists for today
       const existingAttendance = await prisma.attendance.findFirst({
         where: {
           userId: assignment.userId,
-          locationId: assignment.siteId,
+          locationId: userSiteId,
           attendanceDate: {
             gte: today,
             lt: tomorrow
@@ -1177,10 +1152,11 @@ export async function generateTodayAttendanceRecords() {
       }
 
       // Create attendance record with PENDING status
+      // Uses user's primary site (user.siteId) as single source of truth
       await prisma.attendance.create({
         data: {
           userId: assignment.userId,
-          locationId: assignment.siteId,
+          locationId: userSiteId,
           attendanceDate: today,
           status: 'PENDING', // Will be updated to PRESENT/LATE when they check in
           checkInTime: null,
