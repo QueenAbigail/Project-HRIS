@@ -1095,6 +1095,8 @@ export async function generateTodayAttendanceRecords() {
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
+    console.log('[v0] Starting attendance generation for date:', today)
+
     // Find all active assignments that cover today
     const activeAssignments = await prisma.employeePatternAssignment.findMany({
       where: {
@@ -1112,6 +1114,8 @@ export async function generateTodayAttendanceRecords() {
       }
     })
 
+    console.log('[v0] Found active assignments:', activeAssignments.length)
+
     let createdCount = 0
     let skippedCount = 0
 
@@ -1119,7 +1123,15 @@ export async function generateTodayAttendanceRecords() {
       // Use user's primary site (siteId) as source of truth
       const userSiteId = assignment.user.siteId
       
+      console.log('[v0] Processing assignment:', {
+        userId: assignment.userId,
+        userName: assignment.user.name,
+        userSiteId: userSiteId,
+        patternName: assignment.pattern.name
+      })
+      
       if (!userSiteId) {
+        console.log('[v0] Skipping - user has no site assigned:', assignment.userId)
         skippedCount++
         continue // Skip if user has no primary site assigned
       }
@@ -1153,6 +1165,7 @@ export async function generateTodayAttendanceRecords() {
 
       // Create attendance record with PENDING status
       // Uses user's primary site (user.siteId) as single source of truth
+      console.log('[v0] Creating attendance record for:', { userId: assignment.userId, locationId: userSiteId })
       await prisma.attendance.create({
         data: {
           userId: assignment.userId,
@@ -1166,6 +1179,7 @@ export async function generateTodayAttendanceRecords() {
         }
       })
 
+      console.log('[v0] Attendance record created successfully')
       createdCount++
     }
 
