@@ -45,6 +45,7 @@ interface Site {
   id: string
   name: string
   code: string
+  companyId: string
   company?: {
     name: string
   } | null
@@ -226,13 +227,14 @@ export function AddEmployeeDialog({
   e.preventDefault()
 
   try {
-    // Find the selected site to get its ID
+    // Find the selected site to get its ID and companyId
     const selectedSite = sites.find(site => site.id === formData.location)
     
     // Kita translate/mapping dulu data dari state lu biar cocok sama maunya backend
     const finalData = {
       ...formData,
       siteId: selectedSite?.id || formData.location, // Use site ID from database
+      companyId: selectedSite?.companyId, // Auto-populate companyId from site
       systemRole: formData.role, // Backend butuh systemRole, form lu ngirim role
       dob: formData.birthDate,
       cob: formData.birthCity,

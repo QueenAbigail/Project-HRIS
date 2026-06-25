@@ -62,6 +62,7 @@ interface Site {
   id: string
   name: string
   code: string
+  companyId: string
   company?: {
     name: string
   } | null

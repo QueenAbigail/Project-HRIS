@@ -80,9 +80,18 @@ export async function updateEmployeeAction(userId: string, formData: any) {
       }
     }
 
-    // 3. Handle location/siteId
+    // 3. Handle location/siteId and auto-update companyId
     if (formData.location && formData.location !== '') {
       updateData.siteId = formData.location
+      
+      // Auto-populate companyId from site when location changes
+      const site = await prisma.site.findUnique({
+        where: { id: formData.location },
+        select: { companyId: true }
+      })
+      if (site?.companyId) {
+        updateData.companyId = site.companyId
+      }
     }
 
     console.log('[v0] Prepared updateData:', updateData)
@@ -138,6 +147,9 @@ export async function createEmployeeAction(formData: any) {
         personalEmail: formData.personalEmail,
         department: formData.department,
         role: formData.systemRole, // Pastikan dari frontend ngirim string yang match sama Enum lu
+        
+        // Relasi ke perusahaan (auto-populated dari site)
+        companyId: formData.companyId || null,
         
         // Relasi ke lokasi (site)
         // Note: Pastikan di dialog frontend, value dari dropdown location itu ngirim 'siteId'
