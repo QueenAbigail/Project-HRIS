@@ -85,6 +85,7 @@ model Company {
   id        String   @id @default(cuid())
   name      String   @unique
   sites     Site[]
+  users     User[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -117,6 +118,8 @@ model User {
   department            String?
   position              String?
   role                  Role                      @default(STAFF)
+  companyId             String?
+  company               Company?                  @relation(fields: [companyId], references: [id], onDelete: SetNull)
   siteId                String
   site                  Site                      @relation(fields: [siteId], references: [id], onDelete: Cascade)
   supervisorId          String?
@@ -153,6 +156,7 @@ model User {
   allowWebAppAccess     Boolean                   @default(false)
 
   @@index([siteId])
+  @@index([companyId])
   @@index([supervisorId])
   @@index([email])
   @@map("users")
