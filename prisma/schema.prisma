@@ -136,12 +136,12 @@ model User {
   createdAt             DateTime                  @default(now())
   updatedAt             DateTime                  @updatedAt
   status                EmployeeStatus            @default(ACTIVE)
-  joinDate              DateTime?
+  joinDate              DateTime?                 @db.Date
   phoneNumber           String?
   ktpNumber             String?                   @unique
   address               String?
   birthCity             String?
-  birthDate             DateTime?
+  birthDate             DateTime?                 @db.Date
   bpjsNumber            String?
   gender                String?
   religion              String?
@@ -151,7 +151,7 @@ model User {
   npwpNumber            String?
   ktaNumber             String?
   certifications        String[]
-  ktaExpiry             DateTime?
+  ktaExpiry             DateTime?                 @db.Date
   allowMobileAttendance Boolean                   @default(false)
   allowWebAppAccess     Boolean                   @default(false)
 
