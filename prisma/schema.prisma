@@ -186,7 +186,7 @@ model Attendance {
   id             String           @id @default(cuid())
   userId         String
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date           DateTime // Full datetime for date only in queries
+  date           DateTime         @db.Date // Date only, no time component
   locationId     String
   location       Site             @relation(fields: [locationId], references: [id])
   shiftId        String?
@@ -300,7 +300,7 @@ model Patrol {
   patrolLocation    PatrolLocation      @relation(fields: [patrolLocationId], references: [id], onDelete: Cascade)
   shiftId           String?
   shift             Shift?              @relation(fields: [shiftId], references: [id])
-  date              DateTime            // Date of patrol
+  date              DateTime            @db.Date // Date of patrol, no time component
   status            PatrolStatus        @default(NOT_STARTED)
   checkInTime       DateTime?           // Actual check-in time
   gpsLat            Float?              // Actual GPS latitude for validation
