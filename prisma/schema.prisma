@@ -197,8 +197,10 @@ model Attendance {
   actualCheckOut DateTime?
   status         AttendanceStatus @default(NOT_CHECKED_IN)
   lateMinutes    Int              @default(0)
-  gpsLat         Float?
-  gpsLng         Float?
+  gpsLat         Float?           // GPS latitude for check-in
+  gpsLng         Float?           // GPS longitude for check-in
+  gpsLatPulang   Float?           // GPS latitude for check-out
+  gpsLngPulang   Float?           // GPS longitude for check-out
   selfieCheckIn  String? // URL
   selfieCheckOut String? // URL
   notes          String?
