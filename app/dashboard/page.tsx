@@ -68,11 +68,12 @@ export default async function DashboardPage() {
       },
       take: 8,
       include: {
-        requester: {
+        user: {
           include: {
             site: true
           }
-        }
+        },
+        bkoAssignments: true
       }
     }),
     prisma.employeeShiftAssignment.findMany({
