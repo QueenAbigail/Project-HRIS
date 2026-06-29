@@ -148,9 +148,6 @@ export async function createEmployeeAction(formData: any) {
         department: formData.department,
         role: formData.systemRole, // Pastikan dari frontend ngirim string yang match sama Enum lu
         
-        // Relasi ke perusahaan (auto-populated dari site)
-        companyId: formData.companyId || null,
-        
         // Relasi ke lokasi (site)
         // Note: Pastikan di dialog frontend, value dari dropdown location itu ngirim 'siteId'
         site: {
@@ -185,7 +182,15 @@ export async function createEmployeeAction(formData: any) {
       }
     })
 
-    // 4. Refresh tabel
+    // 4. Update companyId from site using Prisma (bypass RLS)
+    if (formData.siteId && formData.companyId) {
+      await prisma.user.update({
+        where: { id: authUserId },
+        data: { companyId: formData.companyId }
+      }).catch(err => console.error("Warning: Could not set companyId:", err))
+    }
+
+    // 5. Refresh tabel
     revalidatePath('/dashboard/employees')
     return { success: true }
 
