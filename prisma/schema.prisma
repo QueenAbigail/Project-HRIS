@@ -127,7 +127,6 @@ model User {
   supervisees           User[]                    @relation("Supervisor")
   attendances           Attendance[]
   leaves                Leave[]                   @relation("LeaveRequester")
-  leavesApproved        Leave[]                   @relation("LeaveApprover")
   assignments           EmployeeShiftAssignment[]
   patternAssignments    EmployeePatternAssignment[] @relation("PatternAssignments")
   bulkImports           BulkImportLog[] @relation("BulkImports")
@@ -214,19 +213,19 @@ model Attendance {
 
 // Leave model (requests with approval)
 model Leave {
-  id          String      @id @default(cuid())
-  requesterId String
-  requester   User        @relation("LeaveRequester", fields: [requesterId], references: [id], onDelete: Cascade)
-  approverId  String?
-  approver    User?       @relation("LeaveApprover", fields: [approverId], references: [id], onDelete: SetNull)
-  type        LeaveType
-  startDate   DateTime
-  endDate     DateTime
-  status      LeaveStatus @default(PENDING)
-  notes       String?
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String
+  user           User      @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Cascade)
+  leaveType      String    // ANNUAL, SICK, EMERGENCY, MATERNITY, etc.
+  startDate      DateTime  @db.Date
+  endDate        DateTime  @db.Date
+  reason         String?
+  attachmentUrl  String?
+  status         String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  @@index([requesterId])
-  @@index([approverId])
+  @@index([userId])
   @@index([status])
   @@map("leaves")
 }
