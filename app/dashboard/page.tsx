@@ -36,9 +36,6 @@ export default async function DashboardPage() {
         date: {
           gte: todayStart,
           lt: todayEnd
-        },
-        locationId: {
-          not: null
         }
       },
       include: {
@@ -52,9 +49,6 @@ export default async function DashboardPage() {
         date: {
           gte: weekAgo,
           lt: todayEnd
-        },
-        locationId: {
-          not: null
         }
       },
       include: {

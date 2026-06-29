@@ -187,8 +187,8 @@ model Attendance {
   userId         String
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   date           DateTime         @db.Date // Date only, no time component
-  locationId     String
-  location       Site             @relation(fields: [locationId], references: [id])
+  locationId     String?
+  location       Site?            @relation(fields: [locationId], references: [id])
   shiftId        String?
   shift          Shift?           @relation(fields: [shiftId], references: [id])
   scheduledStart String? // HH:MM
