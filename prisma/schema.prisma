@@ -237,7 +237,7 @@ model BkoAssignment {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   leaveId      String   @db.Uuid
   leave        Leave    @relation(fields: [leaveId], references: [id], onDelete: Cascade)
-  substituteId String   @db.Uuid
+  substituteId String   // Text reference to User id (which is cuid)
   substitute   User     @relation("BkoSubstitute", fields: [substituteId], references: [id], onDelete: Cascade)
   status       String   @default("Aktif")
   createdAt    DateTime @default(now())

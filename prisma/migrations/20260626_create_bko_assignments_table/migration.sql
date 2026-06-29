@@ -2,7 +2,7 @@
 CREATE TABLE "bko_assignments" (
   "id" UUID NOT NULL DEFAULT gen_random_uuid(),
   "leaveId" UUID NOT NULL,
-  "substituteId" UUID NOT NULL,
+  "substituteId" TEXT NOT NULL,
   "status" TEXT NOT NULL DEFAULT 'Aktif',
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP(3) NOT NULL,
