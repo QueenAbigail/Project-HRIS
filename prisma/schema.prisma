@@ -127,6 +127,7 @@ model User {
   supervisees           User[]                    @relation("Supervisor")
   attendances           Attendance[]
   leaves                Leave[]                   @relation("LeaveRequester")
+  bkoAssignments        BkoAssignment[]           @relation("BkoSubstitute")
   assignments           EmployeeShiftAssignment[]
   patternAssignments    EmployeePatternAssignment[] @relation("PatternAssignments")
   bulkImports           BulkImportLog[] @relation("BulkImports")
@@ -224,10 +225,28 @@ model Leave {
   status         String    @default("PENDING") // PENDING, APPROVED, REJECTED
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+  bkoAssignments BkoAssignment[]
 
   @@index([userId])
   @@index([status])
   @@map("leaves")
+}
+
+// BKO Assignments (Backup/Coverage assignments during leave)
+model BkoAssignment {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leaveId      String   @db.Uuid
+  leave        Leave    @relation(fields: [leaveId], references: [id], onDelete: Cascade)
+  substituteId String   @db.Uuid
+  substitute   User     @relation("BkoSubstitute", fields: [substituteId], references: [id], onDelete: Cascade)
+  status       String   @default("Aktif")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([leaveId])
+  @@index([substituteId])
+  @@index([status])
+  @@map("bko_assignments")
 }
 
 // Global system settings for branding
