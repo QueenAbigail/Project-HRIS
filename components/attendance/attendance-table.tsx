@@ -84,10 +84,16 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
           params.append('department', department)
         }
 
-        const response = await fetch(`/api/attendance?${params.toString()}`)
+        const url = `/api/attendance?${params.toString()}`
+        console.log("[v0] Fetching attendance from:", url)
+        const response = await fetch(url)
         if (response.ok) {
           const data = await response.json()
+          console.log("[v0] Attendance data received:", data)
           setRecords(Array.isArray(data) ? data : [])
+        } else {
+          const errorText = await response.text()
+          console.error("[v0] API error response:", errorText)
         }
       } catch (error) {
         console.error('[v0] Failed to fetch attendance records:', error)
