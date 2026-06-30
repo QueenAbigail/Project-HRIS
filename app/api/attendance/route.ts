@@ -58,12 +58,7 @@ export async function GET(request: NextRequest) {
     console.log("[v0] Attendance API - Date range:", { dateRange, dateStart, dateEnd })
 
     // Build where clause
-    const where: any = {
-      date: {
-        gte: dateStart,
-        lte: dateEnd,
-      }
-    }
+    const where: any = {}
     
     if (siteId && siteId !== 'all') {
       where.locationId = siteId
@@ -144,6 +139,7 @@ export async function GET(request: NextRequest) {
 
       return {
         id: record.id,
+        date: record.date,
         employeeId: record.userId,
         employeeName: record.user.name,
         employeeCode: record.user.employeeCode,
@@ -170,7 +166,14 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(formatted)
+    // Filter by date range
+    const filtered = formatted.filter(record => {
+      const recordDate = new Date(record.date || new Date())
+      return recordDate >= dateStart && recordDate <= dateEnd
+    })
+
+    console.log("[v0] Attendance API returning", filtered.length, "records for date range:", dateRange)
+    return NextResponse.json(filtered)
   } catch (error) {
     console.error('[v0] Error fetching attendance:', error)
     return NextResponse.json(
