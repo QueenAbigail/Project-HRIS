@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    console.log("[v0] Fetching patrol locations for siteId:", siteId)
+
     // Fetch patrol locations for the site
     const patrolLocations = await prisma.patrolLocation.findMany({
       where: { siteId },
@@ -28,6 +30,7 @@ export async function GET(request: NextRequest) {
       orderBy: { name: 'asc' },
     })
 
+    console.log("[v0] Found patrol locations:", patrolLocations.length)
     return NextResponse.json(patrolLocations)
   } catch (error) {
     console.error('Error fetching patrol locations:', error)
