@@ -70,6 +70,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    console.log("[v0] Fetching attendance with where clause:", JSON.stringify(where))
     const attendance = await prisma.attendance.findMany({
       where,
       include: {
@@ -103,71 +104,15 @@ export async function GET(request: NextRequest) {
               }
             }
           }
-        }
+        } as any
       },
       orderBy: {
         actualCheckIn: 'desc'
       }
     })
 
-    // Transform to match frontend expectations
-    const formatted = attendance.map((record) => {
-      let status = record.status || 'NOT_CHECKED_IN'
-      let workHours = '--'
-
-      if (record.actualCheckIn && record.actualCheckOut) {
-        const [inH, inM] = record.actualCheckIn.split(':').map(Number)
-        const [outH, outM] = record.actualCheckOut.split(':').map(Number)
-        const totalMinutes = (outH * 60 + outM) - (inH * 60 + inM)
-        const hours = Math.floor(totalMinutes / 60)
-        const minutes = totalMinutes % 60
-        workHours = `${hours}h ${minutes.toString().padStart(2, '0')}m`
-      }
-
-      // Determine status based on check-in data
-      if (!record.actualCheckIn) {
-        status = 'not-checked-in'
-      } else if (status === 'LATE') {
-        status = 'late'
-      } else if (status === 'PRESENT') {
-        status = 'present'
-      } else if (status === 'ABSENT') {
-        status = 'absent'
-      } else {
-        status = 'not-checked-in'
-      }
-
-      return {
-        id: record.id,
-        date: record.date,
-        employeeId: record.userId,
-        employeeName: record.user.name,
-        employeeCode: record.user.employeeCode,
-        initials: record.user.initials,
-        department: record.user.department || '',
-        position: record.user.position || '',
-        location: record.location.company?.name 
-          ? `${record.location.company.name} - ${record.location.name}`
-          : record.location.name,
-        scheduledStart: record.shift?.startTime || record.scheduledStart || '--:--',
-        scheduledEnd: record.shift?.endTime || record.scheduledEnd || '--:--',
-        checkIn: record.actualCheckIn || null,
-        checkOut: record.actualCheckOut || null,
-        status: status as any,
-        lateMinutes: record.lateMinutes || 0,
-        workHours,
-        checkInGps: record.gpsLat && record.gpsLng ? {
-          latitude: record.gpsLat,
-          longitude: record.gpsLng
-        } : null,
-        checkOutGps: null, // Would need to track check-out GPS separately
-        checkInPhotoUrl: record.selfieCheckIn || null,
-        checkOutPhotoUrl: record.selfieCheckOut || null,
-      }
-    })
-
     // Filter by date range
-    const filtered = formatted.filter(record => {
+    const filtered = attendance.filter(record => {
       const recordDate = new Date(record.date || new Date())
       return recordDate >= dateStart && recordDate <= dateEnd
     })
