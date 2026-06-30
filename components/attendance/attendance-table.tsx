@@ -162,22 +162,14 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
                 ? `${record.location.company?.name ? record.location.company.name + ' - ' : ''}${record.location.name}`
                 : 'Unknown'}
           </TableCell>
-          <TableCell className="text-xs text-muted-foreground">{record.scheduledStart}</TableCell>
-          <TableCell className="text-xs text-muted-foreground">{record.actualCheckIn || '--:--'}</TableCell>
-          <TableCell className="text-xs text-muted-foreground">{record.actualCheckOut || '--:--'}</TableCell>
           <TableCell className="text-xs text-muted-foreground">
-            {record.actualCheckIn && record.actualCheckOut ? (() => {
-              try {
-                const [inH, inM] = record.actualCheckIn.split(':').map(Number)
-                const [outH, outM] = record.actualCheckOut.split(':').map(Number)
-                const totalMinutes = (outH * 60 + outM) - (inH * 60 + inM)
-                const hours = Math.floor(totalMinutes / 60)
-                const minutes = totalMinutes % 60
-                return `${hours}h ${minutes.toString().padStart(2, '0')}m`
-              } catch {
-                return '--'
-              }
-            })() : '--'}
+            {record.date ? new Date(record.date).toLocaleDateString() : '--'}
+          </TableCell>
+          <TableCell className="text-xs text-muted-foreground">
+            {record.actualCheckIn ? record.actualCheckIn.split('T')[1]?.substring(0, 5) || '--:--' : '--:--'}
+          </TableCell>
+          <TableCell className="text-xs text-muted-foreground">
+            {record.actualCheckOut ? record.actualCheckOut.split('T')[1]?.substring(0, 5) || '--:--' : '--:--'}
           </TableCell>
           <TableCell>
             <Badge variant="outline" className={statusStyles[record.status?.toLowerCase()] || ''}>
@@ -201,7 +193,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
       ))}
       {data.length === 0 && (
         <TableRow>
-          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
             No records found
           </TableCell>
         </TableRow>
@@ -255,10 +247,9 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
                     <TableRow>
                       <TableHead>Employee</TableHead>
                       <TableHead>Location</TableHead>
-                      <TableHead>Scheduled</TableHead>
+                      <TableHead>Date</TableHead>
                       <TableHead>Check In</TableHead>
                       <TableHead>Check Out</TableHead>
-                      <TableHead>Hours</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -277,10 +268,9 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
                     <TableRow>
                       <TableHead>Employee</TableHead>
                       <TableHead>Location</TableHead>
-                      <TableHead>Scheduled</TableHead>
+                      <TableHead>Date</TableHead>
                       <TableHead>Check In</TableHead>
                       <TableHead>Check Out</TableHead>
-                      <TableHead>Hours</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -299,10 +289,9 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
                     <TableRow>
                       <TableHead>Employee</TableHead>
                       <TableHead>Location</TableHead>
-                      <TableHead>Scheduled</TableHead>
+                      <TableHead>Date</TableHead>
                       <TableHead>Check In</TableHead>
                       <TableHead>Check Out</TableHead>
-                      <TableHead>Hours</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -321,10 +310,9 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
                     <TableRow>
                       <TableHead>Employee</TableHead>
                       <TableHead>Location</TableHead>
-                      <TableHead>Scheduled</TableHead>
+                      <TableHead>Date</TableHead>
                       <TableHead>Check In</TableHead>
                       <TableHead>Check Out</TableHead>
-                      <TableHead>Hours</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -343,10 +331,9 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
                     <TableRow>
                       <TableHead>Employee</TableHead>
                       <TableHead>Location</TableHead>
-                      <TableHead>Scheduled</TableHead>
+                      <TableHead>Date</TableHead>
                       <TableHead>Check In</TableHead>
                       <TableHead>Check Out</TableHead>
-                      <TableHead>Hours</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
