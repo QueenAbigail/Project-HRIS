@@ -1,50 +1,83 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Clock, CheckCircle, XCircle, Calendar } from 'lucide-react'
+import { Clock, CheckCircle, XCircle, Calendar, Loader2 } from 'lucide-react'
 
-const stats = [
-  {
-    title: 'Pending Requests',
-    value: 23,
-    icon: Clock,
-    color: 'text-warning',
-    bgColor: 'bg-warning/10',
-  },
-  {
-    title: 'Approved This Month',
-    value: 45,
-    icon: CheckCircle,
-    color: 'text-success',
-    bgColor: 'bg-success/10',
-  },
-  {
-    title: 'Rejected This Month',
-    value: 8,
-    icon: XCircle,
-    color: 'text-destructive',
-    bgColor: 'bg-destructive/10',
-  },
-  {
-    title: 'On Leave Today',
-    value: 11,
-    icon: Calendar,
-    color: 'text-chart-2',
-    bgColor: 'bg-chart-2/10',
-  },
-]
+interface Stats {
+  pending: number
+  approvedThisMonth: number
+  rejectedThisMonth: number
+  onLeaveToday: number
+}
 
 export function LeaveStats() {
+  const [stats, setStats] = useState<Stats>({ pending: 0, approvedThisMonth: 0, rejectedThisMonth: 0, onLeaveToday: 0 })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/leaves/stats')
+        if (response.ok) {
+          const data = await response.json()
+          setStats(data)
+        }
+      } catch (error) {
+        console.error('[v0] Failed to fetch leave stats:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStats()
+  }, [])
+
+  const statConfigs = [
+    {
+      title: 'Pending Requests',
+      value: stats.pending,
+      icon: Clock,
+      color: 'text-warning',
+      bgColor: 'bg-warning/10',
+    },
+    {
+      title: 'Approved This Month',
+      value: stats.approvedThisMonth,
+      icon: CheckCircle,
+      color: 'text-success',
+      bgColor: 'bg-success/10',
+    },
+    {
+      title: 'Rejected This Month',
+      value: stats.rejectedThisMonth,
+      icon: XCircle,
+      color: 'text-destructive',
+      bgColor: 'bg-destructive/10',
+    },
+    {
+      title: 'On Leave Today',
+      value: stats.onLeaveToday,
+      icon: Calendar,
+      color: 'text-chart-2',
+      bgColor: 'bg-chart-2/10',
+    },
+  ]
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {stats.map((stat) => (
+      {statConfigs.map((stat) => (
         <Card key={stat.title} className="bg-card border-border">
           <CardContent className="flex items-center gap-4 p-4">
             <div className={`rounded-lg p-2.5 ${stat.bgColor}`}>
-              <stat.icon className={`size-5 ${stat.color}`} />
+              {loading ? (
+                <Loader2 className={`size-5 ${stat.color} animate-spin`} />
+              ) : (
+                <stat.icon className={`size-5 ${stat.color}`} />
+              )}
             </div>
             <div>
-              <p className="text-2xl font-bold">{stat.value}</p>
+              <p className="text-2xl font-bold">{loading ? '-' : stat.value}</p>
               <p className="text-sm text-muted-foreground">{stat.title}</p>
             </div>
           </CardContent>

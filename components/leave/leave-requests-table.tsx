@@ -275,9 +275,35 @@ export function LeaveRequestsTable() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 text-primary hover:underline text-sm"
                   >
-                    <ExternalLink className="size-4" />
+                    <FileText className="size-4" />
                     View Document
                   </a>
+                </div>
+              )}
+
+              {selectedLeave.status === 'PENDING' && (
+                <div className="flex gap-2 pt-4 border-t border-border">
+                  <Button 
+                    className="flex-1 gap-2 bg-success/10 text-success hover:bg-success/20"
+                    onClick={() => {
+                      handleStatusChange(selectedLeave.id, 'APPROVED')
+                      setDetailsOpen(false)
+                    }}
+                  >
+                    <Check className="size-4" />
+                    Approve
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="flex-1 gap-2 text-destructive hover:bg-destructive/10"
+                    onClick={() => {
+                      handleStatusChange(selectedLeave.id, 'REJECTED')
+                      setDetailsOpen(false)
+                    }}
+                  >
+                    <X className="size-4" />
+                    Reject
+                  </Button>
                 </div>
               )}
             </div>
