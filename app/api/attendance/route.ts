@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { subDays, startOfDay, endOfDay } from 'date-fns'
+import { subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
 
 interface AttendanceQuery {
   siteId?: string
@@ -14,19 +14,56 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     
     const siteId = searchParams.get('siteId')
+    const dateRange = searchParams.get('dateRange') || 'today'
+    const department = searchParams.get('department')
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
+
+    // Calculate date range based on dateRange parameter
+    let dateStart: Date
+    let dateEnd: Date
+    const now = new Date()
+
+    switch (dateRange) {
+      case 'today':
+        dateStart = startOfDay(now)
+        dateEnd = endOfDay(now)
+        break
+      case 'yesterday':
+        dateStart = startOfDay(subDays(now, 1))
+        dateEnd = endOfDay(subDays(now, 1))
+        break
+      case 'week':
+        dateStart = startOfDay(startOfWeek(now, { weekStartsOn: 0 })) // Sunday start
+        dateEnd = endOfDay(endOfWeek(now, { weekStartsOn: 0 }))
+        break
+      case 'month':
+        dateStart = startOfDay(startOfMonth(now))
+        dateEnd = endOfDay(endOfMonth(now))
+        break
+      case 'custom':
+        dateStart = startOfDay(new Date(date))
+        dateEnd = endOfDay(new Date(date))
+        break
+      default:
+        dateStart = startOfDay(now)
+        dateEnd = endOfDay(now)
+    }
 
     // Build where clause
     const where: any = {
       date: {
-        gte: startOfDay(new Date(date)),
-        lte: endOfDay(new Date(date)),
+        gte: dateStart,
+        lte: dateEnd,
       }
     }
     
     if (siteId && siteId !== 'all') {
-      where.location = {
-        id: siteId
+      where.locationId = siteId
+    }
+
+    if (department && department !== 'all') {
+      where.user = {
+        department: department
       }
     }
 

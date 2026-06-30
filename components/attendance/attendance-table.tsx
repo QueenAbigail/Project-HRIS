@@ -64,7 +64,7 @@ const statusLabels: Record<string, string> = {
   'day-off': 'Day Off',
 }
 
-export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
+export function AttendanceTable({ siteId = 'all', dateRange = 'today', department = 'all' }: { siteId?: string; dateRange?: string; department?: string }) {
   const [records, setRecords] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null)
@@ -76,6 +76,12 @@ export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
         const params = new URLSearchParams()
         if (siteId && siteId !== 'all') {
           params.append('siteId', siteId)
+        }
+        if (dateRange) {
+          params.append('dateRange', dateRange)
+        }
+        if (department && department !== 'all') {
+          params.append('department', department)
         }
 
         const response = await fetch(`/api/attendance?${params.toString()}`)
@@ -91,7 +97,7 @@ export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
     }
 
     fetchAttendance()
-  }, [siteId])
+  }, [siteId, dateRange, department])
 
   const allRecords = records
   const lateRecords = records.filter(r => r.status === 'late')

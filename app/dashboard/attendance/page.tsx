@@ -27,6 +27,8 @@ interface Site {
 export default function AttendancePage() {
   const searchParams = useSearchParams()
   const [selectedSite, setSelectedSite] = useState('all')
+  const [dateRange, setDateRange] = useState('today')
+  const [selectedDepartment, setSelectedDepartment] = useState('all')
   const [sites, setSites] = useState<Site[]>([])
   const [loadingSites, setLoadingSites] = useState(true)
   const [isGeneratingAttendance, setIsGeneratingAttendance] = useState(false)
@@ -91,7 +93,13 @@ export default function AttendancePage() {
 
   return (
     <div className="space-y-6">
-      <AttendanceHeader siteId={selectedSite} />
+      <AttendanceHeader 
+        siteId={selectedSite} 
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        selectedDepartment={selectedDepartment}
+        onDepartmentChange={setSelectedDepartment}
+      />
 
       {/* Site Filter & Generate Button */}
       <div className="flex items-end gap-4 justify-between">
@@ -127,8 +135,8 @@ export default function AttendancePage() {
         </Button>
       </div>
 
-      <AttendanceStats siteId={selectedSite} />
-      <AttendanceTable siteId={selectedSite} />
+      <AttendanceStats siteId={selectedSite} dateRange={dateRange} />
+      <AttendanceTable siteId={selectedSite} dateRange={dateRange} department={selectedDepartment} />
     </div>
   )
 }
