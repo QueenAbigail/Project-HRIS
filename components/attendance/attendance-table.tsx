@@ -26,24 +26,46 @@ import type { GpsCoordinates } from '@/lib/constants'
 
 interface AttendanceRecord {
   id: string
-  employeeId: string
-  employeeName: string
-  employeeCode: string
-  initials: string
-  department: string
-  position: string
-  location: string
-  scheduledStart: string
-  scheduledEnd: string
-  checkIn: string | null
-  checkOut: string | null
-  status: 'present' | 'late' | 'absent' | 'leave' | 'not-checked-in' | 'day-off'
+  date: string
+  userId: string
+  user: {
+    id: string
+    name: string
+    email: string
+    employeeCode: string
+    initials: string | null
+    department: string | null
+    position: string | null
+  }
+  locationId: string
+  location: {
+    id: string
+    name: string
+    code: string
+    company: {
+      name: string
+    } | null
+  } | null
+  shiftId: string | null
+  shift: {
+    id: string
+    name: string
+    startTime: string
+    endTime: string
+  } | null
+  scheduledStart: string | null
+  scheduledEnd: string | null
+  actualCheckIn: string | null
+  actualCheckOut: string | null
+  status: string
   lateMinutes: number
-  workHours: string
-  checkInGps: GpsCoordinates | null
-  checkOutGps: GpsCoordinates | null
-  checkInPhotoUrl: string | null
-  checkOutPhotoUrl: string | null
+  gpsLat: number | null
+  gpsLng: number | null
+  gpsLatPulang: number | null
+  gpsLngPulang: number | null
+  selfieCheckIn: string | null
+  selfieCheckOut: string | null
+  notes: string | null
 }
 
 const statusStyles: Record<string, string> = {
@@ -124,23 +146,42 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
             <div className="flex items-center gap-3">
               <Avatar className="size-8">
                 <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                  {record.initials}
+                  {record.user?.initials || record.user?.name?.charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <p className="font-medium text-sm">{record.employeeName}</p>
-                <p className="text-xs text-muted-foreground">{record.department}</p>
+                <p className="font-medium text-sm">{record.user?.name}</p>
+                <p className="text-xs text-muted-foreground">{record.user?.department || '--'}</p>
               </div>
             </div>
           </TableCell>
-          <TableCell className="text-sm">{record.location}</TableCell>
+          <TableCell className="text-sm">
+            {typeof record.location === 'string' 
+              ? record.location 
+              : record.location 
+                ? `${record.location.company?.name ? record.location.company.name + ' - ' : ''}${record.location.name}`
+                : 'Unknown'}
+          </TableCell>
           <TableCell className="text-xs text-muted-foreground">{record.scheduledStart}</TableCell>
-          <TableCell className="text-xs text-muted-foreground">{record.checkIn || '--:--'}</TableCell>
-          <TableCell className="text-xs text-muted-foreground">{record.checkOut || '--:--'}</TableCell>
-          <TableCell className="text-xs text-muted-foreground">{record.workHours}</TableCell>
+          <TableCell className="text-xs text-muted-foreground">{record.actualCheckIn || '--:--'}</TableCell>
+          <TableCell className="text-xs text-muted-foreground">{record.actualCheckOut || '--:--'}</TableCell>
+          <TableCell className="text-xs text-muted-foreground">
+            {record.actualCheckIn && record.actualCheckOut ? (() => {
+              try {
+                const [inH, inM] = record.actualCheckIn.split(':').map(Number)
+                const [outH, outM] = record.actualCheckOut.split(':').map(Number)
+                const totalMinutes = (outH * 60 + outM) - (inH * 60 + inM)
+                const hours = Math.floor(totalMinutes / 60)
+                const minutes = totalMinutes % 60
+                return `${hours}h ${minutes.toString().padStart(2, '0')}m`
+              } catch {
+                return '--'
+              }
+            })() : '--'}
+          </TableCell>
           <TableCell>
-            <Badge variant="outline" className={statusStyles[record.status]}>
-              {statusLabels[record.status]}
+            <Badge variant="outline" className={statusStyles[record.status?.toLowerCase()] || ''}>
+              {statusLabels[record.status?.toLowerCase()] || record.status || 'Unknown'}
             </Badge>
           </TableCell>
           <TableCell>
