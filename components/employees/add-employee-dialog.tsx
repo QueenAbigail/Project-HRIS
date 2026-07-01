@@ -264,19 +264,57 @@ export function AddEmployeeDialog({
   }
 }
 
-  // Fitur Import (Tetap utuh)
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Fitur Import - Upload ke API
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      setTimeout(() => {
-        setImportCount(15)
-        setImportStatus('success')
-      }, 1500)
+
+    try {
+      setImportStatus('idle')
+      
+      // Create FormData and send to API
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/employees/import', {
+        method: 'POST',
+        body: formData
+      })
+
+      const result = await response.json()
+
+      if (response.ok) {
+        console.log('[v0] Import result:', result)
+        setImportCount(result.success)
+        
+        if (result.errors && result.errors.length > 0) {
+          // Show errors but still mark as partial success
+          const errorMsg = result.errors
+            .slice(0, 3)
+            .map((e: any) => `Row ${e.row}: ${e.error}`)
+            .join('; ')
+          console.error('[v0] Import errors:', errorMsg)
+        }
+        
+        setImportStatus(result.success > 0 ? 'success' : 'error')
+        
+        // Trigger refresh of employee list
+        if (result.success > 0) {
+          onImportEmployees?.([])
+          setTimeout(() => {
+            handleOpenChange(false)
+          }, 1500)
+        }
+      } else {
+        setImportStatus('error')
+        console.error('[v0] Import failed:', result.error)
+      }
+    } catch (error) {
+      console.error('[v0] Upload error:', error)
+      setImportStatus('error')
     }
-    reader.readAsText(file)
   }
+
   const resetImportStatus = () => { setImportStatus('idle'); setImportCount(0) }
 
   return (
