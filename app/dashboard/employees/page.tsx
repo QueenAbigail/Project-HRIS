@@ -203,7 +203,7 @@ async function EmployeesContent({
 
   return (
     <div className="space-y-6">
-      <EmployeesHeader />
+      <EmployeesHeader isClient={isClient} />
       <EmployeesStats 
         counts={{
           total: totalUsers,
@@ -213,7 +213,7 @@ async function EmployeesContent({
         }}
         locationStats={locationStats} 
       />
-      <EmployeesTable users={employees} />
+      <EmployeesTable users={employees} isClient={isClient} />
     </div>
   )
 }

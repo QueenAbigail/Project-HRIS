@@ -46,9 +46,10 @@ const statusStyles: Record<string, string> = {
 
 interface EmployeesTableProps {
   users: Employee[]
+  isClient?: boolean
 }
 
-export function EmployeesTable({ users }: EmployeesTableProps) {
+export function EmployeesTable({ users, isClient = false }: EmployeesTableProps) {
   const [employees, setEmployees] = useState<Employee[]>(users)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -303,18 +304,22 @@ export function EmployeesTable({ users }: EmployeesTableProps) {
                             <Eye className="mr-2 size-4" />
                             View Profile
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEditDetails(employee)}>
-                            <Pencil className="mr-2 size-4" />
-                            Edit Details
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            className="text-destructive"
-                            onClick={() => handleDeleteEmployee(employee.id)}
-                          >
-                            <Trash2 className="mr-2 size-4" />
-                            Delete
-                          </DropdownMenuItem>
+                          {!isClient && (
+                            <>
+                              <DropdownMenuItem onClick={() => handleEditDetails(employee)}>
+                                <Pencil className="mr-2 size-4" />
+                                Edit Details
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={() => handleDeleteEmployee(employee.id)}
+                              >
+                                <Trash2 className="mr-2 size-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
