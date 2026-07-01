@@ -33,9 +33,11 @@ export async function PATCH(
 
     return NextResponse.json(leave)
   } catch (error) {
-    console.error('[v0] Error updating leave:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('[v0] Error updating leave:', errorMessage)
+    console.error('[v0] Full error:', error)
     return NextResponse.json(
-      { error: 'Failed to update leave' },
+      { error: 'Failed to update leave', details: errorMessage },
       { status: 500 }
     )
   }
