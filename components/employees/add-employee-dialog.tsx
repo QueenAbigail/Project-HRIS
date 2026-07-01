@@ -79,8 +79,10 @@ export function AddEmployeeDialog({
   const dataFetchedRef = useRef(false)
   
   // State Import
-  const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error' | 'partial'>('idle')
   const [importCount, setImportCount] = useState(0)
+  const [importFailed, setImportFailed] = useState(0)
+  const [importErrors, setImportErrors] = useState<Array<{row: number, name?: string, error: string}>>([])
   
   // State Manual Form Wizard
   const [step, setStep] = useState(1)
@@ -332,6 +334,9 @@ export function AddEmployeeDialog({
 
     try {
       setImportStatus('idle')
+      setImportCount(0)
+      setImportFailed(0)
+      setImportErrors([])
       
       // Create FormData and send to API
       const formData = new FormData()
@@ -344,39 +349,49 @@ export function AddEmployeeDialog({
 
       const result = await response.json()
 
-      if (response.ok) {
+      if (response.ok || result.success || result.failed) {
         console.log('[v0] Import result:', result)
-        setImportCount(result.success)
+        setImportCount(result.success || 0)
+        setImportFailed(result.failed || 0)
+        setImportErrors(result.errors || [])
         
-        if (result.errors && result.errors.length > 0) {
-          // Show errors but still mark as partial success
-          const errorMsg = result.errors
-            .slice(0, 3)
-            .map((e: any) => `Row ${e.row}: ${e.error}`)
-            .join('; ')
-          console.error('[v0] Import errors:', errorMsg)
+        // Determine status
+        if (result.success > 0 && result.failed > 0) {
+          setImportStatus('partial')
+        } else if (result.success > 0) {
+          setImportStatus('success')
+        } else {
+          setImportStatus('error')
         }
-        
-        setImportStatus(result.success > 0 ? 'success' : 'error')
         
         // Trigger refresh of employee list
         if (result.success > 0) {
           onImportEmployees?.([])
-          setTimeout(() => {
-            handleOpenChange(false)
-          }, 1500)
+          // Auto close on full success after 2 seconds
+          if (result.failed === 0) {
+            setTimeout(() => {
+              handleOpenChange(false)
+            }, 2000)
+          }
         }
       } else {
         setImportStatus('error')
+        setImportErrors([{ row: 0, error: result.error || 'Unknown error occurred' }])
         console.error('[v0] Import failed:', result.error)
       }
     } catch (error) {
       console.error('[v0] Upload error:', error)
       setImportStatus('error')
+      setImportErrors([{ row: 0, error: error instanceof Error ? error.message : 'Upload failed' }])
     }
   }
 
-  const resetImportStatus = () => { setImportStatus('idle'); setImportCount(0) }
+  const resetImportStatus = () => { 
+    setImportStatus('idle')
+    setImportCount(0)
+    setImportFailed(0)
+    setImportErrors([])
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -603,11 +618,59 @@ export function AddEmployeeDialog({
               <Alert className="border-success bg-success/10">
                 <CheckCircle2 className="size-4 text-success" />
                 <AlertTitle className="text-success">Import Successful!</AlertTitle>
-                <AlertDescription>Successfully imported {importCount} employees.</AlertDescription>
+                <AlertDescription>Successfully imported {importCount} employee{importCount !== 1 ? 's' : ''}.</AlertDescription>
               </Alert>
             )}
+            {importStatus === 'partial' && (
+              <>
+                <Alert className="border-amber-500 bg-amber-500/10">
+                  <AlertCircle className="size-4 text-amber-600" />
+                  <AlertTitle className="text-amber-700">Partial Import</AlertTitle>
+                  <AlertDescription className="text-amber-700">
+                    Successfully imported {importCount} employee{importCount !== 1 ? 's' : ''}, but {importFailed} row{importFailed !== 1 ? 's' : ''} failed.
+                  </AlertDescription>
+                </Alert>
+                
+                {importErrors.length > 0 && (
+                  <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="font-semibold text-red-900 mb-2">Import Errors:</p>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {importErrors.map((err, idx) => (
+                        <div key={idx} className="text-sm text-red-800 bg-white p-2 rounded border border-red-100">
+                          <strong>Row {err.row}</strong> {err.name && `(${err.name})`}: {err.error}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            {importStatus === 'error' && (
+              <>
+                <Alert className="border-destructive bg-destructive/10">
+                  <AlertCircle className="size-4 text-destructive" />
+                  <AlertTitle className="text-destructive">Import Failed</AlertTitle>
+                  <AlertDescription className="text-destructive">
+                    Unable to import employees. Please check the errors below and try again.
+                  </AlertDescription>
+                </Alert>
+                
+                {importErrors.length > 0 && (
+                  <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="font-semibold text-red-900 mb-2">Errors:</p>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {importErrors.map((err, idx) => (
+                        <div key={idx} className="text-sm text-red-800 bg-white p-2 rounded border border-red-100">
+                          <strong>Row {err.row}</strong> {err.name && `(${err.name})`}: {err.error}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
             {importStatus !== 'idle' && (
-              <DialogFooter>
+              <DialogFooter className="pt-4 border-t">
                 <Button variant="outline" onClick={() => handleOpenChange(false)}>Close</Button>
                 <Button onClick={resetImportStatus}>Import Another File</Button>
               </DialogFooter>
