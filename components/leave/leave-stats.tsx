@@ -15,22 +15,30 @@ export function LeaveStats() {
   const [stats, setStats] = useState<Stats>({ pending: 0, approvedThisMonth: 0, rejectedThisMonth: 0, onLeaveToday: 0 })
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await fetch('/api/leaves/stats')
-        if (response.ok) {
-          const data = await response.json()
-          setStats(data)
-        }
-      } catch (error) {
-        console.error('[v0] Failed to fetch leave stats:', error)
-      } finally {
-        setLoading(false)
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/leaves/stats')
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
       }
+    } catch (error) {
+      console.error('[v0] Failed to fetch leave stats:', error)
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchStats()
+    
+    // Listen for leave status changes
+    const handleLeaveUpdated = () => {
+      fetchStats()
+    }
+    
+    window.addEventListener('leaveStatusUpdated', handleLeaveUpdated)
+    return () => window.removeEventListener('leaveStatusUpdated', handleLeaveUpdated)
   }, [])
 
   const statConfigs = [

@@ -2,11 +2,9 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 const leaveTypeDefaults: Record<string, { label: string; total: number }> = {
-  ANNUAL: { label: 'Annual Leave', total: 20 },
-  SICK: { label: 'Sick Leave', total: 14 },
-  EMERGENCY: { label: 'Emergency Leave', total: 3 },
-  MATERNITY: { label: 'Maternity Leave', total: 90 },
-  SHIFT_SWAP: { label: 'Shift Swap', total: 0 },
+  Izin: { label: 'Izin', total: 12 },
+  Sakit: { label: 'Sakit', total: 12 },
+  TukarShift: { label: 'Tukar Shift', total: 0 },
 }
 
 export async function GET() {

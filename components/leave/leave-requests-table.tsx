@@ -90,6 +90,8 @@ export function LeaveRequestsTable() {
       
       if (response.ok) {
         setLeaves(leaves.map(l => l.id === leaveId ? { ...l, status: newStatus } : l))
+        // Trigger stats refresh
+        window.dispatchEvent(new Event('leaveStatusUpdated'))
       } else {
         console.error('[v0] API error:', data.error || 'Unknown error')
       }
