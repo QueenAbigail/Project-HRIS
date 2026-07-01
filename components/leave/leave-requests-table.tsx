@@ -85,8 +85,13 @@ export function LeaveRequestsTable() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       })
+      
+      const data = await response.json()
+      
       if (response.ok) {
         setLeaves(leaves.map(l => l.id === leaveId ? { ...l, status: newStatus } : l))
+      } else {
+        console.error('[v0] API error:', data.error || 'Unknown error')
       }
     } catch (error) {
       console.error('[v0] Failed to update leave status:', error)
