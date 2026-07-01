@@ -117,11 +117,11 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // Create auth user
+        // Create auth user with default password matching manual add
         const hrisEmail = `${employeeCode}@hris.com`.toLowerCase()
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
           email: hrisEmail,
-          password: 'DefaultPass123!',
+          password: 'promaxima',
           email_confirm: true,
           user_metadata: { name: row['Full Name'] }
         })
