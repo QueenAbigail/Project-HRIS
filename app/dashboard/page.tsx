@@ -3,10 +3,6 @@ export const dynamic = 'force-dynamic'
 import { prisma } from '@/lib/prisma'
 import { StatsCards } from '@/components/dashboard/stats-cards'
 import { AttendanceChart } from '@/components/dashboard/attendance-chart'
-import { RecentActivity } from '@/components/dashboard/recent-activity'
-import { UpcomingShifts } from '@/components/dashboard/upcoming-shifts'
-import { LeaveRequests } from '@/components/dashboard/leave-requests'
-import { PayrollSummary } from '@/components/dashboard/payroll-summary'
 import { LocationAttendance } from '@/components/dashboard/location-attendance'
 import { LateCheckIns } from '@/components/dashboard/late-checkins'
 import type { Attendance, EmployeeShiftAssignment, Leave, Shift, Site, User } from '@prisma/client'
@@ -279,80 +275,7 @@ export default async function DashboardPage() {
     late: weekCounts[d].late,
   }));
 
-  // leaveRequests
-  const leaveRequests = recentLeaves.map((l) => ({
-    id: l.id,
-    employee: l.requester?.name ?? 'Unknown',
-    initials: l.requester?.initials ?? '',
-    type: l.type,
-    dates: `${l.startDate.toLocaleDateString('id-ID')} - ${l.endDate.toLocaleDateString('id-ID')}`,
-    status: l.status.toLowerCase(),
-  }));
 
-  // upcomingShifts
-  const todayAssignments = assignments.filter((ass) => {
-    try {
-      const wd = JSON.parse(ass.workingDays as string);
-      return Array.isArray(wd) && wd.includes(todayDay);
-    } catch {
-      return false;
-    }
-  }).slice(0, 6).map((ass) => {
-    const att = todayAttendances.find((a) => a.userId === ass.userId);
-    const status = att?.status?.toLowerCase() || 'not-checked-in';
-    const isLate = status === 'late';
-    const lateMinutes = att?.lateMinutes || 0;
-    return {
-      id: ass.userId,
-      employee: ass.user?.name ?? '',
-      initials: ass.user?.initials ?? '',
-      location: ass.site?.name ?? '',
-      time: `${formatTime(ass.shift?.startTime)} - ${formatTime(ass.shift?.endTime)}`,
-      type: ass.shift?.name ?? '',
-      status,
-      isLate,
-      lateMinutes,
-    };
-  });
-
-  // recentActivities
-  const activities = [
-    // late
-    ...lateCheckIns.slice(0, 3).map((record, index) => ({
-      id: `late-${record.id}`,
-      type: 'late-checkin' as const,
-      message: `Late arrival: ${record.employeeName}`,
-      detail: `+${record.lateMinutes} min at ${record.locationName}`,
-      time: `${(index + 1) * 10} min ago`,
-      icon: 'AlertTriangle',
-      lateMinutes: record.lateMinutes,
-    })),
-    // check-ins
-    ...todayAttendances.slice(0, 3).reverse().map((a, index) => ({
-      id: `checkin-${a.id}`,
-      type: 'check-in' as const,
-      message: `${a.user?.name ?? 'Employee'} clocked in at ${a.location?.name ?? 'site'}`,
-      time: `${index + 2} min ago`,
-      icon: 'Clock',
-    })),
-    // leaves
-    ...recentLeaves.slice(0, 2).map((l, index) => ({
-      id: `leave-${l.id}`,
-      type: 'leave-request' as const,
-      message: `Leave requested by ${l.requester?.name ?? 'employee'}`,
-      time: `${index + 4} hours ago`,
-      icon: 'FileText',
-    })),
-  ].slice(0, 8);
-
-  // payrollData
-  const totalUsersForPay = users.length;
-  const payrollData = totalUsersForPay > 0 ? [
-    { label: 'Base Salary', amount: totalUsersForPay * 1000, percentage: 71 },
-    { label: 'Overtime', amount: overallLate * 50, percentage: 14 },
-    { label: 'Allowances', amount: totalUsersForPay * 100, percentage: 10 },
-    { label: 'Bonuses', amount: 0, percentage: 5 },
-  ] : [];
 
   return (
     <div className="space-y-6">
@@ -377,12 +300,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
-        <UpcomingShifts data={todayAssignments} />
-        <LeaveRequests data={leaveRequests} />
-        <PayrollSummary data={payrollData} />
-        <RecentActivity activities={activities} />
-      </div>
+
     </div>
   )
 }
