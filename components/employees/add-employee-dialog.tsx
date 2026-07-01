@@ -79,7 +79,7 @@ export function AddEmployeeDialog({
   const dataFetchedRef = useRef(false)
   
   // State Import
-  const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error' | 'partial'>('idle')
+  const [importStatus, setImportStatus] = useState<'idle' | 'processing' | 'success' | 'error' | 'partial'>('idle')
   const [importCount, setImportCount] = useState(0)
   const [importFailed, setImportFailed] = useState(0)
   const [importErrors, setImportErrors] = useState<Array<{row: number, name?: string, error: string}>>([])
@@ -333,7 +333,7 @@ export function AddEmployeeDialog({
     if (!file) return
 
     try {
-      setImportStatus('idle')
+      setImportStatus('processing')
       setImportCount(0)
       setImportFailed(0)
       setImportErrors([])
@@ -614,6 +614,17 @@ export function AddEmployeeDialog({
                 </div>
               </>
             )}
+            {importStatus === 'processing' && (
+              <div className="flex flex-col items-center justify-center py-8 gap-4">
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                </div>
+                <div className="text-center">
+                  <p className="font-semibold text-base">Importing Employees...</p>
+                  <p className="text-sm text-muted-foreground mt-2">Processing your file. This may take a moment.</p>
+                </div>
+              </div>
+            )}
             {importStatus === 'success' && (
               <Alert className="border-success bg-success/10">
                 <CheckCircle2 className="size-4 text-success" />
@@ -671,8 +682,19 @@ export function AddEmployeeDialog({
             )}
             {importStatus !== 'idle' && (
               <DialogFooter className="pt-4 border-t">
-                <Button variant="outline" onClick={() => handleOpenChange(false)}>Close</Button>
-                <Button onClick={resetImportStatus}>Import Another File</Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleOpenChange(false)}
+                  disabled={importStatus === 'processing'}
+                >
+                  Close
+                </Button>
+                <Button 
+                  onClick={resetImportStatus}
+                  disabled={importStatus === 'processing'}
+                >
+                  {importStatus === 'processing' ? 'Processing...' : 'Import Another File'}
+                </Button>
               </DialogFooter>
             )}
           </TabsContent>
