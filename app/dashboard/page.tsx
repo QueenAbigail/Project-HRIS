@@ -299,14 +299,14 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-balance">Dashboard Overview</h1>
         <p className="text-muted-foreground">
-          Welcome back! Here&apos;s what&apos;s happening with your security team {isClient ? `across all your project sites.` : 'across all locations.'}
+          Welcome back! Here&apos;s what&apos;s happening with your security team {isClient ? `at ${companyName}.` : 'across all locations.'}
         </p>
       </div>
 
       <StatsCards stats={overallStats} />
 
       {/* Location-based Attendance Overview */}
-      <LocationAttendance locationData={locationStatsByCompany} />
+      <LocationAttendance locationData={locationStatsByCompany} companyName={companyName} isClient={isClient} />
 
       <div className="grid gap-6 lg:grid-cols-7">
         <div className="lg:col-span-4">
