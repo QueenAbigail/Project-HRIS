@@ -25,32 +25,36 @@ export async function POST(request: NextRequest) {
     const workbook = read(buffer, { type: 'array' })
     const worksheet = workbook.Sheets[workbook.SheetNames[0]]
     
-    // Get headers and normalize them (trim whitespace)
-    const headers: Record<string, string> = {}
-    if (worksheet['!ref']) {
-      const range = utils.decode_range(worksheet['!ref'])
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const addr = utils.encode_cell({r: 0, c: C})
-        const cell = worksheet[addr]
-        if (cell?.v) {
-          const normalizedHeader = cell.v.toString().trim()
-          headers[normalizedHeader] = normalizedHeader
-        }
-      }
+    // Read all data as array of arrays to parse manually
+    const aoa = utils.sheet_to_json(worksheet, { header: 1 }) as any[][]
+    
+    if (aoa.length < 2) {
+      return NextResponse.json(
+        { error: 'Excel file must have headers and at least one data row', success: 0, failed: 0, errors: [] },
+        { status: 400 }
+      )
     }
     
-    // Parse with header normalization
-    const data = utils.sheet_to_json(worksheet, { defval: '' })
+    // First row is headers - normalize them
+    const headers = (aoa[0] as string[]).map((h: any) => h?.toString().trim() || '')
+    console.log('[v0] Excel headers:', headers)
     
-    // Normalize the parsed data keys (trim whitespace from keys)
-    const normalizedData = data.map((row: any) => {
-      const normalized: any = {}
-      for (const [key, value] of Object.entries(row)) {
-        const trimmedKey = (key as string).trim()
-        normalized[trimmedKey] = value
-      }
-      return normalized
+    // Map headers to column indices
+    const headerMap: Record<string, number> = {}
+    headers.forEach((header, idx) => {
+      headerMap[header] = idx
     })
+    
+    // Parse data rows (skip header row)
+    const normalizedData = aoa.slice(1).map((row: any) => {
+      const normalized: any = {}
+      headers.forEach((header, idx) => {
+        // Get value, handling both array and object formats
+        const value = Array.isArray(row) ? row[idx] : row[header]
+        normalized[header] = value?.toString().trim() || ''
+      })
+      return normalized
+    }).filter((row: any) => Object.values(row).some((v: any) => v)) // Filter empty rows
 
     console.log('[v0] Parsed Excel data:', normalizedData.length, 'rows')
     if (normalizedData.length > 0) {
