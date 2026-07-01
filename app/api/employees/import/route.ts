@@ -81,23 +81,27 @@ export async function POST(request: NextRequest) {
       const rowNum = i + 2 // +2 because row 1 is header, array is 0-indexed
 
       try {
-        // Validate required fields
-        if (!row['Full Name'] || !row['Employee Code (NIP)']) {
+        // Validate required fields (use normalized header names)
+        const fullName = row['Full Name']
+        const employeeCode = row['Employee Code']
+        
+        if (!fullName || !employeeCode) {
           results.failed++
           results.errors.push({
             row: rowNum,
-            name: row['Full Name'] || 'Unknown',
-            error: 'Missing required fields: Full Name or Employee Code'
+            name: fullName || 'Unknown',
+            error: `Missing required fields: Full Name or Employee Code. Got: ${JSON.stringify({fullName, employeeCode})}`
           })
           continue
         }
 
-        // Find the site
+        // Find the site (use normalized Location header)
+        const locationName = row['Location']
         const site = await prisma.site.findFirst({
           where: {
             OR: [
-              { name: row['Location'] },
-              { code: row['Location'] }
+              { name: locationName },
+              { code: locationName }
             ]
           },
           select: { id: true, companyId: true }
@@ -107,14 +111,14 @@ export async function POST(request: NextRequest) {
           results.failed++
           results.errors.push({
             row: rowNum,
-            name: row['Full Name'],
-            error: `Location not found: ${row['Location']}`
+            name: fullName,
+            error: `Location not found: ${locationName}. Please check your Excel file.`
           })
           continue
         }
 
         // Create auth user
-        const hrisEmail = `${row['Employee Code (NIP)']}@hris.com`.toLowerCase()
+        const hrisEmail = `${employeeCode}@hris.com`.toLowerCase()
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
           email: hrisEmail,
           password: 'DefaultPass123!',
@@ -124,7 +128,7 @@ export async function POST(request: NextRequest) {
 
         if (authError) throw new Error(`Auth error: ${authError.message}`)
 
-        // Parse role and status
+        // Parse role and status (use normalized headers)
         const roleMap: Record<string, any> = {
           'STAFF': 'STAFF',
           'MANAGER': 'MANAGER',
@@ -132,25 +136,25 @@ export async function POST(request: NextRequest) {
           'HR_ADMIN': 'HR_ADMIN',
           'SUPER_ADMIN': 'SUPER_ADMIN'
         }
-        const role = roleMap[row['Role (STAFF/MANAGER/SITE_ADMIN/HR_ADMIN)']?.toUpperCase()] || 'STAFF'
+        const role = roleMap[row['Role']?.toUpperCase()] || 'STAFF'
         
         const statusMap: Record<string, any> = {
           'ACTIVE': 'ACTIVE',
           'INACTIVE': 'INACTIVE',
           'SUSPENDED': 'SUSPENDED'
         }
-        const status = statusMap[row['Status (ACTIVE/INACTIVE/SUSPENDED)']?.toUpperCase()] || 'ACTIVE'
+        const status = statusMap[row['Status']?.toUpperCase()] || 'ACTIVE'
 
         // Parse certifications (comma-separated)
-        const certs = row['Certifications (comma-separated)']
-          ? row['Certifications (comma-separated)'].split(',').map((c: string) => c.trim())
+        const certs = row['Certifications']
+          ? row['Certifications'].split(',').map((c: string) => c.trim())
           : []
 
         // Find supervisor if provided
         let supervisorId: string | null = null
-        if (row['Supervisor Employee Code']) {
+        if (row['Supervisor']) {
           const supervisor = await prisma.user.findFirst({
-            where: { employeeCode: row['Supervisor Employee Code'] },
+            where: { employeeCode: row['Supervisor'] },
             select: { id: true }
           })
           supervisorId = supervisor?.id || null
@@ -160,11 +164,11 @@ export async function POST(request: NextRequest) {
         await prisma.user.create({
           data: {
             id: authData.user.id,
-            employeeCode: row['Employee Code (NIP)'],
-            name: row['Full Name'],
+            employeeCode: employeeCode,
+            name: fullName,
             email: hrisEmail,
             personalEmail: row['Personal Email'],
-            initials: row['Full Name']?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 3),
+            initials: fullName?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 3),
             department: row['Department'] || 'Unassigned',
             position: row['Position'] || 'Unassigned',
             siteId: site.id,
