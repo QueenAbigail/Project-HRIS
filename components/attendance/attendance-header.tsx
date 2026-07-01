@@ -32,6 +32,7 @@ interface AttendanceHeaderProps {
   onDateRangeChange?: (range: string) => void
   selectedDepartment?: string
   onDepartmentChange?: (dept: string) => void
+  isClient?: boolean
 }
 
 export function AttendanceHeader({ 
@@ -39,7 +40,8 @@ export function AttendanceHeader({
   dateRange = 'today',
   onDateRangeChange,
   selectedDepartment = 'all',
-  onDepartmentChange
+  onDepartmentChange,
+  isClient = false
 }: AttendanceHeaderProps) {
   const [openCalendarSheet, setOpenCalendarSheet] = useState(false)
   const [departments, setDepartments] = useState<MasterDataItem[]>([])
@@ -73,9 +75,11 @@ export function AttendanceHeader({
               Track and manage employee attendance records
             </p>
           </div>
-          <div className="w-full sm:w-auto">
-            <MarkAttendanceDialog />
-          </div>
+          {!isClient && (
+            <div className="w-full sm:w-auto">
+              <MarkAttendanceDialog />
+            </div>
+          )}
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center gap-4 flex-1">
