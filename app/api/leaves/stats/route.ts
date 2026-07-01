@@ -9,7 +9,7 @@ export async function GET() {
     const monthEnd = endOfMonth(now)
 
     const [pending, approvedThisMonth, rejectedThisMonth, onLeaveToday] = await Promise.all([
-      prisma.leave.count({ where: { status: 'PENDING' } }),
+      prisma.leave.count({ where: { status: 'Pending' } }),
       prisma.leave.count({
         where: {
           status: 'APPROVED',
