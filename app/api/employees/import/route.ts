@@ -35,12 +35,13 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // First row is headers - normalize them (remove asterisks, trim whitespace)
+    // First row is headers - normalize them (remove asterisks, trim whitespace, remove parentheses content)
     const headers = (aoa[0] as string[]).map((h: any) => {
       return h?.toString()
         .trim()
         .replace(/\*$/, '') // Remove trailing asterisk
         .replace(/^\*/, '') // Remove leading asterisk
+        .replace(/\s*\([^)]*\)/g, '') // Remove content in parentheses like "(Site)", "(NIP)"
         .trim() || ''
     })
     console.log('[v0] Excel headers:', headers)
