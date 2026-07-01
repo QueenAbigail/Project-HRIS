@@ -38,3 +38,22 @@ export async function getCurrentUserRole(): Promise<string | null> {
   }
 }
 
+export async function getCurrentUser(): Promise<User | null> {
+  try {
+    const supabase = await createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (!session?.user?.email) return null
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: { site: true }
+    })
+
+    return user || null
+  } catch (error) {
+    console.error('[v0] Failed to fetch current user:', error)
+    return null
+  }
+}
+
