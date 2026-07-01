@@ -25,9 +25,9 @@ export default async function DashboardPage() {
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
   
-  // Determine if user is a CLIENT (can only see their site)
+  // Determine if user is a CLIENT (can see all sites in their company)
   const isClient = currentUser.role === 'CLIENT'
-  const siteFilter = isClient ? { siteId: currentUser.siteId } : {}
+  const companyFilter = isClient ? { companyId: currentUser.companyId } : {}
 
   const [
     companies,
@@ -41,16 +41,16 @@ export default async function DashboardPage() {
     approvedLeavesThisMonth
   ] = await Promise.all([
     prisma.company.findMany(),
-    isClient ? prisma.site.findMany({ where: { id: currentUser.siteId }, include: { company: true } }) : prisma.site.findMany({ include: { company: true } }),
+    isClient ? prisma.site.findMany({ where: { companyId: currentUser.companyId }, include: { company: true } }) : prisma.site.findMany({ include: { company: true } }),
     prisma.shift.findMany(),
-    prisma.user.findMany({ where: siteFilter, include: { site: true } }),
+    prisma.user.findMany({ where: companyFilter, include: { site: true } }),
     prisma.attendance.findMany({
       where: {
         date: {
           gte: todayStart,
           lt: todayEnd
         },
-        ...(isClient ? { user: { siteId: currentUser.siteId } } : {})
+        ...(isClient ? { user: { companyId: currentUser.companyId } } : {})
       },
       include: {
         user: true,
@@ -64,7 +64,7 @@ export default async function DashboardPage() {
           gte: weekAgo,
           lt: todayEnd
         },
-        ...(isClient ? { user: { siteId: currentUser.siteId } } : {})
+        ...(isClient ? { user: { companyId: currentUser.companyId } } : {})
       },
       include: {
         user: true,
@@ -77,7 +77,7 @@ export default async function DashboardPage() {
         status: {
           in: ['PENDING', 'APPROVED']
         },
-        ...(isClient ? { user: { siteId: currentUser.siteId } } : {})
+        ...(isClient ? { user: { companyId: currentUser.companyId } } : {})
       },
       orderBy: {
         startDate: 'desc'
@@ -93,7 +93,7 @@ export default async function DashboardPage() {
       }
     }),
     prisma.employeeShiftAssignment.findMany({
-      where: siteFilter,
+      where: companyFilter,
       include: {
         user: true,
         shift: true,
@@ -108,7 +108,7 @@ export default async function DashboardPage() {
           gte: monthStart,
           lte: monthEnd
         },
-        ...(isClient ? { user: { siteId: currentUser.siteId } } : {})
+        ...(isClient ? { user: { companyId: currentUser.companyId } } : {})
       }
     })
   ]);
@@ -299,7 +299,7 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-balance">Dashboard Overview</h1>
         <p className="text-muted-foreground">
-          Welcome back! Here&apos;s what&apos;s happening with your security team {isClient ? `at ${currentUser.site?.name || 'your site'}.` : 'across all locations.'}
+          Welcome back! Here&apos;s what&apos;s happening with your security team {isClient ? `across all your project sites.` : 'across all locations.'}
         </p>
       </div>
 
