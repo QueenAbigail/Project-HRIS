@@ -216,12 +216,12 @@ model Leave {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId         String
   user           User      @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Cascade)
-  leaveType      String    // ANNUAL, SICK, EMERGENCY, MATERNITY, etc.
+  leaveType      String    // Izin, Sakit, TukarShift
   startDate      DateTime  @db.Date
   endDate        DateTime  @db.Date
   reason         String?
   attachmentUrl  String?
-  status         String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  status         String    @default("Pending") // Pending, Approved, Rejected
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   bkoAssignments BkoAssignment[]
