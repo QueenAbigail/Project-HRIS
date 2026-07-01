@@ -35,8 +35,14 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // First row is headers - normalize them
-    const headers = (aoa[0] as string[]).map((h: any) => h?.toString().trim() || '')
+    // First row is headers - normalize them (remove asterisks, trim whitespace)
+    const headers = (aoa[0] as string[]).map((h: any) => {
+      return h?.toString()
+        .trim()
+        .replace(/\*$/, '') // Remove trailing asterisk
+        .replace(/^\*/, '') // Remove leading asterisk
+        .trim() || ''
+    })
     console.log('[v0] Excel headers:', headers)
     
     // Map headers to column indices
@@ -46,7 +52,7 @@ export async function POST(request: NextRequest) {
     })
     
     // Parse data rows (skip header row)
-    const normalizedData = aoa.slice(1).map((row: any) => {
+    const normalizedData = aoa.slice(1).map((row: any, rowIdx: number) => {
       const normalized: any = {}
       headers.forEach((header, idx) => {
         // Get value, handling both array and object formats
