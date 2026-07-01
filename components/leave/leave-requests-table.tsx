@@ -49,9 +49,9 @@ const leaveTypeMap: Record<string, { label: string; color: string }> = {
 }
 
 const statusStyles: Record<string, string> = {
-  'PENDING': 'bg-warning/10 text-warning border-warning/20',
-  'APPROVED': 'bg-success/10 text-success border-success/20',
-  'REJECTED': 'bg-destructive/10 text-destructive border-destructive/20',
+  'Pending': 'bg-warning/10 text-warning border-warning/20',
+  'Approved': 'bg-success/10 text-success border-success/20',
+  'Rejected': 'bg-destructive/10 text-destructive border-destructive/20',
 }
 
 export function LeaveRequestsTable() {
@@ -78,7 +78,7 @@ export function LeaveRequestsTable() {
     fetchLeaves()
   }, [])
 
-  const handleStatusChange = async (leaveId: string, newStatus: 'APPROVED' | 'REJECTED') => {
+  const handleStatusChange = async (leaveId: string, newStatus: 'Approved' | 'Rejected') => {
     try {
       const response = await fetch(`/api/leaves/${leaveId}`, {
         method: 'PATCH',
@@ -281,12 +281,12 @@ export function LeaveRequestsTable() {
                 </div>
               )}
 
-              {selectedLeave.status === 'PENDING' && (
+              {selectedLeave.status === 'Pending' && (
                 <div className="flex gap-2 pt-4 border-t border-border">
                   <Button 
                     className="flex-1 gap-2 bg-success/10 text-success hover:bg-success/20"
                     onClick={() => {
-                      handleStatusChange(selectedLeave.id, 'APPROVED')
+                      handleStatusChange(selectedLeave.id, 'Approved')
                       setDetailsOpen(false)
                     }}
                   >
@@ -297,7 +297,7 @@ export function LeaveRequestsTable() {
                     variant="outline"
                     className="flex-1 gap-2 text-destructive hover:bg-destructive/10"
                     onClick={() => {
-                      handleStatusChange(selectedLeave.id, 'REJECTED')
+                      handleStatusChange(selectedLeave.id, 'Rejected')
                       setDetailsOpen(false)
                     }}
                   >

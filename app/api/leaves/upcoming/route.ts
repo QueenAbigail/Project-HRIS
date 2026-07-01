@@ -10,7 +10,7 @@ export async function GET() {
 
     const upcoming = await prisma.leave.findMany({
       where: {
-        status: 'APPROVED',
+        status: 'Approved',
         startDate: { lte: monthEnd },
         endDate: { gte: monthStart },
       },

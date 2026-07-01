@@ -18,7 +18,7 @@ export async function GET() {
       const approved = await prisma.leave.count({
         where: {
           leaveType,
-          status: 'APPROVED',
+          status: 'Approved',
         },
       })
 

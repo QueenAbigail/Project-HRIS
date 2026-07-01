@@ -12,19 +12,19 @@ export async function GET() {
       prisma.leave.count({ where: { status: 'Pending' } }),
       prisma.leave.count({
         where: {
-          status: 'APPROVED',
+          status: 'Approved',
           createdAt: { gte: monthStart, lte: monthEnd },
         },
       }),
       prisma.leave.count({
         where: {
-          status: 'REJECTED',
+          status: 'Rejected',
           createdAt: { gte: monthStart, lte: monthEnd },
         },
       }),
       prisma.leave.count({
         where: {
-          status: 'APPROVED',
+          status: 'Approved',
           startDate: { lte: now },
           endDate: { gte: now },
         },

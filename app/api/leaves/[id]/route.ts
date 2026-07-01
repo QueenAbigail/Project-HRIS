@@ -8,7 +8,7 @@ export async function PATCH(
   try {
     const { status } = await request.json()
 
-    if (!['PENDING', 'APPROVED', 'REJECTED'].includes(status)) {
+    if (!['Pending', 'Approved', 'Rejected'].includes(status)) {
       return NextResponse.json(
         { error: 'Invalid status' },
         { status: 400 }
