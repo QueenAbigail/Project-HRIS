@@ -38,10 +38,9 @@ enum LeaveStatus {
 }
 
 enum LeaveType {
-  ANNUAL
-  SICK
-  EMERGENCY
-  MATERNITY
+  Izin
+  Sakit
+  TukarShift
 }
 
 enum EmployeeStatus {
