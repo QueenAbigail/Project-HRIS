@@ -117,16 +117,31 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // Create auth user with default password matching manual add
-        const hrisEmail = `${employeeCode}@hris.com`.toLowerCase()
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          email: hrisEmail,
-          password: 'promaxima',
-          email_confirm: true,
-          user_metadata: { name: row['Full Name'] }
+        // Check if user already exists with this employeeCode
+        const existingUser = await prisma.user.findFirst({
+          where: { employeeCode: employeeCode },
+          select: { id: true }
         })
 
-        if (authError) throw new Error(`Auth error: ${authError.message}`)
+        // Create auth user with default password matching manual add (only if new user)
+        const hrisEmail = `${employeeCode}@hris.com`.toLowerCase()
+        let authData: any
+        
+        if (!existingUser) {
+          // New user - create auth account
+          const { data, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email: hrisEmail,
+            password: 'promaxima',
+            email_confirm: true,
+            user_metadata: { name: row['Full Name'] }
+          })
+          
+          if (authError) throw new Error(`Auth error: ${authError.message}`)
+          authData = data
+        } else {
+          // Existing user - use their ID
+          authData = { user: { id: existingUser.id } }
+        }
 
         // Parse role and status (use normalized headers)
         const roleMap: Record<string, any> = {
@@ -145,14 +160,21 @@ export async function POST(request: NextRequest) {
         }
         const status = statusMap[row['Status']?.toUpperCase()] || 'ACTIVE'
 
+        // Helper to convert "-" or empty to NULL
+        const toNullIfEmpty = (val: any) => {
+          if (!val || val === '-' || val.trim() === '-') return null
+          return val || null
+        }
+
         // Parse certifications (comma-separated)
-        const certs = row['Certifications']
-          ? row['Certifications'].split(',').map((c: string) => c.trim())
+        const certsStr = row['Certifications']
+        const certs = certsStr && certsStr !== '-' 
+          ? certsStr.split(',').map((c: string) => c.trim())
           : []
 
         // Find supervisor if provided
         let supervisorId: string | null = null
-        if (row['Supervisor']) {
+        if (row['Supervisor'] && row['Supervisor'] !== '-') {
           const supervisor = await prisma.user.findFirst({
             where: { employeeCode: row['Supervisor'] },
             select: { id: true }
@@ -160,45 +182,57 @@ export async function POST(request: NextRequest) {
           supervisorId = supervisor?.id || null
         }
 
-        // Create user in database with all fields
-        await prisma.user.create({
-          data: {
-            id: authData.user.id,
-            employeeCode: employeeCode,
-            name: fullName,
-            email: hrisEmail,
-            personalEmail: row['Personal Email'],
-            initials: fullName?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 3),
-            department: row['Department'] || 'Unassigned',
-            position: row['Position'] || 'Unassigned',
-            siteId: site.id,
-            companyId: site.companyId,
-            supervisorId: supervisorId,
-            joinDate: row['Join Date'] ? new Date(row['Join Date']) : new Date(),
-            phoneNumber: row['Phone Number'],
-            ktpNumber: row['KTP Number'],
-            address: row['Address'],
-            birthCity: row['Birth City'],
-            birthDate: row['Birth Date'] ? new Date(row['Birth Date']) : null,
-            bpjsNumber: row['BPJS Number'],
-            gender: row['Gender'],
-            religion: row['Religion'],
-            maritalStatus: row['Marital Status'],
-            employmentStatus: row['Employment Status'],
-            bloodType: row['Blood Type'],
-            npwpNumber: row['NPWP Number'],
-            ktaNumber: row['KTA Number'],
-            certifications: certs,
-            ktaExpiry: row['KTA Expiry'] ? new Date(row['KTA Expiry']) : null,
-            role: role,
-            status: status,
-            bankName: row['Bank Name'],
-            accountHolder: row['Account Holder'],
-            accountNumber: row['Account Number'],
-            allowMobileAttendance: false,
-            allowWebAppAccess: false
-          }
-        })
+        // Prepare user data with NULL handling
+        const userData = {
+          id: authData.user.id,
+          employeeCode: employeeCode,
+          name: fullName,
+          email: hrisEmail,
+          personalEmail: toNullIfEmpty(row['Personal Email']),
+          initials: fullName?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 3),
+          department: row['Department'] || 'Unassigned',
+          position: row['Position'] || 'Unassigned',
+          siteId: site.id,
+          companyId: site.companyId,
+          supervisorId: supervisorId,
+          joinDate: row['Join Date'] ? new Date(row['Join Date']) : new Date(),
+          phoneNumber: toNullIfEmpty(row['Phone Number']),
+          ktpNumber: toNullIfEmpty(row['KTP Number']),
+          address: toNullIfEmpty(row['Address']),
+          birthCity: toNullIfEmpty(row['Birth City']),
+          birthDate: row['Birth Date'] ? new Date(row['Birth Date']) : null,
+          bpjsNumber: toNullIfEmpty(row['BPJS Number']),
+          gender: toNullIfEmpty(row['Gender']),
+          religion: toNullIfEmpty(row['Religion']),
+          maritalStatus: toNullIfEmpty(row['Marital Status']),
+          employmentStatus: toNullIfEmpty(row['Employment Status']),
+          bloodType: toNullIfEmpty(row['Blood Type']),
+          npwpNumber: toNullIfEmpty(row['NPWP Number']),
+          ktaNumber: toNullIfEmpty(row['KTA Number']),
+          certifications: certs,
+          ktaExpiry: row['KTA Expiry'] ? new Date(row['KTA Expiry']) : null,
+          role: role,
+          status: status,
+          bankName: toNullIfEmpty(row['Bank Name']),
+          accountHolder: toNullIfEmpty(row['Account Holder']),
+          accountNumber: toNullIfEmpty(row['Account Number']),
+          allowMobileAttendance: false,
+          allowWebAppAccess: false
+        }
+
+        // Create or update user
+        if (existingUser) {
+          // Update existing user
+          await prisma.user.update({
+            where: { id: existingUser.id },
+            data: userData
+          })
+        } else {
+          // Create new user
+          await prisma.user.create({
+            data: userData
+          })
+        }
 
         results.success++
       } catch (error) {
