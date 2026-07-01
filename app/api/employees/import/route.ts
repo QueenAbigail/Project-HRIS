@@ -117,30 +117,44 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // Check if user already exists with this employeeCode
+        // Generate HRIS email
+        const hrisEmail = `${employeeCode}@hris.com`.toLowerCase()
+        
+        // Check if user already exists in database or auth
         const existingUser = await prisma.user.findFirst({
           where: { employeeCode: employeeCode },
           select: { id: true }
         })
 
-        // Create auth user with default password matching manual add (only if new user)
-        const hrisEmail = `${employeeCode}@hris.com`.toLowerCase()
         let authData: any
+        let userId: string
         
-        if (!existingUser) {
-          // New user - create auth account
-          const { data, error: authError } = await supabaseAdmin.auth.admin.createUser({
-            email: hrisEmail,
-            password: 'promaxima',
-            email_confirm: true,
-            user_metadata: { name: row['Full Name'] }
-          })
-          
-          if (authError) throw new Error(`Auth error: ${authError.message}`)
-          authData = data
+        if (existingUser) {
+          // User exists in database - use their ID
+          userId = existingUser.id
+          authData = { user: { id: userId } }
         } else {
-          // Existing user - use their ID
-          authData = { user: { id: existingUser.id } }
+          // Check if email exists in Supabase Auth
+          const { data: authUsers, error: lookupError } = await supabaseAdmin.auth.admin.listUsers()
+          const existingAuthUser = authUsers?.users.find(u => u.email === hrisEmail)
+          
+          if (existingAuthUser) {
+            // Email already registered in Auth - use that user's ID
+            userId = existingAuthUser.id
+            authData = { user: { id: userId } }
+          } else {
+            // New user - create auth account
+            const { data, error: authError } = await supabaseAdmin.auth.admin.createUser({
+              email: hrisEmail,
+              password: 'promaxima',
+              email_confirm: true,
+              user_metadata: { name: row['Full Name'] }
+            })
+            
+            if (authError) throw new Error(`Auth error: ${authError.message}`)
+            userId = data.user.id
+            authData = data
+          }
         }
 
         // Parse role and status (use normalized headers)
@@ -184,7 +198,7 @@ export async function POST(request: NextRequest) {
 
         // Prepare user data with NULL handling
         const userData = {
-          id: authData.user.id,
+          id: userId,
           employeeCode: employeeCode,
           name: fullName,
           email: hrisEmail,
@@ -220,11 +234,16 @@ export async function POST(request: NextRequest) {
           allowWebAppAccess: false
         }
 
-        // Create or update user
-        if (existingUser) {
+        // Create or update user in database
+        const dbUserExists = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true }
+        })
+        
+        if (dbUserExists) {
           // Update existing user
           await prisma.user.update({
-            where: { id: existingUser.id },
+            where: { id: userId },
             data: userData
           })
         } else {
