@@ -32,9 +32,9 @@ enum AttendanceStatus {
 }
 
 enum LeaveStatus {
-  PENDING
-  APPROVED
-  REJECTED
+  Pending
+  Approved
+  Rejected
 }
 
 enum LeaveType {
