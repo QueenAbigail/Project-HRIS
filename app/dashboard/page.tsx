@@ -50,7 +50,7 @@ export default async function DashboardPage() {
           gte: todayStart,
           lt: todayEnd
         },
-        ...siteFilter
+        ...(isClient ? { user: { siteId: currentUser.siteId } } : {})
       },
       include: {
         user: true,
@@ -64,7 +64,7 @@ export default async function DashboardPage() {
           gte: weekAgo,
           lt: todayEnd
         },
-        ...siteFilter
+        ...(isClient ? { user: { siteId: currentUser.siteId } } : {})
       },
       include: {
         user: true,
@@ -77,7 +77,7 @@ export default async function DashboardPage() {
         status: {
           in: ['PENDING', 'APPROVED']
         },
-        ...siteFilter
+        ...(isClient ? { user: { siteId: currentUser.siteId } } : {})
       },
       orderBy: {
         startDate: 'desc'
@@ -108,7 +108,7 @@ export default async function DashboardPage() {
           gte: monthStart,
           lte: monthEnd
         },
-        ...siteFilter
+        ...(isClient ? { user: { siteId: currentUser.siteId } } : {})
       }
     })
   ]);
