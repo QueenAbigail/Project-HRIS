@@ -83,21 +83,73 @@ export async function POST(request: NextRequest) {
 
         if (authError) throw new Error(`Auth error: ${authError.message}`)
 
-        // Create user in database
+        // Parse role and status
+        const roleMap: Record<string, any> = {
+          'STAFF': 'STAFF',
+          'MANAGER': 'MANAGER',
+          'SITE_ADMIN': 'SITE_ADMIN',
+          'HR_ADMIN': 'HR_ADMIN',
+          'SUPER_ADMIN': 'SUPER_ADMIN'
+        }
+        const role = roleMap[row['Role (STAFF/MANAGER/SITE_ADMIN/HR_ADMIN)']?.toUpperCase()] || 'STAFF'
+        
+        const statusMap: Record<string, any> = {
+          'ACTIVE': 'ACTIVE',
+          'INACTIVE': 'INACTIVE',
+          'SUSPENDED': 'SUSPENDED'
+        }
+        const status = statusMap[row['Status (ACTIVE/INACTIVE/SUSPENDED)']?.toUpperCase()] || 'ACTIVE'
+
+        // Parse certifications (comma-separated)
+        const certs = row['Certifications (comma-separated)']
+          ? row['Certifications (comma-separated)'].split(',').map((c: string) => c.trim())
+          : []
+
+        // Find supervisor if provided
+        let supervisorId: string | null = null
+        if (row['Supervisor Employee Code']) {
+          const supervisor = await prisma.user.findFirst({
+            where: { employeeCode: row['Supervisor Employee Code'] },
+            select: { id: true }
+          })
+          supervisorId = supervisor?.id || null
+        }
+
+        // Create user in database with all fields
         await prisma.user.create({
           data: {
             id: authData.user.id,
             employeeCode: row['Employee Code (NIP)'],
             name: row['Full Name'],
             email: hrisEmail,
-            personalEmail: row['Email'] || hrisEmail,
+            personalEmail: row['Personal Email'] || row['Email'],
+            initials: row['Full Name']?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 3),
             department: row['Department'] || 'Unassigned',
             position: row['Position'] || 'Unassigned',
             siteId: site.id,
             companyId: site.companyId,
+            supervisorId: supervisorId,
             joinDate: row['Join Date'] ? new Date(row['Join Date']) : new Date(),
-            role: 'STAFF',
-            status: 'ACTIVE',
+            phoneNumber: row['Phone Number'],
+            ktpNumber: row['KTP Number'],
+            address: row['Address'],
+            birthCity: row['Birth City'],
+            birthDate: row['Birth Date'] ? new Date(row['Birth Date']) : null,
+            bpjsNumber: row['BPJS Number'],
+            gender: row['Gender'],
+            religion: row['Religion'],
+            maritalStatus: row['Marital Status'],
+            employmentStatus: row['Employment Status'],
+            bloodType: row['Blood Type'],
+            npwpNumber: row['NPWP Number'],
+            ktaNumber: row['KTA Number'],
+            certifications: certs,
+            ktaExpiry: row['KTA Expiry'] ? new Date(row['KTA Expiry']) : null,
+            role: role,
+            status: status,
+            bankName: row['Bank Name'],
+            accountHolder: row['Account Holder'],
+            accountNumber: row['Account Number'],
             allowMobileAttendance: false,
             allowWebAppAccess: false
           }

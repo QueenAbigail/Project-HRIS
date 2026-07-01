@@ -171,14 +171,76 @@ export function AddEmployeeDialog({
     try {
       const XLSX = await import('xlsx')
       const templateData = [
-        ['Full Name', 'Email', 'Employee Code (NIP)', 'Department', 'Position', 'Location', 'Join Date'],
-        ['John Doe', 'john.doe@company.com', 'EMP001', 'Field Security', 'Security Guard', 'HO-01', '2024-01-15'],
-        ['Jane Smith', 'jane.smith@company.com', 'EMP002', 'Surveillance', 'CCTV Operator', 'PT-DT', '2024-02-20'],
-        ['Mike Johnson', 'mike.johnson@company.com', 'EMP003', 'Administration', 'HR Coordinator', 'RM', '2024-03-10'],
+        [
+          'Full Name*', 'Email*', 'Employee Code (NIP)*', 'Personal Email', 'Department', 'Position', 
+          'Location (Site)*', 'Join Date', 'Phone Number', 'KTP Number', 'Address', 'Birth City', 'Birth Date',
+          'BPJS Number', 'Gender', 'Religion', 'Marital Status', 'Employment Status', 'Blood Type',
+          'NPWP Number', 'KTA Number', 'Certifications (comma-separated)', 'KTA Expiry', 
+          'Role (STAFF/MANAGER/SITE_ADMIN/HR_ADMIN)', 'Status (ACTIVE/INACTIVE/SUSPENDED)',
+          'Bank Name', 'Account Holder', 'Account Number', 'Supervisor Employee Code'
+        ],
+        [
+          'John Doe', 'john.doe@company.com', 'EMP001', 'john.personal@email.com', 'Field Security', 'Security Guard',
+          'HO-01', '2024-01-15', '081234567890', '1234567890123456', 'Jl. Example No. 123', 'Jakarta', '1990-05-15',
+          'BP.123.456.789-012', 'Male', 'Islam', 'Married', 'Permanent', 'O+',
+          '12.345.678.9-012.000', '', 'Basic Security Training', '',
+          'STAFF', 'ACTIVE',
+          'Bank Mandiri', 'John Doe', '1234567890', ''
+        ],
+        [
+          'Jane Smith', 'jane.smith@company.com', 'EMP002', 'jane.personal@email.com', 'Surveillance', 'CCTV Operator',
+          'PT-DT', '2024-02-20', '082345678901', '3210987654321098', 'Jl. Security Lane 45', 'Surabaya', '1992-08-22',
+          'BP.987.654.321.098', 'Female', 'Christian', 'Single', 'Permanent', 'A+',
+          '98.765.432.1-098.000', 'KTA-2024-001', 'CCTV Operation,Incident Response', '2025-06-30',
+          'STAFF', 'ACTIVE',
+          'Bank BCA', 'Jane Smith', '9876543210', ''
+        ],
+        [
+          'Mike Johnson', 'mike.johnson@company.com', 'EMP003', 'mike.personal@email.com', 'Administration', 'HR Coordinator',
+          'RM', '2024-03-10', '083456789012', '5678901234567890', 'Jl. Admin Road 78', 'Bandung', '1988-12-10',
+          'BP.555.666.777.888', 'Male', 'Buddhist', 'Married', 'Permanent', 'B+',
+          '55.666.777.8-888.000', '', 'HR Management,Payroll', '',
+          'MANAGER', 'ACTIVE',
+          'Bank BNI', 'Mike Johnson', '5555666677', 'EMP001'
+        ],
       ]
 
       // Create worksheet
       const ws = XLSX.utils.aoa_to_sheet(templateData)
+      
+      // Set column widths
+      ws['!cols'] = [
+        { wch: 15 }, // Full Name
+        { wch: 25 }, // Email
+        { wch: 15 }, // Employee Code
+        { wch: 25 }, // Personal Email
+        { wch: 15 }, // Department
+        { wch: 15 }, // Position
+        { wch: 12 }, // Location
+        { wch: 12 }, // Join Date
+        { wch: 15 }, // Phone
+        { wch: 18 }, // KTP
+        { wch: 25 }, // Address
+        { wch: 15 }, // Birth City
+        { wch: 12 }, // Birth Date
+        { wch: 18 }, // BPJS
+        { wch: 10 }, // Gender
+        { wch: 12 }, // Religion
+        { wch: 15 }, // Marital
+        { wch: 15 }, // Employment
+        { wch: 10 }, // Blood Type
+        { wch: 18 }, // NPWP
+        { wch: 15 }, // KTA
+        { wch: 30 }, // Certifications
+        { wch: 12 }, // KTA Expiry
+        { wch: 20 }, // Role
+        { wch: 20 }, // Status
+        { wch: 15 }, // Bank
+        { wch: 15 }, // Account Holder
+        { wch: 15 }, // Account Number
+        { wch: 15 }, // Supervisor
+      ]
+      
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, 'Employees')
       
