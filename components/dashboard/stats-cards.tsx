@@ -1,7 +1,7 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, Clock, Wallet, UserCheck, UserX, MapPin, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react'
+import { Users, Clock, Calendar, UserCheck, UserX, MapPin, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react'
 import { getOverallAttendanceStats } from '@/lib/data'
 
 interface StatsCardsProps {
@@ -50,12 +50,12 @@ export function StatsCards({ stats }: StatsCardsProps) {
       icon: MapPin,
     },
     {
-      title: 'Monthly Payroll',
-      value: '$542,890',
-      change: '+3.2%',
-      changeType: 'increase' as const,
-      description: 'from last month',
-      icon: Wallet,
+      title: 'Monthly Leaves',
+      value: stats.approvedLeavesThisMonth?.toString() ?? '0',
+      change: undefined,
+      changeType: 'neutral' as const,
+      description: 'approved this month',
+      icon: Calendar,
     },
   ]
 

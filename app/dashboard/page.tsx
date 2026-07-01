@@ -16,6 +16,10 @@ export default async function DashboardPage() {
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
   const weekAgo = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+  
+  // Month start and end for leave count
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
 
   const [
     companies,
@@ -25,7 +29,8 @@ export default async function DashboardPage() {
     todayAttendances,
     weekAttendances,
     recentLeaves,
-    assignments
+    assignments,
+    approvedLeavesThisMonth
   ] = await Promise.all([
     prisma.company.findMany(),
     prisma.site.findMany({ include: { company: true } }),
@@ -81,6 +86,16 @@ export default async function DashboardPage() {
         user: true,
         shift: true,
         site: true
+      }
+    }),
+    // Count approved leaves this month
+    prisma.leave.count({
+      where: {
+        status: 'APPROVED',
+        startDate: {
+          gte: monthStart,
+          lte: monthEnd
+        }
       }
     })
   ]);
@@ -238,6 +253,7 @@ export default async function DashboardPage() {
     expectedToWork: overallExpected,
     attendanceRate: overallRate,
     activeLocations: sites.length,
+    approvedLeavesThisMonth: approvedLeavesThisMonth,
     lateChangeFromLastWeek: 0, // TODO historical
   };
 
