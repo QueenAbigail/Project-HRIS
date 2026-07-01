@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/system'
 import { EmployeesTable } from '@/components/employees/employees-table'
 import { EmployeesHeader } from '@/components/employees/employees-header'
 import { EmployeesStats } from '@/components/employees/employees-stats'
@@ -21,6 +22,11 @@ async function EmployeesContent({
   searchQuery: string
 }) {
   const today = new Date()
+  
+  // Get current user to check if CLIENT role
+  const currentUser = await getCurrentUser()
+  const isClient = currentUser?.role === 'CLIENT'
+  const companyFilter = isClient ? { companyId: currentUser?.companyId } : {}
 
   // Fetch all stats and data in parallel
   const [
@@ -32,10 +38,11 @@ async function EmployeesContent({
     activeLeaves,
     users
   ] = await Promise.all([
-    prisma.user.count(),
-    prisma.user.count({ where: { status: 'ACTIVE' } }),
+    prisma.user.count({ where: companyFilter }),
+    prisma.user.count({ where: { ...companyFilter, status: 'ACTIVE' } }),
     prisma.user.count({ 
       where: { 
+        ...companyFilter,
         OR: [
           { status: 'INACTIVE' },
           { status: 'SUSPENDED' }
@@ -45,6 +52,7 @@ async function EmployeesContent({
     prisma.leave.count({
       where: {
         status: 'APPROVED',
+        ...(isClient ? { user: { companyId: currentUser?.companyId } } : {}),
         AND: [
           {
             startDate: {
@@ -60,6 +68,7 @@ async function EmployeesContent({
       }
     }),
     prisma.site.findMany({
+      where: isClient ? { companyId: currentUser?.companyId } : {},
       include: {
         _count: {
           select: {
@@ -78,6 +87,7 @@ async function EmployeesContent({
     prisma.leave.findMany({
       where: {
         status: 'APPROVED',
+        ...(isClient ? { user: { companyId: currentUser?.companyId } } : {}),
         AND: [
           {
             startDate: {
@@ -96,6 +106,7 @@ async function EmployeesContent({
       }
     }),
     prisma.user.findMany({
+      where: companyFilter,
       select: {
         id: true,
         name: true,
