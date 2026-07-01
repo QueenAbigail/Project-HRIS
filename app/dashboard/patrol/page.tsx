@@ -3,11 +3,17 @@ import { CheckpointStatusDashboard } from '@/components/patrol/checkpoint-status
 import { PatrolTimelineView } from '@/components/patrol/patrol-timeline-view'
 import { PatrolPageClient } from '@/components/patrol/patrol-page-client'
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/system'
 import { MapPin } from 'lucide-react'
 
 export default async function PatrolPage() {
-  // Fetch all companies and sites from database
+  // Get current user to check if CLIENT role
+  const currentUser = await getCurrentUser()
+  const isClient = currentUser?.role === 'CLIENT'
+  
+  // Fetch companies and sites from database
   const companies = await prisma.company.findMany({
+    where: isClient ? { id: currentUser?.companyId } : undefined,
     include: {
       sites: {
         include: {

@@ -31,16 +31,21 @@ interface CompanyAttendanceData {
 
 interface LocationAttendanceProps {
   locationData?: CompanyAttendanceData[]
+  companyName?: string
+  isClient?: boolean
 }
 
-export function LocationAttendance({ locationData }: LocationAttendanceProps) {
+export function LocationAttendance({ locationData, companyName = 'all', isClient = false }: LocationAttendanceProps) {
   const router = useRouter()
 
   const handleLocationClick = (siteId: string) => {
     router.push(`/dashboard/attendance?site=${siteId}`)
   }
 
-  if (!locationData || locationData.length === 0) {
+  // Filter to only show client's company if CLIENT role
+  const filteredData = isClient ? locationData?.filter(company => company.companyName === companyName) : locationData
+
+  if (!filteredData || filteredData.length === 0) {
     return (
       <Card className="bg-card border-border">
         <CardHeader>
@@ -48,7 +53,7 @@ export function LocationAttendance({ locationData }: LocationAttendanceProps) {
             <MapPin className="size-5" />
             Attendance by Location
           </CardTitle>
-          <CardDescription>Real-time status across all client sites</CardDescription>
+          <CardDescription>Real-time status across all {isClient ? `${companyName}` : 'client'} sites</CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-center py-12">
           <div className="text-center">
@@ -63,14 +68,14 @@ export function LocationAttendance({ locationData }: LocationAttendanceProps) {
 
   // Calculate totals from all companies
   const totals = {
-    totalStaff: locationData.reduce((acc, company) => acc + company.totalStaff, 0),
-    present: locationData.reduce((acc, company) => acc + company.present + company.late, 0),
-    absent: locationData.reduce((acc, company) => acc + company.absent, 0),
-    late: locationData.reduce((acc, company) => acc + company.late, 0),
-    notCheckedIn: locationData.reduce((acc, company) => acc + company.notCheckedIn, 0),
-    onLeave: locationData.reduce((acc, company) => acc + company.onLeave, 0),
-    dayOff: locationData.reduce((acc, company) => acc + company.dayOff, 0),
-    expectedToWork: locationData.reduce((acc, company) => acc + company.expectedToWork, 0),
+    totalStaff: filteredData.reduce((acc, company) => acc + company.totalStaff, 0),
+    present: filteredData.reduce((acc, company) => acc + company.present + company.late, 0),
+    absent: filteredData.reduce((acc, company) => acc + company.absent, 0),
+    late: filteredData.reduce((acc, company) => acc + company.late, 0),
+    notCheckedIn: filteredData.reduce((acc, company) => acc + company.notCheckedIn, 0),
+    onLeave: filteredData.reduce((acc, company) => acc + company.onLeave, 0),
+    dayOff: filteredData.reduce((acc, company) => acc + company.dayOff, 0),
+    expectedToWork: filteredData.reduce((acc, company) => acc + company.expectedToWork, 0),
   }
 
   return (
@@ -82,7 +87,7 @@ export function LocationAttendance({ locationData }: LocationAttendanceProps) {
               <MapPin className="size-5" />
               Attendance by Location
             </CardTitle>
-            <CardDescription>Real-time status across all client sites</CardDescription>
+            <CardDescription>Real-time status across all {isClient ? `${companyName}` : 'client'} sites</CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             <div className="flex items-center gap-1.5">
@@ -184,7 +189,7 @@ export function LocationAttendance({ locationData }: LocationAttendanceProps) {
 
         {/* Location Breakdown by Company */}
         <Accordion type="single" collapsible className="w-full">
-          {locationData.map((company) => {
+          {filteredData.map((company) => {
             const companyAttendanceRate = company.attendanceRate
             const companyHasLateCheckIns = company.late > 0
 

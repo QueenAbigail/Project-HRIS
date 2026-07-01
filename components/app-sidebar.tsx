@@ -292,8 +292,11 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   // Determine which menu to show based on the current path
   const isPayrollPage = pathname.startsWith('/payroll')
   const isAdminPage = pathname.startsWith('/superadmin')
+  const isClientUser = userRole === 'CLIENT'
   
-  let navItemsToShow = mainNavItems
+  let navItemsToShow = isClientUser 
+    ? mainNavItems.filter(item => item.title !== 'Payroll')
+    : mainNavItems
   let menuLabel = 'Main Menu'
   
   if (isPayrollPage) {

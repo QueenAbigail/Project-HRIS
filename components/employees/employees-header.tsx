@@ -8,9 +8,10 @@ import { AddEmployeeDialog } from './add-employee-dialog'
 
 interface EmployeesHeaderProps {
   onAddEmployee?: (employee: NewEmployee) => void
+  isClient?: boolean
 }
 
-export function EmployeesHeader({ onAddEmployee }: EmployeesHeaderProps) {
+export function EmployeesHeader({ onAddEmployee, isClient = false }: EmployeesHeaderProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
 
   return (
@@ -23,18 +24,22 @@ export function EmployeesHeader({ onAddEmployee }: EmployeesHeaderProps) {
               Manage your security personnel and team members
             </p>
           </div>
-          <Button className="w-full sm:w-auto" onClick={() => setDialogOpen(true)}>
-            <Plus className="mr-2 size-4" />
-            Add Employee
-          </Button>
+          {!isClient && (
+            <Button className="w-full sm:w-auto" onClick={() => setDialogOpen(true)}>
+              <Plus className="mr-2 size-4" />
+              Add Employee
+            </Button>
+          )}
         </div>
       </div>
       
-      <AddEmployeeDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onAddEmployee={onAddEmployee}
-      />
+      {!isClient && (
+        <AddEmployeeDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onAddEmployee={onAddEmployee}
+        />
+      )}
     </>
   )
 }

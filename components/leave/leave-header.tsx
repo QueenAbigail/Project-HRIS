@@ -23,7 +23,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
-export function LeaveHeader() {
+interface LeaveHeaderProps {
+  isClient?: boolean
+}
+
+export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
   const [openNewRequest, setOpenNewRequest] = useState(false)
   const [openRequestApproval, setOpenRequestApproval] = useState(false)
   const [openImageZoom, setOpenImageZoom] = useState(false)
@@ -145,14 +149,15 @@ export function LeaveHeader() {
           </p>
         </div>
         <div className="flex flex-col gap-2">
-          <Dialog open={openNewRequest} onOpenChange={setOpenNewRequest}>
-            <DialogTrigger asChild>
-              <Button className="w-full">
-                <Plus className="mr-2 size-4" />
-                New Request
-              </Button>
-            </DialogTrigger>
-          <DialogContent className="max-w-md">
+          {!isClient && (
+            <Dialog open={openNewRequest} onOpenChange={setOpenNewRequest}>
+              <DialogTrigger asChild>
+                <Button className="w-full">
+                  <Plus className="mr-2 size-4" />
+                  New Request
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Submit Leave Request</DialogTitle>
               <DialogDescription>
@@ -219,9 +224,10 @@ export function LeaveHeader() {
                 </Button>
                 <Button type="submit">Submit Request</Button>
               </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+              </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 
@@ -263,14 +269,15 @@ export function LeaveHeader() {
             </SelectContent>
           </Select>
         </div>
-        <Dialog open={openRequestApproval} onOpenChange={setOpenRequestApproval}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="w-full sm:w-auto">
-              <CheckCircle2 className="mr-2 size-4" />
-              Request Approval
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        {!isClient && (
+          <Dialog open={openRequestApproval} onOpenChange={setOpenRequestApproval}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full sm:w-auto">
+                <CheckCircle2 className="mr-2 size-4" />
+                Request Approval
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Review Leave Approval Request</DialogTitle>
               <DialogDescription>
@@ -404,8 +411,9 @@ export function LeaveHeader() {
                 </div>
               </DialogFooter>
             </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* Image Zoom Modal */}

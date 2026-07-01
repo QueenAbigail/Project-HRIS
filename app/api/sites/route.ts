@@ -1,9 +1,15 @@
 import { prisma } from '@/lib/prisma'
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
+import { getCurrentUser } from '@/lib/system'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Get current user to check if CLIENT role
+    const currentUser = await getCurrentUser()
+    const isClient = currentUser?.role === 'CLIENT'
+    
     const sites = await prisma.site.findMany({
+      where: isClient ? { companyId: currentUser?.companyId } : undefined,
       select: {
         id: true,
         name: true,

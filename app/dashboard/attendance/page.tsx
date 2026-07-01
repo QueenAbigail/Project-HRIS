@@ -24,6 +24,11 @@ interface Site {
   } | null
 }
 
+interface CurrentUser {
+  role: string
+  companyId?: string
+}
+
 export default function AttendancePage() {
   const searchParams = useSearchParams()
   const [selectedSite, setSelectedSite] = useState('all')
@@ -32,6 +37,8 @@ export default function AttendancePage() {
   const [sites, setSites] = useState<Site[]>([])
   const [loadingSites, setLoadingSites] = useState(true)
   const [isGeneratingAttendance, setIsGeneratingAttendance] = useState(false)
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
+  const [isClient, setIsClient] = useState(false)
 
   const handleGenerateAttendance = async () => {
     setIsGeneratingAttendance(true)
@@ -66,21 +73,30 @@ export default function AttendancePage() {
 
   // Fetch sites from database
   useEffect(() => {
-    const fetchSites = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('/api/sites')
-        if (response.ok) {
-          const data = await response.json()
-          setSites(data)
+        // Fetch current user
+        const userResponse = await fetch('/api/auth/me')
+        if (userResponse.ok) {
+          const userData = await userResponse.json()
+          setCurrentUser(userData)
+          setIsClient(userData.role === 'CLIENT')
+        }
+
+        // Fetch sites
+        const sitesResponse = await fetch('/api/sites')
+        if (sitesResponse.ok) {
+          const sitesData = await sitesResponse.json()
+          setSites(sitesData)
         }
       } catch (error) {
-        console.error('Failed to fetch sites:', error)
+        console.error('Failed to fetch data:', error)
       } finally {
         setLoadingSites(false)
       }
     }
 
-    fetchSites()
+    fetchData()
   }, [])
 
   useEffect(() => {
@@ -99,6 +115,7 @@ export default function AttendancePage() {
         onDateRangeChange={setDateRange}
         selectedDepartment={selectedDepartment}
         onDepartmentChange={setSelectedDepartment}
+        isClient={isClient}
       />
 
       {/* Site Filter & Generate Button */}
@@ -122,17 +139,19 @@ export default function AttendancePage() {
             </SelectContent>
           </Select>
         </div>
-        <Button
-          onClick={handleGenerateAttendance}
-          disabled={isGeneratingAttendance}
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          title="Generate pending attendance records for today based on assignments"
-        >
-          <RefreshCw className={`size-4 ${isGeneratingAttendance ? 'animate-spin' : ''}`} />
-          {isGeneratingAttendance ? 'Generating...' : 'Generate Today'}
-        </Button>
+        {!isClient && (
+          <Button
+            onClick={handleGenerateAttendance}
+            disabled={isGeneratingAttendance}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            title="Generate pending attendance records for today based on assignments"
+          >
+            <RefreshCw className={`size-4 ${isGeneratingAttendance ? 'animate-spin' : ''}`} />
+            {isGeneratingAttendance ? 'Generating...' : 'Generate Today'}
+          </Button>
+        )}
       </div>
 
       <AttendanceStats siteId={selectedSite} dateRange={dateRange} />

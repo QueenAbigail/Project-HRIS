@@ -28,6 +28,7 @@ export default async function DashboardPage() {
   // Determine if user is a CLIENT (can see all sites in their company)
   const isClient = currentUser.role === 'CLIENT'
   const companyFilter = isClient ? { companyId: currentUser.companyId } : {}
+  const companyName = currentUser.site?.company?.name || 'your company'
 
   const [
     companies,
@@ -40,7 +41,7 @@ export default async function DashboardPage() {
     assignments,
     approvedLeavesThisMonth
   ] = await Promise.all([
-    prisma.company.findMany(),
+    isClient ? prisma.company.findMany({ where: { id: currentUser.companyId } }) : prisma.company.findMany(),
     isClient ? prisma.site.findMany({ where: { companyId: currentUser.companyId }, include: { company: true } }) : prisma.site.findMany({ include: { company: true } }),
     prisma.shift.findMany(),
     prisma.user.findMany({ where: companyFilter, include: { site: true } }),
@@ -93,7 +94,7 @@ export default async function DashboardPage() {
       }
     }),
     prisma.employeeShiftAssignment.findMany({
-      where: companyFilter,
+      where: isClient ? { site: { companyId: currentUser.companyId } } : {},
       include: {
         user: true,
         shift: true,
@@ -112,6 +113,9 @@ export default async function DashboardPage() {
       }
     })
   ]);
+
+  // Extract company name for CLIENT users from the fetched companies
+  const companyNameForDisplay = isClient && companies.length > 0 ? companies[0].name : currentUser.site?.company?.name || 'your company'
 
   const todayDay = today.getDay();
 
@@ -299,14 +303,14 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-balance">Dashboard Overview</h1>
         <p className="text-muted-foreground">
-          Welcome back! Here&apos;s what&apos;s happening with your security team {isClient ? `across all your project sites.` : 'across all locations.'}
+          Welcome back! Here&apos;s what&apos;s happening with your security team {isClient ? `at ${companyNameForDisplay}.` : 'across all locations.'}
         </p>
       </div>
 
       <StatsCards stats={overallStats} />
 
       {/* Location-based Attendance Overview */}
-      <LocationAttendance locationData={locationStatsByCompany} />
+      <LocationAttendance locationData={locationStatsByCompany} companyName={companyNameForDisplay} isClient={isClient} />
 
       <div className="grid gap-6 lg:grid-cols-7">
         <div className="lg:col-span-4">

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/system'
 import { subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
 
 interface AttendanceQuery {
@@ -12,6 +13,10 @@ interface AttendanceQuery {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
+    
+    // Get current user to check if CLIENT role
+    const currentUser = await getCurrentUser()
+    const isClient = currentUser?.role === 'CLIENT'
     
     const siteId = searchParams.get('siteId')
     const dateRange = searchParams.get('dateRange') || 'today'
@@ -62,10 +67,16 @@ export async function GET(request: NextRequest) {
     
     if (siteId && siteId !== 'all') {
       where.locationId = siteId
+    } else if (isClient) {
+      // For CLIENT users, only show their company's locations
+      where.location = {
+        companyId: currentUser?.companyId
+      }
     }
 
     if (department && department !== 'all') {
       where.user = {
+        ...where.user,
         department: department
       }
     }
