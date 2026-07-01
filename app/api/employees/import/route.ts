@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: results.success,
       failed: results.failed,
-      total: data.length,
+      total: normalizedData.length,
       errors: results.errors
     })
   } catch (error) {
