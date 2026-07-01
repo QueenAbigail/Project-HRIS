@@ -28,6 +28,7 @@ export default async function DashboardPage() {
   // Determine if user is a CLIENT (can see all sites in their company)
   const isClient = currentUser.role === 'CLIENT'
   const companyFilter = isClient ? { companyId: currentUser.companyId } : {}
+  const companyName = currentUser.site?.company?.name || 'your company'
 
   const [
     companies,
