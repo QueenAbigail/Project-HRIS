@@ -41,12 +41,12 @@ export async function POST(request: NextRequest) {
 
       try {
         // Validate required fields
-        if (!row['Full Name'] || !row['Email'] || !row['Employee Code (NIP)']) {
+        if (!row['Full Name'] || !row['Employee Code (NIP)']) {
           results.failed++
           results.errors.push({
             row: rowNum,
             name: row['Full Name'] || 'Unknown',
-            error: 'Missing required fields: Full Name, Email, or Employee Code'
+            error: 'Missing required fields: Full Name or Employee Code'
           })
           continue
         }
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
             employeeCode: row['Employee Code (NIP)'],
             name: row['Full Name'],
             email: hrisEmail,
-            personalEmail: row['Personal Email'] || row['Email'],
+            personalEmail: row['Personal Email'],
             initials: row['Full Name']?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 3),
             department: row['Department'] || 'Unassigned',
             position: row['Position'] || 'Unassigned',

@@ -172,7 +172,7 @@ export function AddEmployeeDialog({
       const XLSX = await import('xlsx')
       const templateData = [
         [
-          'Full Name*', 'Email*', 'Employee Code (NIP)*', 'Personal Email', 'Department', 'Position', 
+          'Full Name*', 'Employee Code (NIP)*', 'Personal Email', 'Department', 'Position', 
           'Location (Site)*', 'Join Date', 'Phone Number', 'KTP Number', 'Address', 'Birth City', 'Birth Date',
           'BPJS Number', 'Gender', 'Religion', 'Marital Status', 'Employment Status', 'Blood Type',
           'NPWP Number', 'KTA Number', 'Certifications (comma-separated)', 'KTA Expiry', 
@@ -180,7 +180,7 @@ export function AddEmployeeDialog({
           'Bank Name', 'Account Holder', 'Account Number', 'Supervisor Employee Code'
         ],
         [
-          'John Doe', 'john.doe@company.com', 'EMP001', 'john.personal@email.com', 'Field Security', 'Security Guard',
+          'John Doe', 'EMP001', 'john.personal@email.com', 'Field Security', 'Security Guard',
           'HO-01', '2024-01-15', '081234567890', '1234567890123456', 'Jl. Example No. 123', 'Jakarta', '1990-05-15',
           'BP.123.456.789-012', 'Male', 'Islam', 'Married', 'Permanent', 'O+',
           '12.345.678.9-012.000', '', 'Basic Security Training', '',
@@ -188,7 +188,7 @@ export function AddEmployeeDialog({
           'Bank Mandiri', 'John Doe', '1234567890', ''
         ],
         [
-          'Jane Smith', 'jane.smith@company.com', 'EMP002', 'jane.personal@email.com', 'Surveillance', 'CCTV Operator',
+          'Jane Smith', 'EMP002', 'jane.personal@email.com', 'Surveillance', 'CCTV Operator',
           'PT-DT', '2024-02-20', '082345678901', '3210987654321098', 'Jl. Security Lane 45', 'Surabaya', '1992-08-22',
           'BP.987.654.321.098', 'Female', 'Christian', 'Single', 'Permanent', 'A+',
           '98.765.432.1-098.000', 'KTA-2024-001', 'CCTV Operation,Incident Response', '2025-06-30',
@@ -196,7 +196,7 @@ export function AddEmployeeDialog({
           'Bank BCA', 'Jane Smith', '9876543210', ''
         ],
         [
-          'Mike Johnson', 'mike.johnson@company.com', 'EMP003', 'mike.personal@email.com', 'Administration', 'HR Coordinator',
+          'Mike Johnson', 'EMP003', 'mike.personal@email.com', 'Administration', 'HR Coordinator',
           'RM', '2024-03-10', '083456789012', '5678901234567890', 'Jl. Admin Road 78', 'Bandung', '1988-12-10',
           'BP.555.666.777.888', 'Male', 'Buddhist', 'Married', 'Permanent', 'B+',
           '55.666.777.8-888.000', '', 'HR Management,Payroll', '',
@@ -211,7 +211,6 @@ export function AddEmployeeDialog({
       // Set column widths
       ws['!cols'] = [
         { wch: 15 }, // Full Name
-        { wch: 25 }, // Email
         { wch: 15 }, // Employee Code
         { wch: 25 }, // Personal Email
         { wch: 15 }, // Department
