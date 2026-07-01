@@ -93,7 +93,7 @@ export default async function DashboardPage() {
       }
     }),
     prisma.employeeShiftAssignment.findMany({
-      where: companyFilter,
+      where: isClient ? { site: { companyId: currentUser.companyId } } : {},
       include: {
         user: true,
         shift: true,
