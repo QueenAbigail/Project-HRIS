@@ -45,6 +45,7 @@ interface Site {
   id: string
   name: string
   code: string
+  companyId: string
   company?: {
     name: string
   } | null
@@ -78,8 +79,10 @@ export function AddEmployeeDialog({
   const dataFetchedRef = useRef(false)
   
   // State Import
-  const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [importStatus, setImportStatus] = useState<'idle' | 'processing' | 'success' | 'error' | 'partial'>('idle')
   const [importCount, setImportCount] = useState(0)
+  const [importFailed, setImportFailed] = useState(0)
+  const [importErrors, setImportErrors] = useState<Array<{row: number, name?: string, error: string}>>([])
   
   // State Manual Form Wizard
   const [step, setStep] = useState(1)
@@ -170,14 +173,75 @@ export function AddEmployeeDialog({
     try {
       const XLSX = await import('xlsx')
       const templateData = [
-        ['Full Name', 'Email', 'Employee Code (NIP)', 'Department', 'Position', 'Location', 'Join Date'],
-        ['John Doe', 'john.doe@company.com', 'EMP001', 'Field Security', 'Security Guard', 'HO-01', '2024-01-15'],
-        ['Jane Smith', 'jane.smith@company.com', 'EMP002', 'Surveillance', 'CCTV Operator', 'PT-DT', '2024-02-20'],
-        ['Mike Johnson', 'mike.johnson@company.com', 'EMP003', 'Administration', 'HR Coordinator', 'RM', '2024-03-10'],
+        [
+          'Full Name*', 'Employee Code (NIP)*', 'Personal Email', 'Department', 'Position', 
+          'Location (Site)*', 'Join Date', 'Phone Number', 'KTP Number', 'Address', 'Birth City', 'Birth Date',
+          'BPJS Number', 'Gender', 'Religion', 'Marital Status', 'Employment Status', 'Blood Type',
+          'NPWP Number', 'KTA Number', 'Certifications (comma-separated)', 'KTA Expiry', 
+          'Role (STAFF/MANAGER/SITE_ADMIN/HR_ADMIN)', 'Status (ACTIVE/INACTIVE/SUSPENDED)',
+          'Bank Name', 'Account Holder', 'Account Number', 'Supervisor Employee Code'
+        ],
+        [
+          'John Doe', 'EMP001', 'john.personal@email.com', 'Field Security', 'Security Guard',
+          'HO-01', '2024-01-15', '081234567890', '1234567890123456', 'Jl. Example No. 123', 'Jakarta', '1990-05-15',
+          'BP.123.456.789-012', 'Male', 'Islam', 'Married', 'Permanent', 'O+',
+          '12.345.678.9-012.000', '', 'Basic Security Training', '',
+          'STAFF', 'ACTIVE',
+          'Bank Mandiri', 'John Doe', '1234567890', ''
+        ],
+        [
+          'Jane Smith', 'EMP002', 'jane.personal@email.com', 'Surveillance', 'CCTV Operator',
+          'PT-DT', '2024-02-20', '082345678901', '3210987654321098', 'Jl. Security Lane 45', 'Surabaya', '1992-08-22',
+          'BP.987.654.321.098', 'Female', 'Christian', 'Single', 'Permanent', 'A+',
+          '98.765.432.1-098.000', 'KTA-2024-001', 'CCTV Operation,Incident Response', '2025-06-30',
+          'STAFF', 'ACTIVE',
+          'Bank BCA', 'Jane Smith', '9876543210', ''
+        ],
+        [
+          'Mike Johnson', 'EMP003', 'mike.personal@email.com', 'Administration', 'HR Coordinator',
+          'RM', '2024-03-10', '083456789012', '5678901234567890', 'Jl. Admin Road 78', 'Bandung', '1988-12-10',
+          'BP.555.666.777.888', 'Male', 'Buddhist', 'Married', 'Permanent', 'B+',
+          '55.666.777.8-888.000', '', 'HR Management,Payroll', '',
+          'MANAGER', 'ACTIVE',
+          'Bank BNI', 'Mike Johnson', '5555666677', 'EMP001'
+        ],
       ]
 
       // Create worksheet
       const ws = XLSX.utils.aoa_to_sheet(templateData)
+      
+      // Set column widths
+      ws['!cols'] = [
+        { wch: 15 }, // Full Name
+        { wch: 15 }, // Employee Code
+        { wch: 25 }, // Personal Email
+        { wch: 15 }, // Department
+        { wch: 15 }, // Position
+        { wch: 12 }, // Location
+        { wch: 12 }, // Join Date
+        { wch: 15 }, // Phone
+        { wch: 18 }, // KTP
+        { wch: 25 }, // Address
+        { wch: 15 }, // Birth City
+        { wch: 12 }, // Birth Date
+        { wch: 18 }, // BPJS
+        { wch: 10 }, // Gender
+        { wch: 12 }, // Religion
+        { wch: 15 }, // Marital
+        { wch: 15 }, // Employment
+        { wch: 10 }, // Blood Type
+        { wch: 18 }, // NPWP
+        { wch: 15 }, // KTA
+        { wch: 30 }, // Certifications
+        { wch: 12 }, // KTA Expiry
+        { wch: 20 }, // Role
+        { wch: 20 }, // Status
+        { wch: 15 }, // Bank
+        { wch: 15 }, // Account Holder
+        { wch: 15 }, // Account Number
+        { wch: 15 }, // Supervisor
+      ]
+      
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, 'Employees')
       
@@ -226,13 +290,14 @@ export function AddEmployeeDialog({
   e.preventDefault()
 
   try {
-    // Find the selected site to get its ID
+    // Find the selected site to get its ID and companyId
     const selectedSite = sites.find(site => site.id === formData.location)
     
     // Kita translate/mapping dulu data dari state lu biar cocok sama maunya backend
     const finalData = {
       ...formData,
       siteId: selectedSite?.id || formData.location, // Use site ID from database
+      companyId: selectedSite?.companyId, // Auto-populate companyId from site
       systemRole: formData.role, // Backend butuh systemRole, form lu ngirim role
       dob: formData.birthDate,
       cob: formData.birthCity,
@@ -262,20 +327,71 @@ export function AddEmployeeDialog({
   }
 }
 
-  // Fitur Import (Tetap utuh)
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Fitur Import - Upload ke API
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      setTimeout(() => {
-        setImportCount(15)
-        setImportStatus('success')
-      }, 1500)
+
+    try {
+      setImportStatus('processing')
+      setImportCount(0)
+      setImportFailed(0)
+      setImportErrors([])
+      
+      // Create FormData and send to API
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/employees/import', {
+        method: 'POST',
+        body: formData
+      })
+
+      const result = await response.json()
+
+      if (response.ok || result.success || result.failed) {
+        console.log('[v0] Import result:', result)
+        setImportCount(result.success || 0)
+        setImportFailed(result.failed || 0)
+        setImportErrors(result.errors || [])
+        
+        // Determine status
+        if (result.success > 0 && result.failed > 0) {
+          setImportStatus('partial')
+        } else if (result.success > 0) {
+          setImportStatus('success')
+        } else {
+          setImportStatus('error')
+        }
+        
+        // Trigger refresh of employee list
+        if (result.success > 0) {
+          onImportEmployees?.([])
+          // Auto close on full success after 2 seconds
+          if (result.failed === 0) {
+            setTimeout(() => {
+              handleOpenChange(false)
+            }, 2000)
+          }
+        }
+      } else {
+        setImportStatus('error')
+        setImportErrors([{ row: 0, error: result.error || 'Unknown error occurred' }])
+        console.error('[v0] Import failed:', result.error)
+      }
+    } catch (error) {
+      console.error('[v0] Upload error:', error)
+      setImportStatus('error')
+      setImportErrors([{ row: 0, error: error instanceof Error ? error.message : 'Upload failed' }])
     }
-    reader.readAsText(file)
   }
-  const resetImportStatus = () => { setImportStatus('idle'); setImportCount(0) }
+
+  const resetImportStatus = () => { 
+    setImportStatus('idle')
+    setImportCount(0)
+    setImportFailed(0)
+    setImportErrors([])
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -498,17 +614,87 @@ export function AddEmployeeDialog({
                 </div>
               </>
             )}
+            {importStatus === 'processing' && (
+              <div className="flex flex-col items-center justify-center py-8 gap-4">
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                </div>
+                <div className="text-center">
+                  <p className="font-semibold text-base">Importing Employees...</p>
+                  <p className="text-sm text-muted-foreground mt-2">Processing your file. This may take a moment.</p>
+                </div>
+              </div>
+            )}
             {importStatus === 'success' && (
               <Alert className="border-success bg-success/10">
                 <CheckCircle2 className="size-4 text-success" />
                 <AlertTitle className="text-success">Import Successful!</AlertTitle>
-                <AlertDescription>Successfully imported {importCount} employees.</AlertDescription>
+                <AlertDescription>Successfully imported {importCount} employee{importCount !== 1 ? 's' : ''}.</AlertDescription>
               </Alert>
             )}
+            {importStatus === 'partial' && (
+              <>
+                <Alert className="border-amber-500 bg-amber-500/10">
+                  <AlertCircle className="size-4 text-amber-600" />
+                  <AlertTitle className="text-amber-700">Partial Import</AlertTitle>
+                  <AlertDescription className="text-amber-700">
+                    Successfully imported {importCount} employee{importCount !== 1 ? 's' : ''}, but {importFailed} row{importFailed !== 1 ? 's' : ''} failed.
+                  </AlertDescription>
+                </Alert>
+                
+                {importErrors.length > 0 && (
+                  <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="font-semibold text-red-900 mb-2">Import Errors:</p>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {importErrors.map((err, idx) => (
+                        <div key={idx} className="text-sm text-red-800 bg-white p-2 rounded border border-red-100">
+                          <strong>Row {err.row}</strong> {err.name && `(${err.name})`}: {err.error}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            {importStatus === 'error' && (
+              <>
+                <Alert className="border-destructive bg-destructive/10">
+                  <AlertCircle className="size-4 text-destructive" />
+                  <AlertTitle className="text-destructive">Import Failed</AlertTitle>
+                  <AlertDescription className="text-destructive">
+                    Unable to import employees. Please check the errors below and try again.
+                  </AlertDescription>
+                </Alert>
+                
+                {importErrors.length > 0 && (
+                  <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="font-semibold text-red-900 mb-2">Errors:</p>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {importErrors.map((err, idx) => (
+                        <div key={idx} className="text-sm text-red-800 bg-white p-2 rounded border border-red-100">
+                          <strong>Row {err.row}</strong> {err.name && `(${err.name})`}: {err.error}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
             {importStatus !== 'idle' && (
-              <DialogFooter>
-                <Button variant="outline" onClick={() => handleOpenChange(false)}>Close</Button>
-                <Button onClick={resetImportStatus}>Import Another File</Button>
+              <DialogFooter className="pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleOpenChange(false)}
+                  disabled={importStatus === 'processing'}
+                >
+                  Close
+                </Button>
+                <Button 
+                  onClick={resetImportStatus}
+                  disabled={importStatus === 'processing'}
+                >
+                  {importStatus === 'processing' ? 'Processing...' : 'Import Another File'}
+                </Button>
               </DialogFooter>
             )}
           </TabsContent>

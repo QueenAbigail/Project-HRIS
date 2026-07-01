@@ -26,24 +26,46 @@ import type { GpsCoordinates } from '@/lib/constants'
 
 interface AttendanceRecord {
   id: string
-  employeeId: string
-  employeeName: string
-  employeeCode: string
-  initials: string
-  department: string
-  position: string
-  location: string
-  scheduledStart: string
-  scheduledEnd: string
-  checkIn: string | null
-  checkOut: string | null
-  status: 'present' | 'late' | 'absent' | 'leave' | 'not-checked-in' | 'day-off'
+  date: string
+  userId: string
+  user: {
+    id: string
+    name: string
+    email: string
+    employeeCode: string
+    initials: string | null
+    department: string | null
+    position: string | null
+  }
+  locationId: string
+  location: {
+    id: string
+    name: string
+    code: string
+    company: {
+      name: string
+    } | null
+  } | null
+  shiftId: string | null
+  shift: {
+    id: string
+    name: string
+    startTime: string
+    endTime: string
+  } | null
+  scheduledStart: string | null
+  scheduledEnd: string | null
+  actualCheckIn: string | null
+  actualCheckOut: string | null
+  status: string
   lateMinutes: number
-  workHours: string
-  checkInGps: GpsCoordinates | null
-  checkOutGps: GpsCoordinates | null
-  checkInPhotoUrl: string | null
-  checkOutPhotoUrl: string | null
+  gpsLat: number | null
+  gpsLng: number | null
+  gpsLatPulang: number | null
+  gpsLngPulang: number | null
+  selfieCheckIn: string | null
+  selfieCheckOut: string | null
+  notes: string | null
 }
 
 const statusStyles: Record<string, string> = {
@@ -64,7 +86,7 @@ const statusLabels: Record<string, string> = {
   'day-off': 'Day Off',
 }
 
-export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
+export function AttendanceTable({ siteId = 'all', dateRange = 'today', department = 'all' }: { siteId?: string; dateRange?: string; department?: string }) {
   const [records, setRecords] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null)
@@ -77,11 +99,23 @@ export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
         if (siteId && siteId !== 'all') {
           params.append('siteId', siteId)
         }
+        if (dateRange) {
+          params.append('dateRange', dateRange)
+        }
+        if (department && department !== 'all') {
+          params.append('department', department)
+        }
 
-        const response = await fetch(`/api/attendance?${params.toString()}`)
+        const url = `/api/attendance?${params.toString()}`
+        console.log("[v0] Fetching attendance from:", url)
+        const response = await fetch(url)
         if (response.ok) {
           const data = await response.json()
+          console.log("[v0] Attendance data received:", data)
           setRecords(Array.isArray(data) ? data : [])
+        } else {
+          const errorText = await response.text()
+          console.error("[v0] API error response:", errorText)
         }
       } catch (error) {
         console.error('[v0] Failed to fetch attendance records:', error)
@@ -91,7 +125,7 @@ export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
     }
 
     fetchAttendance()
-  }, [siteId])
+  }, [siteId, dateRange, department])
 
   const allRecords = records
   const lateRecords = records.filter(r => r.status === 'late')
@@ -112,23 +146,34 @@ export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
             <div className="flex items-center gap-3">
               <Avatar className="size-8">
                 <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                  {record.initials}
+                  {record.user?.initials || record.user?.name?.charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <p className="font-medium text-sm">{record.employeeName}</p>
-                <p className="text-xs text-muted-foreground">{record.department}</p>
+                <p className="font-medium text-sm">{record.user?.name}</p>
+                <p className="text-xs text-muted-foreground">{record.user?.department || '--'}</p>
               </div>
             </div>
           </TableCell>
-          <TableCell className="text-sm">{record.location}</TableCell>
-          <TableCell className="text-xs text-muted-foreground">{record.scheduledStart}</TableCell>
-          <TableCell className="text-xs text-muted-foreground">{record.checkIn || '--:--'}</TableCell>
-          <TableCell className="text-xs text-muted-foreground">{record.checkOut || '--:--'}</TableCell>
-          <TableCell className="text-xs text-muted-foreground">{record.workHours}</TableCell>
+          <TableCell className="text-sm">
+            {typeof record.location === 'string' 
+              ? record.location 
+              : record.location 
+                ? `${record.location.company?.name ? record.location.company.name + ' - ' : ''}${record.location.name}`
+                : 'Unknown'}
+          </TableCell>
+          <TableCell className="text-xs text-muted-foreground">
+            {record.date ? new Date(record.date).toLocaleDateString() : '--'}
+          </TableCell>
+          <TableCell className="text-xs text-muted-foreground">
+            {record.actualCheckIn ? record.actualCheckIn.split('T')[1]?.substring(0, 5) || '--:--' : '--:--'}
+          </TableCell>
+          <TableCell className="text-xs text-muted-foreground">
+            {record.actualCheckOut ? record.actualCheckOut.split('T')[1]?.substring(0, 5) || '--:--' : '--:--'}
+          </TableCell>
           <TableCell>
-            <Badge variant="outline" className={statusStyles[record.status]}>
-              {statusLabels[record.status]}
+            <Badge variant="outline" className={statusStyles[record.status?.toLowerCase()] || ''}>
+              {statusLabels[record.status?.toLowerCase()] || record.status || 'Unknown'}
             </Badge>
           </TableCell>
           <TableCell>
@@ -148,7 +193,7 @@ export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
       ))}
       {data.length === 0 && (
         <TableRow>
-          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
             No records found
           </TableCell>
         </TableRow>
@@ -202,10 +247,9 @@ export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
                     <TableRow>
                       <TableHead>Employee</TableHead>
                       <TableHead>Location</TableHead>
-                      <TableHead>Scheduled</TableHead>
+                      <TableHead>Date</TableHead>
                       <TableHead>Check In</TableHead>
                       <TableHead>Check Out</TableHead>
-                      <TableHead>Hours</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -224,10 +268,9 @@ export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
                     <TableRow>
                       <TableHead>Employee</TableHead>
                       <TableHead>Location</TableHead>
-                      <TableHead>Scheduled</TableHead>
+                      <TableHead>Date</TableHead>
                       <TableHead>Check In</TableHead>
                       <TableHead>Check Out</TableHead>
-                      <TableHead>Hours</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -246,10 +289,9 @@ export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
                     <TableRow>
                       <TableHead>Employee</TableHead>
                       <TableHead>Location</TableHead>
-                      <TableHead>Scheduled</TableHead>
+                      <TableHead>Date</TableHead>
                       <TableHead>Check In</TableHead>
                       <TableHead>Check Out</TableHead>
-                      <TableHead>Hours</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -268,10 +310,9 @@ export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
                     <TableRow>
                       <TableHead>Employee</TableHead>
                       <TableHead>Location</TableHead>
-                      <TableHead>Scheduled</TableHead>
+                      <TableHead>Date</TableHead>
                       <TableHead>Check In</TableHead>
                       <TableHead>Check Out</TableHead>
-                      <TableHead>Hours</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -290,10 +331,9 @@ export function AttendanceTable({ siteId = 'all' }: { siteId?: string }) {
                     <TableRow>
                       <TableHead>Employee</TableHead>
                       <TableHead>Location</TableHead>
-                      <TableHead>Scheduled</TableHead>
+                      <TableHead>Date</TableHead>
                       <TableHead>Check In</TableHead>
                       <TableHead>Check Out</TableHead>
-                      <TableHead>Hours</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>

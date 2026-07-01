@@ -32,16 +32,15 @@ enum AttendanceStatus {
 }
 
 enum LeaveStatus {
-  PENDING
-  APPROVED
-  REJECTED
+  Pending
+  Approved
+  Rejected
 }
 
 enum LeaveType {
-  ANNUAL
-  SICK
-  EMERGENCY
-  MATERNITY
+  Izin
+  Sakit
+  TukarShift
 }
 
 enum EmployeeStatus {
@@ -85,6 +84,7 @@ model Company {
   id        String   @id @default(cuid())
   name      String   @unique
   sites     Site[]
+  users     User[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -117,6 +117,8 @@ model User {
   department            String?
   position              String?
   role                  Role                      @default(STAFF)
+  companyId             String?
+  company               Company?                  @relation(fields: [companyId], references: [id], onDelete: SetNull)
   siteId                String
   site                  Site                      @relation(fields: [siteId], references: [id], onDelete: Cascade)
   supervisorId          String?
@@ -124,7 +126,7 @@ model User {
   supervisees           User[]                    @relation("Supervisor")
   attendances           Attendance[]
   leaves                Leave[]                   @relation("LeaveRequester")
-  leavesApproved        Leave[]                   @relation("LeaveApprover")
+  bkoAssignments        BkoAssignment[]           @relation("BkoSubstitute")
   assignments           EmployeeShiftAssignment[]
   patternAssignments    EmployeePatternAssignment[] @relation("PatternAssignments")
   bulkImports           BulkImportLog[] @relation("BulkImports")
@@ -133,12 +135,12 @@ model User {
   createdAt             DateTime                  @default(now())
   updatedAt             DateTime                  @updatedAt
   status                EmployeeStatus            @default(ACTIVE)
-  joinDate              DateTime?
+  joinDate              DateTime?                 @db.Date
   phoneNumber           String?
   ktpNumber             String?                   @unique
   address               String?
   birthCity             String?
-  birthDate             DateTime?
+  birthDate             DateTime?                 @db.Date
   bpjsNumber            String?
   gender                String?
   religion              String?
@@ -148,11 +150,15 @@ model User {
   npwpNumber            String?
   ktaNumber             String?
   certifications        String[]
-  ktaExpiry             DateTime?
+  ktaExpiry             DateTime?                 @db.Date
   allowMobileAttendance Boolean                   @default(false)
   allowWebAppAccess     Boolean                   @default(false)
+  bankName              String?
+  accountHolder         String?
+  accountNumber         String?
 
   @@index([siteId])
+  @@index([companyId])
   @@index([supervisorId])
   @@index([email])
   @@map("users")
@@ -179,9 +185,9 @@ model Attendance {
   id             String           @id @default(cuid())
   userId         String
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date           DateTime // Full datetime for date only in queries
-  locationId     String
-  location       Site             @relation(fields: [locationId], references: [id])
+  date           DateTime         @db.Date // Date only, no time component
+  locationId     String?
+  location       Site?            @relation(fields: [locationId], references: [id])
   shiftId        String?
   shift          Shift?           @relation(fields: [shiftId], references: [id])
   scheduledStart String? // HH:MM
@@ -190,8 +196,10 @@ model Attendance {
   actualCheckOut DateTime?
   status         AttendanceStatus @default(NOT_CHECKED_IN)
   lateMinutes    Int              @default(0)
-  gpsLat         Float?
-  gpsLng         Float?
+  gpsLat         Float?           // GPS latitude for check-in
+  gpsLng         Float?           // GPS longitude for check-in
+  gpsLatPulang   Float?           // GPS latitude for check-out
+  gpsLngPulang   Float?           // GPS longitude for check-out
   selfieCheckIn  String? // URL
   selfieCheckOut String? // URL
   notes          String?
@@ -205,21 +213,39 @@ model Attendance {
 
 // Leave model (requests with approval)
 model Leave {
-  id          String      @id @default(cuid())
-  requesterId String
-  requester   User        @relation("LeaveRequester", fields: [requesterId], references: [id], onDelete: Cascade)
-  approverId  String?
-  approver    User?       @relation("LeaveApprover", fields: [approverId], references: [id], onDelete: SetNull)
-  type        LeaveType
-  startDate   DateTime
-  endDate     DateTime
-  status      LeaveStatus @default(PENDING)
-  notes       String?
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String
+  user           User      @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Cascade)
+  leaveType      String    // Izin, Sakit, TukarShift
+  startDate      DateTime  @db.Date
+  endDate        DateTime  @db.Date
+  reason         String?
+  attachmentUrl  String?
+  status         String    @default("Pending") // Pending, Approved, Rejected
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  bkoAssignments BkoAssignment[]
 
-  @@index([requesterId])
-  @@index([approverId])
+  @@index([userId])
   @@index([status])
   @@map("leaves")
+}
+
+// BKO Assignments (Backup/Coverage assignments during leave)
+model BkoAssignment {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leaveId      String   @db.Uuid
+  leave        Leave    @relation(fields: [leaveId], references: [id], onDelete: Cascade)
+  substituteId String   // Text reference to User id (which is cuid)
+  substitute   User     @relation("BkoSubstitute", fields: [substituteId], references: [id], onDelete: Cascade)
+  status       String   @default("Aktif")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([leaveId])
+  @@index([substituteId])
+  @@index([status])
+  @@map("bko_assignments")
 }
 
 // Global system settings for branding
@@ -293,7 +319,7 @@ model Patrol {
   patrolLocation    PatrolLocation      @relation(fields: [patrolLocationId], references: [id], onDelete: Cascade)
   shiftId           String?
   shift             Shift?              @relation(fields: [shiftId], references: [id])
-  date              DateTime            // Date of patrol
+  date              DateTime            @db.Date // Date of patrol, no time component
   status            PatrolStatus        @default(NOT_STARTED)
   checkInTime       DateTime?           // Actual check-in time
   gpsLat            Float?              // Actual GPS latitude for validation

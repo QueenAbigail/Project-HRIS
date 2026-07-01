@@ -26,7 +26,21 @@ interface MasterDataItem {
   category: string
 }
 
-export function AttendanceHeader({ siteId = 'all' }: { siteId?: string }) {
+interface AttendanceHeaderProps {
+  siteId?: string
+  dateRange?: string
+  onDateRangeChange?: (range: string) => void
+  selectedDepartment?: string
+  onDepartmentChange?: (dept: string) => void
+}
+
+export function AttendanceHeader({ 
+  siteId = 'all',
+  dateRange = 'today',
+  onDateRangeChange,
+  selectedDepartment = 'all',
+  onDepartmentChange
+}: AttendanceHeaderProps) {
   const [openCalendarSheet, setOpenCalendarSheet] = useState(false)
   const [departments, setDepartments] = useState<MasterDataItem[]>([])
   const [loadingDepartments, setLoadingDepartments] = useState(true)
@@ -69,7 +83,7 @@ export function AttendanceHeader({ siteId = 'all' }: { siteId?: string }) {
               <Calendar className="size-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Date Range:</span>
             </div>
-            <Select defaultValue="today">
+            <Select value={dateRange} onValueChange={(value) => onDateRangeChange?.(value)}>
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Select period" />
               </SelectTrigger>
@@ -81,7 +95,7 @@ export function AttendanceHeader({ siteId = 'all' }: { siteId?: string }) {
                 <SelectItem value="custom">Custom Range</SelectItem>
               </SelectContent>
             </Select>
-            <Select defaultValue="all">
+            <Select value={selectedDepartment} onValueChange={(value) => onDepartmentChange?.(value)}>
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder={loadingDepartments ? "Loading..." : "Department"} />
               </SelectTrigger>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { subDays, startOfDay, endOfDay } from 'date-fns'
+import { subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
 
 interface AttendanceQuery {
   siteId?: string
@@ -14,22 +14,63 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     
     const siteId = searchParams.get('siteId')
+    const dateRange = searchParams.get('dateRange') || 'today'
+    const department = searchParams.get('department')
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
 
-    // Build where clause
-    const where: any = {
-      date: {
-        gte: startOfDay(new Date(date)),
-        lte: endOfDay(new Date(date)),
-      }
+    // Calculate date range based on dateRange parameter
+    let dateStart: Date
+    let dateEnd: Date
+    const now = new Date()
+
+    switch (dateRange) {
+      case 'today':
+        dateStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        dateEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+        break
+      case 'yesterday':
+        const yesterday = subDays(now, 1)
+        dateStart = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
+        dateEnd = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59)
+        break
+      case 'week':
+        const weekStart = startOfWeek(now, { weekStartsOn: 0 }) // Sunday start
+        const weekEnd = endOfWeek(now, { weekStartsOn: 0 })
+        dateStart = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate())
+        dateEnd = new Date(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate(), 23, 59, 59)
+        break
+      case 'month':
+        const monthStart = startOfMonth(now)
+        const monthEnd = endOfMonth(now)
+        dateStart = new Date(monthStart.getFullYear(), monthStart.getMonth(), monthStart.getDate())
+        dateEnd = new Date(monthEnd.getFullYear(), monthEnd.getMonth(), monthEnd.getDate(), 23, 59, 59)
+        break
+      case 'custom':
+        const customDate = new Date(date)
+        dateStart = new Date(customDate.getFullYear(), customDate.getMonth(), customDate.getDate())
+        dateEnd = new Date(customDate.getFullYear(), customDate.getMonth(), customDate.getDate(), 23, 59, 59)
+        break
+      default:
+        dateStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        dateEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
     }
+
+    console.log("[v0] Attendance API - Date range:", { dateRange, dateStart, dateEnd })
+
+    // Build where clause
+    const where: any = {}
     
     if (siteId && siteId !== 'all') {
-      where.location = {
-        id: siteId
+      where.locationId = siteId
+    }
+
+    if (department && department !== 'all') {
+      where.user = {
+        department: department
       }
     }
 
+    console.log("[v0] Fetching attendance with where clause:", JSON.stringify(where))
     const attendance = await prisma.attendance.findMany({
       where,
       include: {
@@ -63,69 +104,21 @@ export async function GET(request: NextRequest) {
               }
             }
           }
-        }
+        } as any
       },
       orderBy: {
         actualCheckIn: 'desc'
       }
     })
 
-    // Transform to match frontend expectations
-    const formatted = attendance.map((record) => {
-      let status = record.status || 'NOT_CHECKED_IN'
-      let workHours = '--'
-
-      if (record.actualCheckIn && record.actualCheckOut) {
-        const [inH, inM] = record.actualCheckIn.split(':').map(Number)
-        const [outH, outM] = record.actualCheckOut.split(':').map(Number)
-        const totalMinutes = (outH * 60 + outM) - (inH * 60 + inM)
-        const hours = Math.floor(totalMinutes / 60)
-        const minutes = totalMinutes % 60
-        workHours = `${hours}h ${minutes.toString().padStart(2, '0')}m`
-      }
-
-      // Determine status based on check-in data
-      if (!record.actualCheckIn) {
-        status = 'not-checked-in'
-      } else if (status === 'LATE') {
-        status = 'late'
-      } else if (status === 'PRESENT') {
-        status = 'present'
-      } else if (status === 'ABSENT') {
-        status = 'absent'
-      } else {
-        status = 'not-checked-in'
-      }
-
-      return {
-        id: record.id,
-        employeeId: record.userId,
-        employeeName: record.user.name,
-        employeeCode: record.user.employeeCode,
-        initials: record.user.initials,
-        department: record.user.department || '',
-        position: record.user.position || '',
-        location: record.location.company?.name 
-          ? `${record.location.company.name} - ${record.location.name}`
-          : record.location.name,
-        scheduledStart: record.shift?.startTime || record.scheduledStart || '--:--',
-        scheduledEnd: record.shift?.endTime || record.scheduledEnd || '--:--',
-        checkIn: record.actualCheckIn || null,
-        checkOut: record.actualCheckOut || null,
-        status: status as any,
-        lateMinutes: record.lateMinutes || 0,
-        workHours,
-        checkInGps: record.gpsLat && record.gpsLng ? {
-          latitude: record.gpsLat,
-          longitude: record.gpsLng
-        } : null,
-        checkOutGps: null, // Would need to track check-out GPS separately
-        checkInPhotoUrl: record.selfieCheckIn || null,
-        checkOutPhotoUrl: record.selfieCheckOut || null,
-      }
+    // Filter by date range
+    const filtered = attendance.filter(record => {
+      const recordDate = new Date(record.date || new Date())
+      return recordDate >= dateStart && recordDate <= dateEnd
     })
 
-    return NextResponse.json(formatted)
+    console.log("[v0] Attendance API returning", filtered.length, "records for date range:", dateRange)
+    return NextResponse.json(filtered)
   } catch (error) {
     console.error('[v0] Error fetching attendance:', error)
     return NextResponse.json(

@@ -80,9 +80,18 @@ export async function updateEmployeeAction(userId: string, formData: any) {
       }
     }
 
-    // 3. Handle location/siteId
+    // 3. Handle location/siteId and auto-update companyId
     if (formData.location && formData.location !== '') {
       updateData.siteId = formData.location
+      
+      // Auto-populate companyId from site when location changes
+      const site = await prisma.site.findUnique({
+        where: { id: formData.location },
+        select: { companyId: true }
+      })
+      if (site?.companyId) {
+        updateData.companyId = site.companyId
+      }
     }
 
     console.log('[v0] Prepared updateData:', updateData)
@@ -173,7 +182,15 @@ export async function createEmployeeAction(formData: any) {
       }
     })
 
-    // 4. Refresh tabel
+    // 4. Update companyId from site using Prisma (bypass RLS)
+    if (formData.siteId && formData.companyId) {
+      await prisma.user.update({
+        where: { id: authUserId },
+        data: { companyId: formData.companyId }
+      }).catch(err => console.error("Warning: Could not set companyId:", err))
+    }
+
+    // 5. Refresh tabel
     revalidatePath('/dashboard/employees')
     return { success: true }
 

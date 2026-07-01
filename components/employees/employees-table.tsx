@@ -111,8 +111,24 @@ export function EmployeesTable({ users }: EmployeesTableProps) {
     setEditOpen(false)
   }
 
-  const handleDeleteEmployee = (id: string) => {
-    setEmployees(prev => prev.filter(emp => emp.id !== id))
+  const handleDeleteEmployee = async (id: string) => {
+    try {
+      const response = await fetch(`/api/employees/${id}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        setEmployees(prev => prev.filter(emp => emp.id !== id))
+        console.log('[v0] Employee deleted successfully')
+      } else {
+        const error = await response.json()
+        console.error('[v0] Failed to delete employee:', error)
+        alert('Failed to delete employee: ' + (error.message || 'Unknown error'))
+      }
+    } catch (error) {
+      console.error('[v0] Delete error:', error)
+      alert('Error deleting employee')
+    }
   }
 
   // Generate page numbers to display

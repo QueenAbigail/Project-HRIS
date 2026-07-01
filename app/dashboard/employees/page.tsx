@@ -92,7 +92,7 @@ async function EmployeesContent({
         ]
       },
       select: {
-        requesterId: true
+        userId: true
       }
     }),
     prisma.user.findMany({
@@ -136,7 +136,7 @@ async function EmployeesContent({
     })
   ])
 
-  const onLeaveIds = new Set(activeLeaves.map((leave) => leave.requesterId))
+  const onLeaveIds = new Set(activeLeaves.map((leave) => leave.userId))
 
   const employees = users.map((user) => {
     const status = onLeaveIds.has(user.id) && user.status === 'ACTIVE'
