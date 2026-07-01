@@ -24,9 +24,39 @@ export async function POST(request: NextRequest) {
     const { read, utils } = await import('xlsx')
     const workbook = read(buffer, { type: 'array' })
     const worksheet = workbook.Sheets[workbook.SheetNames[0]]
-    const data = utils.sheet_to_json(worksheet)
+    
+    // Get headers and normalize them (trim whitespace)
+    const headers: Record<string, string> = {}
+    if (worksheet['!ref']) {
+      const range = utils.decode_range(worksheet['!ref'])
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const addr = utils.encode_cell({r: 0, c: C})
+        const cell = worksheet[addr]
+        if (cell?.v) {
+          const normalizedHeader = cell.v.toString().trim()
+          headers[normalizedHeader] = normalizedHeader
+        }
+      }
+    }
+    
+    // Parse with header normalization
+    const data = utils.sheet_to_json(worksheet, { defval: '' })
+    
+    // Normalize the parsed data keys (trim whitespace from keys)
+    const normalizedData = data.map((row: any) => {
+      const normalized: any = {}
+      for (const [key, value] of Object.entries(row)) {
+        const trimmedKey = (key as string).trim()
+        normalized[trimmedKey] = value
+      }
+      return normalized
+    })
 
-    console.log('[v0] Parsed Excel data:', data.length, 'rows')
+    console.log('[v0] Parsed Excel data:', normalizedData.length, 'rows')
+    if (normalizedData.length > 0) {
+      console.log('[v0] First row keys:', Object.keys(normalizedData[0]))
+      console.log('[v0] First row data:', normalizedData[0])
+    }
 
     // Import employees
     const results = {
@@ -35,8 +65,8 @@ export async function POST(request: NextRequest) {
       errors: [] as Array<{ row: number; name: string; error: string }>
     }
 
-    for (let i = 0; i < data.length; i++) {
-      const row = data[i] as any
+    for (let i = 0; i < normalizedData.length; i++) {
+      const row = normalizedData[i] as any
       const rowNum = i + 2 // +2 because row 1 is header, array is 0-indexed
 
       try {
