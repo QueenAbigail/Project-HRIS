@@ -132,6 +132,7 @@ async function EmployeesContent({
         ktaNumber: true,
         ktaExpiry: true,
         certifications: true,
+        employmentStatus: true,
         site: {
           select: {
             name: true,
