@@ -481,37 +481,19 @@ const details = employeeDetails[employee.id] || defaultDetails
                 {/* Base Salary */}
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Base Salary</span>
-                  <span className="font-medium">IDR 0/month</span>
+                  <span className="font-medium">Rp 0/month</span>
                 </div>
 
-                {/* Adjustments Section */}
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-success">Adjustments</p>
-                  <div className="pl-4 space-y-1 text-sm">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-xs">Allowance</span>
-                      <span className="text-success">+ IDR 0</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-xs">Bonus</span>
-                      <span className="text-success">+ IDR 0</span>
-                    </div>
-                  </div>
+                {/* Adjustments */}
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Adjustments</span>
+                  <span className="text-success font-medium">+ Rp 0</span>
                 </div>
 
-                {/* Deductions Section */}
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-destructive">Deductions</p>
-                  <div className="pl-4 space-y-1 text-sm">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-xs">Tax</span>
-                      <span className="text-destructive">- IDR 0</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-xs">Insurance</span>
-                      <span className="text-destructive">- IDR 0</span>
-                    </div>
-                  </div>
+                {/* Deductions */}
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Deductions</span>
+                  <span className="text-destructive font-medium">- Rp 0</span>
                 </div>
 
                 <Separator />
@@ -519,15 +501,15 @@ const details = employeeDetails[employee.id] || defaultDetails
                 {/* Take Home Pay */}
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Take Home Pay</span>
-                  <span className="text-lg font-bold text-primary">IDR 0</span>
+                  <span className="text-lg font-bold text-primary">Rp 0</span>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Payment Details */}
+            {/* Account Detail */}
             <Card className="bg-secondary/50 border-border">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Payment Details</CardTitle>
+                <CardTitle className="text-sm font-medium">Account Detail</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between items-center text-sm">
