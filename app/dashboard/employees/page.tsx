@@ -219,12 +219,13 @@ async function EmployeesContent({
   )
 }
 
-export default function EmployeesPage({
+export default async function EmployeesPage({
   searchParams
 }: {
-  searchParams: { search?: string }
+  searchParams: Promise<{ search?: string }>
 }) {
-  const searchQuery = searchParams.search || ''
+  const params = await searchParams
+  const searchQuery = params.search || ''
 
   return (
     <Suspense fallback={<EmployeesSkeleton />}>
