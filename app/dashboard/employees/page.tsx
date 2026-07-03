@@ -193,6 +193,7 @@ async function EmployeesContent({
       ktaExpiry: user.ktaExpiry
         ? format(user.ktaExpiry, 'yyyy-MM-dd')
         : '',
+      employmentStatus: user.employmentStatus ?? '',
     }
   })
 
