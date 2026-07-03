@@ -50,6 +50,19 @@ interface EmployeeEditFormData {
   emergencyContact: string
   bankAccount: string
   taxId: string
+  joinDate?: string
+  employmentStatus?: string
+  certifications?: string
+  ktaNumber?: string
+  ktaExpiry?: string
+  supervisor?: string
+  bankName?: string
+  accountHolder?: string
+  accountNumber?: string
+  role?: string
+  userStatus?: string
+  allowMobileAttendance?: boolean
+  allowWebAccess?: boolean
 }
 
 interface MasterDataItem {
@@ -101,6 +114,19 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
     emergencyContact: '',
     bankAccount: '',
     taxId: '',
+    joinDate: '',
+    employmentStatus: '',
+    certifications: '',
+    ktaNumber: '',
+    ktaExpiry: '',
+    supervisor: '',
+    bankName: '',
+    accountHolder: '',
+    accountNumber: '',
+    role: '',
+    userStatus: 'ACTIVE',
+    allowMobileAttendance: false,
+    allowWebAccess: false,
   })
 
   const [showPassword, setShowPassword] = useState(false)
@@ -110,6 +136,7 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
   const [maritalStatuses, setMaritalStatuses] = useState<MasterDataItem[]>([])
   const [religions, setReligions] = useState<MasterDataItem[]>([])
   const [bloodTypes, setBloodTypes] = useState<MasterDataItem[]>([])
+  const [employees, setEmployees] = useState<Array<{id: string; name: string}>>([])
   const [loadingData, setLoadingData] = useState(false)
   const dataFetchedRef = useRef(false)
 
@@ -140,6 +167,19 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
         emergencyContact: employee.emergencyContact || 'Emergency Contact - +1 (555) 000-0000',
         bankAccount: employee.bankAccount || '**** **** **** 0000',
         taxId: employee.taxId || '***-**-0000',
+        joinDate: employee.joinDate || '',
+        employmentStatus: employee.employmentStatus || '',
+        certifications: employee.certifications?.join(', ') || '',
+        ktaNumber: employee.ktaNumber || '',
+        ktaExpiry: employee.ktaExpiry || '',
+        supervisor: employee.supervisor?.id || '',
+        bankName: employee.bankName || '',
+        accountHolder: employee.accountHolder || '',
+        accountNumber: employee.accountNumber || '',
+        role: 'USER',
+        userStatus: 'ACTIVE',
+        allowMobileAttendance: false,
+        allowWebAccess: false,
       })
     }
   }, [employee, sites])
@@ -174,6 +214,13 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
         setMaritalStatuses(Array.isArray(maritalData) ? maritalData : [])
         setReligions(Array.isArray(religionData) ? religionData : [])
         setBloodTypes(Array.isArray(bloodData) ? bloodData : [])
+
+        // Fetch employees for supervisor dropdown
+        const employeesResponse = await fetch('/api/employees-list')
+        if (employeesResponse.ok) {
+          const employeesData = await employeesResponse.json()
+          setEmployees(Array.isArray(employeesData) ? employeesData : [])
+        }
 
         dataFetchedRef.current = true
       } catch (error) {
@@ -252,10 +299,11 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
         {/* === BODY FLEXIBLE (YANG BISA DI-SCROLL) === */}
         <div className="flex-1 overflow-hidden px-6 flex flex-col min-h-0">
           <Tabs defaultValue="personal" className="flex-1 flex flex-col min-h-0 w-full">
-            <TabsList className="w-full grid grid-cols-3">
+            <TabsList className="w-full grid grid-cols-4">
               <TabsTrigger value="personal">Personal Info</TabsTrigger>
               <TabsTrigger value="assignment">Assignment</TabsTrigger>
               <TabsTrigger value="payroll">Payroll</TabsTrigger>
+              <TabsTrigger value="administration">Administration</TabsTrigger>
             </TabsList>
 
             <div className="flex-1 overflow-y-auto min-h-0 mt-4 pr-3 pb-4">
@@ -419,6 +467,49 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
                     </Select>
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="joinDate">Join Date</Label>
+                    <Input id="joinDate" type="date" value={formData.joinDate || ''} onChange={(e) => setFormData(prev => ({ ...prev, joinDate: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="employmentStatus">Employment Status</Label>
+                    <Select value={formData.employmentStatus || ''} onValueChange={(value) => setFormData(prev => ({ ...prev, employmentStatus: value }))}>
+                      <SelectTrigger id="employmentStatus"><SelectValue placeholder="Select status" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PKWTT (Tetap)">PKWTT (Permanent)</SelectItem>
+                        <SelectItem value="PKWT (Kontrak)">PKWT (Contract)</SelectItem>
+                        <SelectItem value="Freelance">Freelance</SelectItem>
+                        <SelectItem value="Consultant">Consultant</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ktaNumber">KTA Number</Label>
+                    <Input id="ktaNumber" value={formData.ktaNumber || ''} onChange={(e) => setFormData(prev => ({ ...prev, ktaNumber: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ktaExpiry">KTA Expiry</Label>
+                    <Input id="ktaExpiry" type="date" value={formData.ktaExpiry || ''} onChange={(e) => setFormData(prev => ({ ...prev, ktaExpiry: e.target.value }))} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="certifications">Certifications</Label>
+                  <Textarea id="certifications" value={formData.certifications || ''} onChange={(e) => setFormData(prev => ({ ...prev, certifications: e.target.value }))} placeholder="Enter certifications (comma-separated)" className="min-h-[60px]" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="supervisor">Direct Supervisor</Label>
+                  <Select value={formData.supervisor || ''} onValueChange={(value) => setFormData(prev => ({ ...prev, supervisor: value }))}>
+                    <SelectTrigger id="supervisor"><SelectValue placeholder={loadingData ? "Loading..." : "Select supervisor"} /></SelectTrigger>
+                    <SelectContent>
+                      {employees.map(emp => (
+                        <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="rounded-lg bg-muted/50 p-4 mt-4">
                   <p className="text-sm text-muted-foreground">
                     <strong className="text-foreground">Note:</strong> Changing the placement location will trigger a notification to the site supervisor at the new location.
@@ -428,10 +519,24 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
 
               {/* TAB 3: PAYROLL */}
               <TabsContent value="payroll" className="mt-0 pb-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bankName">Bank Name</Label>
+                    <Input id="bankName" value={formData.bankName || ''} onChange={(e) => setFormData(prev => ({ ...prev, bankName: e.target.value }))} placeholder="e.g., BCA, Mandiri" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="accountHolder">Account Holder</Label>
+                    <Input id="accountHolder" value={formData.accountHolder || ''} onChange={(e) => setFormData(prev => ({ ...prev, accountHolder: e.target.value }))} />
+                  </div>
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="bank">Bank Account Number</Label>
-                  <Input id="bank" value={formData.bankAccount} onChange={(e) => setFormData(prev => ({ ...prev, bankAccount: e.target.value }))} placeholder="**** **** **** ****" />
-                  <p className="text-xs text-muted-foreground">Enter full account number. Will be partially masked after saving.</p>
+                  <Label htmlFor="accountNumber">Account Number</Label>
+                  <Input id="accountNumber" value={formData.accountNumber || ''} onChange={(e) => setFormData(prev => ({ ...prev, accountNumber: e.target.value }))} placeholder="Full account number" />
+                  <p className="text-xs text-muted-foreground">Enter full account number. Will be partially masked when displayed.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bankAccount">Legacy Bank Account</Label>
+                  <Input id="bankAccount" value={formData.bankAccount} onChange={(e) => setFormData(prev => ({ ...prev, bankAccount: e.target.value }))} placeholder="**** **** **** ****" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="tax">Tax ID / NPWP</Label>
@@ -441,6 +546,60 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
                   <p className="text-sm text-warning">
                     <strong>Security Notice:</strong> Changes to payroll information will require verification.
                   </p>
+                </div>
+              </TabsContent>
+
+              {/* TAB 4: ADMINISTRATION */}
+              <TabsContent value="administration" className="mt-0 pb-4 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="role">User Role</Label>
+                    <Select value={formData.role || ''} onValueChange={(value) => setFormData(prev => ({ ...prev, role: value }))}>
+                      <SelectTrigger id="role"><SelectValue placeholder="Select role" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+                        <SelectItem value="HR_ADMIN">HR Admin</SelectItem>
+                        <SelectItem value="HR_STAFF">HR Staff</SelectItem>
+                        <SelectItem value="MANAGER">Manager</SelectItem>
+                        <SelectItem value="USER">User</SelectItem>
+                        <SelectItem value="CLIENT">Client</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="userStatus">User Status</Label>
+                    <Select value={formData.userStatus || 'ACTIVE'} onValueChange={(value) => setFormData(prev => ({ ...prev, userStatus: value }))}>
+                      <SelectTrigger id="userStatus"><SelectValue placeholder="Select status" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ACTIVE">Active</SelectItem>
+                        <SelectItem value="SUSPEND">Suspended</SelectItem>
+                        <SelectItem value="INACTIVE">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="border border-border rounded-lg p-4 space-y-3">
+                  <p className="text-sm font-medium">Access Permissions</p>
+                  <div className="flex items-center space-x-3">
+                    <input 
+                      type="checkbox" 
+                      id="allowMobileAttendance"
+                      checked={formData.allowMobileAttendance || false}
+                      onChange={(e) => setFormData(prev => ({ ...prev, allowMobileAttendance: e.target.checked }))}
+                      className="rounded border-border"
+                    />
+                    <Label htmlFor="allowMobileAttendance" className="font-normal cursor-pointer">Allow Mobile Attendance</Label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input 
+                      type="checkbox" 
+                      id="allowWebAccess"
+                      checked={formData.allowWebAccess || false}
+                      onChange={(e) => setFormData(prev => ({ ...prev, allowWebAccess: e.target.checked }))}
+                      className="rounded border-border"
+                    />
+                    <Label htmlFor="allowWebAccess" className="font-normal cursor-pointer">Allow Web Access</Label>
+                  </div>
                 </div>
               </TabsContent>
 
