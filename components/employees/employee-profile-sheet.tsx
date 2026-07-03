@@ -52,6 +52,9 @@ export interface Employee {
   certifications?: string[]
   bankAccount?: string
   taxId?: string
+  bankName?: string
+  accountHolder?: string
+  accountNumber?: string
   personalEmail?: string
   bpjsNumber?: string
   npwpNumber?: string
@@ -466,7 +469,7 @@ const details = employeeDetails[employee.id] || defaultDetails
           </TabsContent>
 
           <TabsContent value="payroll" className="mt-4 space-y-4">
-            {/* Salary Info */}
+            {/* Salary Information */}
             <Card className="bg-secondary/50 border-border">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -475,37 +478,69 @@ const details = employeeDetails[employee.id] || defaultDetails
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                {/* Base Salary */}
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Base Salary</span>
-                  <span className="font-medium">${details.baseSalary.toLocaleString()}/month</span>
+                  <span className="font-medium">IDR 0/month</span>
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Overtime ({details.overtimeHours}h)</span>
-                  <span className="font-medium text-warning">+${(details.overtimeHours * 25).toLocaleString()}</span>
+
+                {/* Adjustments Section */}
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-success">Adjustments</p>
+                  <div className="pl-4 space-y-1 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground text-xs">Allowance</span>
+                      <span className="text-success">+ IDR 0</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground text-xs">Bonus</span>
+                      <span className="text-success">+ IDR 0</span>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Deductions Section */}
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-destructive">Deductions</p>
+                  <div className="pl-4 space-y-1 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground text-xs">Tax</span>
+                      <span className="text-destructive">- IDR 0</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground text-xs">Insurance</span>
+                      <span className="text-destructive">- IDR 0</span>
+                    </div>
+                  </div>
+                </div>
+
                 <Separator />
+
+                {/* Take Home Pay */}
                 <div className="flex justify-between items-center">
-                  <span className="font-medium">Estimated Total</span>
-                  <span className="text-lg font-bold text-primary">
-                    ${(details.baseSalary + details.overtimeHours * 25).toLocaleString()}
-                  </span>
+                  <span className="font-medium">Take Home Pay</span>
+                  <span className="text-lg font-bold text-primary">IDR 0</span>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Bank Details */}
+            {/* Payment Details */}
             <Card className="bg-secondary/50 border-border">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">Payment Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Bank Account</span>
-                  <span className="font-mono">{details.bankAccount}</span>
+                  <span className="text-muted-foreground">Bank Name</span>
+                  <span className="font-medium">{employee.bankName || 'Not specified'}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Tax ID</span>
-                  <span className="font-mono">{details.taxId}</span>
+                  <span className="text-muted-foreground">Account Holder</span>
+                  <span className="font-medium">{employee.accountHolder || 'Not specified'}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Account Number</span>
+                  <span className="font-mono text-xs">{employee.accountNumber ? `••••${employee.accountNumber.slice(-4)}` : 'Not specified'}</span>
                 </div>
               </CardContent>
             </Card>

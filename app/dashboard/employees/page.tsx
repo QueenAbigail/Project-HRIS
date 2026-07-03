@@ -133,6 +133,9 @@ async function EmployeesContent({
         ktaExpiry: true,
         certifications: true,
         employmentStatus: true,
+        bankName: true,
+        accountHolder: true,
+        accountNumber: true,
         site: {
           select: {
             name: true,
@@ -194,6 +197,9 @@ async function EmployeesContent({
         ? format(user.ktaExpiry, 'yyyy-MM-dd')
         : '',
       employmentStatus: user.employmentStatus ?? '',
+      bankName: user.bankName ?? '',
+      accountHolder: user.accountHolder ?? '',
+      accountNumber: user.accountNumber ?? '',
     }
   })
 
