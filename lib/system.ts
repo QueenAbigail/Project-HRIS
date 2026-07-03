@@ -22,12 +22,12 @@ export async function getSystemSettings(): Promise<Omit<SystemSettings, 'id'> | 
 export async function getCurrentUserRole(): Promise<string | null> {
   try {
     const supabase = await createClient()
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
 
-    if (!session?.user?.email) return null
+    if (!authUser?.email) return null
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { email: authUser.email },
       select: { role: true }
     })
 
@@ -41,13 +41,15 @@ export async function getCurrentUserRole(): Promise<string | null> {
 export async function getCurrentUser(): Promise<User | null> {
   try {
     const supabase = await createClient()
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
 
-    if (!session?.user?.email) return null
+    if (!authUser?.email) return null
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      include: { site: true }
+      where: { email: authUser.email },
+      include: { 
+        site: true
+      }
     })
 
     return user || null

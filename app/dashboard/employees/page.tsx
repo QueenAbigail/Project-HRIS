@@ -132,6 +132,10 @@ async function EmployeesContent({
         ktaNumber: true,
         ktaExpiry: true,
         certifications: true,
+        employmentStatus: true,
+        bankName: true,
+        accountHolder: true,
+        accountNumber: true,
         site: {
           select: {
             name: true,
@@ -192,6 +196,10 @@ async function EmployeesContent({
       ktaExpiry: user.ktaExpiry
         ? format(user.ktaExpiry, 'yyyy-MM-dd')
         : '',
+      employmentStatus: user.employmentStatus ?? '',
+      bankName: user.bankName ?? '',
+      accountHolder: user.accountHolder ?? '',
+      accountNumber: user.accountNumber ?? '',
     }
   })
 
@@ -218,12 +226,13 @@ async function EmployeesContent({
   )
 }
 
-export default function EmployeesPage({
+export default async function EmployeesPage({
   searchParams
 }: {
-  searchParams: { search?: string }
+  searchParams: Promise<{ search?: string }>
 }) {
-  const searchQuery = searchParams.search || ''
+  const params = await searchParams
+  const searchQuery = params.search || ''
 
   return (
     <Suspense fallback={<EmployeesSkeleton />}>

@@ -52,6 +52,9 @@ export interface Employee {
   certifications?: string[]
   bankAccount?: string
   taxId?: string
+  bankName?: string
+  accountHolder?: string
+  accountNumber?: string
   personalEmail?: string
   bpjsNumber?: string
   npwpNumber?: string
@@ -220,7 +223,7 @@ const details = employeeDetails[employee.id] || defaultDetails
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="w-full grid grid-cols-3">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="attendance">Attendance</TabsTrigger>
+            <TabsTrigger value="assignment">Assignment</TabsTrigger>
             <TabsTrigger value="payroll">Payroll</TabsTrigger>
           </TabsList>
 
@@ -339,72 +342,6 @@ const details = employeeDetails[employee.id] || defaultDetails
               </CardContent>
             </Card>
 
-            {/* Assignment Details */}
-            <Card className="bg-secondary/50 border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <MapPin className="size-4" />
-                  Assignment Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-start gap-3 text-sm">
-                  <MapPin className="size-4 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Location / Site</p>
-                    <span>{employee.site?.name || employee.location}</span>
-                    <span className="ml-2 text-xs font-mono text-muted-foreground">({employee.locationCode})</span>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 text-sm">
-                  <Building className="size-4 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Department</p>
-                    <span>{employee.department}</span>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 text-sm">
-                  <Calendar className="size-4 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Join Date</p>
-                    <span>{employee.joinDate}</span>
-                  </div>
-                </div>
-
-                {/* Expandable Assignment Section - EXACT same pattern as Contact */}
-                <div
-                  className={`grid transition-all duration-300 ease-in-out ${isExpandedAssignment ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0'}`}
-                >
-                  <div className="overflow-hidden">
-                    <div className="space-y-3 pt-3 border-t border-border">
-                      <div className="flex items-start gap-3 text-sm">
-                        <FileSignature className="size-4 text-muted-foreground mt-0.5" />
-                        <div>
-                          <p className="text-xs text-muted-foreground">Employment Status</p>
-                          <span>{employee.employmentStatus || 'Not specified'}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3 text-sm">
-                        <UserCheck className="size-4 text-muted-foreground mt-0.5" />
-                        <div>
-                          <p className="text-xs text-muted-foreground">Direct Supervisor</p>
-                          <span>{employee.supervisor?.name || 'Not assigned'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className="w-full flex justify-center items-center py-1 text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => setIsExpandedAssignment((prev) => !prev)}
-                >
-                  <ChevronDown className={`size-4 transition-transform duration-300 ${isExpandedAssignment ? 'rotate-180' : 'rotate-0'}`} />
-                </button>
-              </CardContent>
-            </Card>
-
             {/* Certifications */}
             <Card className="bg-secondary/50 border-border">
               <CardHeader className="pb-2">
@@ -463,63 +400,76 @@ const details = employeeDetails[employee.id] || defaultDetails
             </Button>
           </TabsContent>
 
-          <TabsContent value="attendance" className="mt-4 space-y-4">
-            {/* Attendance Stats */}
-            <div className="grid grid-cols-3 gap-3">
-              <Card className="bg-secondary/50 border-border">
-                <CardContent className="pt-4 text-center">
-                  <p className="text-2xl font-bold text-primary">{details.attendanceThisMonth}</p>
-                  <p className="text-xs text-muted-foreground">Days Present</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-secondary/50 border-border">
-                <CardContent className="pt-4 text-center">
-                  <p className="text-2xl font-bold">{details.totalWorkHours}</p>
-                  <p className="text-xs text-muted-foreground">Work Hours</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-secondary/50 border-border">
-                <CardContent className="pt-4 text-center">
-                  <p className="text-2xl font-bold text-warning">{details.overtimeHours}</p>
-                  <p className="text-xs text-muted-foreground">Overtime</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Recent Activity */}
+          <TabsContent value="assignment" className="mt-4 space-y-4">
+            {/* Assignment Details */}
             <Card className="bg-secondary/50 border-border">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Clock className="size-4" />
-                  Recent Activity
+                  <MapPin className="size-4" />
+                  Assignment Details
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {details.recentActivity.map((activity, index) => (
-                    <div key={index} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="size-4 text-success" />
-                        <span>{activity.action}</span>
+              <CardContent className="space-y-3">
+                <div className="flex items-start gap-3 text-sm">
+                  <MapPin className="size-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Location / Site</p>
+                    <span>{employee.site?.name || employee.location}</span>
+                    <span className="ml-2 text-xs font-mono text-muted-foreground">({employee.locationCode})</span>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 text-sm">
+                  <Building className="size-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Department</p>
+                    <span>{employee.department}</span>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 text-sm">
+                  <Calendar className="size-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Join Date</p>
+                    <span>{employee.joinDate}</span>
+                  </div>
+                </div>
+
+                {/* Expandable Assignment Section */}
+                <div
+                  className={`grid transition-all duration-300 ease-in-out ${isExpandedAssignment ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0'}`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="space-y-3 pt-3 border-t border-border">
+                      <div className="flex items-start gap-3 text-sm">
+                        <FileSignature className="size-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Employment Status</p>
+                          <span>{employee.employmentStatus || 'Not specified'}</span>
+                        </div>
                       </div>
-                      <div className="text-right text-muted-foreground">
-                        <p className="text-xs">{activity.date}</p>
-                        <p className="text-xs">{activity.time}</p>
+                      <div className="flex items-start gap-3 text-sm">
+                        <UserCheck className="size-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Direct Supervisor</p>
+                          <span>{employee.supervisor?.name || 'Not assigned'}</span>
+                        </div>
                       </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
+
+                <button
+                  type="button"
+                  className="w-full flex justify-center items-center py-1 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setIsExpandedAssignment((prev) => !prev)}
+                >
+                  <ChevronDown className={`size-4 transition-transform duration-300 ${isExpandedAssignment ? 'rotate-180' : 'rotate-0'}`} />
+                </button>
               </CardContent>
             </Card>
-
-            <Button variant="outline" className="w-full">
-              <FileText className="size-4 mr-2" />
-              View Full Attendance Report
-            </Button>
           </TabsContent>
 
           <TabsContent value="payroll" className="mt-4 space-y-4">
-            {/* Salary Info */}
+            {/* Salary Information */}
             <Card className="bg-secondary/50 border-border">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -528,37 +478,51 @@ const details = employeeDetails[employee.id] || defaultDetails
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                {/* Base Salary */}
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Base Salary</span>
-                  <span className="font-medium">${details.baseSalary.toLocaleString()}/month</span>
+                  <span className="font-medium">Rp 0/month</span>
                 </div>
+
+                {/* Adjustments */}
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Overtime ({details.overtimeHours}h)</span>
-                  <span className="font-medium text-warning">+${(details.overtimeHours * 25).toLocaleString()}</span>
+                  <span className="text-muted-foreground">Adjustments</span>
+                  <span className="text-success font-medium">+ Rp 0</span>
                 </div>
+
+                {/* Deductions */}
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Deductions</span>
+                  <span className="text-destructive font-medium">- Rp 0</span>
+                </div>
+
                 <Separator />
+
+                {/* Take Home Pay */}
                 <div className="flex justify-between items-center">
-                  <span className="font-medium">Estimated Total</span>
-                  <span className="text-lg font-bold text-primary">
-                    ${(details.baseSalary + details.overtimeHours * 25).toLocaleString()}
-                  </span>
+                  <span className="font-medium">Take Home Pay</span>
+                  <span className="text-lg font-bold text-primary">Rp 0</span>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Bank Details */}
+            {/* Account Detail */}
             <Card className="bg-secondary/50 border-border">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Payment Details</CardTitle>
+                <CardTitle className="text-sm font-medium">Account Detail</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Bank Account</span>
-                  <span className="font-mono">{details.bankAccount}</span>
+                  <span className="text-muted-foreground">Bank Name</span>
+                  <span className="font-medium">{employee.bankName || 'Not specified'}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Tax ID</span>
-                  <span className="font-mono">{details.taxId}</span>
+                  <span className="text-muted-foreground">Account Holder</span>
+                  <span className="font-medium">{employee.accountHolder || 'Not specified'}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Account Number</span>
+                  <span className="font-mono text-xs">{employee.accountNumber ? `••••${employee.accountNumber.slice(-4)}` : 'Not specified'}</span>
                 </div>
               </CardContent>
             </Card>

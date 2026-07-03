@@ -35,9 +35,9 @@ export interface LayoutProps {
 
 export default async function PayrollLayout({ children }: LayoutProps) {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user: authUser } } = await supabase.auth.getUser()
 
-  if (!session?.user?.email) {
+  if (!authUser?.email) {
     redirect('/')
   }
 
@@ -46,7 +46,7 @@ export default async function PayrollLayout({ children }: LayoutProps) {
 
   try {
     user = (await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { email: authUser.email },
       select: { 
         name: true, 
         position: true, 
