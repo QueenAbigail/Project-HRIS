@@ -158,12 +158,10 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Submit Leave Request</DialogTitle>
-              <DialogDescription>
-                Fill in the details below to submit a new leave request for approval.
-              </DialogDescription>
-            </DialogHeader>
+                <DialogHeader>
+                  <DialogTitle>Submit New Leave Request</DialogTitle>
+                  <DialogDescription>Fill in the details for your leave request</DialogDescription>
+                </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="leaveType">Leave Type</Label>
@@ -278,15 +276,10 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Review Leave Approval Request</DialogTitle>
-              <DialogDescription>
-                Review the submitted leave request form and mobile app data below. Click Approve or Reject to proceed.
-              </DialogDescription>
-              <div className="text-xs text-muted-foreground mt-2">
-                Request {currentApprovalIndex + 1} of {totalRequests}
-              </div>
-            </DialogHeader>
+              <DialogHeader>
+                <DialogTitle>Request Approval</DialogTitle>
+                <DialogDescription>Review and approve pending leave requests</DialogDescription>
+              </DialogHeader>
             
             <div className="space-y-6">
               {/* Form Picture Section */}
