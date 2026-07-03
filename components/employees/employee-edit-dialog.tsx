@@ -176,8 +176,8 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
         bankName: employee.bankName || '',
         accountHolder: employee.accountHolder || '',
         accountNumber: employee.accountNumber || '',
-        role: 'USER',
-        userStatus: 'ACTIVE',
+        role: employee.role || 'STAFF',
+        userStatus: employee.userStatus || 'ACTIVE',
         allowMobileAttendance: false,
         allowWebAccess: false,
       })
@@ -534,14 +534,6 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
                   <Input id="accountNumber" value={formData.accountNumber || ''} onChange={(e) => setFormData(prev => ({ ...prev, accountNumber: e.target.value }))} placeholder="Full account number" />
                   <p className="text-xs text-muted-foreground">Enter full account number. Will be partially masked when displayed.</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bankAccount">Legacy Bank Account</Label>
-                  <Input id="bankAccount" value={formData.bankAccount} onChange={(e) => setFormData(prev => ({ ...prev, bankAccount: e.target.value }))} placeholder="**** **** **** ****" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tax">Tax ID / NPWP</Label>
-                  <Input id="tax" value={formData.taxId} onChange={(e) => setFormData(prev => ({ ...prev, taxId: e.target.value }))} placeholder="***-**-****" />
-                </div>
                 <div className="rounded-lg bg-warning/10 border border-warning/20 p-4 mt-4">
                   <p className="text-sm text-warning">
                     <strong>Security Notice:</strong> Changes to payroll information will require verification.
@@ -558,10 +550,10 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
                       <SelectTrigger id="role"><SelectValue placeholder="Select role" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
-                        <SelectItem value="HR_ADMIN">HR Admin</SelectItem>
-                        <SelectItem value="HR_STAFF">HR Staff</SelectItem>
+                        <SelectItem value="HR_ADMIN">Hr Admin</SelectItem>
+                        <SelectItem value="SITE_ADMIN">Site Admin</SelectItem>
                         <SelectItem value="MANAGER">Manager</SelectItem>
-                        <SelectItem value="USER">User</SelectItem>
+                        <SelectItem value="STAFF">Staff</SelectItem>
                         <SelectItem value="CLIENT">Client</SelectItem>
                       </SelectContent>
                     </Select>
