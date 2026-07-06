@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dialog'
 import { Clock, AlertTriangle, MapPin, Camera, Navigation, ExternalLink, Loader2 } from 'lucide-react'
 import type { GpsCoordinates } from '@/lib/constants'
+import { formatAttendanceStatus, getAttendanceLabel, getStatusStyles } from '@/lib/attendance-utils'
 
 interface AttendanceRecord {
   id: string
@@ -68,23 +69,7 @@ interface AttendanceRecord {
   notes: string | null
 }
 
-const statusStyles: Record<string, string> = {
-  'present': 'bg-success/10 text-success border-success/20',
-  'late': 'bg-warning/10 text-warning border-warning/20',
-  'absent': 'bg-destructive/10 text-destructive border-destructive/20',
-  'leave': 'bg-chart-2/10 text-chart-2 border-chart-2/20',
-  'not-checked-in': 'bg-muted text-muted-foreground border-muted',
-  'day-off': 'bg-primary/10 text-primary/70 border-primary/20',
-}
-
-const statusLabels: Record<string, string> = {
-  'present': 'Present',
-  'late': 'Late',
-  'absent': 'Absent',
-  'leave': 'On Leave',
-  'not-checked-in': 'Pending',
-  'day-off': 'Day Off',
-}
+// Status formatting is now handled by attendance-utils.ts for consistent display across the app
 
 export function AttendanceTable({ siteId = 'all', dateRange = 'today', department = 'all' }: { siteId?: string; dateRange?: string; department?: string }) {
   const [records, setRecords] = useState<AttendanceRecord[]>([])
@@ -172,8 +157,8 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
             {record.actualCheckOut ? record.actualCheckOut.split('T')[1]?.substring(0, 5) || '--:--' : '--:--'}
           </TableCell>
           <TableCell>
-            <Badge variant="outline" className={statusStyles[record.status?.toLowerCase()] || ''}>
-              {statusLabels[record.status?.toLowerCase()] || record.status || 'Unknown'}
+            <Badge variant="outline" className={getStatusStyles(record.status)}>
+              {getAttendanceLabel(record.status)}
             </Badge>
           </TableCell>
           <TableCell>
