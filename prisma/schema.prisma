@@ -497,16 +497,16 @@ model BulkImportRecord {
 
 model CronLog {
   id              String    @id @default(cuid())
-  jobName         String    // "attendance_generation", "leave_processing", etc.
-  status          String    @default("pending") // "success", "pending", "error", "running"
-  message         String?
-  recordsCreated  Int       @default(0)
-  recordsSkipped  Int       @default(0)
-  error           String?
-  duration        Int?      // Duration in milliseconds
-  startTime       DateTime  @default(now())
-  endTime         DateTime?
-  createdAt       DateTime  @default(now())
+  jobName         String    @map("job_name") // "attendance_generation", "leave_processing", etc.
+  status          String    @default("pending") @map("status") // "success", "pending", "error", "running"
+  message         String?   @map("message")
+  recordsCreated  Int       @default(0) @map("records_created")
+  recordsSkipped  Int       @default(0) @map("records_skipped")
+  error           String?   @map("error")
+  duration        Int?      @map("duration") // Duration in milliseconds
+  startTime       DateTime  @default(now()) @map("start_time")
+  endTime         DateTime? @map("end_time")
+  createdAt       DateTime  @default(now()) @map("created_at")
   
   @@index([jobName, createdAt])
   @@index([status])

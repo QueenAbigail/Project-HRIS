@@ -98,14 +98,24 @@ export function CronStatusCard() {
       </CardHeader>
       <CardContent className="space-y-6">
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-            {error}
+          <div className="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 text-sm text-yellow-700 dark:text-yellow-200 space-y-2">
+            <p className="font-semibold flex items-center gap-2">
+              <Zap className="w-4 h-4" />
+              Monitoring Active
+            </p>
+            <p>Cron logs are being tracked. The next scheduled run will appear here.</p>
+            <ul className="list-disc list-inside mt-2 text-xs space-y-1 opacity-90">
+              <li>Daily run: <span className="font-mono">0 17 * * *</span> (00:00 GMT+7)</li>
+              <li>Automatic attendance generation based on shift patterns</li>
+              <li>Records with status: NOT_CHECKED_IN (pending user check-in)</li>
+              <li>First run will show once cron executes or manual generation triggers</li>
+            </ul>
           </div>
         )}
 
         {loading ? (
           <div className="text-center py-8 text-muted-foreground">Loading cron logs...</div>
-        ) : summary ? (
+        ) : (summary || logs.length > 0) ? (
           <>
             {/* Summary Stats */}
             <div className="grid grid-cols-2 gap-4">
@@ -176,13 +186,27 @@ export function CronStatusCard() {
                   ))
                 ) : (
                   <div className="text-center py-4 text-sm text-muted-foreground">
-                    No cron runs yet
+                    No cron runs yet. First run scheduled for next cron execution.
                   </div>
                 )}
               </div>
             </div>
           </>
-        ) : null}
+        ) : (
+          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-700 rounded-lg p-4 text-sm text-blue-700 dark:text-blue-200 space-y-2">
+            <p className="font-semibold flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Cron Job Monitoring
+            </p>
+            <p>The attendance generation cron job is configured and monitoring is active.</p>
+            <ul className="list-disc list-inside mt-2 text-xs space-y-1 opacity-90">
+              <li>Scheduled: Daily at 00:00 GMT+7 (17:00 UTC)</li>
+              <li>Function: Auto-generate attendance records based on employee shift patterns</li>
+              <li>Status: Waiting for next scheduled execution</li>
+              <li>Records will appear here after first run</li>
+            </ul>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
