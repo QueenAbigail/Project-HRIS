@@ -1108,7 +1108,14 @@ export async function generateTodayAttendanceRecords() {
         ]
       },
       include: {
-        user: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            siteId: true
+          }
+        },
         site: true,
         pattern: true
       }
@@ -1127,7 +1134,11 @@ export async function generateTodayAttendanceRecords() {
         userId: assignment.userId,
         userName: assignment.user.name,
         userSiteId: userSiteId,
-        patternName: assignment.pattern.name
+        patternName: assignment.pattern.name,
+        patternType: assignment.pattern.type,
+        status: assignment.status,
+        startDate: assignment.startDate,
+        endDate: assignment.endDate
       })
       
       if (!userSiteId) {
@@ -1153,12 +1164,62 @@ export async function generateTodayAttendanceRecords() {
         continue
       }
 
-      // Determine if user is scheduled for today based on pattern
+      // Determine if user is scheduled for today based on pattern type
       const dayOfWeek = today.getDay()
-      const workingDays = assignment.pattern.workingDays as number[] || []
-      
-      // Skip if pattern specifies working days and today is not a working day
-      if (workingDays.length > 0 && !workingDays.includes(dayOfWeek)) {
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+      let isScheduledToday = true
+      let scheduleReason = ''
+
+      if (assignment.pattern.type === 'FIXED') {
+        // For fixed patterns, check if today is a working day
+        const workingDays = assignment.pattern.workingDays as number[] || []
+        console.log('[v0] FIXED pattern - workingDays:', workingDays, 'today:', dayNames[dayOfWeek])
+        if (workingDays.length > 0 && !workingDays.includes(dayOfWeek)) {
+          isScheduledToday = false
+          scheduleReason = `Not a working day (pattern has [${workingDays.map(d => dayNames[d]).join(', ')}])`
+        } else {
+          scheduleReason = 'Working day according to pattern'
+        }
+      } else if (assignment.pattern.type === 'ROTATING') {
+        // For rotating patterns, calculate based on sequence and start date
+        const rotatingData = assignment.pattern.rotatingPattern as any
+        if (rotatingData?.sequence && rotatingData?.startDate) {
+          const patternStartDate = new Date(rotatingData.startDate)
+          const daysFromStart = Math.floor((today.getTime() - patternStartDate.getTime()) / (1000 * 60 * 60 * 24))
+          const sequenceIndex = daysFromStart % rotatingData.sequence.length
+          const currentCycle = rotatingData.sequence[sequenceIndex]
+          
+          console.log('[v0] ROTATING pattern - daysFromStart:', daysFromStart, 'sequenceIndex:', sequenceIndex, 'currentCycle:', currentCycle)
+          
+          // Skip non-working days (e.g., rest days)
+          isScheduledToday = currentCycle.days > 0 // Assuming structure with "days" property
+          scheduleReason = isScheduledToday ? `Working cycle: ${JSON.stringify(currentCycle)}` : `Rest cycle: ${JSON.stringify(currentCycle)}`
+        } else {
+          scheduleReason = 'Invalid rotating pattern data'
+        }
+      } else if (assignment.pattern.type === 'MODULO') {
+        // For modulo patterns, calculate based on sequence and start date
+        const moduloData = assignment.pattern.moduloPattern as any
+        if (moduloData?.sequence && moduloData?.startDate) {
+          const patternStartDate = new Date(moduloData.startDate)
+          const daysFromStart = Math.floor((today.getTime() - patternStartDate.getTime()) / (1000 * 60 * 60 * 24))
+          const sequenceIndex = daysFromStart % moduloData.sequence.length
+          const currentShiftType = moduloData.sequence[sequenceIndex]
+          
+          console.log('[v0] MODULO pattern - daysFromStart:', daysFromStart, 'sequenceIndex:', sequenceIndex, 'currentShift:', currentShiftType)
+          
+          // Skip rest days or specific indicators
+          isScheduledToday = currentShiftType !== 'rest' && currentShiftType !== 'OFF'
+          scheduleReason = isScheduledToday ? `Shift: ${currentShiftType}` : `Off day: ${currentShiftType}`
+        } else {
+          scheduleReason = 'Invalid modulo pattern data'
+        }
+      }
+
+      console.log('[v0] Schedule check for', assignment.user.name, '-', scheduleReason)
+
+      if (!isScheduledToday) {
+        console.log('[v0] Skipping - user not scheduled for today')
         skippedCount++
         continue
       }
