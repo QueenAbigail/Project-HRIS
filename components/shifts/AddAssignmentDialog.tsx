@@ -19,8 +19,12 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from 'sonner'
 import { assignPatternToEmployee, getAllEmployees } from '@/app/superadmin/actions'
+import { validateAssignment, formatValidationErrors } from '@/lib/pattern-validation'
+import { AttendancePreview } from './AttendancePreview'
+import { AlertTriangle, CheckCircle } from 'lucide-react'
 
 interface AddAssignmentDialogProps {
   open: boolean
@@ -96,10 +100,25 @@ export function AddAssignmentDialog({
       const startDateObj = new Date(startDate)
       const endDateObj = endDate ? new Date(endDate) : null
 
-      // Validate dates
-      if (endDateObj && endDateObj <= startDateObj) {
-        toast.error('End date must be after start date')
+      // Validate assignment using validation utility
+      const validation = validateAssignment({
+        employeeId: selectedEmployee,
+        patternId: selectedPattern,
+        startDate: startDateObj,
+        endDate: endDateObj
+      })
+
+      if (!validation.isValid) {
+        const errorMessage = validation.errors.join('\n')
+        toast.error(`Validation failed:\n${errorMessage}`)
         return
+      }
+
+      // Show warnings as toast info
+      if (validation.warnings.length > 0) {
+        validation.warnings.forEach(warning => {
+          toast.info(warning)
+        })
       }
       
       // Call server action with enhanced options
@@ -221,6 +240,19 @@ export function AddAssignmentDialog({
               onChange={(e) => setNotes(e.target.value)}
             />
           </div>
+
+          {/* Attendance Preview */}
+          {selectedEmployee && selectedPattern && startDate && (
+            <div className="border-t pt-4">
+              <AttendancePreview
+                employeeId={selectedEmployee}
+                patternId={selectedPattern}
+                startDate={new Date(startDate)}
+                patterns={patterns}
+                employees={allEmployees}
+              />
+            </div>
+          )}
 
           <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded text-sm text-blue-900 dark:text-blue-100">
             <p className="font-semibold mb-1">What happens next:</p>

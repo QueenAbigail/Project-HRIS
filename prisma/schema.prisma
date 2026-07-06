@@ -49,6 +49,18 @@ enum EmployeeStatus {
   SUSPENDED
 }
 
+enum CronStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  ERROR
+}
+
+enum CronJobName {
+  ATTENDANCE_GENERATION
+  LEAVE_PROCESSING
+}
+
 enum PatrolStatus {
   NOT_STARTED
   IN_PROGRESS
@@ -481,4 +493,22 @@ model BulkImportRecord {
   createdAt       DateTime @default(now())
   
   @@map("bulk_import_records")
+}
+
+model CronLog {
+  id              String    @id @default(cuid())
+  jobName         String    // "attendance_generation", "leave_processing", etc.
+  status          String    @default("pending") // "success", "pending", "error", "running"
+  message         String?
+  recordsCreated  Int       @default(0)
+  recordsSkipped  Int       @default(0)
+  error           String?
+  duration        Int?      // Duration in milliseconds
+  startTime       DateTime  @default(now())
+  endTime         DateTime?
+  createdAt       DateTime  @default(now())
+  
+  @@index([jobName, createdAt])
+  @@index([status])
+  @@map("cron_logs")
 }

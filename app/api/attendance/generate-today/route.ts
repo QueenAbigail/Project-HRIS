@@ -1,10 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateTodayAttendanceRecords } from '@/app/superadmin/actions'
+import { prisma } from '@/lib/prisma'
 
 // Shared handler for both manual (POST with auth header) and cron (GET) requests
 async function handleAttendanceGeneration() {
+  const startTime = Date.now()
+  let cronLogId: string | null = null
+
   try {
+    // Create a cron log entry
+    const cronLog = await prisma.cronLog.create({
+      data: {
+        jobName: 'ATTENDANCE_GENERATION',
+        status: 'RUNNING',
+        startTime: new Date()
+      }
+    })
+    cronLogId = cronLog.id
+
     const result = await generateTodayAttendanceRecords()
+    const duration = Date.now() - startTime
+
+    // Update the cron log with results
+    await prisma.cronLog.update({
+      where: { id: cronLogId },
+      data: {
+        status: 'SUCCESS',
+        recordsCreated: result.createdCount || 0,
+        recordsSkipped: result.skippedCount || 0,
+        message: result.message || 'Attendance records generated successfully',
+        duration,
+        endTime: new Date()
+      }
+    })
+
     return NextResponse.json({
       success: true,
       message: result.message,
@@ -12,8 +41,28 @@ async function handleAttendanceGeneration() {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('[v0] Error generating attendance:', error)
+    const duration = Date.now() - startTime
     const errorMessage = error instanceof Error ? error.message : 'Failed to generate attendance records'
+    
+    console.error('[v0] Error generating attendance:', error)
+
+    // Update the cron log with error
+    if (cronLogId) {
+      try {
+        await prisma.cronLog.update({
+          where: { id: cronLogId },
+          data: {
+            status: 'ERROR',
+            error: errorMessage,
+            duration,
+            endTime: new Date()
+          }
+        })
+      } catch (logError) {
+        console.error('[v0] Failed to log cron error:', logError)
+      }
+    }
+
     return NextResponse.json(
       { error: errorMessage, success: false },
       { status: 500 }
