@@ -211,44 +211,59 @@ export function AttendanceCalendar({ siteId = 'all' }: { siteId?: string }) {
             </div>
 
             {/* Daily Breakdown */}
-            {selectedDateStats && (
-              <div className="border-t pt-4 space-y-3 bg-muted/30 rounded-lg p-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  {new Date(selectedDate!).toLocaleDateString('default', {
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </p>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2">
-                      <div className="size-2 rounded-full bg-success" />
-                      Attend
-                    </span>
-                    <span className="font-semibold">
-                      {selectedDateStats.attendancePercentage}% ({selectedDateStats.present}/{selectedDateStats.total})
-                    </span>
+            {selectedDate && (
+              <div className="border-t pt-4">
+                {selectedDateStats ? (
+                  <div className="space-y-3 bg-muted/30 rounded-lg p-4">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {new Date(selectedDate).toLocaleDateString('default', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="flex items-center gap-2">
+                          <div className="size-2 rounded-full bg-success" />
+                          Attend
+                        </span>
+                        <span className="font-semibold">
+                          {selectedDateStats.attendancePercentage}% ({selectedDateStats.present}/{selectedDateStats.total})
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="flex items-center gap-2">
+                          <div className="size-2 rounded-full bg-warning" />
+                          Late
+                        </span>
+                        <span className="font-semibold">
+                          {selectedDateStats.latePercentage}% ({selectedDateStats.late}/{selectedDateStats.total})
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="flex items-center gap-2">
+                          <div className="size-2 rounded-full bg-destructive" />
+                          Absent
+                        </span>
+                        <span className="font-semibold">
+                          {selectedDateStats.absentPercentage}% ({selectedDateStats.absent}/{selectedDateStats.total})
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2">
-                      <div className="size-2 rounded-full bg-warning" />
-                      Late
-                    </span>
-                    <span className="font-semibold">
-                      {selectedDateStats.latePercentage}% ({selectedDateStats.late}/{selectedDateStats.total})
-                    </span>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p className="text-sm">
+                      {new Date(selectedDate).toLocaleDateString('default', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </p>
+                    <p className="text-xs mt-2">No attendance records for this date</p>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2">
-                      <div className="size-2 rounded-full bg-destructive" />
-                      Absent
-                    </span>
-                    <span className="font-semibold">
-                      {selectedDateStats.absentPercentage}% ({selectedDateStats.absent}/{selectedDateStats.total})
-                    </span>
-                  </div>
-                </div>
+                )}
               </div>
             )}
           </>
