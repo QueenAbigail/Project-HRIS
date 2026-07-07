@@ -25,6 +25,8 @@ export function AttendanceDetailsModal({ open, onOpenChange, record }: Attendanc
   const [selfieCheckIn, setSelfieCheckIn] = useState<string | null>(null)
   const [selfieCheckOut, setSelfieCheckOut] = useState<string | null>(null)
   const [loadingImages, setLoadingImages] = useState(false)
+  const [selfieCheckInError, setSelfieCheckInError] = useState(false)
+  const [selfieCheckOutError, setSelfieCheckOutError] = useState(false)
 
   // Lazy load selfies when modal opens
   useEffect(() => {
@@ -46,6 +48,8 @@ export function AttendanceDetailsModal({ open, onOpenChange, record }: Attendanc
     if (!newOpen) {
       setSelfieCheckIn(null)
       setSelfieCheckOut(null)
+      setSelfieCheckInError(false)
+      setSelfieCheckOutError(false)
     }
     onOpenChange(newOpen)
   }, [onOpenChange])
@@ -135,11 +139,21 @@ export function AttendanceDetailsModal({ open, onOpenChange, record }: Attendanc
                         <Camera className="size-4" />
                         Selfie Verification
                       </p>
-                      <img 
-                        src={selfieCheckIn} 
-                        alt="Check-in selfie" 
-                        className="w-full max-w-xs rounded-lg border object-cover"
-                      />
+                      {selfieCheckInError ? (
+                        <div className="w-full max-w-xs h-64 rounded-lg border bg-muted/50 flex items-center justify-center text-center p-4">
+                          <div>
+                            <Camera className="size-8 text-muted-foreground mb-2 mx-auto" />
+                            <p className="text-xs text-muted-foreground">Image not available</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <img 
+                          src={selfieCheckIn} 
+                          alt="Check-in selfie" 
+                          className="w-full max-w-xs rounded-lg border object-cover"
+                          onError={() => setSelfieCheckInError(true)}
+                        />
+                      )}
                     </div>
                   )}
 
