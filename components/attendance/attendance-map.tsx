@@ -39,7 +39,7 @@ export default function AttendanceMap({ lat, lng, label, markerColor = '#3b82f6'
   }, [markerColor])
 
   return (
-    <div className="w-full h-64 rounded-lg overflow-hidden border bg-muted">
+    <div className="w-full h-64 rounded-lg overflow-hidden border bg-muted [&_script]:hidden" suppressHydrationWarning>
       <MapContainer 
         center={[lat, lng]} 
         zoom={18} 

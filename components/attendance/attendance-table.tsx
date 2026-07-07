@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Clock, AlertTriangle, MapPin, Loader2 } from 'lucide-react'
+import { Clock, AlertTriangle, MapPin, Loader2, Eye } from 'lucide-react'
 import type { GpsCoordinates } from '@/lib/constants'
 import { formatAttendanceStatus, getAttendanceLabel, getStatusStyles } from '@/lib/attendance-utils'
 import { AttendanceDetailsModal } from './attendance-details-modal'
@@ -164,7 +164,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
                 setDetailsOpen(true)
               }}
             >
-              <ExternalLink className="size-4" />
+              <Eye className="size-4" />
               View
             </Button>
           </TableCell>

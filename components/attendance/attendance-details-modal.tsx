@@ -67,7 +67,7 @@ export function AttendanceDetailsModal({ open, onOpenChange, record }: Attendanc
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto [&_script]:hidden" suppressHydrationWarning>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="size-5 text-primary" />
