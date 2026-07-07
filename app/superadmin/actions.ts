@@ -1260,9 +1260,29 @@ export async function generateTodayAttendanceRecords() {
         continue
       }
 
-      // Create attendance record with NOT_CHECKED_IN status and scheduled times
+      // Check if user has an approved leave on this date
+      const approvedLeave = await prisma.leave.findFirst({
+        where: {
+          userId: assignment.userId,
+          status: 'Approved',
+          startDate: {
+            lte: today
+          },
+          endDate: {
+            gte: today
+          }
+        }
+      })
+
+      let attendanceStatus = 'NOT_CHECKED_IN'
+      if (approvedLeave) {
+        console.log('[v0] Found approved leave for', assignment.user.name, '- marking as LEAVE')
+        attendanceStatus = 'LEAVE'
+      }
+
+      // Create attendance record with appropriate status
       // Uses user's primary site (user.siteId) as single source of truth
-      console.log('[v0] Creating attendance record for:', { userId: assignment.userId, locationId: userSiteId, scheduledStart, scheduledEnd })
+      console.log('[v0] Creating attendance record for:', { userId: assignment.userId, locationId: userSiteId, scheduledStart, scheduledEnd, status: attendanceStatus })
       await prisma.attendance.create({
         data: {
           userId: assignment.userId,
@@ -1271,12 +1291,12 @@ export async function generateTodayAttendanceRecords() {
           date: today,
           scheduledStart: scheduledStart,
           scheduledEnd: scheduledEnd,
-          status: 'NOT_CHECKED_IN', // Will be updated to PRESENT/LATE when they check in
+          status: attendanceStatus, // LEAVE if approved leave exists, otherwise NOT_CHECKED_IN
           lateMinutes: 0
         }
       })
 
-      console.log('[v0] Attendance record created successfully')
+      console.log('[v0] Attendance record created successfully with status:', attendanceStatus)
       createdCount++
     }
 
