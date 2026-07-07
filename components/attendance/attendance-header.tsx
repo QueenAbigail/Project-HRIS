@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 import { Calendar } from 'lucide-react'
 import {
@@ -17,8 +18,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { AttendanceCalendar } from './attendance-calendar'
 import { MarkAttendanceDialog } from './mark-attendance-dialog'
+import { Loader2 } from 'lucide-react'
+
+// Lazy load the calendar component - only loads when sheet is opened
+const AttendanceCalendar = dynamic(() => import('./attendance-calendar').then(mod => ({ default: mod.AttendanceCalendar })), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-64"><Loader2 className="size-5 animate-spin text-muted-foreground" /></div>
+})
 
 interface MasterDataItem {
   id: string
@@ -133,7 +140,11 @@ export function AttendanceHeader({
             </SheetDescription>
           </SheetHeader>
           <div className="mt-6">
-            <AttendanceCalendar siteId={siteId} />
+            {openCalendarSheet && (
+              <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="size-5 animate-spin text-muted-foreground" /></div>}>
+                <AttendanceCalendar siteId={siteId} />
+              </Suspense>
+            )}
           </div>
         </SheetContent>
       </Sheet>
