@@ -63,6 +63,13 @@ interface SiteOption {
   code: string
 }
 
+interface ExistingAttendance {
+  hasCheckIn: boolean
+  hasCheckOut: boolean
+  checkInTime?: string
+  checkOutTime?: string
+}
+
 export function MarkAttendanceDialog() {
   const [open, setOpen] = useState(false)
   const [comboboxOpen, setComboboxOpen] = useState(false)
@@ -74,14 +81,16 @@ export function MarkAttendanceDialog() {
   const [sites, setSites] = useState<SiteOption[]>([])
   const [employeesLoaded, setEmployeesLoaded] = useState(false)
   const [sitesLoaded, setSitesLoaded] = useState(false)
+  const [existingAttendance, setExistingAttendance] = useState<ExistingAttendance | null>(null)
+  const [checkingAttendance, setCheckingAttendance] = useState(false)
 
   const [formData, setFormData] = useState<MarkAttendanceFormData>({
     employeeId: '',
     date: new Date().toISOString().split('T')[0],
     location: '',
     status: 'PRESENT',
-    checkInTime: '06:00',
-    checkOutTime: '14:00',
+    checkInTime: '',
+    checkOutTime: '',
     notes: '',
   })
 
@@ -146,6 +155,36 @@ export function MarkAttendanceDialog() {
         emp.email.toLowerCase().includes(query)
     )
   }, [searchValue, employees])
+
+  // Check for existing attendance when employee or date changes
+  useEffect(() => {
+    if (!formData.employeeId || !formData.date) {
+      setExistingAttendance(null)
+      return
+    }
+
+    const checkExistingAttendance = async () => {
+      try {
+        setCheckingAttendance(true)
+        const response = await fetch(
+          `/api/attendance/check?employeeId=${formData.employeeId}&date=${formData.date}`
+        )
+        if (response.ok) {
+          const data = await response.json()
+          setExistingAttendance(data)
+        } else {
+          setExistingAttendance(null)
+        }
+      } catch (err) {
+        console.error('[v0] Error checking attendance:', err)
+        setExistingAttendance(null)
+      } finally {
+        setCheckingAttendance(false)
+      }
+    }
+
+    checkExistingAttendance()
+  }, [formData.employeeId, formData.date])
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -375,27 +414,53 @@ export function MarkAttendanceDialog() {
           {/* Quaternary Section: Time Details */}
           <div className="bg-muted/40 rounded-lg p-4 space-y-3">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Time Details</p>
+            
+            {/* Warnings for locked times */}
+            {existingAttendance && (existingAttendance.hasCheckIn || existingAttendance.hasCheckOut) && (
+              <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded">
+                <AlertCircle className="size-4 text-yellow-600 shrink-0 mt-0.5" />
+                <div className="text-xs text-yellow-700 space-y-1">
+                  {existingAttendance.hasCheckIn && (
+                    <p>Check-in already recorded at {existingAttendance.checkInTime} - cannot be changed</p>
+                  )}
+                  {existingAttendance.hasCheckOut && (
+                    <p>Check-out already recorded at {existingAttendance.checkOutTime} - cannot be changed</p>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label htmlFor="checkInTime" className="text-xs">Check-in</Label>
+                <Label htmlFor="checkInTime" className="text-xs">
+                  Check-in
+                  {existingAttendance?.hasCheckIn && <span className="ml-1 text-yellow-600">●</span>}
+                </Label>
                 <Input
                   id="checkInTime"
                   name="checkInTime"
                   type="time"
                   value={formData.checkInTime}
                   onChange={handleInputChange}
-                  className="h-8 text-sm"
+                  disabled={existingAttendance?.hasCheckIn || checkingAttendance}
+                  className="h-8 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder="--:--"
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="checkOutTime" className="text-xs">Check-out</Label>
+                <Label htmlFor="checkOutTime" className="text-xs">
+                  Check-out
+                  {existingAttendance?.hasCheckOut && <span className="ml-1 text-yellow-600">●</span>}
+                </Label>
                 <Input
                   id="checkOutTime"
                   name="checkOutTime"
                   type="time"
                   value={formData.checkOutTime}
                   onChange={handleInputChange}
-                  className="h-8 text-sm"
+                  disabled={existingAttendance?.hasCheckOut || checkingAttendance}
+                  className="h-8 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder="--:--"
                 />
               </div>
             </div>

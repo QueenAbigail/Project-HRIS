@@ -16,10 +16,7 @@ export async function GET() {
         employeeCode: true,
         name: true,
         email: true,
-        defaultSiteId: true,
-      },
-      where: {
-        // Exclude the current user if needed, or add other filters
+        siteId: true,
       },
       orderBy: {
         name: 'asc',
@@ -29,11 +26,10 @@ export async function GET() {
     // Format for the dropdown
     const formattedEmployees = employees.map((emp) => ({
       id: emp.id,
-      employeeCode: emp.employeeCode,
+      employeeCode: emp.employeeCode || emp.id,
       name: emp.name,
       email: emp.email,
-      defaultSite: emp.defaultSiteId,
-      displayText: `${emp.employeeCode} - ${emp.name}`,
+      defaultSite: emp.siteId,
     }))
 
     return NextResponse.json(formattedEmployees)
