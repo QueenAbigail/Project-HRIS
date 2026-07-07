@@ -265,14 +265,14 @@ export function MarkAttendanceDialog() {
           Mark Attendance
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[520px]">
-        <DialogHeader className="pb-4 border-b">
+      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="pb-4 border-b sticky top-0 bg-background z-10">
           <DialogTitle className="text-xl">Mark Attendance</DialogTitle>
           <DialogDescription className="text-xs mt-1">
             Create new or update existing attendance records
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 px-0">
           {/* Error Message */}
           {error && (
             <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
@@ -410,14 +410,14 @@ export function MarkAttendanceDialog() {
             
             {/* Warnings for locked times */}
             {existingAttendance && (existingAttendance.hasCheckIn || existingAttendance.hasCheckOut) && (
-              <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded">
-                <AlertCircle className="size-4 text-yellow-600 shrink-0 mt-0.5" />
-                <div className="text-xs text-yellow-700 space-y-1">
+              <div className="flex items-start gap-2 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded text-xs">
+                <AlertCircle className="size-3.5 text-yellow-600 shrink-0 mt-0.5" />
+                <div className="text-yellow-700 space-y-0.5 leading-tight">
                   {existingAttendance.hasCheckIn && (
-                    <p>Check-in already recorded at {existingAttendance.checkInTime} - cannot be changed</p>
+                    <p>Check-in already recorded at {existingAttendance.checkInTime}</p>
                   )}
                   {existingAttendance.hasCheckOut && (
-                    <p>Check-out already recorded at {existingAttendance.checkOutTime} - cannot be changed</p>
+                    <p>Check-out already recorded at {existingAttendance.checkOutTime}</p>
                   )}
                 </div>
               </div>
@@ -473,7 +473,7 @@ export function MarkAttendanceDialog() {
             />
           </div>
 
-          <DialogFooter className="gap-2 pt-4 border-t">
+          <DialogFooter className="gap-2 pt-3 border-t sticky bottom-0 bg-background z-10">
             <Button
               type="button"
               variant="outline"
