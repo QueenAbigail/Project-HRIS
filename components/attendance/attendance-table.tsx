@@ -339,10 +339,10 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MapPin className="size-5 text-primary" />
-              Attendance Details - {selectedRecord?.employeeName}
+              Attendance Details - {selectedRecord?.user.name}
             </DialogTitle>
             <DialogDescription>
-              GPS location and selfie verification for check-in/check-out
+              {selectedRecord?.date && new Date(selectedRecord.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </DialogDescription>
           </DialogHeader>
 
@@ -352,51 +352,78 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
               <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
                 <Avatar className="size-12">
                   <AvatarFallback className="bg-primary/10 text-primary">
-                    {selectedRecord.initials}
+                    {selectedRecord.user.name.substring(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="min-w-0">
-                  <p className="font-semibold">{selectedRecord.employeeName}</p>
-                  <p className="text-sm text-muted-foreground">{selectedRecord.department} - {selectedRecord.position}</p>
-                  <p className="text-xs text-muted-foreground">{selectedRecord.location}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold">{selectedRecord.user.name}</p>
+                  <p className="text-sm text-muted-foreground">{selectedRecord.user.email}</p>
+                  <p className="text-xs text-muted-foreground">{selectedRecord.location?.name || 'Unknown Location'}</p>
                 </div>
               </div>
 
+              {/* Attendance Summary */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 border rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Status</p>
+                  <Badge variant="outline" className={getStatusStyles(selectedRecord.status)}>
+                    {getAttendanceLabel(selectedRecord.status)}
+                  </Badge>
+                </div>
+                <div className="p-3 border rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Date</p>
+                  <p className="font-semibold text-sm">{selectedRecord.date ? new Date(selectedRecord.date).toLocaleDateString() : 'N/A'}</p>
+                </div>
+                {selectedRecord.scheduledStart && (
+                  <div className="p-3 border rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Scheduled Time</p>
+                    <p className="font-semibold text-sm">{selectedRecord.scheduledStart}</p>
+                  </div>
+                )}
+                {selectedRecord.lateMinutes > 0 && (
+                  <div className="p-3 border rounded-lg bg-warning/10">
+                    <p className="text-xs text-muted-foreground mb-1">Late</p>
+                    <p className="font-semibold text-sm text-warning">{selectedRecord.lateMinutes} minutes</p>
+                  </div>
+                )}
+              </div>
+
               {/* Check-in Details */}
-              {selectedRecord.checkIn && (
+              {selectedRecord.actualCheckIn && (
                 <div className="border rounded-lg p-4 space-y-3">
                   <h3 className="font-semibold flex items-center gap-2">
                     <Clock className="size-4" />
-                    Check-in: {selectedRecord.checkIn}
+                    Check-in
                   </h3>
+                  <p className="text-sm">{selectedRecord.actualCheckIn}</p>
                   
-                  {selectedRecord.checkInPhotoUrl && (
+                  {selectedRecord.selfieCheckIn && (
                     <div>
                       <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
                         <Camera className="size-4" />
                         Selfie Verification
                       </p>
                       <img 
-                        src={selectedRecord.checkInPhotoUrl} 
+                        src={selectedRecord.selfieCheckIn} 
                         alt="Check-in selfie" 
                         className="w-full max-w-xs rounded-lg border"
                       />
                     </div>
                   )}
 
-                  {selectedRecord.checkInGps && (
+                  {selectedRecord.gpsLat && selectedRecord.gpsLng && (
                     <div>
                       <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
                         <Navigation className="size-4" />
                         GPS Location
                       </p>
                       <div className="text-xs space-y-1 bg-muted p-2 rounded">
-                        <p>Latitude: {selectedRecord.checkInGps.latitude}</p>
-                        <p>Longitude: {selectedRecord.checkInGps.longitude}</p>
+                        <p>Latitude: {selectedRecord.gpsLat.toFixed(6)}</p>
+                        <p>Longitude: {selectedRecord.gpsLng.toFixed(6)}</p>
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => openGoogleMaps(selectedRecord.checkInGps!)}
+                          onClick={() => window.open(`https://maps.google.com/?q=${selectedRecord.gpsLat},${selectedRecord.gpsLng}`, '_blank')}
                           className="mt-2"
                         >
                           <ExternalLink className="size-4 mr-2" />
@@ -409,40 +436,41 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
               )}
 
               {/* Check-out Details */}
-              {selectedRecord.checkOut && (
+              {selectedRecord.actualCheckOut && (
                 <div className="border rounded-lg p-4 space-y-3">
                   <h3 className="font-semibold flex items-center gap-2">
                     <Clock className="size-4" />
-                    Check-out: {selectedRecord.checkOut}
+                    Check-out
                   </h3>
+                  <p className="text-sm">{selectedRecord.actualCheckOut}</p>
 
-                  {selectedRecord.checkOutPhotoUrl && (
+                  {selectedRecord.selfieCheckOut && (
                     <div>
                       <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
                         <Camera className="size-4" />
                         Selfie Verification
                       </p>
                       <img 
-                        src={selectedRecord.checkOutPhotoUrl} 
+                        src={selectedRecord.selfieCheckOut} 
                         alt="Check-out selfie" 
                         className="w-full max-w-xs rounded-lg border"
                       />
                     </div>
                   )}
 
-                  {selectedRecord.checkOutGps && (
+                  {selectedRecord.gpsLatPulang && selectedRecord.gpsLngPulang && (
                     <div>
                       <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
                         <Navigation className="size-4" />
-                        GPS Location
+                        GPS Location (Check-out)
                       </p>
                       <div className="text-xs space-y-1 bg-muted p-2 rounded">
-                        <p>Latitude: {selectedRecord.checkOutGps.latitude}</p>
-                        <p>Longitude: {selectedRecord.checkOutGps.longitude}</p>
+                        <p>Latitude: {selectedRecord.gpsLatPulang.toFixed(6)}</p>
+                        <p>Longitude: {selectedRecord.gpsLngPulang.toFixed(6)}</p>
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => openGoogleMaps(selectedRecord.checkOutGps!)}
+                          onClick={() => window.open(`https://maps.google.com/?q=${selectedRecord.gpsLatPulang},${selectedRecord.gpsLngPulang}`, '_blank')}
                           className="mt-2"
                         >
                           <ExternalLink className="size-4 mr-2" />
@@ -454,13 +482,17 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
                 </div>
               )}
 
-              {/* Late Warning */}
-              {selectedRecord.status === 'late' && selectedRecord.lateMinutes > 0 && (
-                <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
-                  <div className="flex items-center gap-2 text-warning">
-                    <AlertTriangle className="size-4" />
-                    <span className="font-medium">Late by {selectedRecord.lateMinutes} minutes</span>
-                  </div>
+              {/* Notes */}
+              {selectedRecord.notes && (
+                <div className="p-4 border rounded-lg bg-muted/30">
+                  <p className="text-sm font-semibold mb-2">Notes</p>
+                  <p className="text-sm text-muted-foreground">{selectedRecord.notes}</p>
+                </div>
+              )}
+
+              {!selectedRecord.actualCheckIn && (
+                <div className="p-4 bg-muted/30 border border-dashed rounded-lg text-center">
+                  <p className="text-sm text-muted-foreground">No check-in recorded for this date</p>
                 </div>
               )}
             </div>
