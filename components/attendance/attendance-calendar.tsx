@@ -54,12 +54,14 @@ export function AttendanceCalendar({ siteId = 'all' }: { siteId?: string }) {
         if (response.ok) {
           const data = await response.json()
           setStats(data)
-          if (!selectedDate && data.dailyDetails) {
-            const firstDateWithData = Object.keys(data.dailyDetails).sort()[0]
-            if (firstDateWithData) {
-              setSelectedDate(firstDateWithData)
+          // Only set initial selected date if none is selected
+          setSelectedDate((prevDate) => {
+            if (!prevDate && data.dailyDetails) {
+              const firstDateWithData = Object.keys(data.dailyDetails).sort()[0]
+              return firstDateWithData || null
             }
-          }
+            return prevDate
+          })
         }
       } catch (error) {
         console.error('[v0] Failed to fetch calendar stats:', error)
@@ -69,7 +71,7 @@ export function AttendanceCalendar({ siteId = 'all' }: { siteId?: string }) {
     }
 
     fetchAttendanceStats()
-  }, [siteId, currentMonth, selectedDate])
+  }, [siteId, currentMonth])
 
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
