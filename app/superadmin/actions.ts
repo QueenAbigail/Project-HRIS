@@ -1169,6 +1169,9 @@ export async function generateTodayAttendanceRecords() {
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
       let isScheduledToday = true
       let scheduleReason = ''
+      let scheduledStart: string | null = null
+      let scheduledEnd: string | null = null
+      let shiftId: string | null = null
 
       if (assignment.pattern.type === 'FIXED') {
         // For fixed patterns, check if today is a working day
@@ -1179,6 +1182,15 @@ export async function generateTodayAttendanceRecords() {
           scheduleReason = `Not a working day (pattern has [${workingDays.map(d => dayNames[d]).join(', ')}])`
         } else {
           scheduleReason = 'Working day according to pattern'
+          // For FIXED patterns, use the single shift time
+          if (assignment.pattern.shiftId) {
+            shiftId = assignment.pattern.shiftId
+            const shift = await prisma.shift.findUnique({
+              where: { id: shiftId }
+            })
+            scheduledStart = shift?.startTime || null
+            scheduledEnd = shift?.endTime || null
+          }
         }
       } else if (assignment.pattern.type === 'ROTATING') {
         // For rotating patterns, calculate based on sequence and start date
@@ -1191,9 +1203,21 @@ export async function generateTodayAttendanceRecords() {
           
           console.log('[v0] ROTATING pattern - daysFromStart:', daysFromStart, 'sequenceIndex:', sequenceIndex, 'currentCycle:', currentCycle)
           
-          // Skip non-working days (e.g., rest days)
-          isScheduledToday = currentCycle.days > 0 // Assuming structure with "days" property
+          // Skip rest days (when shiftType is 'off')
+          isScheduledToday = currentCycle.shiftType !== 'off' && currentCycle.shiftType !== 'OFF'
           scheduleReason = isScheduledToday ? `Working cycle: ${JSON.stringify(currentCycle)}` : `Rest cycle: ${JSON.stringify(currentCycle)}`
+          
+          // Get shift times if scheduled
+          if (isScheduledToday && currentCycle.shiftType) {
+            shiftId = currentCycle.shiftType
+            const shift = await prisma.shift.findUnique({
+              where: { id: shiftId }
+            })
+            if (shift) {
+              scheduledStart = shift.startTime
+              scheduledEnd = shift.endTime
+            }
+          }
         } else {
           scheduleReason = 'Invalid rotating pattern data'
         }
@@ -1211,12 +1235,24 @@ export async function generateTodayAttendanceRecords() {
           // Skip rest days or specific indicators
           isScheduledToday = currentShiftType !== 'rest' && currentShiftType !== 'OFF'
           scheduleReason = isScheduledToday ? `Shift: ${currentShiftType}` : `Off day: ${currentShiftType}`
+          
+          // Get shift times if scheduled
+          if (isScheduledToday && currentShiftType && currentShiftType !== 'rest') {
+            shiftId = currentShiftType
+            const shift = await prisma.shift.findUnique({
+              where: { id: shiftId }
+            })
+            if (shift) {
+              scheduledStart = shift.startTime
+              scheduledEnd = shift.endTime
+            }
+          }
         } else {
           scheduleReason = 'Invalid modulo pattern data'
         }
       }
 
-      console.log('[v0] Schedule check for', assignment.user.name, '-', scheduleReason)
+      console.log('[v0] Schedule check for', assignment.user.name, '-', scheduleReason, { scheduledStart, scheduledEnd })
 
       if (!isScheduledToday) {
         console.log('[v0] Skipping - user not scheduled for today')
@@ -1224,14 +1260,17 @@ export async function generateTodayAttendanceRecords() {
         continue
       }
 
-      // Create attendance record with NOT_CHECKED_IN status
+      // Create attendance record with NOT_CHECKED_IN status and scheduled times
       // Uses user's primary site (user.siteId) as single source of truth
-      console.log('[v0] Creating attendance record for:', { userId: assignment.userId, locationId: userSiteId })
+      console.log('[v0] Creating attendance record for:', { userId: assignment.userId, locationId: userSiteId, scheduledStart, scheduledEnd })
       await prisma.attendance.create({
         data: {
           userId: assignment.userId,
           locationId: userSiteId,
+          shiftId: shiftId,
           date: today,
+          scheduledStart: scheduledStart,
+          scheduledEnd: scheduledEnd,
           status: 'NOT_CHECKED_IN', // Will be updated to PRESENT/LATE when they check in
           lateMinutes: 0
         }
