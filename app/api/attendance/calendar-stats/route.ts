@@ -43,10 +43,17 @@ export async function GET(request: NextRequest) {
     })
 
     // Group by date to calculate attendance status for each day
+    interface DailyStats {
+      present: number
+      late: number
+      absent: number
+      total: number
+    }
+
     const attendanceByDate = new Map<string, Array<{ status: string; lateMinutes: number }>>()
 
     attendanceRecords.forEach((record) => {
-      const dateKey = record.date.toISOString().split('T')[0].replace(/-/g, '')
+      const dateKey = record.date.toISOString().split('T')[0]
       if (!attendanceByDate.has(dateKey)) {
         attendanceByDate.set(dateKey, [])
       }
@@ -56,7 +63,20 @@ export async function GET(request: NextRequest) {
       })
     })
 
-    // Calculate attendance status for each day
+    // Calculate detailed stats for each day
+    interface DateDetail {
+      date: string
+      present: number
+      late: number
+      absent: number
+      total: number
+      attendancePercentage: number
+      latePercentage: number
+      absentPercentage: number
+      status: 'fullAttendance' | 'partial' | 'lowAttendance'
+    }
+
+    const dailyDetails: Record<string, DateDetail> = {}
     const fullAttendanceDates: string[] = []
     const partialDates: string[] = []
     const lowAttendanceDates: string[] = []
@@ -66,19 +86,38 @@ export async function GET(request: NextRequest) {
 
       // Count records by status
       const presentCount = records.filter((r) => r.status === 'PRESENT').length
+      const lateCount = records.filter((r) => r.status === 'LATE' && r.lateMinutes! > 0).length
       const absentCount = records.filter((r) => r.status === 'NOT_CHECKED_IN' || r.status === 'ABSENT').length
       const totalCount = records.length
 
-      // Calculate percentage
-      const presentPercentage = (presentCount / totalCount) * 100
+      // Calculate percentages
+      const attendancePercentage = Math.round(((presentCount + lateCount) / totalCount) * 100)
+      const latePercentage = Math.round((lateCount / totalCount) * 100)
+      const absentPercentage = Math.round((absentCount / totalCount) * 100)
 
       // Determine day status based on attendance percentage
-      if (presentPercentage === 100) {
+      let dayStatus: 'fullAttendance' | 'partial' | 'lowAttendance'
+      if (attendancePercentage >= 90) {
+        dayStatus = 'fullAttendance'
         fullAttendanceDates.push(dateKey)
-      } else if (presentPercentage >= 50) {
+      } else if (attendancePercentage >= 50) {
+        dayStatus = 'partial'
         partialDates.push(dateKey)
       } else {
+        dayStatus = 'lowAttendance'
         lowAttendanceDates.push(dateKey)
+      }
+
+      dailyDetails[dateKey] = {
+        date: dateKey,
+        present: presentCount,
+        late: lateCount,
+        absent: absentCount,
+        total: totalCount,
+        attendancePercentage,
+        latePercentage,
+        absentPercentage,
+        status: dayStatus,
       }
     })
 
@@ -91,6 +130,7 @@ export async function GET(request: NextRequest) {
         partial: partialDates,
         lowAttendance: lowAttendanceDates,
       },
+      dailyDetails,
     })
   } catch (error) {
     console.error('[v0] Calendar stats error:', error)
