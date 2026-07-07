@@ -122,13 +122,6 @@ export function MarkAttendanceDialog() {
             const sitesData = await sitesResponse.json()
             setSites(sitesData)
             setSitesLoaded(true)
-            // Set default location if available
-            if (sitesData.length > 0 && !formData.location) {
-              setFormData((prev) => ({
-                ...prev,
-                location: sitesData[0].id,
-              }))
-            }
           } else {
             setError('Failed to load locations')
           }
@@ -142,7 +135,7 @@ export function MarkAttendanceDialog() {
     }
 
     fetchData()
-  }, [open, employeesLoaded, sitesLoaded, formData.location])
+  }, [open, employeesLoaded, sitesLoaded])
 
   // Filter employees based on search
   const filteredEmployees = useMemo(() => {
