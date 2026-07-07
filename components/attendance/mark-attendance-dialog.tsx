@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -34,11 +34,10 @@ import {
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Clock, Check, ChevronsUpDown } from 'lucide-react'
-import { locations, employeeSchedules } from '@/lib/constants'
+import { Clock, Check, ChevronsUpDown, Loader2, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type AttendanceStatus = 'present' | 'late' | 'absent' | 'leave' | 'not-checked-in'
+type AttendanceStatus = 'PRESENT' | 'LATE' | 'ABSENT' | 'LEAVE' | 'NOT_CHECKED_IN'
 
 interface MarkAttendanceFormData {
   employeeId: string
@@ -52,45 +51,101 @@ interface MarkAttendanceFormData {
 
 interface EmployeeOption {
   id: string
+  employeeCode: string
   name: string
-  displayText: string
+  email: string
   defaultSite: string
+}
+
+interface SiteOption {
+  id: string
+  name: string
+  code: string
 }
 
 export function MarkAttendanceDialog() {
   const [open, setOpen] = useState(false)
   const [comboboxOpen, setComboboxOpen] = useState(false)
   const [searchValue, setSearchValue] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [employees, setEmployees] = useState<EmployeeOption[]>([])
+  const [sites, setSites] = useState<SiteOption[]>([])
+  const [employeesLoaded, setEmployeesLoaded] = useState(false)
+  const [sitesLoaded, setSitesLoaded] = useState(false)
+
   const [formData, setFormData] = useState<MarkAttendanceFormData>({
     employeeId: '',
     date: new Date().toISOString().split('T')[0],
-    location: 'HO',
-    status: 'present',
+    location: '',
+    status: 'PRESENT',
     checkInTime: '06:00',
     checkOutTime: '14:00',
     notes: '',
   })
 
-  // Convert employee schedules to combobox options
-  const employeeOptions: EmployeeOption[] = useMemo(() => {
-    return employeeSchedules.map((schedule) => ({
-      id: schedule.employeeId,
-      name: schedule.employeeName,
-      displayText: `${schedule.employeeId} - ${schedule.employeeName} - ${locations.find((l) => l.id === schedule.locationId)?.name || schedule.locationId}`,
-      defaultSite: schedule.locationId,
-    }))
-  }, [])
+  // Load employees and sites on mount or when dialog opens
+  useEffect(() => {
+    if (!open) return
+
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        // Fetch employees
+        if (!employeesLoaded) {
+          const empResponse = await fetch('/api/employees/list')
+          if (empResponse.ok) {
+            const empData = await empResponse.json()
+            setEmployees(empData)
+            setEmployeesLoaded(true)
+          } else {
+            setError('Failed to load employees')
+          }
+        }
+
+        // Fetch sites
+        if (!sitesLoaded) {
+          const sitesResponse = await fetch('/api/sites/list')
+          if (sitesResponse.ok) {
+            const sitesData = await sitesResponse.json()
+            setSites(sitesData)
+            setSitesLoaded(true)
+            // Set default location if available
+            if (sitesData.length > 0 && !formData.location) {
+              setFormData((prev) => ({
+                ...prev,
+                location: sitesData[0].id,
+              }))
+            }
+          } else {
+            setError('Failed to load locations')
+          }
+        }
+      } catch (err) {
+        console.error('[v0] Error fetching data:', err)
+        setError('Failed to load data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [open, employeesLoaded, sitesLoaded, formData.location])
 
   // Filter employees based on search
   const filteredEmployees = useMemo(() => {
-    if (!searchValue) return employeeOptions
+    if (!searchValue) return employees
     const query = searchValue.toLowerCase()
-    return employeeOptions.filter(
+    return employees.filter(
       (emp) =>
-        emp.id.toLowerCase().includes(query) ||
-        emp.name.toLowerCase().includes(query)
+        emp.employeeCode?.toLowerCase().includes(query) ||
+        emp.name.toLowerCase().includes(query) ||
+        emp.email.toLowerCase().includes(query)
     )
-  }, [searchValue, employeeOptions])
+  }, [searchValue, employees])
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -104,33 +159,70 @@ export function MarkAttendanceDialog() {
   }
 
   const handleEmployeeSelect = (employeeId: string) => {
-    const selectedEmployee = employeeOptions.find((emp) => emp.id === employeeId)
+    const selectedEmployee = employees.find((emp) => emp.id === employeeId)
     if (selectedEmployee) {
       setFormData((prev) => ({
         ...prev,
         employeeId: selectedEmployee.id,
-        location: selectedEmployee.defaultSite,
+        location: selectedEmployee.defaultSite || prev.location,
       }))
-      setSearchValue(selectedEmployee.displayText)
+      setSearchValue(`${selectedEmployee.employeeCode} - ${selectedEmployee.name}`)
     }
     setComboboxOpen(false)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('[v0] Mark Attendance submitted:', formData)
-    // TODO: Submit to API
-    setOpen(false)
-    setFormData({
-      employeeId: '',
-      date: new Date().toISOString().split('T')[0],
-      location: 'HO',
-      status: 'present',
-      checkInTime: '06:00',
-      checkOutTime: '14:00',
-      notes: '',
-    })
-    setSearchValue('')
+
+    // Validate required fields
+    if (!formData.employeeId || !formData.date || !formData.location || !formData.status) {
+      setError('Please fill in all required fields')
+      return
+    }
+
+    try {
+      setSaving(true)
+      setError(null)
+
+      const response = await fetch('/api/attendance/mark', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: formData.employeeId,
+          date: formData.date,
+          locationId: formData.location,
+          status: formData.status,
+          checkInTime: formData.checkInTime || undefined,
+          checkOutTime: formData.checkOutTime || undefined,
+          notes: formData.notes || undefined,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to save attendance')
+      }
+
+      // Success - close dialog and reset form
+      setOpen(false)
+      setFormData({
+        employeeId: '',
+        date: new Date().toISOString().split('T')[0],
+        location: sites.length > 0 ? sites[0].id : '',
+        status: 'PRESENT',
+        checkInTime: '06:00',
+        checkOutTime: '14:00',
+        notes: '',
+      })
+      setSearchValue('')
+    } catch (err) {
+      console.error('[v0] Error saving attendance:', err)
+      setError(err instanceof Error ? err.message : 'Failed to save attendance')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -149,63 +241,79 @@ export function MarkAttendanceDialog() {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Error Message */}
+          {error && (
+            <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+              <AlertCircle className="size-4 text-destructive shrink-0" />
+              <p className="text-xs text-destructive">{error}</p>
+            </div>
+          )}
+
           {/* Primary Section: Employee Selection */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold">Select Employee *</Label>
-            <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={comboboxOpen}
-                  className="w-full justify-between h-10 px-3 bg-background hover:bg-muted/50"
-                >
-                  <span className={cn('truncate', !formData.employeeId && 'text-muted-foreground')}>
-                    {formData.employeeId
-                      ? employeeOptions.find((emp) => emp.id === formData.employeeId)
-                          ?.displayText
-                      : 'Search by employee ID or name...'}
-                  </span>
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-full p-0" align="start">
-                <Command>
-                  <CommandInput
-                    placeholder="Search by ID or name..."
-                    value={searchValue}
-                    onValueChange={setSearchValue}
-                    className="border-none focus:ring-0"
-                  />
-                  <CommandList className="max-h-[280px]">
-                    <CommandEmpty className="py-6 text-center text-xs">No employee found</CommandEmpty>
-                    <CommandGroup>
-                      {filteredEmployees.map((employee) => (
-                        <CommandItem
-                          key={employee.id}
-                          value={`${employee.id} ${employee.name}`}
-                          onSelect={() => handleEmployeeSelect(employee.id)}
-                          className="cursor-pointer"
-                        >
-                          <Check
-                            className={cn(
-                              'mr-2 h-4 w-4',
-                              formData.employeeId === employee.id
-                                ? 'opacity-100'
-                                : 'opacity-0'
-                            )}
-                          />
-                          <div className="flex flex-col gap-1 flex-1">
-                            <span className="text-sm font-medium">{employee.id} - {employee.name}</span>
-                            <span className="text-xs text-muted-foreground">{locations.find(l => l.id === employee.defaultSite)?.name}</span>
-                          </div>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            {loading && !employeesLoaded ? (
+              <div className="flex items-center justify-center h-10 bg-muted/20 rounded-lg">
+                <Loader2 className="size-4 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={comboboxOpen}
+                    className="w-full justify-between h-10 px-3 bg-background hover:bg-muted/50"
+                  >
+                    <span className={cn('truncate', !formData.employeeId && 'text-muted-foreground')}>
+                      {formData.employeeId
+                        ? (() => {
+                            const emp = employees.find((e) => e.id === formData.employeeId)
+                            return emp ? `${emp.employeeCode} - ${emp.name}` : 'Select employee...'
+                          })()
+                        : 'Search by employee ID or name...'}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput
+                      placeholder="Search by ID or name..."
+                      value={searchValue}
+                      onValueChange={setSearchValue}
+                      className="border-none focus:ring-0"
+                    />
+                    <CommandList className="max-h-[280px]">
+                      <CommandEmpty className="py-6 text-center text-xs">No employee found</CommandEmpty>
+                      <CommandGroup>
+                        {filteredEmployees.map((employee) => (
+                          <CommandItem
+                            key={employee.id}
+                            value={`${employee.employeeCode} ${employee.name}`}
+                            onSelect={() => handleEmployeeSelect(employee.id)}
+                            className="cursor-pointer"
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 h-4 w-4',
+                                formData.employeeId === employee.id
+                                  ? 'opacity-100'
+                                  : 'opacity-0'
+                              )}
+                            />
+                            <div className="flex flex-col gap-1 flex-1">
+                              <span className="text-sm font-medium">{employee.employeeCode} - {employee.name}</span>
+                              <span className="text-xs text-muted-foreground">{employee.email}</span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
 
           {/* Secondary Section: Date & Location */}
@@ -229,12 +337,12 @@ export function MarkAttendanceDialog() {
                 onValueChange={(value) => handleSelectChange('location', value)}
               >
                 <SelectTrigger id="location" className="h-9">
-                  <SelectValue placeholder="Select" />
+                  <SelectValue placeholder="Loading..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {locations.map((location) => (
-                    <SelectItem key={location.id} value={location.id}>
-                      {location.name}
+                  {sites.map((site) => (
+                    <SelectItem key={site.id} value={site.id}>
+                      {site.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -255,11 +363,11 @@ export function MarkAttendanceDialog() {
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="present">Present</SelectItem>
-                <SelectItem value="late">Late</SelectItem>
-                <SelectItem value="absent">Absent</SelectItem>
-                <SelectItem value="leave">Leave</SelectItem>
-                <SelectItem value="not-checked-in">Not Checked In</SelectItem>
+                <SelectItem value="PRESENT">Present</SelectItem>
+                <SelectItem value="LATE">Late</SelectItem>
+                <SelectItem value="ABSENT">Absent</SelectItem>
+                <SelectItem value="LEAVE">Leave</SelectItem>
+                <SelectItem value="NOT_CHECKED_IN">Not Checked In</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -313,14 +421,23 @@ export function MarkAttendanceDialog() {
               variant="outline"
               onClick={() => setOpen(false)}
               className="h-9"
+              disabled={saving}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               className="h-9"
+              disabled={saving || loading}
             >
-              Save Attendance
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Attendance'
+              )}
             </Button>
           </DialogFooter>
         </form>
