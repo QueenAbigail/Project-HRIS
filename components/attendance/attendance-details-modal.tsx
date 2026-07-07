@@ -23,21 +23,22 @@ interface AttendanceDetailsModalProps {
 
 export function AttendanceDetailsModal({ open, onOpenChange, record }: AttendanceDetailsModalProps) {
   const [selfieCheckIn, setSelfieCheckIn] = useState<string | null>(null)
-  const [selfieCheckOut, setSelfieCheckOut] = useState<string | null>(null)
   const [loadingImages, setLoadingImages] = useState(false)
   const [selfieCheckInError, setSelfieCheckInError] = useState(false)
-  const [selfieCheckOutError, setSelfieCheckOutError] = useState(false)
 
   // Lazy load selfies when modal opens
   useEffect(() => {
     if (open && record) {
       setLoadingImages(true)
-      // Images will be loaded on demand when needed
+      // Construct proper public URLs from stored paths
+      // If selfieCheckIn is stored as a full URL, use it directly
+      // If it's a path like "uuid/filename.jpg", construct the full URL
       if (record.selfieCheckIn) {
-        setSelfieCheckIn(record.selfieCheckIn)
-      }
-      if (record.selfieCheckOut) {
-        setSelfieCheckOut(record.selfieCheckOut)
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const checkInUrl = record.selfieCheckIn.startsWith('http')
+          ? record.selfieCheckIn
+          : `${supabaseUrl}/storage/v1/object/public/attendance-photos/${record.selfieCheckIn}`
+        setSelfieCheckIn(checkInUrl)
       }
       setLoadingImages(false)
     }
@@ -47,9 +48,7 @@ export function AttendanceDetailsModal({ open, onOpenChange, record }: Attendanc
   const handleOpenChange = useCallback((newOpen: boolean) => {
     if (!newOpen) {
       setSelfieCheckIn(null)
-      setSelfieCheckOut(null)
       setSelfieCheckInError(false)
-      setSelfieCheckOutError(false)
     }
     onOpenChange(newOpen)
   }, [onOpenChange])
