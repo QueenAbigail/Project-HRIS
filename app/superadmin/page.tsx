@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LayoutDashboard, LogIn, UserPlus, AlertTriangle, Clock, AlertCircle, Eye, Search, X } from 'lucide-react'
+import { CronStatusCard } from '@/components/superadmin/cron-status-card'
 
 interface LoginActivity {
   id: string
@@ -266,6 +267,9 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Cron Status Monitor */}
+      <CronStatusCard />
 
       {/* Filter Section */}
       <Card className="bg-card border-border">

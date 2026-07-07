@@ -32,6 +32,33 @@ export async function PATCH(
       }
     })
 
+    // If leave is approved, sync attendance records
+    if (status === 'Approved') {
+      try {
+        console.log('[v0] Leave approved, syncing attendance records for user:', leave.userId)
+        
+        // Call the sync-leaves endpoint to update attendance records
+        const syncResponse = await fetch(
+          `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/attendance/sync-leaves`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ leaveId: id }),
+          }
+        )
+
+        if (syncResponse.ok) {
+          const syncResult = await syncResponse.json()
+          console.log('[v0] Attendance sync result:', syncResult)
+        } else {
+          console.error('[v0] Failed to sync attendance records:', syncResponse.statusText)
+        }
+      } catch (syncError) {
+        console.error('[v0] Error syncing attendance:', syncError)
+        // Don't fail the leave approval if sync fails, just log it
+      }
+    }
+
     return NextResponse.json(leave)
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)

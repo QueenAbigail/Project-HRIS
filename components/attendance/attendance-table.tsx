@@ -14,15 +14,10 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Clock, AlertTriangle, MapPin, Camera, Navigation, ExternalLink, Loader2 } from 'lucide-react'
+import { Clock, AlertTriangle, MapPin, Loader2, Eye } from 'lucide-react'
 import type { GpsCoordinates } from '@/lib/constants'
+import { formatAttendanceStatus, getAttendanceLabel, getStatusStyles } from '@/lib/attendance-utils'
+import { AttendanceDetailsModal } from './attendance-details-modal'
 
 interface AttendanceRecord {
   id: string
@@ -68,23 +63,7 @@ interface AttendanceRecord {
   notes: string | null
 }
 
-const statusStyles: Record<string, string> = {
-  'present': 'bg-success/10 text-success border-success/20',
-  'late': 'bg-warning/10 text-warning border-warning/20',
-  'absent': 'bg-destructive/10 text-destructive border-destructive/20',
-  'leave': 'bg-chart-2/10 text-chart-2 border-chart-2/20',
-  'not-checked-in': 'bg-muted text-muted-foreground border-muted',
-  'day-off': 'bg-primary/10 text-primary/70 border-primary/20',
-}
-
-const statusLabels: Record<string, string> = {
-  'present': 'Present',
-  'late': 'Late',
-  'absent': 'Absent',
-  'leave': 'On Leave',
-  'not-checked-in': 'Pending',
-  'day-off': 'Day Off',
-}
+// Status formatting is now handled by attendance-utils.ts for consistent display across the app
 
 export function AttendanceTable({ siteId = 'all', dateRange = 'today', department = 'all' }: { siteId?: string; dateRange?: string; department?: string }) {
   const [records, setRecords] = useState<AttendanceRecord[]>([])
@@ -172,8 +151,8 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
             {record.actualCheckOut ? record.actualCheckOut.split('T')[1]?.substring(0, 5) || '--:--' : '--:--'}
           </TableCell>
           <TableCell>
-            <Badge variant="outline" className={statusStyles[record.status?.toLowerCase()] || ''}>
-              {statusLabels[record.status?.toLowerCase()] || record.status || 'Unknown'}
+            <Badge variant="outline" className={getStatusStyles(record.status)}>
+              {getAttendanceLabel(record.status)}
             </Badge>
           </TableCell>
           <TableCell>
@@ -185,7 +164,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
                 setDetailsOpen(true)
               }}
             >
-              <ExternalLink className="size-4" />
+              <Eye className="size-4" />
               View
             </Button>
           </TableCell>
@@ -349,139 +328,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
       </Card>
 
       {/* Details Dialog */}
-      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MapPin className="size-5 text-primary" />
-              Attendance Details - {selectedRecord?.employeeName}
-            </DialogTitle>
-            <DialogDescription>
-              GPS location and selfie verification for check-in/check-out
-            </DialogDescription>
-          </DialogHeader>
-
-          {selectedRecord && (
-            <div className="space-y-6">
-              {/* Employee Info */}
-              <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
-                <Avatar className="size-12">
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    {selectedRecord.initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <p className="font-semibold">{selectedRecord.employeeName}</p>
-                  <p className="text-sm text-muted-foreground">{selectedRecord.department} - {selectedRecord.position}</p>
-                  <p className="text-xs text-muted-foreground">{selectedRecord.location}</p>
-                </div>
-              </div>
-
-              {/* Check-in Details */}
-              {selectedRecord.checkIn && (
-                <div className="border rounded-lg p-4 space-y-3">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Clock className="size-4" />
-                    Check-in: {selectedRecord.checkIn}
-                  </h3>
-                  
-                  {selectedRecord.checkInPhotoUrl && (
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-                        <Camera className="size-4" />
-                        Selfie Verification
-                      </p>
-                      <img 
-                        src={selectedRecord.checkInPhotoUrl} 
-                        alt="Check-in selfie" 
-                        className="w-full max-w-xs rounded-lg border"
-                      />
-                    </div>
-                  )}
-
-                  {selectedRecord.checkInGps && (
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-                        <Navigation className="size-4" />
-                        GPS Location
-                      </p>
-                      <div className="text-xs space-y-1 bg-muted p-2 rounded">
-                        <p>Latitude: {selectedRecord.checkInGps.latitude}</p>
-                        <p>Longitude: {selectedRecord.checkInGps.longitude}</p>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => openGoogleMaps(selectedRecord.checkInGps!)}
-                          className="mt-2"
-                        >
-                          <ExternalLink className="size-4 mr-2" />
-                          View on Maps
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Check-out Details */}
-              {selectedRecord.checkOut && (
-                <div className="border rounded-lg p-4 space-y-3">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Clock className="size-4" />
-                    Check-out: {selectedRecord.checkOut}
-                  </h3>
-
-                  {selectedRecord.checkOutPhotoUrl && (
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-                        <Camera className="size-4" />
-                        Selfie Verification
-                      </p>
-                      <img 
-                        src={selectedRecord.checkOutPhotoUrl} 
-                        alt="Check-out selfie" 
-                        className="w-full max-w-xs rounded-lg border"
-                      />
-                    </div>
-                  )}
-
-                  {selectedRecord.checkOutGps && (
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-                        <Navigation className="size-4" />
-                        GPS Location
-                      </p>
-                      <div className="text-xs space-y-1 bg-muted p-2 rounded">
-                        <p>Latitude: {selectedRecord.checkOutGps.latitude}</p>
-                        <p>Longitude: {selectedRecord.checkOutGps.longitude}</p>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => openGoogleMaps(selectedRecord.checkOutGps!)}
-                          className="mt-2"
-                        >
-                          <ExternalLink className="size-4 mr-2" />
-                          View on Maps
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Late Warning */}
-              {selectedRecord.status === 'late' && selectedRecord.lateMinutes > 0 && (
-                <div className="p-4 bg-warning/10 border border-warning/20 rounded-lg">
-                  <div className="flex items-center gap-2 text-warning">
-                    <AlertTriangle className="size-4" />
-                    <span className="font-medium">Late by {selectedRecord.lateMinutes} minutes</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <AttendanceDetailsModal open={detailsOpen} onOpenChange={setDetailsOpen} record={selectedRecord} />
     </>
   )
 }

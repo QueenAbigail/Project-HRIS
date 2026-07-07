@@ -3,6 +3,47 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
 import { subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
 
+// Helper function to calculate attendance status based on check-in time and scheduled time
+function calculateAttendanceStatus(actualCheckIn: string | null, scheduledStart: string | null): string {
+  if (!actualCheckIn) {
+    return 'NOT_CHECKED_IN'
+  }
+
+  if (!scheduledStart) {
+    // If no scheduled start time, mark as PRESENT
+    return 'PRESENT'
+  }
+
+  try {
+    // Parse check-in time (format: "HH:MM" or ISO timestamp)
+    const checkInTime = actualCheckIn.includes(':') && !actualCheckIn.includes('T')
+      ? actualCheckIn
+      : new Date(actualCheckIn).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
+
+    const [checkInHour, checkInMinute] = checkInTime.split(':').map(Number)
+    const checkInTotalMinutes = checkInHour * 60 + checkInMinute
+
+    // Parse scheduled start time
+    const scheduleTime = scheduledStart.includes(':') && !scheduledStart.includes('T')
+      ? scheduledStart
+      : new Date(scheduledStart).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
+
+    const [scheduleHour, scheduleMinute] = scheduleTime.split(':').map(Number)
+    const scheduleTotalMinutes = scheduleHour * 60 + scheduleMinute
+
+    // If check-in time is after scheduled time, mark as LATE
+    if (checkInTotalMinutes > scheduleTotalMinutes) {
+      return 'LATE'
+    }
+
+    // Otherwise, mark as PRESENT
+    return 'PRESENT'
+  } catch (error) {
+    console.error('[v0] Error calculating attendance status:', error)
+    return 'PRESENT' // Default to PRESENT on error
+  }
+}
+
 interface AttendanceQuery {
   siteId?: string
   date?: string
@@ -180,28 +221,54 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Calculate proper status based on check-in time and scheduled time
+    const calculatedStatus = actualCheckIn 
+      ? calculateAttendanceStatus(actualCheckIn, scheduledStart)
+      : (status || 'NOT_CHECKED_IN')
+
     if (existingAttendance) {
-      // Update existing record
+      // Update existing record with proper status calculation
+      const updateData: any = {
+        lateMinutes,
+        gpsLng,
+        gpsLat,
+        notes,
+      }
+
+      // If actualCheckIn is provided, update check-in and recalculate status
+      if (actualCheckIn && !existingAttendance.actualCheckIn) {
+        updateData.actualCheckIn = actualCheckIn
+        updateData.status = calculateAttendanceStatus(actualCheckIn, scheduledStart || existingAttendance.scheduledStart)
+        updateData.selfieCheckIn = selfieCheckIn
+      }
+
+      // If actualCheckOut is provided, update check-out
+      if (actualCheckOut) {
+        updateData.actualCheckOut = actualCheckOut
+        updateData.selfieCheckOut = selfieCheckOut
+      }
+
       const updated = await prisma.attendance.update({
         where: { id: existingAttendance.id },
-        data: {
-          actualCheckOut,
-          status,
-          lateMinutes,
-          gpsLng,
-          gpsLat,
-          selfieCheckOut,
-          notes,
-        },
+        data: updateData,
         include: {
           user: true,
           location: true,
         }
       })
+
+      console.log('[v0] Updated attendance record:', {
+        userId,
+        date: dateOnly,
+        previousStatus: existingAttendance.status,
+        newStatus: updated.status,
+        checkInTime: updated.actualCheckIn
+      })
+
       return NextResponse.json(updated)
     }
 
-    // Create new record
+    // Create new record with calculated status
     const newAttendance = await prisma.attendance.create({
       data: {
         userId,
@@ -212,7 +279,7 @@ export async function POST(request: NextRequest) {
         scheduledEnd,
         actualCheckIn,
         actualCheckOut: actualCheckOut || null,
-        status: status || 'CHECKED_IN',
+        status: calculatedStatus,
         lateMinutes: lateMinutes || 0,
         gpsLat: gpsLat || null,
         gpsLng: gpsLng || null,
@@ -224,6 +291,13 @@ export async function POST(request: NextRequest) {
         user: true,
         location: true,
       }
+    })
+
+    console.log('[v0] Created attendance record:', {
+      userId,
+      date: dateOnly,
+      status: newAttendance.status,
+      checkInTime: newAttendance.actualCheckIn
     })
 
     return NextResponse.json(newAttendance)
