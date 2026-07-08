@@ -2,20 +2,19 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
-    // Get all unique departments from employees
-    const departments = await prisma.employee.findMany({
-      select: { department: true },
-      distinct: ['department'],
-      where: { department: { not: null } },
-      orderBy: { department: 'asc' },
+    // Get all departments from MasterData table
+    const departments = await prisma.masterData.findMany({
+      where: {
+        category: 'Department',
+        isActive: true,
+      },
+      orderBy: { value: 'asc' },
     })
 
-    const depts = departments
-      .filter(d => d.department) // Remove null values
-      .map(d => ({
-        value: d.department!.toLowerCase().replace(/\s+/g, '-'),
-        label: d.department,
-      }))
+    const depts = departments.map(d => ({
+      value: d.value,
+      label: d.value,
+    }))
 
     return Response.json(depts)
   } catch (error) {
