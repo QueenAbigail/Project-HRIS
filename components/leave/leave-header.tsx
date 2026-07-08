@@ -63,12 +63,18 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
 
         if (typesRes.ok) {
           const types = await typesRes.json()
+          console.log('[v0] Leave types fetched:', types)
           setLeaveTypes(types)
+        } else {
+          console.error('[v0] Leave types fetch failed:', typesRes.status, await typesRes.text())
         }
 
         if (deptsRes.ok) {
           const depts = await deptsRes.json()
+          console.log('[v0] Departments fetched:', depts)
           setDepartments(depts)
+        } else {
+          console.error('[v0] Departments fetch failed:', deptsRes.status, await deptsRes.text())
         }
       } catch (error) {
         console.error('[v0] Failed to fetch filters:', error)
