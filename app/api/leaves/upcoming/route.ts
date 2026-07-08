@@ -5,14 +5,16 @@ import { startOfMonth, endOfMonth, format } from 'date-fns'
 export async function GET() {
   try {
     const now = new Date()
+    now.setHours(0, 0, 0, 0) // Start of today
     const monthStart = startOfMonth(now)
     const monthEnd = endOfMonth(now)
 
+    // Only show leaves that start from today onwards (upcoming, not past)
     const upcoming = await prisma.leave.findMany({
       where: {
         status: 'Approved',
+        startDate: { gte: now }, // Only leaves starting today or later
         startDate: { lte: monthEnd },
-        endDate: { gte: monthStart },
       },
       include: {
         user: {
