@@ -1147,19 +1147,16 @@ export async function generateTodayAttendanceRecords() {
         continue // Skip if user has no primary site assigned
       }
 
-      // Check if attendance record already exists for today
+      // Check if attendance record already exists for today (unique constraint is on userId + date)
       const existingAttendance = await prisma.attendance.findFirst({
         where: {
           userId: assignment.userId,
-          locationId: userSiteId,
-          date: {
-            gte: today,
-            lt: tomorrow
-          }
+          date: today
         }
       })
 
       if (existingAttendance) {
+        console.log('[v0] Attendance record already exists for user on this date - skipping')
         skippedCount++
         continue
       }
