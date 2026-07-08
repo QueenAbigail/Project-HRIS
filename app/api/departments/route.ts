@@ -4,23 +4,28 @@ const prisma = new PrismaClient()
 
 export async function GET() {
   try {
-    console.log('[v0] Fetching departments from MasterData...')
+    console.log('[v0] Fetching departments from User table...')
     
-    // Get all departments from MasterData table
-    const departments = await prisma.masterData.findMany({
+    // Get all unique departments from users
+    const users = await prisma.user.findMany({
+      select: { department: true },
+      distinct: ['department'],
       where: {
-        category: 'Department',
-        isActive: true,
+        department: {
+          not: null,
+        },
       },
-      orderBy: { value: 'asc' },
+      orderBy: { department: 'asc' },
     })
 
-    console.log('[v0] Found departments:', departments.length, departments)
+    console.log('[v0] Found departments:', users.length, users)
 
-    const depts = departments.map(d => ({
-      value: d.value,
-      label: d.value,
-    }))
+    const depts = users
+      .filter(u => u.department) // Remove null values
+      .map(u => ({
+        value: u.department!,
+        label: u.department!,
+      }))
 
     return Response.json(depts)
   } catch (error) {
