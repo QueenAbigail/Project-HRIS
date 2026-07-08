@@ -23,9 +23,16 @@ export async function GET() {
       take: 5,
     })
 
+    // Map leave type from database value to display label
+    const leaveTypeMap: Record<string, string> = {
+      'Izin': 'Cuti',
+      'Sakit': 'Sakit',
+      'TukarShift': 'Tukar Shift',
+    }
+
     const formatted = upcoming.map(leave => ({
       name: leave.user?.name || 'Unknown',
-      type: leave.leaveType,
+      type: leaveTypeMap[leave.leaveType] || leave.leaveType,
       startDate: format(new Date(leave.startDate), 'MMM d'),
       endDate: format(new Date(leave.endDate), 'MMM d'),
       days: Math.ceil(

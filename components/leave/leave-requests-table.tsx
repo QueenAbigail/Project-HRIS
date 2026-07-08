@@ -41,11 +41,11 @@ interface LeaveRequest {
 }
 
 const leaveTypeMap: Record<string, { label: string; color: string }> = {
-  ANNUAL: { label: 'Cuti', color: 'bg-primary/10 text-primary border-primary/20' },
-  SICK: { label: 'Sakit', color: 'bg-chart-5/10 text-chart-5 border-chart-5/20' },
-  EMERGENCY: { label: 'Darurat', color: 'bg-destructive/10 text-destructive border-destructive/20' },
-  MATERNITY: { label: 'Melahirkan', color: 'bg-pink-500/10 text-pink-500 border-pink-500/20' },
-  SHIFT_SWAP: { label: 'Tukar Shift', color: 'bg-chart-2/10 text-chart-2 border-chart-2/20' },
+  Izin: { label: 'Cuti', color: 'bg-primary/10 text-primary border-primary/20' },
+  Sakit: { label: 'Sakit', color: 'bg-chart-5/10 text-chart-5 border-chart-5/20' },
+  Darurat: { label: 'Darurat', color: 'bg-destructive/10 text-destructive border-destructive/20' },
+  Melahirkan: { label: 'Melahirkan', color: 'bg-pink-500/10 text-pink-500 border-pink-500/20' },
+  TukarShift: { label: 'Tukar Shift', color: 'bg-chart-2/10 text-chart-2 border-chart-2/20' },
 }
 
 const statusStyles: Record<string, string> = {
