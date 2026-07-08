@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, CheckCircle2, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import {
@@ -27,6 +27,16 @@ interface LeaveHeaderProps {
   isClient?: boolean
 }
 
+interface LeaveType {
+  value: string
+  label: string
+}
+
+interface Department {
+  value: string
+  label: string
+}
+
 export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
   const [openNewRequest, setOpenNewRequest] = useState(false)
   const [openRequestApproval, setOpenRequestApproval] = useState(false)
@@ -38,6 +48,37 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
     endDate: '',
     reason: '',
   })
+  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [loadingFilters, setLoadingFilters] = useState(true)
+
+  // Fetch leave types and departments
+  useEffect(() => {
+    const fetchFilters = async () => {
+      try {
+        const [typesRes, deptsRes] = await Promise.all([
+          fetch('/api/leaves/types'),
+          fetch('/api/departments'),
+        ])
+
+        if (typesRes.ok) {
+          const types = await typesRes.json()
+          setLeaveTypes(types)
+        }
+
+        if (deptsRes.ok) {
+          const depts = await deptsRes.json()
+          setDepartments(depts)
+        }
+      } catch (error) {
+        console.error('[v0] Failed to fetch filters:', error)
+      } finally {
+        setLoadingFilters(false)
+      }
+    }
+
+    fetchFilters()
+  }, [])
 
   // Hardcoded multiple approval requests data (will be fetched from database later)
   const [approvalRequests] = useState([
@@ -170,10 +211,9 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
                     <SelectValue placeholder="Select leave type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="annual">Annual Leave</SelectItem>
-                    <SelectItem value="sick">Sick Leave</SelectItem>
-                    <SelectItem value="personal">Personal Leave</SelectItem>
-                    <SelectItem value="emergency">Emergency</SelectItem>
+                    {leaveTypes.map(type => (
+                      <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -242,28 +282,26 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
               <SelectItem value="rejected">Rejected</SelectItem>
             </SelectContent>
           </Select>
-          <Select defaultValue="all-types">
+          <Select defaultValue="all-types" disabled={loadingFilters}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Leave Type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all-types">All Types</SelectItem>
-              <SelectItem value="annual">Annual Leave</SelectItem>
-              <SelectItem value="sick">Sick Leave</SelectItem>
-              <SelectItem value="personal">Personal Leave</SelectItem>
-              <SelectItem value="emergency">Emergency</SelectItem>
+              {leaveTypes.map(type => (
+                <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          <Select defaultValue="all-dept">
+          <Select defaultValue="all-dept" disabled={loadingFilters}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Department" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all-dept">All Departments</SelectItem>
-              <SelectItem value="field">Field Security</SelectItem>
-              <SelectItem value="surveillance">Surveillance</SelectItem>
-              <SelectItem value="patrol">Patrol</SelectItem>
-              <SelectItem value="admin">Administration</SelectItem>
+              {departments.map(dept => (
+                <SelectItem key={dept.value} value={dept.value}>{dept.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
