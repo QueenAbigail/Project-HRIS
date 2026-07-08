@@ -228,7 +228,7 @@ model Leave {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId         String
   user           User      @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Cascade)
-  leaveType      String    // Izin, Sakit, TukarShift
+  leaveType      String    // Izin (displayed as 'Cuti' in UI), Sakit, TukarShift
   startDate      DateTime  @db.Date
   endDate        DateTime  @db.Date
   reason         String?
