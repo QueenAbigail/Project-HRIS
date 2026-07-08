@@ -41,7 +41,7 @@ interface LeaveRequest {
 }
 
 const leaveTypeMap: Record<string, { label: string; color: string }> = {
-  ANNUAL: { label: 'Izin', color: 'bg-primary/10 text-primary border-primary/20' },
+  ANNUAL: { label: 'Cuti', color: 'bg-primary/10 text-primary border-primary/20' },
   SICK: { label: 'Sakit', color: 'bg-chart-5/10 text-chart-5 border-chart-5/20' },
   EMERGENCY: { label: 'Darurat', color: 'bg-destructive/10 text-destructive border-destructive/20' },
   MATERNITY: { label: 'Melahirkan', color: 'bg-pink-500/10 text-pink-500 border-pink-500/20' },

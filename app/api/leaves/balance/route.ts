@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 const leaveTypeDefaults: Record<string, { label: string; total: number }> = {
-  Izin: { label: 'Izin', total: 12 },
+  Izin: { label: 'Cuti', total: 12 },
   Sakit: { label: 'Sakit', total: 12 },
   TukarShift: { label: 'Tukar Shift', total: 0 },
 }
