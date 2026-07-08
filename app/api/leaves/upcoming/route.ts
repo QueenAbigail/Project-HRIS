@@ -9,12 +9,12 @@ export async function GET() {
     const monthStart = startOfMonth(now)
     const monthEnd = endOfMonth(now)
 
-    // Only show leaves that start from today onwards (upcoming, not past)
+    // Show leaves where the end date hasn't passed yet (leave is still ongoing or upcoming)
+    // This includes leaves from previous months that are still active, and future leaves
     const upcoming = await prisma.leave.findMany({
       where: {
         status: 'Approved',
-        startDate: { gte: now }, // Only leaves starting today or later
-        startDate: { lte: monthEnd },
+        endDate: { gte: now }, // Only leaves that haven't ended yet
       },
       include: {
         user: {
