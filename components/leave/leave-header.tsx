@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { Plus, CheckCircle2, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { Plus, CheckCircle2, ChevronLeft, ChevronRight, X, ChevronsUpDown, Check } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -19,9 +19,23 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
 
 interface LeaveHeaderProps {
   isClient?: boolean
@@ -37,12 +51,22 @@ interface Department {
   label: string
 }
 
+interface Employee {
+  id: string
+  name: string
+  employeeCode?: string
+  email?: string
+}
+
 export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
   const [openNewRequest, setOpenNewRequest] = useState(false)
   const [openRequestApproval, setOpenRequestApproval] = useState(false)
   const [openImageZoom, setOpenImageZoom] = useState(false)
   const [currentApprovalIndex, setCurrentApprovalIndex] = useState(0)
+  const [comboboxOpen, setComboboxOpen] = useState(false)
+  const [employeeSearchValue, setEmployeeSearchValue] = useState('')
   const [formData, setFormData] = useState({
+    userId: '',
     leaveType: '',
     startDate: '',
     endDate: '',
@@ -50,7 +74,9 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
   })
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
   const [loadingFilters, setLoadingFilters] = useState(true)
+  const [loadingEmployees, setLoadingEmployees] = useState(false)
 
   // Fetch leave types and departments
   useEffect(() => {
@@ -63,7 +89,6 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
 
         if (typesRes.ok) {
           const types = await typesRes.json()
-          console.log('[v0] Leave types fetched:', types)
           setLeaveTypes(types)
         } else {
           console.error('[v0] Leave types fetch failed:', typesRes.status, await typesRes.text())
@@ -71,7 +96,6 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
 
         if (deptsRes.ok) {
           const depts = await deptsRes.json()
-          console.log('[v0] Departments fetched:', depts)
           setDepartments(depts)
         } else {
           console.error('[v0] Departments fetch failed:', deptsRes.status, await deptsRes.text())
@@ -85,6 +109,49 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
 
     fetchFilters()
   }, [])
+
+  // Fetch employees when modal opens
+  useEffect(() => {
+    if (!openNewRequest) return
+
+    const fetchEmployees = async () => {
+      try {
+        setLoadingEmployees(true)
+        const response = await fetch('/api/employees/list')
+        if (response.ok) {
+          const data = await response.json()
+          setEmployees(data)
+        }
+      } catch (error) {
+        console.error('[v0] Failed to fetch employees:', error)
+      } finally {
+        setLoadingEmployees(false)
+      }
+    }
+
+    fetchEmployees()
+  }, [openNewRequest])
+
+  // Filter employees based on search
+  const filteredEmployees = useMemo(() => {
+    if (!employeeSearchValue) return employees
+    const query = employeeSearchValue.toLowerCase()
+    return employees.filter(
+      (emp) =>
+        emp.employeeCode?.toLowerCase().includes(query) ||
+        emp.name.toLowerCase().includes(query) ||
+        emp.email?.toLowerCase().includes(query)
+    )
+  }, [employeeSearchValue, employees])
+
+  const handleEmployeeSelect = (employeeId: string) => {
+    const selectedEmployee = employees.find((emp) => emp.id === employeeId)
+    if (selectedEmployee) {
+      setFormData((prev) => ({ ...prev, userId: employeeId }))
+      setEmployeeSearchValue(`${selectedEmployee.employeeCode || ''} - ${selectedEmployee.name}`)
+    }
+    setComboboxOpen(false)
+  }
 
   // Hardcoded multiple approval requests data (will be fetched from database later)
   const [approvalRequests] = useState([
@@ -149,11 +216,41 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('[v0] New leave request submitted:', formData)
-    setFormData({ leaveType: '', startDate: '', endDate: '', reason: '' })
-    setOpenNewRequest(false)
+    
+    if (!formData.userId || !formData.leaveType || !formData.startDate || !formData.endDate) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/leaves', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: formData.userId,
+          leaveType: formData.leaveType,
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+          reason: formData.reason,
+          status: 'Approved', // Admin can directly approve
+        }),
+      })
+
+      if (response.ok) {
+        alert('Leave request created successfully')
+        setFormData({ userId: '', leaveType: '', startDate: '', endDate: '', reason: '' })
+        setEmployeeSearchValue('')
+        setOpenNewRequest(false)
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.message || 'Failed to create leave request'}`)
+      }
+    } catch (error) {
+      console.error('[v0] Error submitting leave request:', error)
+      alert('Failed to submit leave request')
+    }
   }
 
   const handleApprove = () => {
@@ -211,7 +308,71 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
                 </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="leaveType">Leave Type</Label>
+                <Label>Select Employee *</Label>
+                {loadingEmployees ? (
+                  <div className="flex items-center justify-center h-10 bg-muted/20 rounded-lg text-sm text-muted-foreground">
+                    Loading employees...
+                  </div>
+                ) : (
+                  <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={comboboxOpen}
+                        className="w-full justify-between h-10 px-3 bg-background hover:bg-muted/50"
+                      >
+                        <span className={cn('truncate', !formData.userId && 'text-muted-foreground')}>
+                          {formData.userId
+                            ? (() => {
+                                const emp = employees.find((e) => e.id === formData.userId)
+                                return emp ? `${emp.employeeCode || ''} - ${emp.name}`.trim() : 'Select employee...'
+                              })()
+                            : 'Search by ID or name...'}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput
+                          placeholder="Search by ID or name..."
+                          value={employeeSearchValue}
+                          onValueChange={setEmployeeSearchValue}
+                          className="border-none focus:ring-0"
+                        />
+                        <CommandList className="max-h-[200px]">
+                          <CommandEmpty className="py-6 text-center text-xs">No employee found</CommandEmpty>
+                          <CommandGroup>
+                            {filteredEmployees.map((employee) => (
+                              <CommandItem
+                                key={employee.id}
+                                value={`${employee.employeeCode} ${employee.name}`}
+                                onSelect={() => handleEmployeeSelect(employee.id)}
+                                className="cursor-pointer"
+                              >
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    formData.userId === employee.id ? 'opacity-100' : 'opacity-0'
+                                  )}
+                                />
+                                <div className="flex flex-col gap-1 flex-1">
+                                  <span className="text-sm font-medium">{employee.employeeCode} - {employee.name}</span>
+                                  {employee.email && <span className="text-xs text-muted-foreground">{employee.email}</span>}
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="leaveType">Leave Type *</Label>
                 <Select value={formData.leaveType} onValueChange={(value) => setFormData(prev => ({ ...prev, leaveType: value }))}>
                   <SelectTrigger id="leaveType">
                     <SelectValue placeholder="Select leave type" />
