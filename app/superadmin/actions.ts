@@ -1183,11 +1183,19 @@ export async function generateTodayAttendanceRecords() {
           // For FIXED patterns, use the single shift time
           if (assignment.pattern.shiftId) {
             shiftId = assignment.pattern.shiftId
+            console.log('[v0] FIXED pattern - looking up shift:', shiftId)
             const shift = await prisma.shift.findUnique({
               where: { id: shiftId }
             })
-            scheduledStart = shift?.startTime || null
-            scheduledEnd = shift?.endTime || null
+            if (shift) {
+              scheduledStart = shift.startTime
+              scheduledEnd = shift.endTime
+              console.log('[v0] FIXED pattern - found shift:', { id: shift.id, startTime: scheduledStart, endTime: scheduledEnd })
+            } else {
+              console.log('[v0] FIXED pattern - shift not found:', shiftId)
+            }
+          } else {
+            console.log('[v0] FIXED pattern - no shiftId in pattern')
           }
         }
       } else if (assignment.pattern.type === 'ROTATING') {
@@ -1208,13 +1216,19 @@ export async function generateTodayAttendanceRecords() {
           // Get shift times if scheduled
           if (isScheduledToday && currentCycle.shiftType) {
             shiftId = currentCycle.shiftType
+            console.log('[v0] ROTATING pattern - looking up shift:', shiftId)
             const shift = await prisma.shift.findUnique({
               where: { id: shiftId }
             })
             if (shift) {
               scheduledStart = shift.startTime
               scheduledEnd = shift.endTime
+              console.log('[v0] ROTATING pattern - found shift:', { id: shift.id, startTime: scheduledStart, endTime: scheduledEnd })
+            } else {
+              console.log('[v0] ROTATING pattern - shift not found:', shiftId)
             }
+          } else {
+            console.log('[v0] ROTATING pattern - not scheduled or no shiftType')
           }
         } else {
           scheduleReason = 'Invalid rotating pattern data'
@@ -1237,13 +1251,19 @@ export async function generateTodayAttendanceRecords() {
           // Get shift times if scheduled
           if (isScheduledToday && currentShiftType && currentShiftType !== 'rest') {
             shiftId = currentShiftType
+            console.log('[v0] MODULO pattern - looking up shift:', shiftId)
             const shift = await prisma.shift.findUnique({
               where: { id: shiftId }
             })
             if (shift) {
               scheduledStart = shift.startTime
               scheduledEnd = shift.endTime
+              console.log('[v0] MODULO pattern - found shift:', { id: shift.id, startTime: scheduledStart, endTime: scheduledEnd })
+            } else {
+              console.log('[v0] MODULO pattern - shift not found:', shiftId)
             }
+          } else {
+            console.log('[v0] MODULO pattern - not scheduled or no shift type')
           }
         } else {
           scheduleReason = 'Invalid modulo pattern data'
