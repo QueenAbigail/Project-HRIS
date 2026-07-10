@@ -1,24 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/db'
-import { schedules, employees, shifts } from '@/db/schema'
-import { eq } from 'drizzle-orm'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(req: NextRequest) {
   try {
-    const allSchedules = await db
-      .select({
-        id: schedules.id,
-        employeeId: schedules.employeeId,
-        employeeName: employees.name,
-        shiftId: schedules.shiftId,
-        shiftName: shifts.name,
-        shiftStart: shifts.startTime,
-        shiftEnd: shifts.endTime,
-        scheduleDate: schedules.scheduleDate,
-      })
-      .from(schedules)
-      .leftJoin(employees, eq(schedules.employeeId, employees.id))
-      .leftJoin(shifts, eq(schedules.shiftId, shifts.id))
+    const allSchedules = await prisma.schedule.findMany({
+      include: {
+        employee: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        shift: {
+          select: {
+            id: true,
+            name: true,
+            startTime: true,
+            endTime: true
+          }
+        }
+      },
+      orderBy: {
+        scheduleDate: 'desc'
+      }
+    })
 
     return NextResponse.json(allSchedules)
   } catch (error) {
@@ -33,7 +38,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { employeeId, shiftId, scheduleDate } = body
+    const { employeeId, shiftId, scheduleDate, shiftStart, shiftEnd, isException, notes } = body
 
     if (!employeeId || !shiftId || !scheduleDate) {
       return NextResponse.json(
@@ -42,17 +47,22 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const result = await db.insert(schedules).values({
-      employeeId,
-      shiftId,
-      scheduleDate: new Date(scheduleDate),
-      createdAt: new Date(),
+    const result = await prisma.schedule.create({
+      data: {
+        employeeId,
+        shiftId,
+        scheduleDate: new Date(scheduleDate),
+        shiftStart: shiftStart || '',
+        shiftEnd: shiftEnd || '',
+        isException: isException ?? false,
+        notes
+      }
     })
 
     return NextResponse.json({
       success: true,
       message: 'Schedule created',
-      id: result.insertId,
+      data: result
     })
   } catch (error) {
     console.error('Error creating schedule:', error)

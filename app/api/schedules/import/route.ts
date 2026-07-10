@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/db'
-import { schedules, employees, shifts } from '@/db/schema'
-import { eq } from 'drizzle-orm'
+import { prisma } from '@/lib/prisma'
+import { generateTodayAttendanceRecords } from '@/app/superadmin/actions'
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,41 +18,50 @@ export async function POST(req: NextRequest) {
 
     for (const schedule of importedSchedules) {
       try {
-        const { employeeName, employeeId, date, shift } = schedule
+        const { employeeName, employeeId, date, shift, shiftStart, shiftEnd } = schedule
 
-        // Find employee
-        const employee = await db
-          .select()
-          .from(employees)
-          .where(eq(employees.name, employeeName))
-          .limit(1)
+        // Find employee by name or ID
+        let employee
+        if (employeeId) {
+          employee = await prisma.user.findUnique({
+            where: { id: employeeId }
+          })
+        } else {
+          employee = await prisma.user.findFirst({
+            where: { name: employeeName }
+          })
+        }
 
-        if (!employee.length) {
-          errors.push(`Employee ${employeeName} not found`)
+        if (!employee) {
+          errors.push(`Employee ${employeeName || employeeId} not found`)
           continue
         }
 
         // Map shift code to shift ID
         let shiftId: string | null = null
+        let finalShiftStart = shiftStart
+        let finalShiftEnd = shiftEnd
 
         // Handle different shift codes
         const shiftCode = String(shift).toUpperCase()
         if (shiftCode === 'P' || shiftCode === 'PAGI' || shiftCode === 'MORNING') {
-          // Find morning shift
-          const morningShift = await db
-            .select()
-            .from(shifts)
-            .where(eq(shifts.name, 'Morning')) // Adjust based on your shift naming
-            .limit(1)
-          shiftId = morningShift[0]?.id || null
+          const foundShift = await prisma.shift.findFirst({
+            where: { name: { contains: 'Morning', mode: 'insensitive' } }
+          })
+          if (foundShift) {
+            shiftId = foundShift.id
+            finalShiftStart = foundShift.startTime
+            finalShiftEnd = foundShift.endTime
+          }
         } else if (shiftCode === 'M' || shiftCode === 'MALAM' || shiftCode === 'EVENING') {
-          // Find evening shift
-          const eveningShift = await db
-            .select()
-            .from(shifts)
-            .where(eq(shifts.name, 'Evening'))
-            .limit(1)
-          shiftId = eveningShift[0]?.id || null
+          const foundShift = await prisma.shift.findFirst({
+            where: { name: { contains: 'Evening', mode: 'insensitive' } }
+          })
+          if (foundShift) {
+            shiftId = foundShift.id
+            finalShiftStart = foundShift.startTime
+            finalShiftEnd = foundShift.endTime
+          }
         } else if (shiftCode === 'X' || shiftCode === 'OFF' || shiftCode === 'DAY OFF') {
           // Skip day off entries
           continue
@@ -64,10 +72,9 @@ export async function POST(req: NextRequest) {
           continue
         }
 
-        // Parse date - handle different formats
+        // Parse date
         let scheduleDate: Date
         try {
-          // Try to parse the date from Excel
           if (typeof date === 'number') {
             // Excel serial number
             scheduleDate = new Date((date - 25569) * 86400 * 1000)
@@ -85,11 +92,15 @@ export async function POST(req: NextRequest) {
         }
 
         // Create schedule record
-        await db.insert(schedules).values({
-          employeeId: employee[0].id,
-          shiftId,
-          scheduleDate,
-          createdAt: new Date(),
+        await prisma.schedule.create({
+          data: {
+            employeeId: employee.id,
+            shiftId,
+            scheduleDate,
+            shiftStart: finalShiftStart,
+            shiftEnd: finalShiftEnd,
+            isException: false
+          }
         })
 
         created++
@@ -101,23 +112,18 @@ export async function POST(req: NextRequest) {
 
     // Generate today's attendance if any schedules were created for today
     if (created > 0) {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-
-      const todaysSchedules = await db
-        .select()
-        .from(schedules)
-        .where(eq(schedules.scheduleDate, today))
-
-      // TODO: Generate attendance records here
-      // This would call the attendance generation logic
+      try {
+        await generateTodayAttendanceRecords()
+      } catch (attendanceError) {
+        console.error('Error generating attendance:', attendanceError)
+      }
     }
 
     return NextResponse.json({
       success: true,
       created,
       errors: errors.length > 0 ? errors : undefined,
-      message: `Successfully imported ${created} schedules${errors.length > 0 ? ` (${errors.length} errors)` : ''}`,
+      message: `Successfully imported ${created} schedules${errors.length > 0 ? ` (${errors.length} errors)` : ''}`
     })
   } catch (error) {
     console.error('Schedule import error:', error)

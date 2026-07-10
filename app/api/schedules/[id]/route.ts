@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/db'
-import { schedules } from '@/db/schema'
-import { eq } from 'drizzle-orm'
+import { prisma } from '@/lib/prisma'
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const body = await req.json()
-    const { employeeId, shiftId, scheduleDate } = body
+    const { employeeId, shiftId, scheduleDate, shiftStart, shiftEnd, isException, notes } = body
 
     if (!employeeId || !shiftId || !scheduleDate) {
       return NextResponse.json(
@@ -15,18 +13,23 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       )
     }
 
-    await db
-      .update(schedules)
-      .set({
+    const result = await prisma.schedule.update({
+      where: { id: params.id },
+      data: {
         employeeId,
         shiftId,
         scheduleDate: new Date(scheduleDate),
-      })
-      .where(eq(schedules.id, params.id))
+        shiftStart,
+        shiftEnd,
+        isException: isException ?? false,
+        notes
+      }
+    })
 
     return NextResponse.json({
       success: true,
       message: 'Schedule updated',
+      data: result
     })
   } catch (error) {
     console.error('Error updating schedule:', error)
@@ -39,11 +42,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await db.delete(schedules).where(eq(schedules.id, params.id))
+    await prisma.schedule.delete({
+      where: { id: params.id }
+    })
 
     return NextResponse.json({
       success: true,
-      message: 'Schedule deleted',
+      message: 'Schedule deleted'
     })
   } catch (error) {
     console.error('Error deleting schedule:', error)
