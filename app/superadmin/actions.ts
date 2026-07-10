@@ -4,7 +4,6 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getSwappedScheduleIfExists } from '@/lib/shift-swap-handler'
 import { createAdminClient } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
 
 export async function updateSettings(formData: FormData) {
   // 1. Call Supabase Admin Client (for file upload with full permissions)
