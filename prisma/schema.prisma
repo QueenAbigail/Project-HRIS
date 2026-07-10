@@ -225,18 +225,20 @@ model Attendance {
 
 // Leave model (requests with approval)
 model Leave {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId         String
-  user           User      @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Cascade)
-  leaveType      String    // Izin (displayed as 'Cuti' in UI), Sakit, TukarShift
-  startDate      DateTime  @db.Date
-  endDate        DateTime  @db.Date
-  reason         String?
-  attachmentUrl  String?
-  status         String    @default("Pending") // Pending, Approved, Rejected
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  bkoAssignments BkoAssignment[]
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String
+  user              User      @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Cascade)
+  leaveType         String    // Izin (displayed as 'Cuti' in UI), Sakit, TukarShift
+  startDate         DateTime  @db.Date
+  endDate           DateTime  @db.Date
+  reason            String?
+  attachmentUrl     String?
+  status            String    @default("Pending") // Pending, Approved, Rejected
+  workingDaysCount  Int       @default(0) // Actual working days affected based on pattern
+  dayBreakdown      String?   // JSON string showing which days are counted vs skipped
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  bkoAssignments    BkoAssignment[]
 
   @@index([userId])
   @@index([status])

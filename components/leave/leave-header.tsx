@@ -75,6 +75,8 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loadingFilters, setLoadingFilters] = useState(true)
   const [loadingEmployees, setLoadingEmployees] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [validationInfo, setValidationInfo] = useState<any>(null)
 
   // Fetch leave types and departments
   useEffect(() => {
@@ -168,6 +170,7 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
     }
 
     try {
+      setSubmitting(true)
       const response = await fetch('/api/leaves', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -182,9 +185,17 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
       })
 
       if (response.ok) {
-        alert('Leave request created successfully')
+        const result = await response.json()
+        setValidationInfo(result.validation)
+        
+        const message = result.validation?.dayBreakdown?.summary 
+          ? `Leave created successfully!\n\n${result.validation.dayBreakdown.summary}`
+          : 'Leave request created successfully'
+        
+        alert(message)
         setFormData({ userId: '', leaveType: '', startDate: '', endDate: '', reason: '' })
         setEmployeeSearchValue('')
+        setValidationInfo(null)
         setOpenNewRequest(false)
       } else {
         const error = await response.json()
@@ -193,6 +204,8 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
     } catch (error) {
       console.error('[v0] Error submitting leave request:', error)
       alert('Failed to submit leave request')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -329,20 +342,37 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
                 <Label htmlFor="reason">Reason</Label>
                 <Textarea
                   id="reason"
-                  name="reason"
                   placeholder="Please provide a reason for your leave request..."
                   value={formData.reason}
-                  onChange={handleInputChange}
+                  onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
                   rows={3}
-                  required
                 />
               </div>
 
+              {validationInfo && validationInfo.dayBreakdown && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+                  <div className="font-medium text-blue-900 mb-2">Leave Duration Breakdown</div>
+                  <div className="text-blue-800 space-y-1">
+                    <div>{validationInfo.dayBreakdown.summary}</div>
+                    {validationInfo.dayBreakdown.breakdown && (
+                      <div className="text-xs mt-2 text-blue-700">
+                        {validationInfo.dayBreakdown.breakdown
+                          .filter((d: any) => d.isWorking)
+                          .map((d: any) => `${d.date} (${d.dayOfWeek})`)
+                          .join(', ')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpenNewRequest(false)}>
+                <Button variant="outline" onClick={() => setOpenNewRequest(false)} disabled={submitting}>
                   Cancel
                 </Button>
-                <Button type="submit">Submit Request</Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? 'Creating...' : 'Submit Request'}
+                </Button>
               </DialogFooter>
               </form>
               </DialogContent>
