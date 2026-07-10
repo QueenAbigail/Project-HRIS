@@ -6,6 +6,7 @@ import { StatsCards } from '@/components/dashboard/stats-cards'
 import { AttendanceChart } from '@/components/dashboard/attendance-chart'
 import { LocationAttendance } from '@/components/dashboard/location-attendance'
 import { LateCheckIns } from '@/components/dashboard/late-checkins'
+import { UpcomingLeaves } from '@/components/dashboard/upcoming-leaves'
 import type { Attendance, EmployeeShiftAssignment, Leave, Shift, Site, User } from '@prisma/client'
 
 export default async function DashboardPage() {
@@ -312,12 +313,11 @@ export default async function DashboardPage() {
       {/* Location-based Attendance Overview */}
       <LocationAttendance locationData={locationStatsByCompany} companyName={companyNameForDisplay} isClient={isClient} />
 
-      <div className="grid gap-6 lg:grid-cols-7">
-        <div className="lg:col-span-4">
-          <AttendanceChart chartData={chartData} />
-        </div>
-        <div className="lg:col-span-3">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AttendanceChart chartData={chartData} />
+        <div className="space-y-6">
           <LateCheckIns lateCheckIns={lateCheckIns} />
+          <UpcomingLeaves />
         </div>
       </div>
 
