@@ -115,6 +115,7 @@ model Shift {
   Attendance         Attendance[]
   patrols            Patrol[]
   schedulePatterns   SchedulePattern[]
+  schedules          Schedule[]                @relation("ScheduleShifts")
 
   @@map("shifts")
 }
@@ -171,6 +172,7 @@ model User {
   accountNumber         String?
   swapsFrom             ShiftSwap[]               @relation("SwapFrom")
   swapsTo               ShiftSwap[]               @relation("SwapTo")
+  schedules             Schedule[]                @relation("EmployeeSchedules")
 
   @@index([siteId])
   @@index([companyId])
@@ -520,6 +522,27 @@ model ShiftSwap {
   @@index([status])
   @@index([swapDate])
   @@map("shift_swaps")
+}
+
+model Schedule {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeId      String
+  employee        User      @relation("EmployeeSchedules", fields: [employeeId], references: [id], onDelete: Cascade)
+  shiftId         String
+  shift           Shift     @relation("ScheduleShifts", fields: [shiftId], references: [id], onDelete: Cascade)
+  scheduleDate    DateTime  @db.Date
+  shiftStart      String    // "09:00" format
+  shiftEnd        String    // "17:00" format
+  isException     Boolean   @default(false) // true if manually overridden
+  notes           String?   // e.g., "Swapped with John", "Manual override"
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([employeeId, scheduleDate]) // One schedule per employee per day
+  @@index([employeeId])
+  @@index([scheduleDate])
+  @@index([shiftId])
+  @@map("schedules")
 }
 
 model CronLog {

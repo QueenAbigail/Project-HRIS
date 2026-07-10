@@ -1,5 +1,92 @@
 import { prisma } from '@/lib/prisma'
 
+/**
+ * Apply a shift swap by updating Schedule records
+ * When two employees swap shifts, both their Schedule records are updated
+ */
+export async function applyShiftSwapToSchedules(
+  employeeFromId: string,
+  employeeToId: string,
+  swapDate: Date
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const dateOnly = new Date(swapDate)
+    dateOnly.setHours(0, 0, 0, 0)
+
+    console.log('[v0] Applying shift swap to schedules:', {
+      employeeFromId,
+      employeeToId,
+      swapDate: dateOnly.toISOString().split('T')[0]
+    })
+
+    // Get both employees' schedules for this date
+    const fromSchedule = await prisma.schedule.findUnique({
+      where: {
+        employeeId_scheduleDate: {
+          employeeId: employeeFromId,
+          scheduleDate: dateOnly
+        }
+      }
+    })
+
+    const toSchedule = await prisma.schedule.findUnique({
+      where: {
+        employeeId_scheduleDate: {
+          employeeId: employeeToId,
+          scheduleDate: dateOnly
+        }
+      }
+    })
+
+    if (!fromSchedule || !toSchedule) {
+      return {
+        success: false,
+        message: 'One or both employees do not have schedules for this date'
+      }
+    }
+
+    // Swap the shift assignments
+    await Promise.all([
+      prisma.schedule.update({
+        where: {
+          id: fromSchedule.id
+        },
+        data: {
+          shiftId: toSchedule.shiftId,
+          shiftStart: toSchedule.shiftStart,
+          shiftEnd: toSchedule.shiftEnd,
+          isException: true,
+          notes: `Swapped with ${employeeToId}`
+        }
+      }),
+      prisma.schedule.update({
+        where: {
+          id: toSchedule.id
+        },
+        data: {
+          shiftId: fromSchedule.shiftId,
+          shiftStart: fromSchedule.shiftStart,
+          shiftEnd: fromSchedule.shiftEnd,
+          isException: true,
+          notes: `Swapped with ${employeeFromId}`
+        }
+      })
+    ])
+
+    console.log('[v0] Shift swap applied successfully')
+    return {
+      success: true,
+      message: 'Shift swap applied to schedules'
+    }
+  } catch (error) {
+    console.error('[v0] Error applying shift swap:', error)
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to apply shift swap'
+    }
+  }
+}
+
 interface SwappedSchedule {
   isSwapped: boolean
   swappedWithEmployeeId?: string

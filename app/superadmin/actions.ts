@@ -1093,23 +1093,16 @@ export async function generateTodayAttendanceRecords() {
   try {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
 
-    console.log('[v0] Starting attendance generation for date:', today)
+    console.log('[v0] Starting attendance generation for date:', today.toISOString().split('T')[0])
 
-    // Find all active assignments that cover today
-    const activeAssignments = await prisma.employeePatternAssignment.findMany({
+    // Get all schedules for today
+    const todaysSchedules = await prisma.schedule.findMany({
       where: {
-        status: 'ACTIVE',
-        startDate: { lte: today },
-        OR: [
-          { endDate: null },
-          { endDate: { gte: today } }
-        ]
+        scheduleDate: today
       },
       include: {
-        user: {
+        employee: {
           select: {
             id: true,
             name: true,
@@ -1117,163 +1110,34 @@ export async function generateTodayAttendanceRecords() {
             siteId: true
           }
         },
-        site: true,
-        pattern: true
+        shift: true
       }
     })
 
-    console.log('[v0] Found active assignments:', activeAssignments.length)
+    console.log('[v0] Found', todaysSchedules.length, 'schedules for today')
 
     let createdCount = 0
     let skippedCount = 0
 
-    for (const assignment of activeAssignments) {
-      // Use user's primary site (siteId) as source of truth
-      const userSiteId = assignment.user.siteId
-      
-      console.log('[v0] Processing assignment:', {
-        userId: assignment.userId,
-        userName: assignment.user.name,
-        userSiteId: userSiteId,
-        patternName: assignment.pattern.name,
-        patternType: assignment.pattern.type,
-        status: assignment.status,
-        startDate: assignment.startDate,
-        endDate: assignment.endDate
-      })
-      
+    for (const schedule of todaysSchedules) {
+      const userSiteId = schedule.employee.siteId
+
       if (!userSiteId) {
-        console.log('[v0] Skipping - user has no site assigned:', assignment.userId)
+        console.log('[v0] Skipping - employee has no site assigned:', schedule.employeeId)
         skippedCount++
-        continue // Skip if user has no primary site assigned
+        continue
       }
 
-      // Check if attendance record already exists for today (unique constraint is on userId + date)
+      // Check if attendance record already exists for today
       const existingAttendance = await prisma.attendance.findFirst({
         where: {
-          userId: assignment.userId,
+          userId: schedule.employeeId,
           date: today
         }
       })
 
       if (existingAttendance) {
-        console.log('[v0] Attendance record already exists for user on this date - skipping')
-        skippedCount++
-        continue
-      }
-
-      // Determine if user is scheduled for today based on pattern type
-      const dayOfWeek = today.getDay()
-      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-      let isScheduledToday = true
-      let scheduleReason = ''
-      let scheduledStart: string | null = null
-      let scheduledEnd: string | null = null
-      let shiftId: string | null = null
-
-      if (assignment.pattern.type === 'FIXED') {
-        // For fixed patterns, check if today is a working day
-        const workingDays = assignment.pattern.workingDays as number[] || []
-        console.log('[v0] FIXED pattern - workingDays:', workingDays, 'today:', dayNames[dayOfWeek])
-        if (workingDays.length > 0 && !workingDays.includes(dayOfWeek)) {
-          isScheduledToday = false
-          scheduleReason = `Not a working day (pattern has [${workingDays.map(d => dayNames[d]).join(', ')}])`
-        } else {
-          scheduleReason = 'Working day according to pattern'
-          // For FIXED patterns, use the single shift time
-          if (assignment.pattern.shiftId) {
-            shiftId = assignment.pattern.shiftId
-            console.log('[v0] FIXED pattern - looking up shift:', shiftId)
-            const shift = await prisma.shift.findUnique({
-              where: { id: shiftId }
-            })
-            if (shift) {
-              scheduledStart = shift.startTime
-              scheduledEnd = shift.endTime
-              console.log('[v0] FIXED pattern - found shift:', { id: shift.id, startTime: scheduledStart, endTime: scheduledEnd })
-            } else {
-              console.log('[v0] FIXED pattern - shift not found:', shiftId)
-            }
-          } else {
-            console.log('[v0] FIXED pattern - no shiftId in pattern')
-          }
-        }
-      } else if (assignment.pattern.type === 'ROTATING') {
-        // For rotating patterns, calculate based on sequence and start date
-        const rotatingData = assignment.pattern.rotatingPattern as any
-        if (rotatingData?.sequence && rotatingData?.startDate) {
-          const patternStartDate = new Date(rotatingData.startDate)
-          const daysFromStart = Math.floor((today.getTime() - patternStartDate.getTime()) / (1000 * 60 * 60 * 24))
-          const sequenceIndex = daysFromStart % rotatingData.sequence.length
-          const currentCycle = rotatingData.sequence[sequenceIndex]
-          
-          console.log('[v0] ROTATING pattern - daysFromStart:', daysFromStart, 'sequenceIndex:', sequenceIndex, 'currentCycle:', currentCycle)
-          
-          // Skip rest days (when shiftType is 'off')
-          isScheduledToday = currentCycle.shiftType !== 'off' && currentCycle.shiftType !== 'OFF'
-          scheduleReason = isScheduledToday ? `Working cycle: ${JSON.stringify(currentCycle)}` : `Rest cycle: ${JSON.stringify(currentCycle)}`
-          
-          // Get shift times if scheduled
-          if (isScheduledToday && currentCycle.shiftType) {
-            shiftId = currentCycle.shiftType
-            console.log('[v0] ROTATING pattern - looking up shift:', shiftId)
-            const shift = await prisma.shift.findUnique({
-              where: { id: shiftId }
-            })
-            if (shift) {
-              scheduledStart = shift.startTime
-              scheduledEnd = shift.endTime
-              console.log('[v0] ROTATING pattern - found shift:', { id: shift.id, startTime: scheduledStart, endTime: scheduledEnd })
-            } else {
-              console.log('[v0] ROTATING pattern - shift not found:', shiftId)
-            }
-          } else {
-            console.log('[v0] ROTATING pattern - not scheduled or no shiftType')
-          }
-        } else {
-          scheduleReason = 'Invalid rotating pattern data'
-        }
-      } else if (assignment.pattern.type === 'MODULO') {
-        // For modulo patterns, calculate based on sequence and start date
-        const moduloData = assignment.pattern.moduloPattern as any
-        if (moduloData?.sequence && moduloData?.startDate) {
-          const patternStartDate = new Date(moduloData.startDate)
-          const daysFromStart = Math.floor((today.getTime() - patternStartDate.getTime()) / (1000 * 60 * 60 * 24))
-          const sequenceIndex = daysFromStart % moduloData.sequence.length
-          const currentShiftType = moduloData.sequence[sequenceIndex]
-          
-          console.log('[v0] MODULO pattern - daysFromStart:', daysFromStart, 'sequenceIndex:', sequenceIndex, 'currentShift:', currentShiftType)
-          
-          // Skip rest days or specific indicators
-          isScheduledToday = currentShiftType !== 'rest' && currentShiftType !== 'OFF'
-          scheduleReason = isScheduledToday ? `Shift: ${currentShiftType}` : `Off day: ${currentShiftType}`
-          
-          // Get shift times if scheduled
-          if (isScheduledToday && currentShiftType && currentShiftType !== 'rest') {
-            shiftId = currentShiftType
-            console.log('[v0] MODULO pattern - looking up shift:', shiftId)
-            const shift = await prisma.shift.findUnique({
-              where: { id: shiftId }
-            })
-            if (shift) {
-              scheduledStart = shift.startTime
-              scheduledEnd = shift.endTime
-              console.log('[v0] MODULO pattern - found shift:', { id: shift.id, startTime: scheduledStart, endTime: scheduledEnd })
-            } else {
-              console.log('[v0] MODULO pattern - shift not found:', shiftId)
-            }
-          } else {
-            console.log('[v0] MODULO pattern - not scheduled or no shift type')
-          }
-        } else {
-          scheduleReason = 'Invalid modulo pattern data'
-        }
-      }
-
-      console.log('[v0] Schedule check for', assignment.user.name, '-', scheduleReason, { scheduledStart, scheduledEnd })
-
-      if (!isScheduledToday) {
-        console.log('[v0] Skipping - user not scheduled for today')
+        console.log('[v0] Attendance record already exists for', schedule.employee.name, '- skipping')
         skippedCount++
         continue
       }
@@ -1281,75 +1145,58 @@ export async function generateTodayAttendanceRecords() {
       // Check if user has an approved leave on this date
       const approvedLeave = await prisma.leave.findFirst({
         where: {
-          userId: assignment.userId,
+          userId: schedule.employeeId,
           status: 'Approved',
-          startDate: {
-            lte: today
-          },
-          endDate: {
-            gte: today
-          }
+          startDate: { lte: today },
+          endDate: { gte: today }
         }
       })
 
       let attendanceStatus = 'NOT_CHECKED_IN'
-      let finalScheduledStart = scheduledStart
-      let finalScheduledEnd = scheduledEnd
-      let shiftSwapInfo: any = null
+      let finalScheduledStart = schedule.shiftStart
+      let finalScheduledEnd = schedule.shiftEnd
+      let notes = schedule.notes || null
 
       if (approvedLeave) {
-        console.log('[v0] Found approved leave for', assignment.user.name, '- marking as LEAVE')
+        console.log('[v0] Found approved leave for', schedule.employee.name, '- marking as LEAVE')
         attendanceStatus = 'LEAVE'
-      } else {
-        // Check if user has an approved shift swap for today
-        try {
-          const swapSchedule = await getSwappedScheduleIfExists(
-            assignment.userId,
-            today,
-            shiftId,
-            scheduledStart,
-            scheduledEnd
-          )
-
-          if (swapSchedule.isSwapped) {
-            console.log('[v0] Shift swap detected for', assignment.user.name, '- using swapped schedule')
-            finalScheduledStart = swapSchedule.swappedScheduledStart
-            finalScheduledEnd = swapSchedule.swappedScheduledEnd
-            shiftSwapInfo = {
-              swappedWithEmployeeId: swapSchedule.swappedWithEmployeeId,
-              swappedWithEmployeeName: swapSchedule.swappedWithEmployeeName,
-              originalStart: swapSchedule.originalScheduledStart,
-              originalEnd: swapSchedule.originalScheduledEnd,
-            }
-          }
-        } catch (swapError) {
-          console.error('[v0] Error checking shift swap, continuing without swap:', swapError)
-          // Continue without swap if there's an error
-        }
       }
 
-      // Create attendance record with appropriate status
-      // Uses user's primary site (user.siteId) as single source of truth
+      // Create attendance record
       try {
-        console.log('[v0] Creating attendance record for:', { userId: assignment.userId, locationId: userSiteId, shiftId, scheduledStart: finalScheduledStart, scheduledEnd: finalScheduledEnd, status: attendanceStatus })
+        console.log('[v0] Creating attendance record for:', {
+          userId: schedule.employeeId,
+          name: schedule.employee.name,
+          locationId: userSiteId,
+          shiftId: schedule.shiftId,
+          scheduledStart: finalScheduledStart,
+          scheduledEnd: finalScheduledEnd,
+          status: attendanceStatus
+        })
+
         const createdAttendance = await prisma.attendance.create({
           data: {
-            userId: assignment.userId,
+            userId: schedule.employeeId,
             locationId: userSiteId,
-            shiftId: shiftId,
+            shiftId: schedule.shiftId,
             date: today,
             scheduledStart: finalScheduledStart,
             scheduledEnd: finalScheduledEnd,
-            status: attendanceStatus, // LEAVE if approved leave exists, otherwise NOT_CHECKED_IN
+            status: attendanceStatus,
             lateMinutes: 0,
-            notes: shiftSwapInfo ? `Shift swapped with ${shiftSwapInfo.swappedWithEmployeeName}` : null
+            notes: notes
           }
         })
 
-        console.log('[v0] Attendance record created successfully:', { id: createdAttendance.id, status: attendanceStatus, scheduledStart: createdAttendance.scheduledStart, scheduledEnd: createdAttendance.scheduledEnd })
+        console.log('[v0] Attendance record created successfully:', {
+          id: createdAttendance.id,
+          status: attendanceStatus,
+          scheduledStart: createdAttendance.scheduledStart,
+          scheduledEnd: createdAttendance.scheduledEnd
+        })
         createdCount++
       } catch (createError) {
-        console.error('[v0] Error creating attendance record for', assignment.user.name, ':', createError)
+        console.error('[v0] Error creating attendance record for', schedule.employee.name, ':', createError)
         skippedCount++
         continue
       }
@@ -1364,7 +1211,7 @@ export async function generateTodayAttendanceRecords() {
       details: {
         created: createdCount,
         skipped: skippedCount,
-        total: activeAssignments.length
+        total: todaysSchedules.length
       }
     }
   } catch (error) {

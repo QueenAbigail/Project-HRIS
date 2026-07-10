@@ -53,7 +53,6 @@ import {
 } from '@/lib/data'
 import { ShiftFormDialog } from '@/components/shifts/ShiftFormDialog'
 import { EmployeeAssignmentTable } from '@/components/shifts/EmployeeAssignmentTable'
-import { EmployeeSwapDialog } from '@/components/shifts/EmployeeSwapDialog'
 import { getShifts, getEmployeeSchedules } from '@/app/superadmin/actions'
 
 // Schedule pattern types
@@ -111,7 +110,6 @@ export default function SchedulePatternsPage() {
   const [createShiftOpen, setCreateShiftOpen] = useState(false)
   const [editShiftOpen, setEditShiftOpen] = useState(false)
   const [editingShift, setEditingShift] = useState<typeof shifts[0] | null>(null)
-  const [swapOpen, setSwapOpen] = useState(false)
 
   // Initialize shifts from database
   const initializeShifts = useSchedulesStore(state => state.initializeShifts)
@@ -497,7 +495,7 @@ export default function SchedulePatternsPage() {
 
         {/* Main Management Tabs */}
         <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="patterns">
               <CalendarDays className="mr-2 size-4" />
               Patterns
@@ -509,10 +507,6 @@ export default function SchedulePatternsPage() {
             <TabsTrigger value="assignments">
               <Users className="mr-2 size-4" />
               Assignments
-            </TabsTrigger>
-            <TabsTrigger value="swaps">
-              <Settings className="mr-2 size-4" />
-              Quick Swaps
             </TabsTrigger>
           </TabsList>
 
@@ -807,17 +801,7 @@ export default function SchedulePatternsPage() {
           </TabsContent>
 
           {/* Swaps Tab */}
-          <TabsContent value="swaps" className="p-6">
-            <EmployeeSwapDialog open={swapOpen} onOpenChange={setSwapOpen} />
-            <div className="text-center py-12 text-muted-foreground">
-              <Users className="mx-auto size-12 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Quick Employee Swaps</h3>
-              <p>Use the swap dialog for fast schedule changes with automatic attendance adjustment</p>
-              <Button onClick={() => setSwapOpen(true)} className="mt-4">
-                Start Swap
-              </Button>
-            </div>
-          </TabsContent>
+
         </Tabs>
       </div>
 
