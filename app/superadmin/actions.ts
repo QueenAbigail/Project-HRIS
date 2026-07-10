@@ -1282,46 +1282,57 @@ export async function generateTodayAttendanceRecords() {
         attendanceStatus = 'LEAVE'
       } else {
         // Check if user has an approved shift swap for today
-        const swapSchedule = await getSwappedScheduleIfExists(
-          assignment.userId,
-          today,
-          shiftId,
-          scheduledStart,
-          scheduledEnd
-        )
+        try {
+          const swapSchedule = await getSwappedScheduleIfExists(
+            assignment.userId,
+            today,
+            shiftId,
+            scheduledStart,
+            scheduledEnd
+          )
 
-        if (swapSchedule.isSwapped) {
-          console.log('[v0] Shift swap detected for', assignment.user.name, '- using swapped schedule')
-          finalScheduledStart = swapSchedule.swappedScheduledStart
-          finalScheduledEnd = swapSchedule.swappedScheduledEnd
-          shiftSwapInfo = {
-            swappedWithEmployeeId: swapSchedule.swappedWithEmployeeId,
-            swappedWithEmployeeName: swapSchedule.swappedWithEmployeeName,
-            originalStart: swapSchedule.originalScheduledStart,
-            originalEnd: swapSchedule.originalScheduledEnd,
+          if (swapSchedule.isSwapped) {
+            console.log('[v0] Shift swap detected for', assignment.user.name, '- using swapped schedule')
+            finalScheduledStart = swapSchedule.swappedScheduledStart
+            finalScheduledEnd = swapSchedule.swappedScheduledEnd
+            shiftSwapInfo = {
+              swappedWithEmployeeId: swapSchedule.swappedWithEmployeeId,
+              swappedWithEmployeeName: swapSchedule.swappedWithEmployeeName,
+              originalStart: swapSchedule.originalScheduledStart,
+              originalEnd: swapSchedule.originalScheduledEnd,
+            }
           }
+        } catch (swapError) {
+          console.error('[v0] Error checking shift swap, continuing without swap:', swapError)
+          // Continue without swap if there's an error
         }
       }
 
       // Create attendance record with appropriate status
       // Uses user's primary site (user.siteId) as single source of truth
-      console.log('[v0] Creating attendance record for:', { userId: assignment.userId, locationId: userSiteId, scheduledStart: finalScheduledStart, scheduledEnd: finalScheduledEnd, status: attendanceStatus, shiftSwapInfo })
-      await prisma.attendance.create({
-        data: {
-          userId: assignment.userId,
-          locationId: userSiteId,
-          shiftId: shiftId,
-          date: today,
-          scheduledStart: finalScheduledStart,
-          scheduledEnd: finalScheduledEnd,
-          status: attendanceStatus, // LEAVE if approved leave exists, otherwise NOT_CHECKED_IN
-          lateMinutes: 0,
-          notes: shiftSwapInfo ? `Shift swapped with ${shiftSwapInfo.swappedWithEmployeeName}` : null
-        }
-      })
+      try {
+        console.log('[v0] Creating attendance record for:', { userId: assignment.userId, locationId: userSiteId, shiftId, scheduledStart: finalScheduledStart, scheduledEnd: finalScheduledEnd, status: attendanceStatus })
+        const createdAttendance = await prisma.attendance.create({
+          data: {
+            userId: assignment.userId,
+            locationId: userSiteId,
+            shiftId: shiftId,
+            date: today,
+            scheduledStart: finalScheduledStart,
+            scheduledEnd: finalScheduledEnd,
+            status: attendanceStatus, // LEAVE if approved leave exists, otherwise NOT_CHECKED_IN
+            lateMinutes: 0,
+            notes: shiftSwapInfo ? `Shift swapped with ${shiftSwapInfo.swappedWithEmployeeName}` : null
+          }
+        })
 
-      console.log('[v0] Attendance record created successfully with status:', attendanceStatus)
-      createdCount++
+        console.log('[v0] Attendance record created successfully:', { id: createdAttendance.id, status: attendanceStatus, scheduledStart: createdAttendance.scheduledStart, scheduledEnd: createdAttendance.scheduledEnd })
+        createdCount++
+      } catch (createError) {
+        console.error('[v0] Error creating attendance record for', assignment.user.name, ':', createError)
+        skippedCount++
+        continue
+      }
     }
 
     revalidatePath('/dashboard/attendance')
