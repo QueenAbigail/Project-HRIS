@@ -85,6 +85,7 @@ model Site {
   patrolLocations PatrolLocation[]
   patrols     Patrol[]
   bulkImportRecords BulkImportRecord[] @relation("SiteBulkImports")
+  shiftSwaps  ShiftSwap[]
   createdAt   DateTime                  @default(now())
   updatedAt   DateTime                  @updatedAt
 
