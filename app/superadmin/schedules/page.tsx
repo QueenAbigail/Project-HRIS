@@ -136,6 +136,7 @@ export default function SchedulesPage() {
           <ShiftFormDialog
             open={createShiftOpen}
             onOpenChange={setCreateShiftOpen}
+            onSuccess={loadData}
           />
 
           <ShiftFormDialog
@@ -145,6 +146,7 @@ export default function SchedulesPage() {
               setEditShiftOpen(open)
               if (!open) setEditingShift(null)
             }}
+            onSuccess={loadData}
           />
         </TabsContent>
 
