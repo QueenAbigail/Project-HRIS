@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Get all schedules or create new one
 export async function GET(req: NextRequest) {
   try {
     const allSchedules = await prisma.schedule.findMany({

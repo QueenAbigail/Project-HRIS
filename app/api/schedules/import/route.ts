@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateTodayAttendanceRecords } from '@/app/superadmin/actions'
 
+// Import schedules in bulk from Excel file
 export async function POST(req: NextRequest) {
   try {
     const { schedules: importedSchedules } = await req.json()
