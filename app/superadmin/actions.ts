@@ -1,6 +1,8 @@
 'use server'
 
+import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { getSwappedScheduleIfExists } from '@/lib/shift-swap-handler'
 import { createAdminClient } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
@@ -1272,24 +1274,50 @@ export async function generateTodayAttendanceRecords() {
       })
 
       let attendanceStatus = 'NOT_CHECKED_IN'
+      let finalScheduledStart = scheduledStart
+      let finalScheduledEnd = scheduledEnd
+      let shiftSwapInfo: any = null
+
       if (approvedLeave) {
         console.log('[v0] Found approved leave for', assignment.user.name, '- marking as LEAVE')
         attendanceStatus = 'LEAVE'
+      } else {
+        // Check if user has an approved shift swap for today
+        const swapSchedule = await getSwappedScheduleIfExists(
+          assignment.userId,
+          today,
+          shiftId,
+          scheduledStart,
+          scheduledEnd
+        )
+
+        if (swapSchedule.isSwapped) {
+          console.log('[v0] Shift swap detected for', assignment.user.name, '- using swapped schedule')
+          finalScheduledStart = swapSchedule.swappedScheduledStart
+          finalScheduledEnd = swapSchedule.swappedScheduledEnd
+          shiftSwapInfo = {
+            swappedWithEmployeeId: swapSchedule.swappedWithEmployeeId,
+            swappedWithEmployeeName: swapSchedule.swappedWithEmployeeName,
+            originalStart: swapSchedule.originalScheduledStart,
+            originalEnd: swapSchedule.originalScheduledEnd,
+          }
+        }
       }
 
       // Create attendance record with appropriate status
       // Uses user's primary site (user.siteId) as single source of truth
-      console.log('[v0] Creating attendance record for:', { userId: assignment.userId, locationId: userSiteId, scheduledStart, scheduledEnd, status: attendanceStatus })
+      console.log('[v0] Creating attendance record for:', { userId: assignment.userId, locationId: userSiteId, scheduledStart: finalScheduledStart, scheduledEnd: finalScheduledEnd, status: attendanceStatus, shiftSwapInfo })
       await prisma.attendance.create({
         data: {
           userId: assignment.userId,
           locationId: userSiteId,
           shiftId: shiftId,
           date: today,
-          scheduledStart: scheduledStart,
-          scheduledEnd: scheduledEnd,
+          scheduledStart: finalScheduledStart,
+          scheduledEnd: finalScheduledEnd,
           status: attendanceStatus, // LEAVE if approved leave exists, otherwise NOT_CHECKED_IN
-          lateMinutes: 0
+          lateMinutes: 0,
+          notes: shiftSwapInfo ? `Shift swapped with ${shiftSwapInfo.swappedWithEmployeeName}` : null
         }
       })
 

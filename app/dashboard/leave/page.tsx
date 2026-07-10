@@ -1,6 +1,6 @@
 import { LeaveHeader } from '@/components/leave/leave-header'
 import { LeaveStats } from '@/components/leave/leave-stats'
-import { LeaveRequestsTable } from '@/components/leave/leave-requests-table'
+import { UnifiedRequestsTable } from '@/components/leave/unified-requests-table'
 import { getCurrentUser } from '@/lib/system'
 
 export default async function LeavePage() {
@@ -12,7 +12,7 @@ export default async function LeavePage() {
     <div className="space-y-6">
       <LeaveHeader isClient={isClient} />
       <LeaveStats />
-      <LeaveRequestsTable />
+      <UnifiedRequestsTable />
     </div>
   )
 }

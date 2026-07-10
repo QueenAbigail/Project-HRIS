@@ -168,6 +168,8 @@ model User {
   bankName              String?
   accountHolder         String?
   accountNumber         String?
+  swapsFrom             ShiftSwap[]               @relation("SwapFrom")
+  swapsTo               ShiftSwap[]               @relation("SwapTo")
 
   @@index([siteId])
   @@index([companyId])
@@ -495,6 +497,28 @@ model BulkImportRecord {
   createdAt       DateTime @default(now())
   
   @@map("bulk_import_records")
+}
+
+model ShiftSwap {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeFromId  String
+  employeeFrom    User      @relation("SwapFrom", fields: [employeeFromId], references: [id], onDelete: Cascade)
+  employeeToId    String
+  employeeTo      User      @relation("SwapTo", fields: [employeeToId], references: [id], onDelete: Cascade)
+  swapDate        DateTime  @db.Date
+  siteId          String
+  site            Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  reason          String?
+  status          String    @default("Pending") // Pending, Approved, Rejected
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([employeeFromId, employeeToId, swapDate]) // Prevent duplicate swaps on same date
+  @@index([employeeFromId])
+  @@index([employeeToId])
+  @@index([status])
+  @@index([swapDate])
+  @@map("shift_swaps")
 }
 
 model CronLog {
