@@ -161,6 +161,7 @@ model User {
   ktaExpiry             DateTime?                 @db.Date
   allowMobileAttendance Boolean                   @default(false)
   allowWebAppAccess     Boolean                   @default(false)
+  expoPushToken         String?                   @db.Text
   bankName              String?
   accountHolder         String?
   accountNumber         String?
