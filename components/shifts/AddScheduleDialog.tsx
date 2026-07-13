@@ -30,6 +30,7 @@ export function AddScheduleDialog({
   const [employeeSearch, setEmployeeSearch] = useState('')
   const [showEmployeeList, setShowEmployeeList] = useState(false)
   const [useDateRange, setUseDateRange] = useState(false)
+  const [useRotationPattern, setUseRotationPattern] = useState(false)
   const [selectedDays, setSelectedDays] = useState({
     mon: true,
     tue: true,
@@ -39,6 +40,16 @@ export function AddScheduleDialog({
     sat: false,
     sun: false,
   })
+  const [rotationPattern, setRotationPattern] = useState<Array<{ shiftId: string; days: number }>>([
+    { shiftId: '', days: 2 },
+    { shiftId: '', days: 2 },
+    { shiftId: '', days: 2 },
+    { shiftId: '', days: 2 },
+  ])
+  const [rotationStartDate, setRotationStartDate] = useState(
+    new Date().toISOString().split('T')[0]
+  )
+  const [rotationDuration, setRotationDuration] = useState(30)
   const [formData, setFormData] = useState({
     employeeId: '',
     employeeName: '',
@@ -109,43 +120,96 @@ export function AddScheduleDialog({
     return dates
   }
 
+  const generateRotationSchedules = (): Array<{ date: string; shiftId: string }> => {
+    const schedules: Array<{ date: string; shiftId: string }> = []
+    const start = new Date(rotationStartDate)
+    const end = new Date(start.getTime() + rotationDuration * 24 * 60 * 60 * 1000)
+    
+    let currentDay = 0
+    let patternIndex = 0
+    
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const pattern = rotationPattern[patternIndex]
+      if (!pattern || !pattern.shiftId) break
+      
+      schedules.push({
+        date: d.toISOString().split('T')[0],
+        shiftId: pattern.shiftId,
+      })
+      
+      currentDay++
+      
+      // Move to next shift in pattern when days are complete
+      if (currentDay >= pattern.days) {
+        currentDay = 0
+        patternIndex = (patternIndex + 1) % rotationPattern.length
+      }
+    }
+    
+    return schedules
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.employeeId || !formData.shiftId) {
-      toast.error('Please fill in all fields')
+    if (!formData.employeeId) {
+      toast.error('Please select an employee')
       return
     }
 
-    if (useDateRange && !formData.startDate && !formData.endDate) {
-      toast.error('Please select date range')
-      return
-    }
+    if (useRotationPattern) {
+      // Validate rotation pattern
+      if (rotationPattern.some(p => !p.shiftId || p.days < 1)) {
+        toast.error('Please complete the rotation pattern')
+        return
+      }
 
-    if (!useDateRange && !formData.scheduleDate) {
-      toast.error('Please select a date')
-      return
-    }
+      const rotationSchedules = generateRotationSchedules()
+      if (rotationSchedules.length === 0) {
+        toast.error('No schedules generated from pattern')
+        return
+      }
 
-    try {
-      setLoading(true)
+      try {
+        setLoading(true)
 
-      if (schedule && !useDateRange) {
-        // Edit single schedule
-        const response = await fetch(`/api/schedules/${schedule.id}`, {
-          method: 'PUT',
+        const schedulesToCreate = rotationSchedules.map(s => ({
+          employeeId: formData.employeeId,
+          shiftId: s.shiftId,
+          scheduleDate: s.date,
+        }))
+
+        const response = await fetch('/api/schedules/bulk-create', {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            employeeId: formData.employeeId,
-            shiftId: formData.shiftId,
-            scheduleDate: formData.scheduleDate,
-          }),
+          body: JSON.stringify({ schedules: schedulesToCreate }),
         })
 
-        if (!response.ok) throw new Error('Failed to update schedule')
-        toast.success('Schedule updated')
-      } else if (useDateRange) {
-        // Create multiple schedules for date range
+        if (!response.ok) throw new Error('Failed to create schedules')
+        const result = await response.json()
+        toast.success(`Created ${result.created} schedules with rotation pattern`)
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to save schedules')
+      } finally {
+        setLoading(false)
+        onSuccess?.()
+        onOpenChange(false)
+        resetForm()
+      }
+    } else if (useDateRange) {
+      if (!formData.shiftId) {
+        toast.error('Please select a shift')
+        return
+      }
+
+      if (!formData.startDate || !formData.endDate) {
+        toast.error('Please select date range')
+        return
+      }
+
+      try {
+        setLoading(true)
+
         const dates = generateDateRange()
         if (dates.length === 0) {
           toast.error('No dates match the selected days')
@@ -167,29 +231,61 @@ export function AddScheduleDialog({
         if (!response.ok) throw new Error('Failed to create schedules')
         const result = await response.json()
         toast.success(`Created ${result.created} schedules`)
-      } else {
-        // Create single schedule
-        const response = await fetch('/api/schedules', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            employeeId: formData.employeeId,
-            shiftId: formData.shiftId,
-            scheduleDate: formData.scheduleDate,
-          }),
-        })
-
-        if (!response.ok) throw new Error('Failed to create schedule')
-        toast.success('Schedule created')
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to save schedules')
+      } finally {
+        setLoading(false)
+        onSuccess?.()
+        onOpenChange(false)
+        resetForm()
+      }
+    } else {
+      // Single schedule
+      if (!formData.shiftId || !formData.scheduleDate) {
+        toast.error('Please fill in all fields')
+        return
       }
 
-      onSuccess?.()
-      onOpenChange(false)
-      resetForm()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to save schedule')
-    } finally {
-      setLoading(false)
+      try {
+        setLoading(true)
+
+        if (schedule) {
+          // Edit single schedule
+          const response = await fetch(`/api/schedules/${schedule.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              employeeId: formData.employeeId,
+              shiftId: formData.shiftId,
+              scheduleDate: formData.scheduleDate,
+            }),
+          })
+
+          if (!response.ok) throw new Error('Failed to update schedule')
+          toast.success('Schedule updated')
+        } else {
+          // Create single schedule
+          const response = await fetch('/api/schedules', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              employeeId: formData.employeeId,
+              shiftId: formData.shiftId,
+              scheduleDate: formData.scheduleDate,
+            }),
+          })
+
+          if (!response.ok) throw new Error('Failed to create schedule')
+          toast.success('Schedule created')
+        }
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to save schedule')
+      } finally {
+        setLoading(false)
+        onSuccess?.()
+        onOpenChange(false)
+        resetForm()
+      }
     }
   }
 
@@ -257,19 +353,108 @@ export function AddScheduleDialog({
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="useRange"
-                checked={useDateRange}
-                onCheckedChange={(checked) => setUseDateRange(checked as boolean)}
-                disabled={!!schedule}
-              />
-              <Label htmlFor="useRange" className="font-normal cursor-pointer">
-                Apply to date range (multiple days)
-              </Label>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="useRange"
+                  checked={useDateRange && !useRotationPattern}
+                  onCheckedChange={(checked) => {
+                    setUseDateRange(checked as boolean)
+                    setUseRotationPattern(false)
+                  }}
+                  disabled={!!schedule || useRotationPattern}
+                />
+                <Label htmlFor="useRange" className="font-normal cursor-pointer">
+                  Date range
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="useRotation"
+                  checked={useRotationPattern}
+                  onCheckedChange={(checked) => {
+                    setUseRotationPattern(checked as boolean)
+                    setUseDateRange(false)
+                  }}
+                  disabled={!!schedule}
+                />
+                <Label htmlFor="useRotation" className="font-normal cursor-pointer">
+                  Rotation pattern
+                </Label>
+              </div>
             </div>
 
-            {useDateRange ? (
+            {useRotationPattern ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="rotationStart">Start Date</Label>
+                  <Input
+                    id="rotationStart"
+                    type="date"
+                    value={rotationStartDate}
+                    onChange={(e) => setRotationStartDate(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="rotationDays">Duration (days)</Label>
+                  <Input
+                    id="rotationDays"
+                    type="number"
+                    min="1"
+                    max="365"
+                    value={rotationDuration}
+                    onChange={(e) => setRotationDuration(parseInt(e.target.value))}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Rotation Pattern</Label>
+                  <div className="bg-muted p-3 rounded-md space-y-3">
+                    {rotationPattern.map((pattern, idx) => (
+                      <div key={idx} className="flex gap-2 items-end">
+                        <div className="flex-1">
+                          <Label className="text-xs text-muted-foreground">Shift {idx + 1}</Label>
+                          <Select
+                            value={pattern.shiftId}
+                            onValueChange={(value) => {
+                              const newPattern = [...rotationPattern]
+                              newPattern[idx].shiftId = value
+                              setRotationPattern(newPattern)
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select shift..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {shifts.map(shift => (
+                                <SelectItem key={shift.id} value={shift.id}>
+                                  {shift.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="w-16">
+                          <Label className="text-xs text-muted-foreground">Days</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="31"
+                            value={pattern.days}
+                            onChange={(e) => {
+                              const newPattern = [...rotationPattern]
+                              newPattern[idx].days = parseInt(e.target.value)
+                              setRotationPattern(newPattern)
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : useDateRange ? (
               <>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
@@ -337,23 +522,25 @@ export function AddScheduleDialog({
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="shift">Shift</Label>
-            <Select value={formData.shiftId} onValueChange={(value) =>
-              setFormData({ ...formData, shiftId: value })
-            }>
-              <SelectTrigger id="shift">
-                <SelectValue placeholder="Select shift..." />
-              </SelectTrigger>
-              <SelectContent>
-                {shifts.map(shift => (
-                  <SelectItem key={shift.id} value={shift.id}>
-                    {shift.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {!useRotationPattern && (
+            <div className="space-y-2">
+              <Label htmlFor="shift">Shift</Label>
+              <Select value={formData.shiftId} onValueChange={(value) =>
+                setFormData({ ...formData, shiftId: value })
+              }>
+                <SelectTrigger id="shift">
+                  <SelectValue placeholder="Select shift..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {shifts.map(shift => (
+                    <SelectItem key={shift.id} value={shift.id}>
+                      {shift.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </form>
 
         <DialogFooter>
