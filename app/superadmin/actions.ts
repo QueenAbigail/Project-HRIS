@@ -98,12 +98,21 @@ export async function getShifts() {
   }
 }
 
-export async function getEmployeeSchedules() {
+export async function getEmployeeSchedules(includePast: boolean = false) {
   try {
-    console.log('[v0] Fetching employee schedules...')
+    console.log('[v0] Fetching employee schedules...', { includePast })
+    
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
     
     // Fetch from Schedule table (new manual assignment system)
+    // By default only fetch future schedules for better performance
     const schedules = await prisma.schedule.findMany({
+      where: includePast ? {} : {
+        scheduleDate: {
+          gte: today
+        }
+      },
       include: {
         employee: {
           select: {
