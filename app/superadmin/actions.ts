@@ -650,27 +650,6 @@ export async function getImportAuditTrail(limit: number = 50) {
     return []
   }
 }
-      },
-      orderBy: { createdAt: 'desc' },
-      take: limit
-    })
-
-    return logs.map(log => ({
-      id: log.id,
-      fileName: log.fileName,
-      importedBy: log.importedByUser?.name || 'Unknown',
-      importedAt: log.createdAt,
-      totalRows: log.totalRows,
-      successCount: log.successCount,
-      errorCount: log.errorCount,
-      status: log.status
-    }))
-  } catch (error) {
-    console.error('[v0] Error fetching audit trail:', error)
-    return []
-  }
-}
-
 
 // Auto-generate expected attendance records for today based on assignments
 export async function generateTodayAttendanceRecords() {
