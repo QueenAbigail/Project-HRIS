@@ -7,8 +7,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ChevronsUpDown, Check } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface AddScheduleDialogProps {
   open: boolean
@@ -29,6 +32,7 @@ export function AddScheduleDialog({
   const [employees, setEmployees] = useState<any[]>([])
   const [employeeSearch, setEmployeeSearch] = useState('')
   const [showEmployeeList, setShowEmployeeList] = useState(false)
+  const [openCombobox, setOpenCombobox] = useState(false)
   const [useDateRange, setUseDateRange] = useState(false)
   const [useRotationPattern, setUseRotationPattern] = useState(false)
   const [selectedDays, setSelectedDays] = useState({
@@ -322,34 +326,69 @@ export function AddScheduleDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="employee">Employee</Label>
-            <div className="relative">
-              <Input
-                id="employee"
-                placeholder="Search employee..."
-                value={employeeSearch || formData.employeeName}
-                onChange={(e) => {
-                  setEmployeeSearch(e.target.value)
-                  setShowEmployeeList(true)
-                }}
-                onFocus={() => setShowEmployeeList(true)}
-              />
-              {showEmployeeList && filteredEmployees.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                  {filteredEmployees.slice(0, 10).map((emp) => (
-                    <button
-                      key={emp.id}
-                      type="button"
-                      onClick={() => handleEmployeeSelect(emp)}
-                      className="w-full text-left px-3 py-2 hover:bg-muted"
-                    >
-                      <div className="font-medium">{emp.name}</div>
-                      <div className="text-sm text-muted-foreground">{emp.id}</div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <Label>Employee</Label>
+            <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openCombobox}
+                  className="w-full justify-between"
+                >
+                  {formData.employeeId
+                    ? employees.find(e => e.id === formData.employeeId)
+                      ? `${employees.find(e => e.id === formData.employeeId)?.id} - ${employees.find(e => e.id === formData.employeeId)?.name}`
+                      : 'Select employee...'
+                    : 'Select employee...'}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0">
+                <Command>
+                  <CommandInput 
+                    placeholder="Search by ID or name..." 
+                    value={employeeSearch}
+                    onValueChange={setEmployeeSearch}
+                  />
+                  <CommandEmpty>No employee found.</CommandEmpty>
+                  <CommandList>
+                    <CommandGroup>
+                      {employees
+                        .filter(emp =>
+                          emp.name.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+                          emp.id.toLowerCase().includes(employeeSearch.toLowerCase())
+                        )
+                        .map((emp) => (
+                          <CommandItem
+                            key={emp.id}
+                            value={emp.id}
+                            onSelect={() => {
+                              setFormData({
+                                ...formData,
+                                employeeId: emp.id,
+                                employeeName: emp.name,
+                              })
+                              setOpenCombobox(false)
+                              setEmployeeSearch('')
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 h-4 w-4',
+                                formData.employeeId === emp.id ? 'opacity-100' : 'opacity-0'
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span className="font-medium">{emp.id}</span>
+                              <span className="text-sm text-muted-foreground">{emp.name}</span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-3">
