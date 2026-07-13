@@ -367,7 +367,7 @@ export function AddScheduleDialog({
                     {formData.employeeId
                       ? (() => {
                           const emp = employees.find((e) => e.id === formData.employeeId)
-                          return emp ? `${emp.id} - ${emp.name}` : 'Select employee...'
+                          return emp ? `${emp.employeeCode || emp.id} - ${emp.name}` : 'Select employee...'
                         })()
                       : 'Search by employee ID or name...'}
                   </span>
@@ -388,7 +388,7 @@ export function AddScheduleDialog({
                       {filteredEmployees.map((employee) => (
                         <CommandItem
                           key={employee.id}
-                          value={`${employee.id} ${employee.name}`}
+                          value={`${employee.employeeCode || employee.id} ${employee.name}`}
                           onSelect={() => {
                             setFormData((prev) => ({
                               ...prev,
@@ -409,7 +409,7 @@ export function AddScheduleDialog({
                             )}
                           />
                           <div className="flex flex-col gap-1 flex-1">
-                            <span className="text-sm font-medium">{employee.id} - {employee.name}</span>
+                            <span className="text-sm font-medium">{employee.employeeCode || employee.id} - {employee.name}</span>
                             <span className="text-xs text-muted-foreground">{employee.email}</span>
                           </div>
                         </CommandItem>
@@ -507,12 +507,12 @@ export function AddScheduleDialog({
                       </Button>
                     </div>
                   </div>
-                  <div className="bg-muted p-3 rounded-md space-y-3">
+                  <div className="bg-muted p-3 rounded-md max-h-64 overflow-y-auto space-y-2">
                     {rotationPattern.map((pattern, idx) => (
-                      <div key={idx} className="space-y-2 pb-3 border-b border-border last:border-0 last:pb-0">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-sm font-medium">Rotation {idx + 1}</Label>
-                          <div className="flex items-center space-x-2">
+                      <div key={idx} className="bg-background p-2.5 rounded border border-border space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <Label className="text-xs font-medium">R{idx + 1}</Label>
+                          <div className="flex items-center space-x-1.5">
                             <Checkbox
                               id={`offday-${idx}`}
                               checked={pattern.isOffDay || false}
@@ -524,48 +524,51 @@ export function AddScheduleDialog({
                               }}
                             />
                             <Label htmlFor={`offday-${idx}`} className="text-xs cursor-pointer">
-                              Day Off
+                              Off
                             </Label>
                           </div>
                         </div>
-                        {!pattern.isOffDay ? (
-                          <Select
-                            value={pattern.shiftId}
-                            onValueChange={(value) => {
-                              const newPattern = [...rotationPattern]
-                              newPattern[idx].shiftId = value
-                              setRotationPattern(newPattern)
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select shift..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {shifts.map(shift => (
-                                <SelectItem key={shift.id} value={shift.id}>
-                                  {shift.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <div className="text-sm text-muted-foreground p-2 bg-background rounded">
-                            Day Off
+                        <div className="space-y-1">
+                          {!pattern.isOffDay ? (
+                            <Select
+                              value={pattern.shiftId}
+                              onValueChange={(value) => {
+                                const newPattern = [...rotationPattern]
+                                newPattern[idx].shiftId = value
+                                setRotationPattern(newPattern)
+                              }}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue placeholder="Shift..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {shifts.map(shift => (
+                                  <SelectItem key={shift.id} value={shift.id}>
+                                    {shift.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <div className="text-xs text-muted-foreground p-1.5 bg-muted rounded">
+                              Day Off
+                            </div>
+                          )}
+                          <div>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="31"
+                              value={pattern.days}
+                              onChange={(e) => {
+                                const newPattern = [...rotationPattern]
+                                newPattern[idx].days = parseInt(e.target.value)
+                                setRotationPattern(newPattern)
+                              }}
+                              className="h-7 text-xs p-1"
+                              placeholder="Days"
+                            />
                           </div>
-                        )}
-                        <div>
-                          <Label className="text-xs text-muted-foreground">Days</Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            max="31"
-                            value={pattern.days}
-                            onChange={(e) => {
-                              const newPattern = [...rotationPattern]
-                              newPattern[idx].days = parseInt(e.target.value)
-                              setRotationPattern(newPattern)
-                            }}
-                          />
                         </div>
                       </div>
                     ))}
