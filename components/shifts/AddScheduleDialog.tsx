@@ -147,10 +147,18 @@ export function AddScheduleDialog({
     const start = new Date(rotationStartDate)
     const end = new Date(start.getTime() + rotationDuration * 24 * 60 * 60 * 1000)
     
+    console.log('[v0] Rotation schedule generation:', {
+      start: rotationStartDate,
+      end: end.toISOString(),
+      duration: rotationDuration,
+      patterns: rotationPattern.length,
+    })
+    
     let currentDay = 0
     let patternIndex = 0
+    let d = new Date(start)
     
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    while (d <= end && schedules.length < 365) { // Safety limit
       const pattern = rotationPattern[patternIndex]
       if (!pattern) break
       
@@ -166,10 +174,12 @@ export function AddScheduleDialog({
           shiftId: pattern.shiftId,
         })
       } else {
+        console.warn('[v0] Rotation pattern missing shift and not off day:', pattern)
         break // Skip if shift not selected and not an off day
       }
       
       currentDay++
+      d.setDate(d.getDate() + 1)
       
       // Move to next shift in pattern when days are complete
       if (currentDay >= pattern.days) {
@@ -178,6 +188,7 @@ export function AddScheduleDialog({
       }
     }
     
+    console.log('[v0] Generated schedules count:', schedules.length)
     return schedules
   }
 
@@ -197,6 +208,8 @@ export function AddScheduleDialog({
       }
 
       const rotationSchedules = generateRotationSchedules()
+      console.log('[v0] Generated rotation schedules:', rotationSchedules.length, rotationSchedules.slice(0, 3))
+      
       if (rotationSchedules.length === 0) {
         toast.error('No schedules generated from pattern')
         return
@@ -211,14 +224,22 @@ export function AddScheduleDialog({
           scheduleDate: s.date,
         }))
 
+        console.log('[v0] Schedules to create:', schedulesToCreate.length, schedulesToCreate.slice(0, 3))
+
         const response = await fetch('/api/schedules/bulk-create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ schedules: schedulesToCreate }),
         })
 
-        if (!response.ok) throw new Error('Failed to create schedules')
+        if (!response.ok) {
+          const errorData = await response.json()
+          console.error('[v0] Bulk create error:', errorData)
+          throw new Error(errorData.error || 'Failed to create schedules')
+        }
+        
         const result = await response.json()
+        console.log('[v0] Bulk create result:', result)
         toast.success(`Created ${result.created} schedules with rotation pattern`)
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Failed to save schedules')
