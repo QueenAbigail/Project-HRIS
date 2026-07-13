@@ -3,9 +3,10 @@ import { prisma } from '@/lib/prisma'
 import { generateTodayAttendanceRecords } from '@/app/superadmin/actions'
 
 // Import schedules in bulk from Excel file
+// Uses the bulk-create endpoint which supports the new manual assignment modes
 export async function POST(req: NextRequest) {
   try {
-    const { schedules: importedSchedules } = await req.json()
+    const { schedules: importedSchedules, replace = true } = await req.json()
 
     if (!Array.isArray(importedSchedules) || importedSchedules.length === 0) {
       return NextResponse.json(
@@ -14,12 +15,17 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    let created = 0
-    const errors: string[] = []
+    console.log('[v0] Import received:', importedSchedules.length, 'schedules, replace:', replace)
 
+    let processed = 0
+    const errors: string[] = []
+    const schedulesToCreate: Array<{ employeeId: string; shiftId: string; scheduleDate: string }> = []
+    const employeesProcessed = new Set<string>()
+
+    // Parse and validate imported schedules
     for (const schedule of importedSchedules) {
       try {
-        const { employeeName, employeeId, date, shift, shiftStart, shiftEnd } = schedule
+        const { employeeName, employeeId, date, shift } = schedule
 
         // Find employee by name or ID
         let employee
@@ -40,29 +46,18 @@ export async function POST(req: NextRequest) {
 
         // Map shift code to shift ID
         let shiftId: string | null = null
-        let finalShiftStart = shiftStart
-        let finalShiftEnd = shiftEnd
-
-        // Handle different shift codes
         const shiftCode = String(shift).toUpperCase()
+
         if (shiftCode === 'P' || shiftCode === 'PAGI' || shiftCode === 'MORNING') {
           const foundShift = await prisma.shift.findFirst({
             where: { name: { contains: 'Morning', mode: 'insensitive' } }
           })
-          if (foundShift) {
-            shiftId = foundShift.id
-            finalShiftStart = foundShift.startTime
-            finalShiftEnd = foundShift.endTime
-          }
+          if (foundShift) shiftId = foundShift.id
         } else if (shiftCode === 'M' || shiftCode === 'MALAM' || shiftCode === 'EVENING') {
           const foundShift = await prisma.shift.findFirst({
             where: { name: { contains: 'Evening', mode: 'insensitive' } }
           })
-          if (foundShift) {
-            shiftId = foundShift.id
-            finalShiftStart = foundShift.startTime
-            finalShiftEnd = foundShift.endTime
-          }
+          if (foundShift) shiftId = foundShift.id
         } else if (shiftCode === 'X' || shiftCode === 'OFF' || shiftCode === 'DAY OFF') {
           // Skip day off entries
           continue
@@ -74,60 +69,87 @@ export async function POST(req: NextRequest) {
         }
 
         // Parse date
-        let scheduleDate: Date
+        let scheduleDate: string
         try {
+          let parsedDate: Date
           if (typeof date === 'number') {
             // Excel serial number
-            scheduleDate = new Date((date - 25569) * 86400 * 1000)
+            parsedDate = new Date((date - 25569) * 86400 * 1000)
           } else {
-            scheduleDate = new Date(date)
+            parsedDate = new Date(date)
           }
 
-          if (isNaN(scheduleDate.getTime())) {
+          if (isNaN(parsedDate.getTime())) {
             errors.push(`Invalid date format: ${date}`)
             continue
           }
+          scheduleDate = parsedDate.toISOString().split('T')[0]
         } catch (e) {
           errors.push(`Error parsing date ${date}: ${String(e)}`)
           continue
         }
 
-        // Create schedule record
-        await prisma.schedule.create({
-          data: {
-            employeeId: employee.id,
-            shiftId,
-            scheduleDate,
-            shiftStart: finalShiftStart,
-            shiftEnd: finalShiftEnd,
-            isException: false
-          }
+        // Add to bulk create list
+        schedulesToCreate.push({
+          employeeId: employee.id,
+          shiftId,
+          scheduleDate,
         })
 
-        created++
+        employeesProcessed.add(employee.id)
+        processed++
       } catch (error) {
-        console.error('Error creating schedule:', error)
-        errors.push(`Error creating schedule: ${String(error)}`)
+        console.error('[v0] Error processing schedule:', error)
+        errors.push(`Error processing schedule: ${String(error)}`)
       }
     }
 
+    console.log('[v0] Import processed:', processed, 'schedules to create')
+
+    if (schedulesToCreate.length === 0) {
+      return NextResponse.json({
+        success: false,
+        created: 0,
+        errors,
+        message: `No valid schedules to import (${errors.length} errors)`
+      })
+    }
+
+    // Use bulk-create endpoint for consistency with manual UI
+    const bulkCreateResponse = await fetch(
+      new URL('/api/schedules/bulk-create', req.nextUrl.origin).toString(),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schedules: schedulesToCreate,
+          replace,
+          // If replacing, send first employee ID (imports usually per-employee)
+          employeeId: employeesProcessed.size === 1 ? Array.from(employeesProcessed)[0] : undefined,
+        }),
+      }
+    )
+
+    const bulkResult = await bulkCreateResponse.json()
+    console.log('[v0] Bulk create result:', bulkResult)
+
     // Generate today's attendance if any schedules were created for today
-    if (created > 0) {
+    if (bulkResult.created > 0) {
       try {
         await generateTodayAttendanceRecords()
       } catch (attendanceError) {
-        console.error('Error generating attendance:', attendanceError)
+        console.error('[v0] Error generating attendance:', attendanceError)
       }
     }
 
     return NextResponse.json({
-      success: true,
-      created,
-      errors: errors.length > 0 ? errors : undefined,
-      message: `Successfully imported ${created} schedules${errors.length > 0 ? ` (${errors.length} errors)` : ''}`
+      success: bulkResult.created > 0,
+      created: bulkResult.created,
+      errors: [...(bulkResult.errors || []), ...errors],
+      message: `Successfully imported ${bulkResult.created} schedules${errors.length > 0 ? ` (${errors.length} errors)` : ''}`
     })
   } catch (error) {
-    console.error('Schedule import error:', error)
+    console.error('[v0] Schedule import error:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Import failed' },
       { status: 500 }
