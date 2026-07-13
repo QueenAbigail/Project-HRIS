@@ -4,9 +4,9 @@ import { prisma } from '@/lib/prisma'
 // Bulk create multiple schedules
 export async function POST(req: NextRequest) {
   try {
-    const { schedules } = await req.json()
+    const { schedules, replace = false, employeeId: filterEmployeeId } = await req.json()
 
-    console.log('[v0] Bulk create received:', schedules.length, 'schedules')
+    console.log('[v0] Bulk create received:', schedules.length, 'schedules, replace:', replace)
     console.log('[v0] First schedule sample:', schedules[0])
 
     if (!Array.isArray(schedules) || schedules.length === 0) {
@@ -14,6 +14,25 @@ export async function POST(req: NextRequest) {
         { error: 'No schedules provided' },
         { status: 400 }
       )
+    }
+
+    // If replace mode is enabled, delete existing schedules for this employee in the date range
+    if (replace && filterEmployeeId) {
+      const dates = schedules.map(s => new Date(s.scheduleDate))
+      const minDate = new Date(Math.min(...dates.map(d => d.getTime())))
+      const maxDate = new Date(Math.max(...dates.map(d => d.getTime())))
+
+      console.log('[v0] Replace mode: deleting schedules for', filterEmployeeId, 'between', minDate, 'and', maxDate)
+
+      await prisma.schedule.deleteMany({
+        where: {
+          employeeId: filterEmployeeId,
+          scheduleDate: {
+            gte: minDate,
+            lte: maxDate,
+          },
+        },
+      })
     }
 
     let created = 0
@@ -31,17 +50,20 @@ export async function POST(req: NextRequest) {
           continue
         }
 
-        // Check if schedule already exists for this employee and date
-        const existing = await prisma.schedule.findFirst({
-          where: {
-            employeeId,
-            scheduleDate: new Date(scheduleDate),
-          },
-        })
+        // In replace mode, we already deleted existing schedules, so no need to check
+        if (!replace) {
+          // Check if schedule already exists for this employee and date
+          const existing = await prisma.schedule.findFirst({
+            where: {
+              employeeId,
+              scheduleDate: new Date(scheduleDate),
+            },
+          })
 
-        if (existing) {
-          errors.push(`Schedule already exists for ${scheduleDate}`)
-          continue
+          if (existing) {
+            errors.push(`Schedule already exists for ${scheduleDate}`)
+            continue
+          }
         }
 
         // Day offs are not supported in this schema - shiftId is required

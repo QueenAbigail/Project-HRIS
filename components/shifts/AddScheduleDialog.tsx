@@ -264,7 +264,11 @@ export function AddScheduleDialog({
         const response = await fetch('/api/schedules/bulk-create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ schedules: schedulesToCreate }),
+          body: JSON.stringify({ 
+            schedules: schedulesToCreate,
+            replace: !!schedule,
+            employeeId: formData.employeeId,
+          }),
         })
 
         if (!response.ok) {
@@ -320,7 +324,11 @@ export function AddScheduleDialog({
         const response = await fetch('/api/schedules/bulk-create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ schedules: schedulesToCreate }),
+          body: JSON.stringify({ 
+            schedules: schedulesToCreate,
+            replace: !!schedule,
+            employeeId: formData.employeeId,
+          }),
         })
 
         if (!response.ok) throw new Error('Failed to create schedules')
