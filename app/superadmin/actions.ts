@@ -638,148 +638,18 @@ export async function getCompanyInfo() {
 /**
  * Get import audit trail
  */
-      data: {
-        fileName,
-        importedBy: userId,
-        totalRows: rows.length,
-        successCount: 0,
-        errorCount: 0,
-        validationDetails: JSON.stringify(validation),
-        status: 'SUCCESS'
-      }
-    })
-
-    console.log('[v0] Created import log:', importLog.id)
-
-    // Process each valid row in a transaction
-    const createdAssignments = []
-    const importRecords = []
-
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i]
-
-      try {
-        // Get actual employee ID
-        const employee = context.employees.get(row.employeeId)
-        if (!employee) {
-          throw new Error('Employee not found')
-        }
-
-        // Get site
-        const site = context.sites.get(row.site.toLowerCase())
-        if (!site) {
-          throw new Error('Site not found')
-        }
-
-        // Get first shift for pattern (will be improved later)
-        const firstShift = [...context.shifts.values()][0]
-        if (!firstShift) {
-          throw new Error('No shifts found in system')
-        }
-
-
-
-        createdAssignments.push(assignment)
-
-        // Create import record
-        importRecords.push({
-          bulkImportLogId: importLog.id,
-          employeeId: row.employeeId,
-          employeeName: row.employeeName,
-          siteId: site.id,
-          assignmentId: assignment.id,
-          startDate,
-          endDate,
-          dailySchedule: JSON.stringify({
-            monday: row.monday,
-            tuesday: row.tuesday,
-            wednesday: row.wednesday,
-            thursday: row.thursday,
-            friday: row.friday,
-            saturday: row.saturday,
-            sunday: row.sunday
-          }),
-          status: 'SUCCESS'
-        })
-      } catch (error) {
-        // Record error but continue processing
-        importRecords.push({
-          bulkImportLogId: importLog.id,
-          employeeId: row.employeeId,
-          employeeName: row.employeeName,
-          siteId: '', // Will fail constraint, but record the error
-          startDate: new Date(row.startDate),
-          endDate: row.endDate ? new Date(row.endDate) : null,
-          dailySchedule: JSON.stringify({}),
-          status: 'ERROR',
-          errorMessage: error instanceof Error ? error.message : 'Unknown error'
-        })
-      }
-    }
-
-    // Batch create import records
-    if (importRecords.length > 0) {
-      await prisma.bulkImportRecord.createMany({
-        data: importRecords.filter(r => r.siteId) // Only records with valid siteId
-      })
-    }
-
-    // Update import log
-    const successCount = importRecords.filter(r => r.status === 'SUCCESS').length
-    const errorCount = importRecords.filter(r => r.status === 'ERROR').length
-
-    await prisma.bulkImportLog.update({
-      where: { id: importLog.id },
-      data: {
-        successCount,
-        errorCount,
-        status: errorCount > 0 ? 'PARTIAL' : 'SUCCESS'
-      }
-    })
-
-    console.log('[v0] Bulk import completed:', {
-      importLogId: importLog.id,
-      createdAssignments: createdAssignments.length,
-      errors: errorCount
-    })
-
-    revalidatePath('/superadmin/schedules')
-
-    return {
-      success: true,
-      importLogId: importLog.id,
-      message: `Successfully imported ${successCount}/${rows.length} employees`,
-      successCount,
-      errorCount
-    }
-  } catch (error) {
-    // Update log with failure status
-    if (importLog) {
-      await prisma.bulkImportLog.update({
-        where: { id: importLog.id },
-        data: {
-          status: 'FAILED',
-          validationDetails: JSON.stringify({
-            error: error instanceof Error ? error.message : 'Unknown error'
-          })
-        }
-      })
-    }
-
-    console.error('[v0] Bulk import failed:', error)
-    throw error
-  }
-}
-
-/**
- * Get import audit trail
- */
-export async function getImportAuditTrail(limit: number = 20) {
+export async function getImportAuditTrail(limit: number = 50) {
   try {
     const logs = await prisma.bulkImportLog.findMany({
-      include: {
-        importedByUser: { select: { name: true, email: true } },
-        importRecords: true
+      orderBy: { createdAt: 'desc' },
+      take: limit
+    })
+    return logs
+  } catch (error) {
+    console.error('[v0] Error fetching import audit trail:', error)
+    return []
+  }
+}
       },
       orderBy: { createdAt: 'desc' },
       take: limit
