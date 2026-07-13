@@ -60,23 +60,36 @@ export function AddScheduleDialog({
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
   })
+  const [editReason, setEditReason] = useState('')
+  const [isEditingPast, setIsEditingPast] = useState(false)
+  const [employeesLoaded, setEmployeesLoaded] = useState(false)
 
   useEffect(() => {
     if (open && schedule) {
       // In edit mode, load the single schedule data
+      const scheduleDate = schedule.scheduleDate?.split('T')[0] || ''
+      const today = new Date().toISOString().split('T')[0]
+      const isPast = scheduleDate < today
+      
       setFormData({
         employeeId: schedule.employeeId,
         employeeName: schedule.employeeName,
         shiftId: schedule.shiftId,
-        scheduleDate: schedule.scheduleDate?.split('T')[0] || '',
+        scheduleDate: scheduleDate,
+        startDate: scheduleDate,
+        endDate: scheduleDate,
       })
-      // Reset pattern modes for edit - default to single date/shift form
+      setIsEditingPast(isPast)
+      setEditReason('')
+      // Allow switching between modes in edit
       setUseDateRange(false)
       setUseRotationPattern(false)
     } else if (open) {
       // In create mode, reset to defaults
       setUseDateRange(false)
       setUseRotationPattern(false)
+      setIsEditingPast(false)
+      setEditReason('')
       setFormData({
         employeeId: '',
         employeeName: '',
@@ -213,6 +226,12 @@ export function AddScheduleDialog({
 
     if (!formData.employeeId) {
       toast.error('Please select an employee')
+      return
+    }
+
+    // Validate past schedule edit reason
+    if (schedule && isEditingPast && !editReason.trim()) {
+      toast.error('Please provide a reason for editing this past schedule')
       return
     }
 
@@ -466,38 +485,36 @@ export function AddScheduleDialog({
           </div>
 
           <div className="space-y-3">
-            {!schedule && (
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="useRange"
-                    checked={useDateRange}
-                    onCheckedChange={(checked) => {
-                      setUseDateRange(checked as boolean)
-                      if (checked) setUseRotationPattern(false)
-                    }}
-                    disabled={useRotationPattern}
-                  />
-                  <Label htmlFor="useRange" className="font-normal cursor-pointer">
-                    Date range
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="useRotation"
-                    checked={useRotationPattern}
-                    onCheckedChange={(checked) => {
-                      setUseRotationPattern(checked as boolean)
-                      if (checked) setUseDateRange(false)
-                    }}
-                    disabled={useDateRange}
-                  />
-                  <Label htmlFor="useRotation" className="font-normal cursor-pointer">
-                    Rotation pattern
-                  </Label>
-                </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="useRange"
+                  checked={useDateRange}
+                  onCheckedChange={(checked) => {
+                    setUseDateRange(checked as boolean)
+                    if (checked) setUseRotationPattern(false)
+                  }}
+                  disabled={useRotationPattern}
+                />
+                <Label htmlFor="useRange" className="font-normal cursor-pointer">
+                  Date range
+                </Label>
               </div>
-            )}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="useRotation"
+                  checked={useRotationPattern}
+                  onCheckedChange={(checked) => {
+                    setUseRotationPattern(checked as boolean)
+                    if (checked) setUseDateRange(false)
+                  }}
+                  disabled={useDateRange}
+                />
+                <Label htmlFor="useRotation" className="font-normal cursor-pointer">
+                  Rotation pattern
+                </Label>
+              </div>
+            </div>
 
             {useRotationPattern ? (
               <>
@@ -708,13 +725,29 @@ export function AddScheduleDialog({
               </Select>
             </div>
           )}
+
+          {schedule && isEditingPast && (
+            <div className="space-y-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-3 rounded-md">
+              <Label className="text-sm font-semibold">Reason for edit (past schedule)*</Label>
+              <p className="text-xs text-muted-foreground">This schedule is in the past. Please provide a reason for this change:</p>
+              <Input
+                placeholder="e.g., Correction for missed shift, Staff swap approval, etc."
+                value={editReason}
+                onChange={(e) => setEditReason(e.target.value)}
+                className="text-sm"
+              />
+            </div>
+          )}
         </form>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={loading}>
+          <Button 
+            onClick={handleSubmit} 
+            disabled={loading || (schedule && isEditingPast && !editReason.trim())}
+          >
             {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
             {schedule ? 'Update' : 'Create'}
           </Button>
