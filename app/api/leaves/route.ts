@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
-import { calculateWorkingDaysForLeave, formatDayBreakdown } from '@/lib/leave-validation'
 
 export async function GET(request: NextRequest) {
   try {
@@ -49,48 +48,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch employee's current active pattern assignment
-    const patternAssignment = await prisma.employeePatternAssignment.findFirst({
+    // Calculate working days - count days with schedules in the date range
+    const scheduledDays = await prisma.schedule.count({
       where: {
-        userId,
-        status: 'ACTIVE',
-        startDate: { lte: new Date(startDate) },
-        OR: [{ endDate: null }, { endDate: { gte: new Date(startDate) } }],
-      },
-      include: {
-        pattern: true,
+        employeeId: userId,
+        scheduleDate: {
+          gte: new Date(startDate),
+          lte: new Date(endDate),
+        },
       },
     })
 
-    let workingDaysCount = 0
-    let dayBreakdown: string | null = null
-
-    if (patternAssignment && patternAssignment.pattern) {
-      try {
-        // Calculate working days based on pattern type
-        const result = await calculateWorkingDaysForLeave(
-          new Date(startDate),
-          new Date(endDate),
-          patternAssignment.pattern
-        )
-
-        workingDaysCount = result.workingDaysCount
-        dayBreakdown = JSON.stringify({
-          summary: result.summary,
-          breakdown: result.breakdown,
-        })
-
-        console.log('[v0] Leave validation - Pattern:', patternAssignment.pattern.type, 'Working days:', workingDaysCount, 'Summary:', result.summary)
-      } catch (error) {
-        console.error('[v0] Error calculating working days:', error)
-        // Continue without pattern validation if error
-        workingDaysCount = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
-      }
-    } else {
-      // No pattern found, use calendar days as fallback
-      workingDaysCount = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
-      console.log('[v0] No active pattern found for user, using calendar days')
-    }
+    // Use scheduled days if available, otherwise fall back to calendar days
+    let workingDaysCount = scheduledDays > 0 ? scheduledDays : 
+      Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
+    
+    console.log('[v0] Leave validation - Working days calculated:', workingDaysCount, 'from', scheduledDays, 'scheduled days')
 
     // Create the leave record
     const leave = await prisma.leave.create({
@@ -103,7 +76,6 @@ export async function POST(request: NextRequest) {
         attachmentUrl: attachmentUrl || null,
         status: status || 'Pending',
         workingDaysCount,
-        dayBreakdown,
       },
       include: {
         user: {

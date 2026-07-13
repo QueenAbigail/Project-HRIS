@@ -98,81 +98,53 @@ export async function getShifts() {
   }
 }
 
-export async function getPatternAssignments() {
-  try {
-    const assignments = await prisma.employeePatternAssignment.findMany({
-      include: {
-        user: { select: { id: true, name: true, role: true, position: true } },
-        pattern: { select: { id: true, name: true, type: true } },
-        site: { select: { id: true, name: true } }
-      },
-      orderBy: { user: { name: 'asc' } }
-    })
-
-    return assignments.map(assignment => ({
-      id: assignment.id,
-      employeeId: assignment.user.id,
-      employeeName: assignment.user.name,
-      employeeRole: assignment.user.role,
-      patternId: assignment.pattern.id,
-      patternName: assignment.pattern.name,
-      patternType: assignment.pattern.type,
-      status: assignment.status,
-      locationId: assignment.site.id,
-      locationName: assignment.site.name,
-      startDate: assignment.startDate,
-      endDate: assignment.endDate,
-      notes: assignment.notes
-    }))
-  } catch (error) {
-    console.error('[v0] Error fetching pattern assignments:', error)
-    return []
-  }
-}
-
 export async function getEmployeeSchedules() {
   try {
     console.log('[v0] Fetching employee schedules...')
     
-    // Fetch from EmployeePatternAssignment table (pattern-based assignments)
-    const patternAssignments = await prisma.employeePatternAssignment.findMany({
+    // Fetch from Schedule table (new manual assignment system)
+    const schedules = await prisma.schedule.findMany({
       include: {
-        user: true,
-        pattern: true,
-        site: true
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phoneNumber: true,
+            role: true
+          }
+        },
+        shift: {
+          select: {
+            id: true,
+            name: true,
+            startTime: true,
+            endTime: true
+          }
+        }
       },
-      orderBy: { user: { name: 'asc' } }
+      orderBy: { scheduleDate: 'asc' }
     })
     
-    // Get first shift as default (since patterns don't have shift mappings yet)
-    const defaultShift = await prisma.shift.findFirst({
-      orderBy: { id: 'asc' }
+    console.log('[v0] Schedules fetched:', {
+      count: schedules.length,
+      dates: schedules.slice(0, 3).map(s => s.scheduleDate)
     })
     
-    if (!defaultShift && patternAssignments.length > 0) {
-      console.warn('[v0] No shifts found in database!')
-    }
-    
-    console.log('[v0] Pattern assignments fetched:', {
-      count: patternAssignments.length,
-      defaultShiftId: defaultShift?.id,
-      assignments: patternAssignments.map(a => ({
-        userId: a.userId,
-        userName: a.user.name,
-        patternName: a.pattern.name
-      }))
-    })
-    
-    // Transform to match EmployeeSchedule type
-    return patternAssignments.map(assignment => ({
-      employeeId: assignment.user.id,
-      employeeName: assignment.user.name,
-      shiftId: defaultShift?.id || '', // Use default shift ID
-      shiftName: defaultShift?.name || assignment.pattern.name, // Fallback to pattern name if no shift
-      locationId: assignment.site.id as any,
-      locationName: assignment.site.name,
-      workingDays: assignment.pattern.workingDays ? (assignment.pattern.workingDays as unknown as number[]) : [],
-      initials: assignment.user.name.split(' ').map(n => n[0]).join('').toUpperCase()
+    // Transform to match expected schedule type
+    return schedules.map(schedule => ({
+      id: schedule.id,
+      employeeId: schedule.employee.id,
+      employeeName: schedule.employee.name,
+      employeeEmail: schedule.employee.email,
+      shiftId: schedule.shift.id,
+      shiftName: schedule.shift.name,
+      scheduleDate: schedule.scheduleDate,
+      shiftStart: schedule.shiftStart,
+      shiftEnd: schedule.shiftEnd,
+      isException: schedule.isException,
+      notes: schedule.notes,
+      initials: schedule.employee.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
     }))
   } catch (error) {
     console.error('[v0] Error fetching employee schedules:', {
