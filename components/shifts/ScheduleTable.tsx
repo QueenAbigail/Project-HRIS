@@ -46,19 +46,25 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
 
   const filtered = schedules
     .filter(s => {
-      // Filter by search
+      // Filter by search (name, ID, shift, and date)
+      const searchLower = search.toLowerCase()
+      const scheduleDate = new Date(s.scheduleDate)
+      const formattedDate = scheduleDate.toLocaleDateString('en-GB') // dd/mm/yyyy
+      
       const matchesSearch =
-        s.employeeName.toLowerCase().includes(search.toLowerCase()) ||
-        s.employeeId.toLowerCase().includes(search.toLowerCase()) ||
-        s.shiftName.toLowerCase().includes(search.toLowerCase())
+        s.employeeName.toLowerCase().includes(searchLower) ||
+        s.employeeId.toLowerCase().includes(searchLower) ||
+        s.shiftName.toLowerCase().includes(searchLower) ||
+        formattedDate.includes(searchLower) ||
+        s.scheduleDate.includes(searchLower) // yyyy-mm-dd format
 
       if (!matchesSearch) return false
 
       // Filter by past dates
       if (!showPast) {
-        const scheduleDate = new Date(s.scheduleDate)
-        scheduleDate.setHours(0, 0, 0, 0)
-        return scheduleDate >= today
+        const scheduleDateCheck = new Date(s.scheduleDate)
+        scheduleDateCheck.setHours(0, 0, 0, 0)
+        return scheduleDateCheck >= today
       }
 
       return true
@@ -90,7 +96,7 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 size-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name, ID, or shift..."
+              placeholder="Search by name, ID, shift, or date..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-10"
