@@ -44,26 +44,38 @@ export async function POST(req: NextRequest) {
           continue
         }
 
-        // If shiftId is null, it's a day off - create with null shiftId
+        // Day offs are not supported in this schema - shiftId is required
+        // Skip creating schedules for day offs (they're represented by not having a schedule)
         if (!shiftId) {
-          await prisma.schedule.create({
-            data: {
-              employeeId,
-              shiftId: null,
-              scheduleDate: new Date(scheduleDate),
-              isException: false,
-            },
-          })
-        } else {
-          await prisma.schedule.create({
-            data: {
-              employeeId,
-              shiftId,
-              scheduleDate: new Date(scheduleDate),
-              isException: false,
-            },
-          })
+          console.log('[v0] Skipping day off for', employeeId, 'on', scheduleDate)
+          continue
         }
+
+        // Verify shift exists and get its time details
+        const shift = await prisma.shift.findUnique({
+          where: { id: shiftId },
+          select: {
+            id: true,
+            startTime: true,
+            endTime: true,
+          },
+        })
+
+        if (!shift) {
+          errors.push(`Shift ${shiftId} not found for date ${scheduleDate}`)
+          continue
+        }
+
+        await prisma.schedule.create({
+          data: {
+            employeeId,
+            shiftId,
+            scheduleDate: new Date(scheduleDate),
+            shiftStart: shift.startTime,
+            shiftEnd: shift.endTime,
+            isException: false,
+          },
+        })
 
         created++
       } catch (error) {

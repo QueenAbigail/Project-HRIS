@@ -357,7 +357,7 @@ export function AddScheduleDialog({
       scheduleDate: new Date().toISOString().split('T')[0],
     })
     setEmployeeSearch('')
-    setShowEmployeeList(false)
+    setComboboxOpen(false)
   }
 
   const handleEmployeeSelect = (employee: any) => {
@@ -367,7 +367,7 @@ export function AddScheduleDialog({
       employeeName: employee.name,
     })
     setEmployeeSearch('')
-    setShowEmployeeList(false)
+    setComboboxOpen(false)
   }
 
   return (
