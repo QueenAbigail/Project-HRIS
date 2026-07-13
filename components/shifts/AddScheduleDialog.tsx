@@ -240,6 +240,13 @@ export function AddScheduleDialog({
         
         const result = await response.json()
         console.log('[v0] Bulk create result:', result)
+        
+        if (result.created === 0 && result.errors) {
+          console.error('[v0] All schedules failed:', result.errors)
+          toast.error(`Failed: ${result.errors[0]}`)
+          return
+        }
+        
         toast.success(`Created ${result.created} schedules with rotation pattern`)
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Failed to save schedules')

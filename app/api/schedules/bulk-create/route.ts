@@ -6,6 +6,9 @@ export async function POST(req: NextRequest) {
   try {
     const { schedules } = await req.json()
 
+    console.log('[v0] Bulk create received:', schedules.length, 'schedules')
+    console.log('[v0] First schedule sample:', schedules[0])
+
     if (!Array.isArray(schedules) || schedules.length === 0) {
       return NextResponse.json(
         { error: 'No schedules provided' },
@@ -19,6 +22,8 @@ export async function POST(req: NextRequest) {
     for (const schedule of schedules) {
       try {
         const { employeeId, shiftId, scheduleDate } = schedule
+
+        console.log('[v0] Processing schedule:', { employeeId, shiftId, scheduleDate, type: typeof scheduleDate })
 
         // shiftId can be null for day offs
         if (!employeeId || !scheduleDate) {
@@ -62,10 +67,13 @@ export async function POST(req: NextRequest) {
 
         created++
       } catch (error) {
-        console.error('Error creating schedule:', error)
-        errors.push(`Error on date: ${String(error)}`)
+        console.error('[v0] Error creating schedule:', error)
+        const errorMsg = error instanceof Error ? error.message : String(error)
+        errors.push(`Error on ${schedule.scheduleDate}: ${errorMsg}`)
       }
     }
+
+    console.log('[v0] Bulk create completed - created:', created, 'errors:', errors.length)
 
     return NextResponse.json({
       success: true,
