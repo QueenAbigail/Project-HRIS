@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,8 +31,7 @@ export function AddScheduleDialog({
   const [loading, setLoading] = useState(false)
   const [employees, setEmployees] = useState<any[]>([])
   const [employeeSearch, setEmployeeSearch] = useState('')
-  const [showEmployeeList, setShowEmployeeList] = useState(false)
-  const [openCombobox, setOpenCombobox] = useState(false)
+  const [comboboxOpen, setComboboxOpen] = useState(false)
   const [useDateRange, setUseDateRange] = useState(false)
   const [useRotationPattern, setUseRotationPattern] = useState(false)
   const [selectedDays, setSelectedDays] = useState({
@@ -93,11 +92,16 @@ export function AddScheduleDialog({
     }
   }, [open])
 
-  const filteredEmployees = employees.filter(
-    emp =>
-      emp.name?.toLowerCase().includes(employeeSearch.toLowerCase()) ||
-      emp.id?.toLowerCase().includes(employeeSearch.toLowerCase())
-  )
+  const filteredEmployees = useMemo(() => {
+    if (!employeeSearch) return employees
+    const query = employeeSearch.toLowerCase()
+    return employees.filter(
+      (emp) =>
+        emp.name?.toLowerCase().includes(query) ||
+        emp.id?.toLowerCase().includes(query) ||
+        emp.email?.toLowerCase().includes(query)
+    )
+  }, [employeeSearch, employees])
 
   const generateDateRange = (): Date[] => {
     const dates: Date[] = []
@@ -326,52 +330,71 @@ export function AddScheduleDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="employee">Employee</Label>
-            <div className="relative">
-              <Input
-                id="employee"
-                placeholder="Search by employee ID or name..."
-                value={employeeSearch}
-                onChange={(e) => {
-                  setEmployeeSearch(e.target.value)
-                  setShowEmployeeList(true)
-                }}
-                onFocus={() => setShowEmployeeList(true)}
-              />
-              {showEmployeeList && filteredEmployees.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-64 overflow-y-auto">
-                  {filteredEmployees.map((emp) => (
-                    <button
-                      key={emp.id}
-                      type="button"
-                      onClick={() => {
-                        setFormData({
-                          ...formData,
-                          employeeId: emp.id,
-                          employeeName: emp.name,
-                        })
-                        setEmployeeSearch('')
-                        setShowEmployeeList(false)
-                      }}
-                      className="w-full text-left px-3 py-2.5 hover:bg-muted border-b border-border last:border-0 transition-colors"
-                    >
-                      <div className="font-medium">{emp.id} - {emp.name}</div>
-                      <div className="text-xs text-muted-foreground">{emp.email}</div>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {showEmployeeList && filteredEmployees.length === 0 && employeeSearch && (
-                <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg p-3 text-center text-sm text-muted-foreground">
-                  No employee found.
-                </div>
-              )}
-            </div>
-            {formData.employeeId && (
-              <div className="text-xs text-muted-foreground mt-1">
-                Selected: {formData.employeeId} - {formData.employeeName}
-              </div>
-            )}
+            <Label className="text-sm font-semibold">Select Employee *</Label>
+            <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={comboboxOpen}
+                  className="w-full justify-between h-10 px-3 bg-background hover:bg-muted/50"
+                >
+                  <span className={cn('truncate', !formData.employeeId && 'text-muted-foreground')}>
+                    {formData.employeeId
+                      ? (() => {
+                          const emp = employees.find((e) => e.id === formData.employeeId)
+                          return emp ? `${emp.id} - ${emp.name}` : 'Select employee...'
+                        })()
+                      : 'Search by employee ID or name...'}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0" align="start">
+                <Command>
+                  <CommandInput
+                    placeholder="Search by ID or name..."
+                    value={employeeSearch}
+                    onValueChange={setEmployeeSearch}
+                    className="border-none focus:ring-0"
+                  />
+                  <CommandList className="max-h-[280px]">
+                    <CommandEmpty className="py-6 text-center text-xs">No employee found</CommandEmpty>
+                    <CommandGroup>
+                      {filteredEmployees.map((employee) => (
+                        <CommandItem
+                          key={employee.id}
+                          value={`${employee.id} ${employee.name}`}
+                          onSelect={() => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              employeeId: employee.id,
+                              employeeName: employee.name,
+                            }))
+                            setComboboxOpen(false)
+                            setEmployeeSearch('')
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <Check
+                            className={cn(
+                              'mr-2 h-4 w-4',
+                              formData.employeeId === employee.id
+                                ? 'opacity-100'
+                                : 'opacity-0'
+                            )}
+                          />
+                          <div className="flex flex-col gap-1 flex-1">
+                            <span className="text-sm font-medium">{employee.id} - {employee.name}</span>
+                            <span className="text-xs text-muted-foreground">{employee.email}</span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-3">
