@@ -234,191 +234,6 @@ export async function deleteShiftFromDb(shiftId: string) {
   }
 }
 
-export async function assignPatternToEmployee(
-  userId: string,
-  patternId: string,
-  options?: {
-    siteId?: string
-    startDate?: Date
-    endDate?: Date
-    notes?: string
-    createdByUserId?: string
-  }
-) {
-  try {
-    // ==================== VALIDATION ====================
-    // Validate user role - only allow STAFF and MANAGER to have patterns
-    const employee = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, name: true, email: true, role: true }
-    })
-
-    if (!employee) {
-      throw new Error(`Employee not found: ${userId}`)
-    }
-
-    if (!['STAFF', 'MANAGER'].includes(employee.role)) {
-      throw new Error(`Cannot assign pattern to user with role: ${employee.role}. Only STAFF and MANAGER roles allowed.`)
-    }
-
-    // Validate pattern exists
-    const pattern = await prisma.schedulePattern.findUnique({
-      where: { id: patternId },
-      select: { id: true, name: true, type: true, workingDays: true }
-    })
-
-    if (!pattern) {
-      throw new Error(`Pattern not found: ${patternId}`)
-    }
-
-    // ==================== SETUP ====================
-    // Get site
-    let targetSiteId = options?.siteId
-    if (!targetSiteId) {
-      const site = await prisma.site.findFirst()
-      if (!site) {
-        throw new Error('No sites found in database')
-      }
-      targetSiteId = site.id
-    }
-
-    const startDate = options?.startDate || new Date()
-    const endDate = options?.endDate || null
-
-    console.log('[v0] ASSIGNING PATTERN TO EMPLOYEE:', {
-      employeeName: employee.name,
-      employeeId: userId,
-      patternName: pattern.name,
-      patternId,
-      startDate,
-      endDate,
-      siteId: targetSiteId
-    })
-
-    // ==================== CORE LOGIC ====================
-    // 1. Create/Update pattern assignment
-    const assignment = await prisma.employeePatternAssignment.create({
-      data: {
-        userId,
-        patternId,
-        siteId: targetSiteId,
-        startDate,
-        endDate,
-        status: 'ACTIVE',
-        createdBy: options?.createdByUserId,
-        notes: options?.notes,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    })
-
-    console.log('[v0] Pattern assignment created:', assignment.id)
-
-    // 2. Initialize attendance records for the pattern duration
-    console.log('[v0] Initializing attendance records...')
-    const endDateForAttendance = endDate || new Date(startDate.getTime() + 90 * 24 * 60 * 60 * 1000) // 90 days default
-    const attendanceRecords = []
-    
-    for (let d = new Date(startDate); d <= endDateForAttendance; d.setDate(d.getDate() + 1)) {
-      attendanceRecords.push({
-        employeeId: userId,
-        date: new Date(d),
-        checkInTime: null,
-        checkOutTime: null,
-        status: 'PENDING', // Will be updated when employee checks in
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
-    }
-
-    console.log(`[v0] Created ${attendanceRecords.length} attendance records`)
-
-    // 3. Generate shifts based on pattern rules
-    console.log('[v0] Generating shifts based on pattern...')
-    if (pattern.workingDays && Array.isArray(pattern.workingDays)) {
-      console.log('[v0] Pattern working days:', pattern.workingDays)
-      // This will be extended based on your pattern shift mapping logic
-    }
-
-    // 4. Log audit trail
-    console.log('[v0] Logging audit trail...')
-    const auditLog = {
-      action: 'PATTERN_ASSIGNED',
-      employeeId: userId,
-      employeeName: employee.name,
-      patternId,
-      patternName: pattern.name,
-      startDate,
-      endDate,
-      status: 'ACTIVE',
-      timestamp: new Date(),
-      performedBy: options?.createdByUserId || 'SYSTEM'
-    }
-    console.log('[v0] Audit log:', auditLog)
-
-    // 5. Send notification to employee
-    console.log('[v0] Sending notification to employee...')
-    const notification = {
-      userId,
-      type: 'PATTERN_ASSIGNED',
-      title: 'New Shift Pattern Assigned',
-      message: `You have been assigned to ${pattern.name} pattern effective from ${startDate.toLocaleDateString()}${endDate ? ` until ${endDate.toLocaleDateString()}` : ' (ongoing)'}`,
-      createdAt: new Date(),
-      read: false
-    }
-    console.log('[v0] Notification:', notification)
-
-    // ==================== FINALIZE ====================
-    revalidatePath('/superadmin/schedules')
-    
-    console.log('[v0] ✓ PATTERN ASSIGNMENT COMPLETE', {
-      assignmentId: assignment.id,
-      employee: employee.name,
-      pattern: pattern.name,
-      startDate,
-      endDate,
-      attendanceRecordsCreated: attendanceRecords.length
-    })
-
-    return {
-      success: true,
-      assignmentId: assignment.id,
-      message: `Pattern "${pattern.name}" successfully assigned to ${employee.name}`,
-      details: {
-        employee: employee.name,
-        pattern: pattern.name,
-        startDate,
-        endDate,
-        attendanceRecordsCreated: attendanceRecords.length
-      }
-    }
-
-  } catch (error) {
-    console.error('[v0] ERROR ASSIGNING PATTERN:', {
-      message: error instanceof Error ? error.message : String(error),
-      error
-    })
-    throw error
-  }
-}
-
-export async function getEmployeePatterns() {
-  try {
-    const assignments = await prisma.employeePatternAssignment.findMany({
-      include: {
-        user: true,
-        pattern: true,
-        site: true
-      }
-    })
-    
-    return assignments || []
-  } catch (error) {
-    console.error('[v0] Error fetching employee patterns:', error)
-    return []
-  }
-}
-
 export async function getAllEmployees() {
   try {
     console.log('[v0] Fetching all employees from users table...')
@@ -456,33 +271,6 @@ export async function getAllEmployees() {
     console.error('[v0] Error fetching all employees:', {
       message: error instanceof Error ? error.message : String(error),
       error
-    })
-    return []
-  }
-}
-
-export async function getSchedulePatterns() {
-  try {
-    console.log('[v0] Fetching schedule patterns...')
-    const patterns = await prisma.schedulePattern.findMany({
-      orderBy: { createdAt: 'desc' }
-    })
-    
-    console.log('[v0] Schedule patterns fetched:', {
-      count: patterns.length,
-      patterns: patterns.map(p => ({
-        id: p.id,
-        name: p.name,
-        type: p.type,
-        description: p.description
-      }))
-    })
-    
-    return patterns || []
-  } catch (error) {
-    console.error('[v0] Error fetching schedule patterns:', {
-      message: error instanceof Error ? error.message : String(error),
-      error: error
     })
     return []
   }
@@ -848,32 +636,8 @@ export async function getCompanyInfo() {
 }
 
 /**
- * Process bulk import (all-or-nothing execution)
+ * Get import audit trail
  */
-export async function processBulkImport(
-  rows: any[],
-  fileName: string,
-  userId: string
-) {
-  let importLog: any = null
-
-  try {
-    console.log('[v0] Starting bulk import process:', { fileName, rowCount: rows.length, userId })
-
-    const { getValidationContext, validateBulkImport: validate } = await import('@/lib/importValidator')
-
-    // Get validation context
-    const context = await getValidationContext(prisma)
-
-    // Validate first
-    const validation = await validate(rows, context)
-
-    if (!validation.isValid) {
-      throw new Error(`Validation failed: ${validation.invalidRows} row(s) have errors`)
-    }
-
-    // Create import log entry
-    importLog = await prisma.bulkImportLog.create({
       data: {
         fileName,
         importedBy: userId,
@@ -913,38 +677,7 @@ export async function processBulkImport(
           throw new Error('No shifts found in system')
         }
 
-        // Parse start/end dates
-        const startDate = new Date(row.startDate)
-        const endDate = row.endDate ? new Date(row.endDate) : null
 
-        // Handle existing assignment (replace)
-        const existing = await prisma.employeePatternAssignment.findFirst({
-          where: { userId: employee.id, siteId: site.id }
-        })
-
-        if (existing) {
-          await prisma.employeePatternAssignment.update({
-            where: { id: existing.id },
-            data: {
-              status: 'ENDED',
-              updatedAt: new Date()
-            }
-          })
-        }
-
-        // Create new assignment
-        const assignment = await prisma.employeePatternAssignment.create({
-          data: {
-            userId: employee.id,
-            patternId: firstShift.id, // Temporary - will be derived from daily shifts
-            siteId: site.id,
-            startDate,
-            endDate,
-            status: 'ACTIVE',
-            createdBy: userId,
-            notes: `Imported from ${fileName}`
-          }
-        })
 
         createdAssignments.push(assignment)
 
