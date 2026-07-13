@@ -43,12 +43,11 @@ export function AddScheduleDialog({
     sat: false,
     sun: false,
   })
-  const [rotationPattern, setRotationPattern] = useState<Array<{ shiftId: string; days: number }>>([
-    { shiftId: '', days: 2 },
-    { shiftId: '', days: 2 },
+  const [rotationPattern, setRotationPattern] = useState<Array<{ shiftId: string; days: number; isOffDay?: boolean }>>([
     { shiftId: '', days: 2 },
     { shiftId: '', days: 2 },
   ])
+  const [rotationCount, setRotationCount] = useState<2 | 3 | 4>(2)
   const [rotationStartDate, setRotationStartDate] = useState(
     new Date().toISOString().split('T')[0]
   )
@@ -128,8 +127,23 @@ export function AddScheduleDialog({
     return dates
   }
 
-  const generateRotationSchedules = (): Array<{ date: string; shiftId: string }> => {
-    const schedules: Array<{ date: string; shiftId: string }> = []
+  const updateRotationCount = (count: 2 | 3 | 4) => {
+    setRotationCount(count)
+    if (count > rotationPattern.length) {
+      // Add new pattern slots
+      const newPatterns = [...rotationPattern]
+      while (newPatterns.length < count) {
+        newPatterns.push({ shiftId: '', days: 2 })
+      }
+      setRotationPattern(newPatterns)
+    } else if (count < rotationPattern.length) {
+      // Remove excess pattern slots
+      setRotationPattern(rotationPattern.slice(0, count))
+    }
+  }
+
+  const generateRotationSchedules = (): Array<{ date: string; shiftId: string | null }> => {
+    const schedules: Array<{ date: string; shiftId: string | null }> = []
     const start = new Date(rotationStartDate)
     const end = new Date(start.getTime() + rotationDuration * 24 * 60 * 60 * 1000)
     
@@ -138,12 +152,22 @@ export function AddScheduleDialog({
     
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const pattern = rotationPattern[patternIndex]
-      if (!pattern || !pattern.shiftId) break
+      if (!pattern) break
       
-      schedules.push({
-        date: d.toISOString().split('T')[0],
-        shiftId: pattern.shiftId,
-      })
+      // If it's an off day, use null for shiftId (will be handled in bulk create)
+      if (pattern.isOffDay) {
+        schedules.push({
+          date: d.toISOString().split('T')[0],
+          shiftId: null,
+        })
+      } else if (pattern.shiftId) {
+        schedules.push({
+          date: d.toISOString().split('T')[0],
+          shiftId: pattern.shiftId,
+        })
+      } else {
+        break // Skip if shift not selected and not an off day
+      }
       
       currentDay++
       
@@ -167,8 +191,8 @@ export function AddScheduleDialog({
 
     if (useRotationPattern) {
       // Validate rotation pattern
-      if (rotationPattern.some(p => !p.shiftId || p.days < 1)) {
-        toast.error('Please complete the rotation pattern')
+      if (rotationPattern.some(p => (!p.isOffDay && !p.shiftId) || p.days < 1)) {
+        toast.error('Please complete the rotation pattern (either select a shift or mark as day off)')
         return
       }
 
@@ -454,12 +478,57 @@ export function AddScheduleDialog({
                 </div>
 
                 <div className="space-y-3">
-                  <Label>Rotation Pattern</Label>
+                  <div className="space-y-2">
+                    <Label>Rotation Pattern</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={rotationCount === 2 ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => updateRotationCount(2)}
+                      >
+                        2 Rotations
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={rotationCount === 3 ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => updateRotationCount(3)}
+                      >
+                        3 Rotations
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={rotationCount === 4 ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => updateRotationCount(4)}
+                      >
+                        4 Rotations
+                      </Button>
+                    </div>
+                  </div>
                   <div className="bg-muted p-3 rounded-md space-y-3">
                     {rotationPattern.map((pattern, idx) => (
-                      <div key={idx} className="flex gap-2 items-end">
-                        <div className="flex-1">
-                          <Label className="text-xs text-muted-foreground">Shift {idx + 1}</Label>
+                      <div key={idx} className="space-y-2 pb-3 border-b border-border last:border-0 last:pb-0">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium">Rotation {idx + 1}</Label>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`offday-${idx}`}
+                              checked={pattern.isOffDay || false}
+                              onCheckedChange={(checked) => {
+                                const newPattern = [...rotationPattern]
+                                newPattern[idx].isOffDay = checked as boolean
+                                if (checked) newPattern[idx].shiftId = ''
+                                setRotationPattern(newPattern)
+                              }}
+                            />
+                            <Label htmlFor={`offday-${idx}`} className="text-xs cursor-pointer">
+                              Day Off
+                            </Label>
+                          </div>
+                        </div>
+                        {!pattern.isOffDay ? (
                           <Select
                             value={pattern.shiftId}
                             onValueChange={(value) => {
@@ -479,8 +548,12 @@ export function AddScheduleDialog({
                               ))}
                             </SelectContent>
                           </Select>
-                        </div>
-                        <div className="w-16">
+                        ) : (
+                          <div className="text-sm text-muted-foreground p-2 bg-background rounded">
+                            Day Off
+                          </div>
+                        )}
+                        <div>
                           <Label className="text-xs text-muted-foreground">Days</Label>
                           <Input
                             type="number"

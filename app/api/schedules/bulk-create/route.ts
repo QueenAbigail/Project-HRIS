@@ -20,7 +20,8 @@ export async function POST(req: NextRequest) {
       try {
         const { employeeId, shiftId, scheduleDate } = schedule
 
-        if (!employeeId || !shiftId || !scheduleDate) {
+        // shiftId can be null for day offs
+        if (!employeeId || !scheduleDate) {
           errors.push(`Missing required fields for date ${scheduleDate}`)
           continue
         }
@@ -38,14 +39,26 @@ export async function POST(req: NextRequest) {
           continue
         }
 
-        await prisma.schedule.create({
-          data: {
-            employeeId,
-            shiftId,
-            scheduleDate: new Date(scheduleDate),
-            isException: false,
-          },
-        })
+        // If shiftId is null, it's a day off - create with null shiftId
+        if (!shiftId) {
+          await prisma.schedule.create({
+            data: {
+              employeeId,
+              shiftId: null,
+              scheduleDate: new Date(scheduleDate),
+              isException: false,
+            },
+          })
+        } else {
+          await prisma.schedule.create({
+            data: {
+              employeeId,
+              shiftId,
+              scheduleDate: new Date(scheduleDate),
+              isException: false,
+            },
+          })
+        }
 
         created++
       } catch (error) {
