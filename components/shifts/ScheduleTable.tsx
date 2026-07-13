@@ -40,6 +40,8 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
   const [search, setSearch] = useState('')
   const [showPast, setShowPast] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 50
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -70,6 +72,11 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
       return true
     })
     .sort((a, b) => new Date(a.scheduleDate).getTime() - new Date(b.scheduleDate).getTime())
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filtered.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const paginatedSchedules = filtered.slice(startIndex, startIndex + itemsPerPage)
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this schedule?')) return
@@ -136,7 +143,7 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((schedule) => (
+              {paginatedSchedules.map((schedule) => (
                 <TableRow key={schedule.id} className="hover:bg-muted/50">
                   <TableCell>
                     <div className="font-medium">{schedule.employeeName}</div>
@@ -182,8 +189,58 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
         </div>
       )}
 
-      <div className="text-sm text-muted-foreground">
-        {filtered.length} of {schedules.length} schedules
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <div>
+          Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filtered.length)} of {filtered.length} schedules
+        </div>
+        
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                let pageNum
+                if (totalPages <= 5) {
+                  pageNum = i + 1
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i
+                } else {
+                  pageNum = currentPage - 2 + i
+                }
+                
+                return (
+                  <Button
+                    key={pageNum}
+                    size="sm"
+                    variant={currentPage === pageNum ? 'default' : 'outline'}
+                    onClick={() => setCurrentPage(pageNum)}
+                  >
+                    {pageNum}
+                  </Button>
+                )
+              })}
+            </div>
+            
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )
