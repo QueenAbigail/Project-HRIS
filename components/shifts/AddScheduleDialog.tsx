@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 
@@ -28,11 +29,23 @@ export function AddScheduleDialog({
   const [employees, setEmployees] = useState<any[]>([])
   const [employeeSearch, setEmployeeSearch] = useState('')
   const [showEmployeeList, setShowEmployeeList] = useState(false)
+  const [useDateRange, setUseDateRange] = useState(false)
+  const [selectedDays, setSelectedDays] = useState({
+    mon: true,
+    tue: true,
+    wed: true,
+    thu: true,
+    fri: true,
+    sat: false,
+    sun: false,
+  })
   const [formData, setFormData] = useState({
     employeeId: '',
     employeeName: '',
     shiftId: '',
     scheduleDate: new Date().toISOString().split('T')[0],
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
   })
 
   useEffect(() => {
@@ -71,31 +84,105 @@ export function AddScheduleDialog({
       emp.id?.toLowerCase().includes(employeeSearch.toLowerCase())
   )
 
+  const generateDateRange = (): Date[] => {
+    const dates: Date[] = []
+    const start = new Date(formData.startDate)
+    const end = new Date(formData.endDate)
+
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const dayOfWeek = d.getDay()
+      const dayMap: Record<number, keyof typeof selectedDays> = {
+        0: 'sun',
+        1: 'mon',
+        2: 'tue',
+        3: 'wed',
+        4: 'thu',
+        5: 'fri',
+        6: 'sat',
+      }
+
+      if (selectedDays[dayMap[dayOfWeek]]) {
+        dates.push(new Date(d))
+      }
+    }
+
+    return dates
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.employeeId || !formData.shiftId || !formData.scheduleDate) {
+    if (!formData.employeeId || !formData.shiftId) {
       toast.error('Please fill in all fields')
+      return
+    }
+
+    if (useDateRange && !formData.startDate && !formData.endDate) {
+      toast.error('Please select date range')
+      return
+    }
+
+    if (!useDateRange && !formData.scheduleDate) {
+      toast.error('Please select a date')
       return
     }
 
     try {
       setLoading(true)
 
-      const url = schedule ? `/api/schedules/${schedule.id}` : '/api/schedules'
-      const method = schedule ? 'PUT' : 'POST'
+      if (schedule && !useDateRange) {
+        // Edit single schedule
+        const response = await fetch(`/api/schedules/${schedule.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            employeeId: formData.employeeId,
+            shiftId: formData.shiftId,
+            scheduleDate: formData.scheduleDate,
+          }),
+        })
 
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
+        if (!response.ok) throw new Error('Failed to update schedule')
+        toast.success('Schedule updated')
+      } else if (useDateRange) {
+        // Create multiple schedules for date range
+        const dates = generateDateRange()
+        if (dates.length === 0) {
+          toast.error('No dates match the selected days')
+          return
+        }
 
-      if (!response.ok) {
-        throw new Error('Failed to save schedule')
+        const schedulesToCreate = dates.map(date => ({
+          employeeId: formData.employeeId,
+          shiftId: formData.shiftId,
+          scheduleDate: date.toISOString().split('T')[0],
+        }))
+
+        const response = await fetch('/api/schedules/bulk-create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ schedules: schedulesToCreate }),
+        })
+
+        if (!response.ok) throw new Error('Failed to create schedules')
+        const result = await response.json()
+        toast.success(`Created ${result.created} schedules`)
+      } else {
+        // Create single schedule
+        const response = await fetch('/api/schedules', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            employeeId: formData.employeeId,
+            shiftId: formData.shiftId,
+            scheduleDate: formData.scheduleDate,
+          }),
+        })
+
+        if (!response.ok) throw new Error('Failed to create schedule')
+        toast.success('Schedule created')
       }
 
-      toast.success(schedule ? 'Schedule updated' : 'Schedule created')
       onSuccess?.()
       onOpenChange(false)
       resetForm()
@@ -169,16 +256,85 @@ export function AddScheduleDialog({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
-            <Input
-              id="date"
-              type="date"
-              value={formData.scheduleDate}
-              onChange={(e) =>
-                setFormData({ ...formData, scheduleDate: e.target.value })
-              }
-            />
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="useRange"
+                checked={useDateRange}
+                onCheckedChange={(checked) => setUseDateRange(checked as boolean)}
+                disabled={!!schedule}
+              />
+              <Label htmlFor="useRange" className="font-normal cursor-pointer">
+                Apply to date range (multiple days)
+              </Label>
+            </div>
+
+            {useDateRange ? (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="startDate">Start Date</Label>
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) =>
+                        setFormData({ ...formData, startDate: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="endDate">End Date</Label>
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={formData.endDate}
+                      onChange={(e) =>
+                        setFormData({ ...formData, endDate: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Select Days</Label>
+                  <div className="grid grid-cols-7 gap-2">
+                    {Object.entries(selectedDays).map(([day, checked]) => (
+                      <div key={day} className="flex items-center">
+                        <Checkbox
+                          id={day}
+                          checked={checked}
+                          onCheckedChange={(value) =>
+                            setSelectedDays({
+                              ...selectedDays,
+                              [day]: value,
+                            })
+                          }
+                        />
+                        <label
+                          htmlFor={day}
+                          className="ml-1 text-xs cursor-pointer font-medium uppercase"
+                        >
+                          {day.substring(0, 1)}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="date">Date</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={formData.scheduleDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, scheduleDate: e.target.value })
+                  }
+                />
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
