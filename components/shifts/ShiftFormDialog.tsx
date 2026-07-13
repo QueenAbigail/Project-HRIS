@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSchedulesStore } from '@/stores/useSchedulesStore'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -29,10 +28,10 @@ interface ShiftFormDialogProps {
   shift?: Shift | Omit<Shift, 'id'>
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
 }
 
-export function ShiftFormDialog({ shift, open, onOpenChange }: ShiftFormDialogProps) {
-  const initializeShifts = useSchedulesStore(state => state.initializeShifts)
+export function ShiftFormDialog({ shift, open, onOpenChange, onSuccess }: ShiftFormDialogProps) {
   const [loading, setLoading] = useState(false)
 
   const form = useForm<FormValues>({
@@ -72,12 +71,13 @@ export function ShiftFormDialog({ shift, open, onOpenChange }: ShiftFormDialogPr
         toast.success('Shift created successfully')
       }
       
-      // Reload shifts from database to update store
-      const updatedShifts = await getShifts()
-      initializeShifts(updatedShifts)
-      
       form.reset()
       onOpenChange(false)
+      
+      // Notify parent to refresh data
+      if (onSuccess) {
+        onSuccess()
+      }
     } catch (error) {
       console.error('[v0] Error saving shift:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to save shift'
@@ -173,12 +173,13 @@ export function ShiftFormDialog({ shift, open, onOpenChange }: ShiftFormDialogPr
                       setLoading(true)
                       await deleteShiftFromDb(shift.id)
                       
-                      // Reload shifts from database
-                      const updatedShifts = await getShifts()
-                      initializeShifts(updatedShifts)
-                      
                       toast.success('Shift deleted successfully')
                       onOpenChange(false)
+                      
+                      // Notify parent to refresh data
+                      if (onSuccess) {
+                        onSuccess()
+                      }
                     } catch (error) {
                       console.error('[v0] Error deleting shift:', error)
                       const errorMessage = error instanceof Error ? error.message : 'Failed to delete shift'

@@ -79,12 +79,11 @@ model Site {
   company     Company?                  @relation(fields: [companyId], references: [id], onDelete: SetNull)
   users       User[]
   attendances Attendance[]
-  assignments EmployeeShiftAssignment[]
-  patternAssignments EmployeePatternAssignment[] @relation("EmployeePatternAssignments")
   attendanceLocations AttendanceLocation[] @relation("SiteAttendanceLocations")
   patrolLocations PatrolLocation[]
   patrols     Patrol[]
   bulkImportRecords BulkImportRecord[] @relation("SiteBulkImports")
+  shiftSwaps  ShiftSwap[]
   createdAt   DateTime                  @default(now())
   updatedAt   DateTime                  @updatedAt
 
@@ -110,10 +109,9 @@ model Shift {
   startTime          String // HH:MM
   endTime            String // HH:MM
   gracePeriodMinutes Int
-  assignments        EmployeeShiftAssignment[]
   Attendance         Attendance[]
   patrols            Patrol[]
-  schedulePatterns   SchedulePattern[]
+  schedules          Schedule[]                @relation("ScheduleShifts")
 
   @@map("shifts")
 }
@@ -139,8 +137,6 @@ model User {
   attendances           Attendance[]
   leaves                Leave[]                   @relation("LeaveRequester")
   bkoAssignments        BkoAssignment[]           @relation("BkoSubstitute")
-  assignments           EmployeeShiftAssignment[]
-  patternAssignments    EmployeePatternAssignment[] @relation("PatternAssignments")
   bulkImports           BulkImportLog[] @relation("BulkImports")
   patrols               Patrol[]
   deviceBindings        DeviceBinding[]
@@ -165,9 +161,13 @@ model User {
   ktaExpiry             DateTime?                 @db.Date
   allowMobileAttendance Boolean                   @default(false)
   allowWebAppAccess     Boolean                   @default(false)
+  expoPushToken         String?                   @db.Text
   bankName              String?
   accountHolder         String?
   accountNumber         String?
+  swapsFrom             ShiftSwap[]               @relation("SwapFrom")
+  swapsTo               ShiftSwap[]               @relation("SwapTo")
+  schedules             Schedule[]                @relation("EmployeeSchedules")
 
   @@index([siteId])
   @@index([companyId])
@@ -178,20 +178,6 @@ model User {
 
 
 // Junction for Employee Shift Assignment (schedules with workingDays array)
-model EmployeeShiftAssignment {
-  id          String @id @default(cuid())
-  userId      String
-  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  shiftId     String
-  shift       Shift  @relation(fields: [shiftId], references: [id])
-  siteId      String
-  site        Site   @relation(fields: [siteId], references: [id])
-  workingDays Json // [0,1,2,3,4,5,6] as array of ints (Sun=0)
-
-  @@unique([userId, shiftId, siteId])
-  @@map("employee_shift_assignments")
-}
-
 // Attendance model (extended with GPS/selfie)
 model Attendance {
   id             String           @id @default(cuid())
@@ -225,18 +211,20 @@ model Attendance {
 
 // Leave model (requests with approval)
 model Leave {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId         String
-  user           User      @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Cascade)
-  leaveType      String    // Izin, Sakit, TukarShift
-  startDate      DateTime  @db.Date
-  endDate        DateTime  @db.Date
-  reason         String?
-  attachmentUrl  String?
-  status         String    @default("Pending") // Pending, Approved, Rejected
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  bkoAssignments BkoAssignment[]
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String
+  user              User      @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Cascade)
+  leaveType         String    // Izin (displayed as 'Cuti' in UI), Sakit, TukarShift
+  startDate         DateTime  @db.Date
+  endDate           DateTime  @db.Date
+  reason            String?
+  attachmentUrl     String?
+  status            String    @default("Pending") // Pending, Approved, Rejected
+  workingDaysCount  Int       @default(0) // Actual working days affected based on pattern
+  dayBreakdown      String?   // JSON string showing which days are counted vs skipped
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  bkoAssignments    BkoAssignment[]
 
   @@index([userId])
   @@index([status])
@@ -385,72 +373,11 @@ model DeviceBinding {
 }
 
 // Enums for schedule patterns
-enum PatternType {
-  FIXED
-  ROTATING
-  MODULO
-}
-
-enum ShiftTypePattern {
-  MORNING
-  NIGHT
-  OFF
-}
-
 // Schedule Pattern model - for managing shift schedules
-model SchedulePattern {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  type        PatternType
-  
-  // For fixed patterns
-  workingDays Json? // [0,1,2,3,4,5,6] as array of ints
-  shiftId     String?
-  shift       Shift?   @relation(fields: [shiftId], references: [id], onDelete: SetNull)
-  
-  // For rotating patterns - stored as JSON
-  rotatingPattern Json? // { sequence: [{ days: 2, shiftType: 'morning' }, ...], startDate: '2026-01-01' }
-  
-  // For modulo patterns - stored as JSON
-  moduloPattern Json? // { sequence: ['morning', 'morning', 'night', 'night'], startDate: '2026-01-01' }
-  
-  isActive          Boolean  @default(true)
-  assignedEmployees Int      @default(0)
-  employeeAssignments EmployeePatternAssignment[]
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  @@map("schedule_patterns")
-}
-
 // Update Shift model to include schedule patterns
 // (Added relation in Shift model below)
 
 // Employee Pattern Assignment - assigns a schedule pattern to an employee
-model EmployeePatternAssignment {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation("PatternAssignments", fields: [userId], references: [id], onDelete: Cascade)
-  patternId String
-  pattern   SchedulePattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
-  siteId    String
-  site      Site     @relation("EmployeePatternAssignments", fields: [siteId], references: [id], onDelete: Cascade)
-  startDate DateTime @default(now())
-  endDate   DateTime? // Contract end date - null means ongoing
-  status    String   @default("ACTIVE") // ACTIVE, ENDED, PAUSED
-  createdBy String? // ID of user who made the assignment
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-  notes     String? // Optional notes about the assignment
-  
-  // Bulk import tracking
-  bulkImportRecords BulkImportRecord[]
-  
-  @@unique([userId, siteId, startDate])
-  @@map("employee_pattern_assignments")
-}
-
 // Bulk Import Log - tracks all bulk import operations
 model BulkImportLog {
   id                String   @id @default(cuid())
@@ -481,9 +408,6 @@ model BulkImportRecord {
   siteId          String   // Site where assigned
   site            Site     @relation("SiteBulkImports", fields: [siteId], references: [id], onDelete: Cascade)
   
-  assignmentId    String?  // Reference to created/updated EmployeePatternAssignment
-  assignment      EmployeePatternAssignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
-  
   startDate       DateTime // Assignment start date
   endDate         DateTime? // Assignment end date
   dailySchedule   Json     // Mon-Sun shift schedule from file
@@ -493,6 +417,49 @@ model BulkImportRecord {
   createdAt       DateTime @default(now())
   
   @@map("bulk_import_records")
+}
+
+model ShiftSwap {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeFromId  String
+  employeeFrom    User      @relation("SwapFrom", fields: [employeeFromId], references: [id], onDelete: Cascade)
+  employeeToId    String
+  employeeTo      User      @relation("SwapTo", fields: [employeeToId], references: [id], onDelete: Cascade)
+  swapDate        DateTime  @db.Date
+  siteId          String
+  site            Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  reason          String?
+  status          String    @default("Pending") // Pending, Approved, Rejected
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([employeeFromId, employeeToId, swapDate]) // Prevent duplicate swaps on same date
+  @@index([employeeFromId])
+  @@index([employeeToId])
+  @@index([status])
+  @@index([swapDate])
+  @@map("shift_swaps")
+}
+
+model Schedule {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeId      String
+  employee        User      @relation("EmployeeSchedules", fields: [employeeId], references: [id], onDelete: Cascade)
+  shiftId         String
+  shift           Shift     @relation("ScheduleShifts", fields: [shiftId], references: [id], onDelete: Cascade)
+  scheduleDate    DateTime  @db.Date
+  shiftStart      String    // "09:00" format
+  shiftEnd        String    // "17:00" format
+  isException     Boolean   @default(false) // true if manually overridden
+  notes           String?   // e.g., "Swapped with John", "Manual override"
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([employeeId, scheduleDate]) // One schedule per employee per day
+  @@index([employeeId])
+  @@index([scheduleDate])
+  @@index([shiftId])
+  @@map("schedules")
 }
 
 model CronLog {

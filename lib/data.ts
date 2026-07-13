@@ -10,45 +10,38 @@ import {
 } from './constants'
 
 
-// Store integrations - use in components (server-side functions use getState)
-import { useSchedulesStore } from '@/stores/useSchedulesStore'
-
-
 // Check if an employee is scheduled to work on a given date
 export function isEmployeeWorkingDay(employeeId: string, date: Date = new Date()): boolean {
-  const schedule = useSchedulesStore.getState().employeeSchedules.find(s => s.employeeId === employeeId)
+  const schedule = employeeSchedules.find(s => s.employeeId === employeeId)
   if (!schedule) return false
   return schedule.workingDays.includes(date.getDay())
 }
 
 // Get employee's schedule
 export function getEmployeeSchedule(employeeId: string): EmployeeSchedule | undefined {
-  return useSchedulesStore.getState().employeeSchedules.find(s => s.employeeId === employeeId)
+  return employeeSchedules.find(s => s.employeeId === employeeId)
 }
 
 // Get all employees on day off for a given date
 export function getEmployeesOnDayOff(date: Date = new Date()): EmployeeSchedule[] {
   const dayOfWeek = date.getDay()
-  const schedules = useSchedulesStore.getState().employeeSchedules
-  return schedules.filter(s => !s.workingDays.includes(dayOfWeek))
+  return employeeSchedules.filter(s => !s.workingDays.includes(dayOfWeek))
 }
 
 // Get employees scheduled to work on a given date
 export function getScheduledEmployees(date: Date = new Date()): EmployeeSchedule[] {
   const dayOfWeek = date.getDay()
-  const schedules = useSchedulesStore.getState().employeeSchedules
-  return schedules.filter(s => s.workingDays.includes(dayOfWeek))
+  return employeeSchedules.filter(s => s.workingDays.includes(dayOfWeek))
 }
 
 // Get day off count by location
 export function getDayOffCountByLocation(date: Date = new Date()): Record<LocationId, number> {
   const dayOfWeek = date.getDay()
-  const schedules = useSchedulesStore.getState().employeeSchedules
   const result: Record<LocationId, number> = {
     'HO': 0, 'PT-DT': 0, 'RM': 0, 'MB-CT': 0, 'CC-N': 0, 'IP-W': 0
   }
   
-  schedules.forEach(schedule => {
+  employeeSchedules.forEach(schedule => {
     if (!schedule.workingDays.includes(dayOfWeek)) {
       result[schedule.locationId]++
     }
@@ -87,13 +80,12 @@ export function calculateLateMinutes(scheduledStart: string, actualCheckIn: stri
 
 // Get all late check-ins for today
 export function getLateCheckIns(): (AttendanceRecord & { employeeName: string; initials: string; locationName: string; shiftName: string })[] {
-  const state = useSchedulesStore.getState()
-  return state.todayAttendance
+  return todayAttendance
     .filter(record => record.status === 'late')
     .map(record => {
-      const schedule = state.employeeSchedules.find(s => s.employeeId === record.employeeId)
+      const schedule = employeeSchedules.find(s => s.employeeId === record.employeeId)
       const location = locations.find(l => l.id === record.locationId)
-      const shift = state.shifts.find(s => s.id === schedule?.shiftId)
+      const shift = shifts.find(s => s.id === schedule?.shiftId)
       
       return {
         ...record,
@@ -108,10 +100,9 @@ export function getLateCheckIns(): (AttendanceRecord & { employeeName: string; i
 
 // Get employees assigned to a specific shift (working today)
 export function getShiftEmployees(shiftId: string): EmployeeSchedule[] {
-  const state = useSchedulesStore.getState()
   const today = new Date()
   const dayOfWeek = today.getDay()
-  return state.employeeSchedules.filter(schedule => 
+  return employeeSchedules.filter(schedule => 
     schedule.shiftId === shiftId && schedule.workingDays.includes(dayOfWeek)
   )
 }
@@ -124,9 +115,7 @@ export interface ShiftStats {
 }
 
 export function getShiftStats(shiftId: string): ShiftStats {
-  const state = useSchedulesStore.getState()
   const employees = getShiftEmployees(shiftId)
-  const todayAttendance = state.todayAttendance
   
   const total = employees.length
   const checkedIn = employees.map(emp => todayAttendance.find(att => att.employeeId === emp.employeeId)).filter(Boolean) as AttendanceRecord[]
@@ -275,12 +264,11 @@ export interface EmployeeWithAttendance {
 
 export function getEmployeesWithAttendance(date: Date = new Date()): EmployeeWithAttendance[] {
   const dayOfWeek = date.getDay()
-  const state = useSchedulesStore.getState()
   
-  return state.employeeSchedules.map(schedule => {
-    const shift = state.shifts.find(s => s.id === schedule.shiftId)!
+  return employeeSchedules.map(schedule => {
+    const shift = shifts.find(s => s.id === schedule.shiftId)!
     const location = locations.find(l => l.id === schedule.locationId)!
-    const attendance = state.todayAttendance.find(a => a.employeeId === schedule.employeeId)
+    const attendance = todayAttendance.find(a => a.employeeId === schedule.employeeId)
     const isWorkingToday = schedule.workingDays.includes(dayOfWeek)
     
     let workHours = '--'
@@ -348,14 +336,13 @@ export function getLateCheckInSeverity(lateMinutes: number): 'minor' | 'moderate
 // Get all BKO (Backup/Replacement) assignments for today
 export function getBKOAssignments(): (AttendanceRecord & { backupEmployeeName: string; originalEmployeeName: string; backupInitials: string; originalInitials: string })[] {
   try {
-    const state = useSchedulesStore.getState()
-    if (!state.todayAttendance) return []
+    if (!todayAttendance) return []
     
-    return state.todayAttendance
+    return todayAttendance
       .filter(record => record.isBackup && record.backupFor)
       .map(record => {
-        const backupSchedule = state.employeeSchedules.find(s => s.employeeId === record.employeeId)
-        const originalSchedule = state.employeeSchedules.find(s => s.employeeId === record.backupFor)
+        const backupSchedule = employeeSchedules.find(s => s.employeeId === record.employeeId)
+        const originalSchedule = employeeSchedules.find(s => s.employeeId === record.backupFor)
         
         return {
           ...record,
@@ -374,8 +361,7 @@ export function getBKOAssignments(): (AttendanceRecord & { backupEmployeeName: s
 // Get BKO count by location
 export function getBKOCountByLocation(date: Date = new Date()): Record<LocationId, number> {
   try {
-    const state = useSchedulesStore.getState()
-    if (!state.todayAttendance) {
+    if (!todayAttendance) {
       return { 'HO': 0, 'PT-DT': 0, 'RM': 0, 'MB-CT': 0, 'CC-N': 0, 'IP-W': 0 }
     }
     
@@ -383,7 +369,7 @@ export function getBKOCountByLocation(date: Date = new Date()): Record<LocationI
       'HO': 0, 'PT-DT': 0, 'RM': 0, 'MB-CT': 0, 'CC-N': 0, 'IP-W': 0
     }
     
-    state.todayAttendance.forEach(record => {
+    todayAttendance.forEach(record => {
       if (record.isBackup && record.backupFor) {
         result[record.locationId]++
       }
@@ -399,9 +385,8 @@ export function getBKOCountByLocation(date: Date = new Date()): Record<LocationI
 // Get total BKO assignments for today
 export function getTotalBKOAssignments(): number {
   try {
-    const state = useSchedulesStore.getState()
-    if (!state.todayAttendance) return 0
-    return state.todayAttendance.filter(record => record.isBackup && record.backupFor).length
+    if (!todayAttendance) return 0
+    return todayAttendance.filter(record => record.isBackup && record.backupFor).length
   } catch (error) {
     console.error('[v0] Error getting total BKO assignments:', error)
     return 0

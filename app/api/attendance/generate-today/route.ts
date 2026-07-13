@@ -26,8 +26,8 @@ async function handleAttendanceGeneration() {
       where: { id: cronLogId },
       data: {
         status: 'SUCCESS',
-        recordsCreated: result.createdCount || 0,
-        recordsSkipped: result.skippedCount || 0,
+        recordsCreated: result.details?.created || 0,
+        recordsSkipped: result.details?.skipped || 0,
         message: result.message || 'Attendance records generated successfully',
         duration,
         endTime: new Date()

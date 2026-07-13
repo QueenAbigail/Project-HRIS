@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { createMasterDataAction } from '@/app/actions/master-data'
+import { toast } from 'sonner'
 
 // Daftar kategori dropdown yang ada di form Add Employee lu
 const CATEGORIES = [
@@ -29,22 +29,27 @@ export default function MasterDataPage() {
     e.preventDefault()
     
     if (!formData.category || !formData.value) {
-      alert('Pilih kategori dan isi valuenya dulu, Can!')
+      toast.error('Pilih kategori dan isi valuenya dulu')
       return
     }
 
     setLoading(true)
     try {
-      const res = await createMasterDataAction(formData)
-      if (res.success) {
-        alert('Mantap! Data berhasil ditambah.')
-        // Kosongin input text, tapi biarin kategorinya sapa tau mau nambah lagi
+      const res = await fetch('/api/master-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+
+      const data = await res.json()
+      if (data.success) {
+        toast.success('Data berhasil ditambah')
         setFormData({ ...formData, value: '' }) 
       } else {
-        alert(res.error) // Munculin error misal datanya udah ada (dobel)
+        toast.error(data.error || 'Gagal menyimpan data')
       }
     } catch (error) {
-      alert('Sistem error pas nyimpen data.')
+      toast.error('Sistem error pas nyimpen data')
     } finally {
       setLoading(false)
     }

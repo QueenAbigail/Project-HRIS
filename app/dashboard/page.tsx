@@ -6,7 +6,8 @@ import { StatsCards } from '@/components/dashboard/stats-cards'
 import { AttendanceChart } from '@/components/dashboard/attendance-chart'
 import { LocationAttendance } from '@/components/dashboard/location-attendance'
 import { LateCheckIns } from '@/components/dashboard/late-checkins'
-import type { Attendance, EmployeeShiftAssignment, Leave, Shift, Site, User } from '@prisma/client'
+import { UpcomingLeaves } from '@/components/dashboard/upcoming-leaves'
+import type { Attendance, Leave, Shift, Site, User } from '@prisma/client'
 
 export default async function DashboardPage() {
   // Get current user to determine data filtering
@@ -93,12 +94,20 @@ export default async function DashboardPage() {
         bkoAssignments: true
       }
     }),
-    prisma.employeeShiftAssignment.findMany({
-      where: isClient ? { site: { companyId: currentUser.companyId } } : {},
+    // Query schedules for today to calculate day offs
+    prisma.schedule.findMany({
+      where: {
+        scheduleDate: {
+          gte: todayStart,
+          lt: todayEnd
+        },
+        employee: isClient ? { site: { companyId: currentUser.companyId } } : {}
+      },
       include: {
-        user: true,
-        shift: true,
-        site: true
+        employee: {
+          include: { site: true }
+        },
+        shift: true
       }
     }),
     // Count approved leaves this month
@@ -127,17 +136,13 @@ export default async function DashboardPage() {
     }
   });
 
-  // dayOff
+  // dayOff - count employees without schedule today
   const dayOffBySite: Record<string, number> = {};
-  assignments.forEach((ass) => {
-    try {
-      const workingDays = JSON.parse(ass.workingDays as string);
-      if (!Array.isArray(workingDays) || !workingDays.includes(todayDay)) {
-        dayOffBySite[ass.site.id] = (dayOffBySite[ass.site.id] || 0) + 1;
-      }
-    } catch (e) {
-      // invalid JSON, count as day off
-      dayOffBySite[ass.site.id] = (dayOffBySite[ass.site.id] || 0) + 1;
+  const scheduledEmployeeIds = new Set(assignments.map(s => s.employee.id));
+  
+  users.forEach((user) => {
+    if (user.site?.id && !scheduledEmployeeIds.has(user.id)) {
+      dayOffBySite[user.site.id] = (dayOffBySite[user.site.id] || 0) + 1;
     }
   });
 
@@ -312,12 +317,11 @@ export default async function DashboardPage() {
       {/* Location-based Attendance Overview */}
       <LocationAttendance locationData={locationStatsByCompany} companyName={companyNameForDisplay} isClient={isClient} />
 
-      <div className="grid gap-6 lg:grid-cols-7">
-        <div className="lg:col-span-4">
-          <AttendanceChart chartData={chartData} />
-        </div>
-        <div className="lg:col-span-3">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AttendanceChart chartData={chartData} />
+        <div className="space-y-6">
           <LateCheckIns lateCheckIns={lateCheckIns} />
+          <UpcomingLeaves />
         </div>
       </div>
 

@@ -5,14 +5,16 @@ import { startOfMonth, endOfMonth, format } from 'date-fns'
 export async function GET() {
   try {
     const now = new Date()
+    now.setHours(0, 0, 0, 0) // Start of today
     const monthStart = startOfMonth(now)
     const monthEnd = endOfMonth(now)
 
+    // Show leaves where the end date hasn't passed yet (leave is still ongoing or upcoming)
+    // This includes leaves from previous months that are still active, and future leaves
     const upcoming = await prisma.leave.findMany({
       where: {
         status: 'Approved',
-        startDate: { lte: monthEnd },
-        endDate: { gte: monthStart },
+        endDate: { gte: now }, // Only leaves that haven't ended yet
       },
       include: {
         user: {
@@ -23,9 +25,16 @@ export async function GET() {
       take: 5,
     })
 
+    // Map leave type from database value to display label
+    const leaveTypeMap: Record<string, string> = {
+      'Izin': 'Cuti',
+      'Sakit': 'Sakit',
+      'TukarShift': 'Tukar Shift',
+    }
+
     const formatted = upcoming.map(leave => ({
       name: leave.user?.name || 'Unknown',
-      type: leave.leaveType,
+      type: leaveTypeMap[leave.leaveType] || leave.leaveType,
       startDate: format(new Date(leave.startDate), 'MMM d'),
       endDate: format(new Date(leave.endDate), 'MMM d'),
       days: Math.ceil(

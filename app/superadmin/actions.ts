@@ -1,8 +1,9 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
-import { createAdminClient } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { revalidatePath } from 'next/cache'
+import { getSwappedScheduleIfExists } from '@/lib/shift-swap-handler'
+import { createAdminClient } from '@/lib/auth'
 
 export async function updateSettings(formData: FormData) {
   // 1. Call Supabase Admin Client (for file upload with full permissions)
@@ -97,81 +98,62 @@ export async function getShifts() {
   }
 }
 
-export async function getPatternAssignments() {
+export async function getEmployeeSchedules(includePast: boolean = false) {
   try {
-    const assignments = await prisma.employeePatternAssignment.findMany({
-      include: {
-        user: { select: { id: true, name: true, role: true, position: true } },
-        pattern: { select: { id: true, name: true, type: true } },
-        site: { select: { id: true, name: true } }
+    console.log('[v0] Fetching employee schedules...', { includePast })
+    
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    // Fetch from Schedule table (new manual assignment system)
+    // By default only fetch future schedules for better performance
+    const schedules = await prisma.schedule.findMany({
+      where: includePast ? {} : {
+        scheduleDate: {
+          gte: today
+        }
       },
-      orderBy: { user: { name: 'asc' } }
-    })
-
-    return assignments.map(assignment => ({
-      id: assignment.id,
-      employeeId: assignment.user.id,
-      employeeName: assignment.user.name,
-      employeeRole: assignment.user.role,
-      patternId: assignment.pattern.id,
-      patternName: assignment.pattern.name,
-      patternType: assignment.pattern.type,
-      status: assignment.status,
-      locationId: assignment.site.id,
-      locationName: assignment.site.name,
-      startDate: assignment.startDate,
-      endDate: assignment.endDate,
-      notes: assignment.notes
-    }))
-  } catch (error) {
-    console.error('[v0] Error fetching pattern assignments:', error)
-    return []
-  }
-}
-
-export async function getEmployeeSchedules() {
-  try {
-    console.log('[v0] Fetching employee schedules...')
-    
-    // Fetch from EmployeePatternAssignment table (pattern-based assignments)
-    const patternAssignments = await prisma.employeePatternAssignment.findMany({
       include: {
-        user: true,
-        pattern: true,
-        site: true
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phoneNumber: true,
+            role: true
+          }
+        },
+        shift: {
+          select: {
+            id: true,
+            name: true,
+            startTime: true,
+            endTime: true
+          }
+        }
       },
-      orderBy: { user: { name: 'asc' } }
+      orderBy: { scheduleDate: 'asc' }
     })
     
-    // Get first shift as default (since patterns don't have shift mappings yet)
-    const defaultShift = await prisma.shift.findFirst({
-      orderBy: { id: 'asc' }
+    console.log('[v0] Schedules fetched:', {
+      count: schedules.length,
+      dates: schedules.slice(0, 3).map(s => s.scheduleDate)
     })
     
-    if (!defaultShift && patternAssignments.length > 0) {
-      console.warn('[v0] No shifts found in database!')
-    }
-    
-    console.log('[v0] Pattern assignments fetched:', {
-      count: patternAssignments.length,
-      defaultShiftId: defaultShift?.id,
-      assignments: patternAssignments.map(a => ({
-        userId: a.userId,
-        userName: a.user.name,
-        patternName: a.pattern.name
-      }))
-    })
-    
-    // Transform to match EmployeeSchedule type
-    return patternAssignments.map(assignment => ({
-      employeeId: assignment.user.id,
-      employeeName: assignment.user.name,
-      shiftId: defaultShift?.id || '', // Use default shift ID
-      shiftName: defaultShift?.name || assignment.pattern.name, // Fallback to pattern name if no shift
-      locationId: assignment.site.id as any,
-      locationName: assignment.site.name,
-      workingDays: assignment.pattern.workingDays ? (assignment.pattern.workingDays as unknown as number[]) : [],
-      initials: assignment.user.name.split(' ').map(n => n[0]).join('').toUpperCase()
+    // Transform to match expected schedule type
+    return schedules.map(schedule => ({
+      id: schedule.id,
+      employeeId: schedule.employee.id,
+      employeeName: schedule.employee.name,
+      employeeEmail: schedule.employee.email,
+      shiftId: schedule.shift.id,
+      shiftName: schedule.shift.name,
+      scheduleDate: schedule.scheduleDate,
+      shiftStart: schedule.shiftStart,
+      shiftEnd: schedule.shiftEnd,
+      isException: schedule.isException,
+      notes: schedule.notes,
+      initials: schedule.employee.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
     }))
   } catch (error) {
     console.error('[v0] Error fetching employee schedules:', {
@@ -252,191 +234,6 @@ export async function deleteShiftFromDb(shiftId: string) {
   }
 }
 
-export async function assignPatternToEmployee(
-  userId: string,
-  patternId: string,
-  options?: {
-    siteId?: string
-    startDate?: Date
-    endDate?: Date
-    notes?: string
-    createdByUserId?: string
-  }
-) {
-  try {
-    // ==================== VALIDATION ====================
-    // Validate user role - only allow STAFF and MANAGER to have patterns
-    const employee = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, name: true, email: true, role: true }
-    })
-
-    if (!employee) {
-      throw new Error(`Employee not found: ${userId}`)
-    }
-
-    if (!['STAFF', 'MANAGER'].includes(employee.role)) {
-      throw new Error(`Cannot assign pattern to user with role: ${employee.role}. Only STAFF and MANAGER roles allowed.`)
-    }
-
-    // Validate pattern exists
-    const pattern = await prisma.schedulePattern.findUnique({
-      where: { id: patternId },
-      select: { id: true, name: true, type: true, workingDays: true }
-    })
-
-    if (!pattern) {
-      throw new Error(`Pattern not found: ${patternId}`)
-    }
-
-    // ==================== SETUP ====================
-    // Get site
-    let targetSiteId = options?.siteId
-    if (!targetSiteId) {
-      const site = await prisma.site.findFirst()
-      if (!site) {
-        throw new Error('No sites found in database')
-      }
-      targetSiteId = site.id
-    }
-
-    const startDate = options?.startDate || new Date()
-    const endDate = options?.endDate || null
-
-    console.log('[v0] ASSIGNING PATTERN TO EMPLOYEE:', {
-      employeeName: employee.name,
-      employeeId: userId,
-      patternName: pattern.name,
-      patternId,
-      startDate,
-      endDate,
-      siteId: targetSiteId
-    })
-
-    // ==================== CORE LOGIC ====================
-    // 1. Create/Update pattern assignment
-    const assignment = await prisma.employeePatternAssignment.create({
-      data: {
-        userId,
-        patternId,
-        siteId: targetSiteId,
-        startDate,
-        endDate,
-        status: 'ACTIVE',
-        createdBy: options?.createdByUserId,
-        notes: options?.notes,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    })
-
-    console.log('[v0] Pattern assignment created:', assignment.id)
-
-    // 2. Initialize attendance records for the pattern duration
-    console.log('[v0] Initializing attendance records...')
-    const endDateForAttendance = endDate || new Date(startDate.getTime() + 90 * 24 * 60 * 60 * 1000) // 90 days default
-    const attendanceRecords = []
-    
-    for (let d = new Date(startDate); d <= endDateForAttendance; d.setDate(d.getDate() + 1)) {
-      attendanceRecords.push({
-        employeeId: userId,
-        date: new Date(d),
-        checkInTime: null,
-        checkOutTime: null,
-        status: 'PENDING', // Will be updated when employee checks in
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
-    }
-
-    console.log(`[v0] Created ${attendanceRecords.length} attendance records`)
-
-    // 3. Generate shifts based on pattern rules
-    console.log('[v0] Generating shifts based on pattern...')
-    if (pattern.workingDays && Array.isArray(pattern.workingDays)) {
-      console.log('[v0] Pattern working days:', pattern.workingDays)
-      // This will be extended based on your pattern shift mapping logic
-    }
-
-    // 4. Log audit trail
-    console.log('[v0] Logging audit trail...')
-    const auditLog = {
-      action: 'PATTERN_ASSIGNED',
-      employeeId: userId,
-      employeeName: employee.name,
-      patternId,
-      patternName: pattern.name,
-      startDate,
-      endDate,
-      status: 'ACTIVE',
-      timestamp: new Date(),
-      performedBy: options?.createdByUserId || 'SYSTEM'
-    }
-    console.log('[v0] Audit log:', auditLog)
-
-    // 5. Send notification to employee
-    console.log('[v0] Sending notification to employee...')
-    const notification = {
-      userId,
-      type: 'PATTERN_ASSIGNED',
-      title: 'New Shift Pattern Assigned',
-      message: `You have been assigned to ${pattern.name} pattern effective from ${startDate.toLocaleDateString()}${endDate ? ` until ${endDate.toLocaleDateString()}` : ' (ongoing)'}`,
-      createdAt: new Date(),
-      read: false
-    }
-    console.log('[v0] Notification:', notification)
-
-    // ==================== FINALIZE ====================
-    revalidatePath('/superadmin/schedules')
-    
-    console.log('[v0] ✓ PATTERN ASSIGNMENT COMPLETE', {
-      assignmentId: assignment.id,
-      employee: employee.name,
-      pattern: pattern.name,
-      startDate,
-      endDate,
-      attendanceRecordsCreated: attendanceRecords.length
-    })
-
-    return {
-      success: true,
-      assignmentId: assignment.id,
-      message: `Pattern "${pattern.name}" successfully assigned to ${employee.name}`,
-      details: {
-        employee: employee.name,
-        pattern: pattern.name,
-        startDate,
-        endDate,
-        attendanceRecordsCreated: attendanceRecords.length
-      }
-    }
-
-  } catch (error) {
-    console.error('[v0] ERROR ASSIGNING PATTERN:', {
-      message: error instanceof Error ? error.message : String(error),
-      error
-    })
-    throw error
-  }
-}
-
-export async function getEmployeePatterns() {
-  try {
-    const assignments = await prisma.employeePatternAssignment.findMany({
-      include: {
-        user: true,
-        pattern: true,
-        site: true
-      }
-    })
-    
-    return assignments || []
-  } catch (error) {
-    console.error('[v0] Error fetching employee patterns:', error)
-    return []
-  }
-}
-
 export async function getAllEmployees() {
   try {
     console.log('[v0] Fetching all employees from users table...')
@@ -474,33 +271,6 @@ export async function getAllEmployees() {
     console.error('[v0] Error fetching all employees:', {
       message: error instanceof Error ? error.message : String(error),
       error
-    })
-    return []
-  }
-}
-
-export async function getSchedulePatterns() {
-  try {
-    console.log('[v0] Fetching schedule patterns...')
-    const patterns = await prisma.schedulePattern.findMany({
-      orderBy: { createdAt: 'desc' }
-    })
-    
-    console.log('[v0] Schedule patterns fetched:', {
-      count: patterns.length,
-      patterns: patterns.map(p => ({
-        id: p.id,
-        name: p.name,
-        type: p.type,
-        description: p.description
-      }))
-    })
-    
-    return patterns || []
-  } catch (error) {
-    console.error('[v0] Error fetching schedule patterns:', {
-      message: error instanceof Error ? error.message : String(error),
-      error: error
     })
     return []
   }
@@ -866,249 +636,36 @@ export async function getCompanyInfo() {
 }
 
 /**
- * Process bulk import (all-or-nothing execution)
- */
-export async function processBulkImport(
-  rows: any[],
-  fileName: string,
-  userId: string
-) {
-  let importLog: any = null
-
-  try {
-    console.log('[v0] Starting bulk import process:', { fileName, rowCount: rows.length, userId })
-
-    const { getValidationContext, validateBulkImport: validate } = await import('@/lib/importValidator')
-
-    // Get validation context
-    const context = await getValidationContext(prisma)
-
-    // Validate first
-    const validation = await validate(rows, context)
-
-    if (!validation.isValid) {
-      throw new Error(`Validation failed: ${validation.invalidRows} row(s) have errors`)
-    }
-
-    // Create import log entry
-    importLog = await prisma.bulkImportLog.create({
-      data: {
-        fileName,
-        importedBy: userId,
-        totalRows: rows.length,
-        successCount: 0,
-        errorCount: 0,
-        validationDetails: JSON.stringify(validation),
-        status: 'SUCCESS'
-      }
-    })
-
-    console.log('[v0] Created import log:', importLog.id)
-
-    // Process each valid row in a transaction
-    const createdAssignments = []
-    const importRecords = []
-
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i]
-
-      try {
-        // Get actual employee ID
-        const employee = context.employees.get(row.employeeId)
-        if (!employee) {
-          throw new Error('Employee not found')
-        }
-
-        // Get site
-        const site = context.sites.get(row.site.toLowerCase())
-        if (!site) {
-          throw new Error('Site not found')
-        }
-
-        // Get first shift for pattern (will be improved later)
-        const firstShift = [...context.shifts.values()][0]
-        if (!firstShift) {
-          throw new Error('No shifts found in system')
-        }
-
-        // Parse start/end dates
-        const startDate = new Date(row.startDate)
-        const endDate = row.endDate ? new Date(row.endDate) : null
-
-        // Handle existing assignment (replace)
-        const existing = await prisma.employeePatternAssignment.findFirst({
-          where: { userId: employee.id, siteId: site.id }
-        })
-
-        if (existing) {
-          await prisma.employeePatternAssignment.update({
-            where: { id: existing.id },
-            data: {
-              status: 'ENDED',
-              updatedAt: new Date()
-            }
-          })
-        }
-
-        // Create new assignment
-        const assignment = await prisma.employeePatternAssignment.create({
-          data: {
-            userId: employee.id,
-            patternId: firstShift.id, // Temporary - will be derived from daily shifts
-            siteId: site.id,
-            startDate,
-            endDate,
-            status: 'ACTIVE',
-            createdBy: userId,
-            notes: `Imported from ${fileName}`
-          }
-        })
-
-        createdAssignments.push(assignment)
-
-        // Create import record
-        importRecords.push({
-          bulkImportLogId: importLog.id,
-          employeeId: row.employeeId,
-          employeeName: row.employeeName,
-          siteId: site.id,
-          assignmentId: assignment.id,
-          startDate,
-          endDate,
-          dailySchedule: JSON.stringify({
-            monday: row.monday,
-            tuesday: row.tuesday,
-            wednesday: row.wednesday,
-            thursday: row.thursday,
-            friday: row.friday,
-            saturday: row.saturday,
-            sunday: row.sunday
-          }),
-          status: 'SUCCESS'
-        })
-      } catch (error) {
-        // Record error but continue processing
-        importRecords.push({
-          bulkImportLogId: importLog.id,
-          employeeId: row.employeeId,
-          employeeName: row.employeeName,
-          siteId: '', // Will fail constraint, but record the error
-          startDate: new Date(row.startDate),
-          endDate: row.endDate ? new Date(row.endDate) : null,
-          dailySchedule: JSON.stringify({}),
-          status: 'ERROR',
-          errorMessage: error instanceof Error ? error.message : 'Unknown error'
-        })
-      }
-    }
-
-    // Batch create import records
-    if (importRecords.length > 0) {
-      await prisma.bulkImportRecord.createMany({
-        data: importRecords.filter(r => r.siteId) // Only records with valid siteId
-      })
-    }
-
-    // Update import log
-    const successCount = importRecords.filter(r => r.status === 'SUCCESS').length
-    const errorCount = importRecords.filter(r => r.status === 'ERROR').length
-
-    await prisma.bulkImportLog.update({
-      where: { id: importLog.id },
-      data: {
-        successCount,
-        errorCount,
-        status: errorCount > 0 ? 'PARTIAL' : 'SUCCESS'
-      }
-    })
-
-    console.log('[v0] Bulk import completed:', {
-      importLogId: importLog.id,
-      createdAssignments: createdAssignments.length,
-      errors: errorCount
-    })
-
-    revalidatePath('/superadmin/schedules')
-
-    return {
-      success: true,
-      importLogId: importLog.id,
-      message: `Successfully imported ${successCount}/${rows.length} employees`,
-      successCount,
-      errorCount
-    }
-  } catch (error) {
-    // Update log with failure status
-    if (importLog) {
-      await prisma.bulkImportLog.update({
-        where: { id: importLog.id },
-        data: {
-          status: 'FAILED',
-          validationDetails: JSON.stringify({
-            error: error instanceof Error ? error.message : 'Unknown error'
-          })
-        }
-      })
-    }
-
-    console.error('[v0] Bulk import failed:', error)
-    throw error
-  }
-}
-
-/**
  * Get import audit trail
  */
-export async function getImportAuditTrail(limit: number = 20) {
+export async function getImportAuditTrail(limit: number = 50) {
   try {
     const logs = await prisma.bulkImportLog.findMany({
-      include: {
-        importedByUser: { select: { name: true, email: true } },
-        importRecords: true
-      },
       orderBy: { createdAt: 'desc' },
       take: limit
     })
-
-    return logs.map(log => ({
-      id: log.id,
-      fileName: log.fileName,
-      importedBy: log.importedByUser?.name || 'Unknown',
-      importedAt: log.createdAt,
-      totalRows: log.totalRows,
-      successCount: log.successCount,
-      errorCount: log.errorCount,
-      status: log.status
-    }))
+    return logs
   } catch (error) {
-    console.error('[v0] Error fetching audit trail:', error)
+    console.error('[v0] Error fetching import audit trail:', error)
     return []
   }
 }
-
 
 // Auto-generate expected attendance records for today based on assignments
 export async function generateTodayAttendanceRecords() {
   try {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
 
-    console.log('[v0] Starting attendance generation for date:', today)
+    console.log('[v0] Starting attendance generation for date:', today.toISOString().split('T')[0])
 
-    // Find all active assignments that cover today
-    const activeAssignments = await prisma.employeePatternAssignment.findMany({
+    // Get all schedules for today
+    const todaysSchedules = await prisma.schedule.findMany({
       where: {
-        status: 'ACTIVE',
-        startDate: { lte: today },
-        OR: [
-          { endDate: null },
-          { endDate: { gte: today } }
-        ]
+        scheduleDate: today
       },
       include: {
-        user: {
+        employee: {
           select: {
             id: true,
             name: true,
@@ -1116,143 +673,34 @@ export async function generateTodayAttendanceRecords() {
             siteId: true
           }
         },
-        site: true,
-        pattern: true
+        shift: true
       }
     })
 
-    console.log('[v0] Found active assignments:', activeAssignments.length)
+    console.log('[v0] Found', todaysSchedules.length, 'schedules for today')
 
     let createdCount = 0
     let skippedCount = 0
 
-    for (const assignment of activeAssignments) {
-      // Use user's primary site (siteId) as source of truth
-      const userSiteId = assignment.user.siteId
-      
-      console.log('[v0] Processing assignment:', {
-        userId: assignment.userId,
-        userName: assignment.user.name,
-        userSiteId: userSiteId,
-        patternName: assignment.pattern.name,
-        patternType: assignment.pattern.type,
-        status: assignment.status,
-        startDate: assignment.startDate,
-        endDate: assignment.endDate
-      })
-      
+    for (const schedule of todaysSchedules) {
+      const userSiteId = schedule.employee.siteId
+
       if (!userSiteId) {
-        console.log('[v0] Skipping - user has no site assigned:', assignment.userId)
+        console.log('[v0] Skipping - employee has no site assigned:', schedule.employeeId)
         skippedCount++
-        continue // Skip if user has no primary site assigned
+        continue
       }
 
-      // Check if attendance record already exists for today (unique constraint is on userId + date)
+      // Check if attendance record already exists for today
       const existingAttendance = await prisma.attendance.findFirst({
         where: {
-          userId: assignment.userId,
+          userId: schedule.employeeId,
           date: today
         }
       })
 
       if (existingAttendance) {
-        console.log('[v0] Attendance record already exists for user on this date - skipping')
-        skippedCount++
-        continue
-      }
-
-      // Determine if user is scheduled for today based on pattern type
-      const dayOfWeek = today.getDay()
-      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-      let isScheduledToday = true
-      let scheduleReason = ''
-      let scheduledStart: string | null = null
-      let scheduledEnd: string | null = null
-      let shiftId: string | null = null
-
-      if (assignment.pattern.type === 'FIXED') {
-        // For fixed patterns, check if today is a working day
-        const workingDays = assignment.pattern.workingDays as number[] || []
-        console.log('[v0] FIXED pattern - workingDays:', workingDays, 'today:', dayNames[dayOfWeek])
-        if (workingDays.length > 0 && !workingDays.includes(dayOfWeek)) {
-          isScheduledToday = false
-          scheduleReason = `Not a working day (pattern has [${workingDays.map(d => dayNames[d]).join(', ')}])`
-        } else {
-          scheduleReason = 'Working day according to pattern'
-          // For FIXED patterns, use the single shift time
-          if (assignment.pattern.shiftId) {
-            shiftId = assignment.pattern.shiftId
-            const shift = await prisma.shift.findUnique({
-              where: { id: shiftId }
-            })
-            scheduledStart = shift?.startTime || null
-            scheduledEnd = shift?.endTime || null
-          }
-        }
-      } else if (assignment.pattern.type === 'ROTATING') {
-        // For rotating patterns, calculate based on sequence and start date
-        const rotatingData = assignment.pattern.rotatingPattern as any
-        if (rotatingData?.sequence && rotatingData?.startDate) {
-          const patternStartDate = new Date(rotatingData.startDate)
-          const daysFromStart = Math.floor((today.getTime() - patternStartDate.getTime()) / (1000 * 60 * 60 * 24))
-          const sequenceIndex = daysFromStart % rotatingData.sequence.length
-          const currentCycle = rotatingData.sequence[sequenceIndex]
-          
-          console.log('[v0] ROTATING pattern - daysFromStart:', daysFromStart, 'sequenceIndex:', sequenceIndex, 'currentCycle:', currentCycle)
-          
-          // Skip rest days (when shiftType is 'off')
-          isScheduledToday = currentCycle.shiftType !== 'off' && currentCycle.shiftType !== 'OFF'
-          scheduleReason = isScheduledToday ? `Working cycle: ${JSON.stringify(currentCycle)}` : `Rest cycle: ${JSON.stringify(currentCycle)}`
-          
-          // Get shift times if scheduled
-          if (isScheduledToday && currentCycle.shiftType) {
-            shiftId = currentCycle.shiftType
-            const shift = await prisma.shift.findUnique({
-              where: { id: shiftId }
-            })
-            if (shift) {
-              scheduledStart = shift.startTime
-              scheduledEnd = shift.endTime
-            }
-          }
-        } else {
-          scheduleReason = 'Invalid rotating pattern data'
-        }
-      } else if (assignment.pattern.type === 'MODULO') {
-        // For modulo patterns, calculate based on sequence and start date
-        const moduloData = assignment.pattern.moduloPattern as any
-        if (moduloData?.sequence && moduloData?.startDate) {
-          const patternStartDate = new Date(moduloData.startDate)
-          const daysFromStart = Math.floor((today.getTime() - patternStartDate.getTime()) / (1000 * 60 * 60 * 24))
-          const sequenceIndex = daysFromStart % moduloData.sequence.length
-          const currentShiftType = moduloData.sequence[sequenceIndex]
-          
-          console.log('[v0] MODULO pattern - daysFromStart:', daysFromStart, 'sequenceIndex:', sequenceIndex, 'currentShift:', currentShiftType)
-          
-          // Skip rest days or specific indicators
-          isScheduledToday = currentShiftType !== 'rest' && currentShiftType !== 'OFF'
-          scheduleReason = isScheduledToday ? `Shift: ${currentShiftType}` : `Off day: ${currentShiftType}`
-          
-          // Get shift times if scheduled
-          if (isScheduledToday && currentShiftType && currentShiftType !== 'rest') {
-            shiftId = currentShiftType
-            const shift = await prisma.shift.findUnique({
-              where: { id: shiftId }
-            })
-            if (shift) {
-              scheduledStart = shift.startTime
-              scheduledEnd = shift.endTime
-            }
-          }
-        } else {
-          scheduleReason = 'Invalid modulo pattern data'
-        }
-      }
-
-      console.log('[v0] Schedule check for', assignment.user.name, '-', scheduleReason, { scheduledStart, scheduledEnd })
-
-      if (!isScheduledToday) {
-        console.log('[v0] Skipping - user not scheduled for today')
+        console.log('[v0] Attendance record already exists for', schedule.employee.name, '- skipping')
         skippedCount++
         continue
       }
@@ -1260,41 +708,61 @@ export async function generateTodayAttendanceRecords() {
       // Check if user has an approved leave on this date
       const approvedLeave = await prisma.leave.findFirst({
         where: {
-          userId: assignment.userId,
+          userId: schedule.employeeId,
           status: 'Approved',
-          startDate: {
-            lte: today
-          },
-          endDate: {
-            gte: today
-          }
+          startDate: { lte: today },
+          endDate: { gte: today }
         }
       })
 
       let attendanceStatus = 'NOT_CHECKED_IN'
+      let finalScheduledStart = schedule.shiftStart
+      let finalScheduledEnd = schedule.shiftEnd
+      let notes = schedule.notes || null
+
       if (approvedLeave) {
-        console.log('[v0] Found approved leave for', assignment.user.name, '- marking as LEAVE')
+        console.log('[v0] Found approved leave for', schedule.employee.name, '- marking as LEAVE')
         attendanceStatus = 'LEAVE'
       }
 
-      // Create attendance record with appropriate status
-      // Uses user's primary site (user.siteId) as single source of truth
-      console.log('[v0] Creating attendance record for:', { userId: assignment.userId, locationId: userSiteId, scheduledStart, scheduledEnd, status: attendanceStatus })
-      await prisma.attendance.create({
-        data: {
-          userId: assignment.userId,
+      // Create attendance record
+      try {
+        console.log('[v0] Creating attendance record for:', {
+          userId: schedule.employeeId,
+          name: schedule.employee.name,
           locationId: userSiteId,
-          shiftId: shiftId,
-          date: today,
-          scheduledStart: scheduledStart,
-          scheduledEnd: scheduledEnd,
-          status: attendanceStatus, // LEAVE if approved leave exists, otherwise NOT_CHECKED_IN
-          lateMinutes: 0
-        }
-      })
+          shiftId: schedule.shiftId,
+          scheduledStart: finalScheduledStart,
+          scheduledEnd: finalScheduledEnd,
+          status: attendanceStatus
+        })
 
-      console.log('[v0] Attendance record created successfully with status:', attendanceStatus)
-      createdCount++
+        const createdAttendance = await prisma.attendance.create({
+          data: {
+            userId: schedule.employeeId,
+            locationId: userSiteId,
+            shiftId: schedule.shiftId,
+            date: today,
+            scheduledStart: finalScheduledStart,
+            scheduledEnd: finalScheduledEnd,
+            status: attendanceStatus,
+            lateMinutes: 0,
+            notes: notes
+          }
+        })
+
+        console.log('[v0] Attendance record created successfully:', {
+          id: createdAttendance.id,
+          status: attendanceStatus,
+          scheduledStart: createdAttendance.scheduledStart,
+          scheduledEnd: createdAttendance.scheduledEnd
+        })
+        createdCount++
+      } catch (createError) {
+        console.error('[v0] Error creating attendance record for', schedule.employee.name, ':', createError)
+        skippedCount++
+        continue
+      }
     }
 
     revalidatePath('/dashboard/attendance')
@@ -1306,7 +774,7 @@ export async function generateTodayAttendanceRecords() {
       details: {
         created: createdCount,
         skipped: skippedCount,
-        total: activeAssignments.length
+        total: todaysSchedules.length
       }
     }
   } catch (error) {
