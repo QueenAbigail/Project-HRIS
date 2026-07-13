@@ -63,11 +63,27 @@ export function AddScheduleDialog({
 
   useEffect(() => {
     if (open && schedule) {
+      // In edit mode, load the single schedule data
       setFormData({
         employeeId: schedule.employeeId,
         employeeName: schedule.employeeName,
         shiftId: schedule.shiftId,
-        scheduleDate: schedule.scheduleDate,
+        scheduleDate: schedule.scheduleDate?.split('T')[0] || '',
+      })
+      // Reset pattern modes for edit - default to single date/shift form
+      setUseDateRange(false)
+      setUseRotationPattern(false)
+    } else if (open) {
+      // In create mode, reset to defaults
+      setUseDateRange(false)
+      setUseRotationPattern(false)
+      setFormData({
+        employeeId: '',
+        employeeName: '',
+        shiftId: '',
+        scheduleDate: new Date().toISOString().split('T')[0],
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       })
     }
   }, [open, schedule])
@@ -450,36 +466,38 @@ export function AddScheduleDialog({
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="useRange"
-                  checked={useDateRange && !useRotationPattern}
-                  onCheckedChange={(checked) => {
-                    setUseDateRange(checked as boolean)
-                    setUseRotationPattern(false)
-                  }}
-                  disabled={!!schedule || useRotationPattern}
-                />
-                <Label htmlFor="useRange" className="font-normal cursor-pointer">
-                  Date range
-                </Label>
+            {!schedule && (
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="useRange"
+                    checked={useDateRange}
+                    onCheckedChange={(checked) => {
+                      setUseDateRange(checked as boolean)
+                      if (checked) setUseRotationPattern(false)
+                    }}
+                    disabled={useRotationPattern}
+                  />
+                  <Label htmlFor="useRange" className="font-normal cursor-pointer">
+                    Date range
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="useRotation"
+                    checked={useRotationPattern}
+                    onCheckedChange={(checked) => {
+                      setUseRotationPattern(checked as boolean)
+                      if (checked) setUseDateRange(false)
+                    }}
+                    disabled={useDateRange}
+                  />
+                  <Label htmlFor="useRotation" className="font-normal cursor-pointer">
+                    Rotation pattern
+                  </Label>
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="useRotation"
-                  checked={useRotationPattern}
-                  onCheckedChange={(checked) => {
-                    setUseRotationPattern(checked as boolean)
-                    setUseDateRange(false)
-                  }}
-                  disabled={!!schedule}
-                />
-                <Label htmlFor="useRotation" className="font-normal cursor-pointer">
-                  Rotation pattern
-                </Label>
-              </div>
-            </div>
+            )}
 
             {useRotationPattern ? (
               <>
