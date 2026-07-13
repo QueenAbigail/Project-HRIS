@@ -79,7 +79,6 @@ model Site {
   company     Company?                  @relation(fields: [companyId], references: [id], onDelete: SetNull)
   users       User[]
   attendances Attendance[]
-  assignments EmployeeShiftAssignment[]
   attendanceLocations AttendanceLocation[] @relation("SiteAttendanceLocations")
   patrolLocations PatrolLocation[]
   patrols     Patrol[]
@@ -110,10 +109,8 @@ model Shift {
   startTime          String // HH:MM
   endTime            String // HH:MM
   gracePeriodMinutes Int
-  assignments        EmployeeShiftAssignment[]
   Attendance         Attendance[]
   patrols            Patrol[]
-  schedulePatterns   SchedulePattern[]
   schedules          Schedule[]                @relation("ScheduleShifts")
 
   @@map("shifts")
@@ -140,7 +137,6 @@ model User {
   attendances           Attendance[]
   leaves                Leave[]                   @relation("LeaveRequester")
   bkoAssignments        BkoAssignment[]           @relation("BkoSubstitute")
-  assignments           EmployeeShiftAssignment[]
   bulkImports           BulkImportLog[] @relation("BulkImports")
   patrols               Patrol[]
   deviceBindings        DeviceBinding[]
@@ -181,20 +177,6 @@ model User {
 
 
 // Junction for Employee Shift Assignment (schedules with workingDays array)
-model EmployeeShiftAssignment {
-  id          String @id @default(cuid())
-  userId      String
-  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  shiftId     String
-  shift       Shift  @relation(fields: [shiftId], references: [id])
-  siteId      String
-  site        Site   @relation(fields: [siteId], references: [id])
-  workingDays Json // [0,1,2,3,4,5,6] as array of ints (Sun=0)
-
-  @@unique([userId, shiftId, siteId])
-  @@map("employee_shift_assignments")
-}
-
 // Attendance model (extended with GPS/selfie)
 model Attendance {
   id             String           @id @default(cuid())

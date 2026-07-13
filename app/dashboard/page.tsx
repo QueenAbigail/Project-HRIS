@@ -7,7 +7,7 @@ import { AttendanceChart } from '@/components/dashboard/attendance-chart'
 import { LocationAttendance } from '@/components/dashboard/location-attendance'
 import { LateCheckIns } from '@/components/dashboard/late-checkins'
 import { UpcomingLeaves } from '@/components/dashboard/upcoming-leaves'
-import type { Attendance, EmployeeShiftAssignment, Leave, Shift, Site, User } from '@prisma/client'
+import type { Attendance, Leave, Shift, Site, User } from '@prisma/client'
 
 export default async function DashboardPage() {
   // Get current user to determine data filtering
@@ -94,12 +94,20 @@ export default async function DashboardPage() {
         bkoAssignments: true
       }
     }),
-    prisma.employeeShiftAssignment.findMany({
-      where: isClient ? { site: { companyId: currentUser.companyId } } : {},
+    // Query schedules for today to calculate day offs
+    prisma.schedule.findMany({
+      where: {
+        scheduleDate: {
+          gte: todayStart,
+          lt: todayEnd
+        },
+        employee: isClient ? { site: { companyId: currentUser.companyId } } : {}
+      },
       include: {
-        user: true,
-        shift: true,
-        site: true
+        employee: {
+          include: { site: true }
+        },
+        shift: true
       }
     }),
     // Count approved leaves this month
@@ -128,17 +136,13 @@ export default async function DashboardPage() {
     }
   });
 
-  // dayOff
+  // dayOff - count employees without schedule today
   const dayOffBySite: Record<string, number> = {};
-  assignments.forEach((ass) => {
-    try {
-      const workingDays = JSON.parse(ass.workingDays as string);
-      if (!Array.isArray(workingDays) || !workingDays.includes(todayDay)) {
-        dayOffBySite[ass.site.id] = (dayOffBySite[ass.site.id] || 0) + 1;
-      }
-    } catch (e) {
-      // invalid JSON, count as day off
-      dayOffBySite[ass.site.id] = (dayOffBySite[ass.site.id] || 0) + 1;
+  const scheduledEmployeeIds = new Set(assignments.map(s => s.employee.id));
+  
+  users.forEach((user) => {
+    if (user.site?.id && !scheduledEmployeeIds.has(user.id)) {
+      dayOffBySite[user.site.id] = (dayOffBySite[user.site.id] || 0) + 1;
     }
   });
 
