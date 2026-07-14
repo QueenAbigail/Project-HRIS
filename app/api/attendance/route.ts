@@ -80,8 +80,8 @@ export async function GET(request: NextRequest) {
         dateEnd = startOfDay(yesterday)
         break
       case 'week':
-        const weekStart = startOfWeek(now, { weekStartsOn: 0 }) // Sunday start
-        const weekEnd = endOfWeek(now, { weekStartsOn: 0 })
+        const weekStart = startOfWeek(now, { weekStartsOn: 1 }) // Monday start
+        const weekEnd = endOfWeek(now, { weekStartsOn: 1 })
         dateStart = startOfDay(weekStart)
         dateEnd = startOfDay(weekEnd)
         break
