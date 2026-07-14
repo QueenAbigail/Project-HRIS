@@ -71,34 +71,34 @@ export async function GET(request: NextRequest) {
 
     switch (dateRange) {
       case 'today':
-        dateStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-        dateEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+        dateStart = startOfDay(now)
+        dateEnd = endOfDay(now)
         break
       case 'yesterday':
         const yesterday = subDays(now, 1)
-        dateStart = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
-        dateEnd = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59)
+        dateStart = startOfDay(yesterday)
+        dateEnd = endOfDay(yesterday)
         break
       case 'week':
         const weekStart = startOfWeek(now, { weekStartsOn: 0 }) // Sunday start
         const weekEnd = endOfWeek(now, { weekStartsOn: 0 })
-        dateStart = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate())
-        dateEnd = new Date(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate(), 23, 59, 59)
+        dateStart = startOfDay(weekStart)
+        dateEnd = endOfDay(weekEnd)
         break
       case 'month':
         const monthStart = startOfMonth(now)
         const monthEnd = endOfMonth(now)
-        dateStart = new Date(monthStart.getFullYear(), monthStart.getMonth(), monthStart.getDate())
-        dateEnd = new Date(monthEnd.getFullYear(), monthEnd.getMonth(), monthEnd.getDate(), 23, 59, 59)
+        dateStart = startOfDay(monthStart)
+        dateEnd = endOfDay(monthEnd)
         break
       case 'custom':
         const customDate = new Date(date)
-        dateStart = new Date(customDate.getFullYear(), customDate.getMonth(), customDate.getDate())
-        dateEnd = new Date(customDate.getFullYear(), customDate.getMonth(), customDate.getDate(), 23, 59, 59)
+        dateStart = startOfDay(customDate)
+        dateEnd = endOfDay(customDate)
         break
       default:
-        dateStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-        dateEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+        dateStart = startOfDay(now)
+        dateEnd = endOfDay(now)
     }
 
     console.log("[v0] Attendance API - Date range:", { dateRange, dateStart, dateEnd })
