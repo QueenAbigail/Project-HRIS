@@ -171,46 +171,6 @@ export async function GET(request: NextRequest) {
       ]
     })
 
-    // Auto-update NOT_CHECKED_IN to ABSENT if scheduled end time has passed
-    const currentTime = new Date()
-    const recordsToUpdate = filtered.filter(record => {
-      if (record.status !== 'NOT_CHECKED_IN') return false
-      
-      // Check if scheduled end time has passed
-      if (record.scheduledEnd) {
-        const [hours, minutes] = record.scheduledEnd.split(':').map(Number)
-        const recordDate = new Date(record.date)
-        const endTime = new Date(recordDate)
-        endTime.setHours(hours, minutes, 0, 0)
-        
-        return currentTime > endTime
-      }
-      return false
-    })
-
-    // Update records in database if any have passed their end time
-    if (recordsToUpdate.length > 0) {
-      console.log("[v0] Auto-updating", recordsToUpdate.length, "NOT_CHECKED_IN records to ABSENT")
-      await prisma.attendance.updateMany({
-        where: {
-          id: {
-            in: recordsToUpdate.map(r => r.id)
-          },
-          status: 'NOT_CHECKED_IN'
-        },
-        data: {
-          status: 'ABSENT'
-        }
-      })
-      
-      // Update local records to reflect the changes
-      filtered.forEach(record => {
-        if (recordsToUpdate.find(r => r.id === record.id)) {
-          record.status = 'ABSENT'
-        }
-      })
-    }
-
     console.log("[v0] Attendance API returning", filtered.length, "records for date range:", dateRange)
     return NextResponse.json(filtered)
   } catch (error) {

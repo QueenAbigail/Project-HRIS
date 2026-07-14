@@ -111,7 +111,6 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
   const presentRecords = records.filter(r => r.status === 'PRESENT')
   const absentRecords = records.filter(r => r.status === 'ABSENT')
   const pendingRecords = records.filter(r => r.status === 'NOT_CHECKED_IN')
-  const dayOffRecords = records.filter(r => r.status === 'LEAVE')
 
   const openGoogleMaps = (gps: GpsCoordinates) => {
     const url = `https://www.google.com/maps?q=${gps.latitude},${gps.longitude}`
@@ -212,13 +211,12 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="all" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="all">All ({allRecords.length})</TabsTrigger>
               <TabsTrigger value="late" className="text-warning">Late ({lateRecords.length})</TabsTrigger>
               <TabsTrigger value="present" className="text-success">Present ({presentRecords.length})</TabsTrigger>
               <TabsTrigger value="absent" className="text-destructive">Absent ({absentRecords.length})</TabsTrigger>
               <TabsTrigger value="pending" className="text-orange-500">Pending ({pendingRecords.length})</TabsTrigger>
-              <TabsTrigger value="day-off">Day Off ({dayOffRecords.length})</TabsTrigger>
             </TabsList>
             
             <TabsContent value="all" className="mt-4">
@@ -326,26 +324,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
               </div>
             </TabsContent>
 
-            <TabsContent value="day-off" className="mt-4">
-              <div className="rounded-lg border overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Employee</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Check In</TableHead>
-                      <TableHead>Check Out</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {renderTableRows(dayOffRecords)}
-                  </TableBody>
-                </Table>
-              </div>
-            </TabsContent>
+
           </Tabs>
         </CardContent>
       </Card>
