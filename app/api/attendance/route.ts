@@ -71,59 +71,66 @@ export async function GET(request: NextRequest) {
 
     switch (dateRange) {
       case 'today':
-        dateStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-        dateEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+        dateStart = startOfDay(now)
+        dateEnd = startOfDay(now)
         break
       case 'yesterday':
         const yesterday = subDays(now, 1)
-        dateStart = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
-        dateEnd = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59)
+        dateStart = startOfDay(yesterday)
+        dateEnd = startOfDay(yesterday)
         break
       case 'week':
-        const weekStart = startOfWeek(now, { weekStartsOn: 0 }) // Sunday start
-        const weekEnd = endOfWeek(now, { weekStartsOn: 0 })
-        dateStart = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate())
-        dateEnd = new Date(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate(), 23, 59, 59)
+        const weekStart = startOfWeek(now, { weekStartsOn: 1 }) // Monday start
+        const weekEnd = endOfWeek(now, { weekStartsOn: 1 })
+        dateStart = startOfDay(weekStart)
+        dateEnd = startOfDay(weekEnd)
         break
       case 'month':
         const monthStart = startOfMonth(now)
         const monthEnd = endOfMonth(now)
-        dateStart = new Date(monthStart.getFullYear(), monthStart.getMonth(), monthStart.getDate())
-        dateEnd = new Date(monthEnd.getFullYear(), monthEnd.getMonth(), monthEnd.getDate(), 23, 59, 59)
+        dateStart = startOfDay(monthStart)
+        dateEnd = startOfDay(monthEnd)
         break
       case 'custom':
         const customDate = new Date(date)
-        dateStart = new Date(customDate.getFullYear(), customDate.getMonth(), customDate.getDate())
-        dateEnd = new Date(customDate.getFullYear(), customDate.getMonth(), customDate.getDate(), 23, 59, 59)
+        dateStart = startOfDay(customDate)
+        dateEnd = startOfDay(customDate)
         break
       default:
-        dateStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-        dateEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+        dateStart = startOfDay(now)
+        dateEnd = startOfDay(now)
     }
 
-    console.log("[v0] Attendance API - Date range:", { dateRange, dateStart, dateEnd })
+    console.log("[v0] Attendance API - Date range:", { dateRange, dateStart: dateStart.toISOString(), dateEnd: dateEnd.toISOString() })
 
-    // Build where clause
-    const where: any = {}
+    // Build where clause - use gte for start and lte for end to match date-only comparison
+    const where: any = {
+      date: {
+        gte: dateStart,
+        lte: dateEnd
+      }
+    }
     
     if (siteId && siteId !== 'all') {
       where.locationId = siteId
     } else if (isClient) {
       // For CLIENT users, only show their company's locations
       where.location = {
-        companyId: currentUser?.companyId
+        company: {
+          id: currentUser?.companyId
+        }
       }
     }
 
     if (department && department !== 'all') {
       where.user = {
-        ...where.user,
         department: department
       }
     }
 
-    console.log("[v0] Fetching attendance with where clause:", JSON.stringify(where))
-    const attendance = await prisma.attendance.findMany({
+    console.log("[v0] Fetching attendance with where clause:", JSON.stringify(where, null, 2))
+    console.log("[v0] Current user:", { id: currentUser?.id, role: currentUser?.role, companyId: currentUser?.companyId })
+    const filtered = await prisma.attendance.findMany({
       where,
       include: {
         user: {
@@ -158,23 +165,21 @@ export async function GET(request: NextRequest) {
           }
         } as any
       },
-      orderBy: {
-        actualCheckIn: 'desc'
-      }
-    })
-
-    // Filter by date range
-    const filtered = attendance.filter(record => {
-      const recordDate = new Date(record.date || new Date())
-      return recordDate >= dateStart && recordDate <= dateEnd
+      orderBy: [
+        { date: 'desc' },
+        { actualCheckIn: 'desc' }
+      ]
     })
 
     console.log("[v0] Attendance API returning", filtered.length, "records for date range:", dateRange)
     return NextResponse.json(filtered)
   } catch (error) {
-    console.error('[v0] Error fetching attendance:', error)
+    console.error('[v0] Error fetching attendance:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json(
-      { error: 'Failed to fetch attendance records' },
+      { error: 'Failed to fetch attendance records', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }

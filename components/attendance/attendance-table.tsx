@@ -107,10 +107,10 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
   }, [siteId, dateRange, department])
 
   const allRecords = records
-  const lateRecords = records.filter(r => r.status === 'late')
-  const presentRecords = records.filter(r => r.status === 'present')
-  const absentRecords = records.filter(r => r.status === 'absent' || r.status === 'not-checked-in')
-  const dayOffRecords = records.filter(r => r.status === 'day-off')
+  const lateRecords = records.filter(r => r.status === 'LATE')
+  const presentRecords = records.filter(r => r.status === 'PRESENT')
+  const absentRecords = records.filter(r => r.status === 'ABSENT')
+  const pendingRecords = records.filter(r => r.status === 'NOT_CHECKED_IN')
 
   const openGoogleMaps = (gps: GpsCoordinates) => {
     const url = `https://www.google.com/maps?q=${gps.latitude},${gps.longitude}`
@@ -216,7 +216,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
               <TabsTrigger value="late" className="text-warning">Late ({lateRecords.length})</TabsTrigger>
               <TabsTrigger value="present" className="text-success">Present ({presentRecords.length})</TabsTrigger>
               <TabsTrigger value="absent" className="text-destructive">Absent ({absentRecords.length})</TabsTrigger>
-              <TabsTrigger value="day-off">Day Off ({dayOffRecords.length})</TabsTrigger>
+              <TabsTrigger value="pending" className="text-orange-500">Pending ({pendingRecords.length})</TabsTrigger>
             </TabsList>
             
             <TabsContent value="all" className="mt-4">
@@ -303,7 +303,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
               </div>
             </TabsContent>
 
-            <TabsContent value="day-off" className="mt-4">
+            <TabsContent value="pending" className="mt-4">
               <div className="rounded-lg border overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -318,11 +318,13 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {renderTableRows(dayOffRecords)}
+                    {renderTableRows(pendingRecords)}
                   </TableBody>
                 </Table>
               </div>
             </TabsContent>
+
+
           </Tabs>
         </CardContent>
       </Card>

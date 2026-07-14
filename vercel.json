@@ -3,6 +3,10 @@
     {
       "path": "/api/attendance/generate-today",
       "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/attendance/auto-absent",
+      "schedule": "5 * * * *"
     }
   ]
 }
