@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getCurrentTimeGMT7, parseLocalDateTime } from '@/lib/timezone'
 
 /**
  * Cron endpoint to auto-update NOT_CHECKED_IN records to ABSENT
@@ -29,15 +30,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const now = new Date()
-    console.log('[v0] Auto-absent cron job started at', now.toISOString())
+    // Get current time in GMT+7 timezone
+    const now = getCurrentTimeGMT7()
+    
+    console.log('[v0] Auto-absent cron job started')
+    console.log('[v0] GMT+7 current time:', now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }))
 
     // Find all NOT_CHECKED_IN records where the scheduled end time has passed
     const pendingRecords = await prisma.attendance.findMany({
       where: {
         status: 'NOT_CHECKED_IN',
         date: {
-          lte: now // Only check records from today and earlier
+          lte: now // Only check records from today and earlier (GMT+7)
         }
       },
       select: {
@@ -57,19 +61,19 @@ export async function POST(request: NextRequest) {
 
     // Filter records where scheduled end time has passed, or if it's an old pending record
     const recordsToUpdate = pendingRecords.filter(record => {
-      const recordDate = new Date(record.date)
-      const endOfDay = new Date(recordDate)
-      endOfDay.setHours(23, 59, 59, 999)
+      const recordDateStr = record.date.toISOString().split('T')[0] // Convert to YYYY-MM-DD
+      const endOfDay = parseLocalDateTime(recordDateStr, '23:59:59')
 
-      // If record has scheduledEnd, check if that time has passed
+      // If record has scheduledEnd, check if that time has passed (in GMT+7)
       if (record.scheduledEnd) {
-        const [hours, minutes] = record.scheduledEnd.split(':').map(Number)
-        const endTime = new Date(recordDate)
-        endTime.setHours(hours, minutes, 0, 0)
-        return now > endTime
+        const endTime = parseLocalDateTime(recordDateStr, record.scheduledEnd)
+        const shouldUpdate = now > endTime
+        
+        console.log(`[v0] Checking ${record.user.name} (${recordDateStr}): scheduled until ${record.scheduledEnd}, now is ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}, shouldUpdate=${shouldUpdate}`)
+        return shouldUpdate
       }
 
-      // If no scheduledEnd (old records), mark as absent if the day has passed
+      // If no scheduledEnd (old records), mark as absent if the day has passed (GMT+7)
       return now > endOfDay
     })
 
