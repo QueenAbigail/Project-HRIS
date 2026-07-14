@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MapPin } from 'lucide-react'
+import { MapPin, AlertCircle } from 'lucide-react'
 
 interface Client {
   id: string
@@ -25,6 +25,7 @@ interface Site {
   name: string
   code: string
   checkpointCount: number
+  clientName?: string
 }
 
 interface PatrolPageClientProps {
@@ -33,20 +34,37 @@ interface PatrolPageClientProps {
 }
 
 export function PatrolPageClient({ clients, sitesByClient }: PatrolPageClientProps) {
-  const [selectedClient, setSelectedClient] = useState(clients[0]?.id || '')
   const [selectedSite, setSelectedSite] = useState<string>()
   const [viewMode, setViewMode] = useState<'status' | 'timeline'>('status')
 
-  const clientSites = sitesByClient[selectedClient] || []
+  // Flatten all sites from all clients
+  const allSites: Site[] = []
+  clients.forEach((client) => {
+    const sites = sitesByClient[client.id] || []
+    sites.forEach((site) => {
+      allSites.push({
+        ...site,
+        clientName: client.name,
+      })
+    })
+  })
 
-  // Set first site when client changes
-  const firstSite = clientSites[0]?.id
-  if (!selectedSite && firstSite) {
-    setSelectedSite(firstSite)
+  // Set first site on initial load
+  if (!selectedSite && allSites.length > 0) {
+    setSelectedSite(allSites[0].id)
   }
 
-  const currentClient = clients.find((c) => c.id === selectedClient)
-  const currentSite = clientSites.find((s) => s.id === selectedSite)
+  const currentSite = allSites.find((s) => s.id === selectedSite)
+
+  // Show empty state if no sites available
+  if (allSites.length === 0) {
+    return (
+      <div className="text-center p-8 border border-dashed border-border rounded-lg">
+        <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+        <p className="text-muted-foreground">No sites available. Please set up sites first.</p>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -62,9 +80,14 @@ export function PatrolPageClient({ clients, sitesByClient }: PatrolPageClientPro
               <SelectValue placeholder="Choose a site" />
             </SelectTrigger>
             <SelectContent>
-              {clientSites.map((site) => (
+              {allSites.map((site) => (
                 <SelectItem key={site.id} value={site.id}>
                   {site.name} ({site.code})
+                  {site.clientName && (
+                    <span className="text-xs text-muted-foreground ml-2">
+                      • {site.clientName}
+                    </span>
+                  )}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -80,6 +103,12 @@ export function PatrolPageClient({ clients, sitesByClient }: PatrolPageClientPro
             <p className="text-sm text-muted-foreground mt-2">
               Code: <span className="font-semibold">{currentSite.code}</span> •
               Checkpoints: <span className="font-semibold">{currentSite.checkpointCount}</span>
+              {currentSite.clientName && (
+                <>
+                  {' '}
+                  • Company: <span className="font-semibold">{currentSite.clientName}</span>
+                </>
+              )}
             </p>
           </div>
         </div>
