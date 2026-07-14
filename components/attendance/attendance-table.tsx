@@ -107,10 +107,10 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
   }, [siteId, dateRange, department])
 
   const allRecords = records
-  const lateRecords = records.filter(r => r.status === 'late')
-  const presentRecords = records.filter(r => r.status === 'present')
-  const absentRecords = records.filter(r => r.status === 'absent' || r.status === 'not-checked-in')
-  const dayOffRecords = records.filter(r => r.status === 'day-off')
+  const lateRecords = records.filter(r => r.status === 'LATE')
+  const presentRecords = records.filter(r => r.status === 'PRESENT')
+  const absentRecords = records.filter(r => r.status === 'ABSENT' || r.status === 'NOT_CHECKED_IN')
+  const dayOffRecords = records.filter(r => r.status === 'LEAVE')
 
   const openGoogleMaps = (gps: GpsCoordinates) => {
     const url = `https://www.google.com/maps?q=${gps.latitude},${gps.longitude}`
