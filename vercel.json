@@ -3,10 +3,12 @@
     {
       "path": "/api/attendance/generate-today",
       "schedule": "0 17 * * *"
-    },
-    {
-      "path": "/api/attendance/auto-absent",
-      "schedule": "5 * * * *"
     }
+    // NOTE: Auto-absent cron disabled for hobby plan (max 1 cron/day limit)
+    // Re-enable when upgrading to production plan:
+    // {
+    //   "path": "/api/attendance/auto-absent",
+    //   "schedule": "5 * * * *"
+    // }
   ]
 }
