@@ -11,48 +11,81 @@ POST /api/attendance/auto-absent
 ```
 
 ### Configuration
-- **Interval**: Every 5-10 minutes (recommended)
+- **Interval**: Hourly at XX:05 (since all shifts end at :00)
+- **Schedule**: `5 * * * *` (5 minutes past every hour)
 - **Authentication**: Requires `CRON_SECRET` environment variable
 - **Timezone**: GMT+7 (Southeast Asia)
 
 ### How It Works
 
-1. **Triggered on schedule** (not based on shift times)
-   - Every fixed interval (e.g., every 5 minutes), the cron job runs
-   - No manual setup needed when adding new shifts
-   - All pending records are automatically checked
+The only trigger for ABSENT status is the cron job:
 
-2. **Automatic processing**
+```
+NOT_CHECKED_IN (created at 00:00 GMT+7)
+    ↓
+Cron runs at XX:05 every hour
+    ↓
+Checks: Has scheduled end time passed?
+    ↓
+If YES → Update to ABSENT
+If NO → Remain as NOT_CHECKED_IN
+```
+
+1. **Fixed schedule** - Runs at 5 minutes past every hour (XX:05 GMT+7)
+   - Shifts end at :00, so checking at XX:05 gives a 5-minute buffer
+   - Perfect timing since all shifts in your system end at :00
+
+2. **Automatic for ALL shifts**
    - Fetches all records with `NOT_CHECKED_IN` status
    - Checks if each record's `scheduledEnd` time has passed (in GMT+7)
-   - Automatically updates status to `ABSENT` if time has passed
-   - No manual action needed
+   - Updates to `ABSENT` if time has passed
+   - No manual setup needed when adding new shifts
 
-3. **Adding New Shifts**
-   - When you create a new shift/attendance record, it's automatically included in the next cron run
-   - No additional cron jobs need to be created
+3. **No additional configuration required**
+   - When you create a new shift/attendance record, it's automatically included in the next hourly cron run
    - The existing cron handles all shifts uniformly
+   - No additional cron jobs need to be created
 
-### Vercel Integration
+## Attendance Generation Cron Job
 
-To set up with Vercel Cron, add to `vercel.json`:
+### Purpose
+Generates daily attendance records based on employee schedules at the start of each day.
+
+### Configuration
+- **Time**: `0 17 * * *` (UTC) = 00:00 GMT+7 (midnight start of day)
+- **Endpoint**: `/api/attendance/generate-today`
+- **Frequency**: Once per day at midnight GMT+7
+- **Status**: Creates all records with initial `NOT_CHECKED_IN` status
+
+### Current Vercel Setup
+
+In `vercel.json`:
 
 ```json
 {
   "crons": [
     {
+      "path": "/api/attendance/generate-today",
+      "schedule": "0 17 * * *"
+    },
+    {
       "path": "/api/attendance/auto-absent",
-      "schedule": "*/5 * * * *"
+      "schedule": "5 * * * *"
     }
   ]
 }
 ```
 
-Or set up via Vercel dashboard:
-1. Go to your project settings
-2. Add a cron job pointing to `/api/attendance/auto-absent`
-3. Set the schedule (e.g., every 5 minutes: `*/5 * * * *`)
-4. Ensure `CRON_SECRET` is set in environment variables
+**Summary:**
+- `0 17 * * *` - Generate today's attendance at 00:00 GMT+7 (5 PM UTC)
+- `5 * * * *` - Auto-mark absent at XX:05 every hour GMT+7
+
+**Already configured** in `vercel.json` - no manual setup needed in Vercel dashboard.
+
+To verify it's running:
+1. Deploy to Vercel
+2. Check Vercel project logs for cron execution
+3. Verify `CRON_SECRET` is set in environment variables
 
 ### Timezone Handling
 
