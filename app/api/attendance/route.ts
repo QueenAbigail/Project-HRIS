@@ -72,38 +72,38 @@ export async function GET(request: NextRequest) {
     switch (dateRange) {
       case 'today':
         dateStart = startOfDay(now)
-        dateEnd = endOfDay(now)
+        dateEnd = startOfDay(now)
         break
       case 'yesterday':
         const yesterday = subDays(now, 1)
         dateStart = startOfDay(yesterday)
-        dateEnd = endOfDay(yesterday)
+        dateEnd = startOfDay(yesterday)
         break
       case 'week':
         const weekStart = startOfWeek(now, { weekStartsOn: 0 }) // Sunday start
         const weekEnd = endOfWeek(now, { weekStartsOn: 0 })
         dateStart = startOfDay(weekStart)
-        dateEnd = endOfDay(weekEnd)
+        dateEnd = startOfDay(weekEnd)
         break
       case 'month':
         const monthStart = startOfMonth(now)
         const monthEnd = endOfMonth(now)
         dateStart = startOfDay(monthStart)
-        dateEnd = endOfDay(monthEnd)
+        dateEnd = startOfDay(monthEnd)
         break
       case 'custom':
         const customDate = new Date(date)
         dateStart = startOfDay(customDate)
-        dateEnd = endOfDay(customDate)
+        dateEnd = startOfDay(customDate)
         break
       default:
         dateStart = startOfDay(now)
-        dateEnd = endOfDay(now)
+        dateEnd = startOfDay(now)
     }
 
-    console.log("[v0] Attendance API - Date range:", { dateRange, dateStart, dateEnd })
+    console.log("[v0] Attendance API - Date range:", { dateRange, dateStart: dateStart.toISOString(), dateEnd: dateEnd.toISOString() })
 
-    // Build where clause
+    // Build where clause - use gte for start and lte for end to match date-only comparison
     const where: any = {
       date: {
         gte: dateStart,
@@ -129,6 +129,7 @@ export async function GET(request: NextRequest) {
     }
 
     console.log("[v0] Fetching attendance with where clause:", JSON.stringify(where, null, 2))
+    console.log("[v0] Current user:", { id: currentUser?.id, role: currentUser?.role, companyId: currentUser?.companyId })
     const filtered = await prisma.attendance.findMany({
       where,
       include: {
@@ -164,18 +165,21 @@ export async function GET(request: NextRequest) {
           }
         } as any
       },
-      orderBy: {
-        date: 'desc',
-        actualCheckIn: 'desc'
-      }
+      orderBy: [
+        { date: 'desc' },
+        { actualCheckIn: 'desc' }
+      ]
     })
 
     console.log("[v0] Attendance API returning", filtered.length, "records for date range:", dateRange)
     return NextResponse.json(filtered)
   } catch (error) {
-    console.error('[v0] Error fetching attendance:', error)
+    console.error('[v0] Error fetching attendance:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json(
-      { error: 'Failed to fetch attendance records' },
+      { error: 'Failed to fetch attendance records', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }
