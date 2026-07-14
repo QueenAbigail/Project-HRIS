@@ -104,26 +104,32 @@ export async function GET(request: NextRequest) {
     console.log("[v0] Attendance API - Date range:", { dateRange, dateStart, dateEnd })
 
     // Build where clause
-    const where: any = {}
+    const where: any = {
+      date: {
+        gte: dateStart,
+        lte: dateEnd
+      }
+    }
     
     if (siteId && siteId !== 'all') {
       where.locationId = siteId
     } else if (isClient) {
       // For CLIENT users, only show their company's locations
       where.location = {
-        companyId: currentUser?.companyId
+        company: {
+          id: currentUser?.companyId
+        }
       }
     }
 
     if (department && department !== 'all') {
       where.user = {
-        ...where.user,
         department: department
       }
     }
 
-    console.log("[v0] Fetching attendance with where clause:", JSON.stringify(where))
-    const attendance = await prisma.attendance.findMany({
+    console.log("[v0] Fetching attendance with where clause:", JSON.stringify(where, null, 2))
+    const filtered = await prisma.attendance.findMany({
       where,
       include: {
         user: {
@@ -159,14 +165,9 @@ export async function GET(request: NextRequest) {
         } as any
       },
       orderBy: {
+        date: 'desc',
         actualCheckIn: 'desc'
       }
-    })
-
-    // Filter by date range
-    const filtered = attendance.filter(record => {
-      const recordDate = new Date(record.date || new Date())
-      return recordDate >= dateStart && recordDate <= dateEnd
     })
 
     console.log("[v0] Attendance API returning", filtered.length, "records for date range:", dateRange)
