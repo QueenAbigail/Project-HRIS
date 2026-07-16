@@ -250,55 +250,22 @@ export function UnifiedRequestsTable() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {request.status === 'Pending' ? (
-                            <div className="flex items-center gap-1">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="size-7 text-success hover:text-success hover:bg-success/10"
-                                onClick={() => {
-                                  if (request.type === 'leave') {
-                                    handleLeaveStatusChange(request.id, 'Approved')
-                                  } else {
-                                    handleSwapStatusChange(request.id, 'Approved')
-                                  }
-                                }}
-                              >
-                                <Check className="size-4" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="size-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => {
-                                  if (request.type === 'leave') {
-                                    handleLeaveStatusChange(request.id, 'Rejected')
-                                  } else {
-                                    handleSwapStatusChange(request.id, 'Rejected')
-                                  }
-                                }}
-                              >
-                                <X className="size-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="size-7"
-                              onClick={() => {
-                                if (request.type === 'leave') {
-                                  setSelectedLeave(request)
-                                  setLeaveDetailsOpen(true)
-                                } else {
-                                  setSelectedSwap(request)
-                                  setSwapDetailsOpen(true)
-                                }
-                              }}
-                            >
-                              <FileText className="size-4" />
-                            </Button>
-                          )}
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-7"
+                            onClick={() => {
+                              if (request.type === 'leave') {
+                                setSelectedLeave(request)
+                                setLeaveDetailsOpen(true)
+                              } else {
+                                setSelectedSwap(request)
+                                setSwapDetailsOpen(true)
+                              }
+                            }}
+                          >
+                            <FileText className="size-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     )
