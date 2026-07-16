@@ -192,38 +192,17 @@ export function LeaveRequestsTable() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {leave.status === 'PENDING' ? (
-                            <div className="flex items-center gap-1">
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
-                                className="size-7 text-success hover:text-success hover:bg-success/10"
-                                onClick={() => handleStatusChange(leave.id, 'APPROVED')}
-                              >
-                                <Check className="size-4" />
-                              </Button>
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
-                                className="size-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => handleStatusChange(leave.id, 'REJECTED')}
-                              >
-                                <X className="size-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button 
-                              size="icon" 
-                              variant="ghost" 
-                              className="size-7"
-                              onClick={() => {
-                                setSelectedLeave(leave)
-                                setDetailsOpen(true)
-                              }}
-                            >
-                              <FileText className="size-4" />
-                            </Button>
-                          )}
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="size-7"
+                            onClick={() => {
+                              setSelectedLeave(leave)
+                              setDetailsOpen(true)
+                            }}
+                          >
+                            <FileText className="size-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     )
