@@ -255,18 +255,6 @@ export function EmployeesTable({ users, isClient = false }: EmployeesTableProps)
                     )}
                   </Button>
                 </DropdownMenuTrigger>
-              </DropdownMenu>
-              {hasActiveFilters && (
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={clearAllFilters}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <X className="mr-1 size-4" />
-                  Clear
-                </Button>
-              )}
                 <DropdownMenuContent align="end" className="w-56">
                   {/* Status Filter */}
                   <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
@@ -339,6 +327,17 @@ export function EmployeesTable({ users, isClient = false }: EmployeesTableProps)
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
+              {hasActiveFilters && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={clearAllFilters}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <X className="mr-1 size-4" />
+                  Clear
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
