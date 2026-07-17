@@ -60,44 +60,44 @@ export default function SettingsPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
               <div>
-                <Label>Email Notifications</Label>
+                <Label className="font-medium">Email Notifications</Label>
                 <p className="text-sm text-muted-foreground">Receive email alerts for important events</p>
               </div>
-              <Switch />
+              <Switch className="h-6 w-11" />
             </div>
             <Separator />
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
               <div>
-                <Label>Leave Request Alerts</Label>
+                <Label className="font-medium">Leave Request Alerts</Label>
                 <p className="text-sm text-muted-foreground">Get notified when new leave requests are submitted</p>
               </div>
-              <Switch />
+              <Switch className="h-6 w-11" />
             </div>
             <Separator />
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
               <div>
-                <Label>Late Check-In Alerts</Label>
+                <Label className="font-medium">Late Check-In Alerts</Label>
                 <p className="text-sm text-muted-foreground">Notify when employees check in late based on schedule</p>
               </div>
-              <Switch />
+              <Switch className="h-6 w-11" />
             </div>
             <Separator />
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
               <div>
-                <Label>Attendance Alerts</Label>
+                <Label className="font-medium">Attendance Alerts</Label>
                 <p className="text-sm text-muted-foreground">Notify when employees are absent</p>
               </div>
-              <Switch />
+              <Switch className="h-6 w-11" />
             </div>
             <Separator />
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
               <div>
-                <Label>Payroll Reminders</Label>
+                <Label className="font-medium">Payroll Reminders</Label>
                 <p className="text-sm text-muted-foreground">Remind before payroll processing deadlines</p>
               </div>
-              <Switch />
+              <Switch className="h-6 w-11" />
             </div>
             <div className="pt-4">
               <Button>Save Preferences</Button>
