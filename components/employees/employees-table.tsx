@@ -58,30 +58,58 @@ export function EmployeesTable({ users, isClient = false }: EmployeesTableProps)
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
   
+  // Filter state
+  const [statusFilter, setStatusFilter] = useState<string | null>(null)
+  const [locationFilter, setLocationFilter] = useState<string | null>(null)
+  const [departmentFilter, setDepartmentFilter] = useState<string | null>(null)
+  
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value
     setSearchQuery(query)
     setCurrentPage(1) // Reset to first page on search
   }
 
+  // Get unique departments from employees
+  const uniqueDepartments = Array.from(new Set(employees.map(e => e.department).filter(Boolean)))
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
-  // Filter employees based on search query
+  // Filter employees based on search query and filters
   const filteredEmployees = useMemo(() => {
-    if (!searchQuery.trim()) return employees
+    let filtered = employees
     
-    const query = searchQuery.toLowerCase()
-    return employees.filter(emp => 
-      emp.name.toLowerCase().includes(query) ||
-      emp.email.toLowerCase().includes(query) ||
-      emp.department.toLowerCase().includes(query) ||
-      emp.position.toLowerCase().includes(query) ||
-      emp.location.toLowerCase().includes(query) ||
-      emp.id.toLowerCase().includes(query)
-    )
-  }, [employees, searchQuery])
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(emp => 
+        emp.name.toLowerCase().includes(query) ||
+        emp.email.toLowerCase().includes(query) ||
+        emp.department.toLowerCase().includes(query) ||
+        emp.position.toLowerCase().includes(query) ||
+        emp.location.toLowerCase().includes(query) ||
+        emp.id.toLowerCase().includes(query)
+      )
+    }
+    
+    // Apply status filter
+    if (statusFilter && statusFilter !== 'all') {
+      filtered = filtered.filter(emp => emp.status === statusFilter)
+    }
+    
+    // Apply location filter
+    if (locationFilter && locationFilter !== 'all') {
+      filtered = filtered.filter(emp => emp.location === locationFilter)
+    }
+    
+    // Apply department filter
+    if (departmentFilter && departmentFilter !== 'all') {
+      filtered = filtered.filter(emp => emp.department === departmentFilter)
+    }
+    
+    return filtered
+  }, [employees, searchQuery, statusFilter, locationFilter, departmentFilter])
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredEmployees.length / pageSize)
@@ -212,29 +240,75 @@ export function EmployeesTable({ users, isClient = false }: EmployeesTableProps)
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
+                  {/* Status Filter */}
                   <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>All Employees</DropdownMenuItem>
-                  <DropdownMenuItem>Active</DropdownMenuItem>
-                  <DropdownMenuItem>On Leave</DropdownMenuItem>
-                  <DropdownMenuItem>Inactive</DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setStatusFilter(null)}
+                    className={statusFilter === null ? 'bg-accent' : ''}
+                  >
+                    All Employees
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setStatusFilter('active')}
+                    className={statusFilter === 'active' ? 'bg-accent' : ''}
+                  >
+                    Active
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setStatusFilter('on-leave')}
+                    className={statusFilter === 'on-leave' ? 'bg-accent' : ''}
+                  >
+                    On Leave
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setStatusFilter('inactive')}
+                    className={statusFilter === 'inactive' ? 'bg-accent' : ''}
+                  >
+                    Inactive
+                  </DropdownMenuItem>
+                  
                   <DropdownMenuSeparator />
+                  
+                  {/* Location Filter */}
                   <DropdownMenuLabel>Filter by Location</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>All Locations</DropdownMenuItem>
-                  <DropdownMenuItem>Head Office</DropdownMenuItem>
-                  <DropdownMenuItem>Plaza Tower - Downtown</DropdownMenuItem>
-                  <DropdownMenuItem>Riverside Mall</DropdownMenuItem>
-                  <DropdownMenuItem>Metro Bank - Central</DropdownMenuItem>
-                  <DropdownMenuItem>Corporate Center - North</DropdownMenuItem>
-                  <DropdownMenuItem>Industrial Park - West</DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setLocationFilter(null)}
+                    className={locationFilter === null ? 'bg-accent' : ''}
+                  >
+                    All Locations
+                  </DropdownMenuItem>
+                  {Array.from(new Set(employees.map(e => e.location).filter(Boolean))).map((location) => (
+                    <DropdownMenuItem 
+                      key={location}
+                      onClick={() => setLocationFilter(location)}
+                      className={locationFilter === location ? 'bg-accent' : ''}
+                    >
+                      {location}
+                    </DropdownMenuItem>
+                  ))}
+                  
                   <DropdownMenuSeparator />
+                  
+                  {/* Department Filter */}
                   <DropdownMenuLabel>Filter by Department</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>Field Security</DropdownMenuItem>
-                  <DropdownMenuItem>Surveillance</DropdownMenuItem>
-                  <DropdownMenuItem>Administration</DropdownMenuItem>
-                  <DropdownMenuItem>Patrol</DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setDepartmentFilter(null)}
+                    className={departmentFilter === null ? 'bg-accent' : ''}
+                  >
+                    All Departments
+                  </DropdownMenuItem>
+                  {uniqueDepartments.map((department) => (
+                    <DropdownMenuItem 
+                      key={department}
+                      onClick={() => setDepartmentFilter(department)}
+                      className={departmentFilter === department ? 'bg-accent' : ''}
+                    >
+                      {department}
+                    </DropdownMenuItem>
+                  ))}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
