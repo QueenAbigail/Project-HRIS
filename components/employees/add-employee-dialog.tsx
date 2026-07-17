@@ -542,9 +542,11 @@ export function AddEmployeeDialog({
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
-                        <SelectItem value="STAFF">Staff</SelectItem>
-                        <SelectItem value="HR_ADMIN">HR Admin</SelectItem>
+                        <SelectItem value="HR_ADMIN">Hr Admin</SelectItem>
+                        <SelectItem value="SITE_ADMIN">Site Admin</SelectItem>
                         <SelectItem value="MANAGER">Manager</SelectItem>
+                        <SelectItem value="STAFF">Staff</SelectItem>
+                        <SelectItem value="CLIENT">Client</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
