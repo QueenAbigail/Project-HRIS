@@ -71,6 +71,16 @@ export function EmployeesTable({ users, isClient = false }: EmployeesTableProps)
 
   // Get unique departments from employees
   const uniqueDepartments = Array.from(new Set(employees.map(e => e.department).filter(Boolean)))
+  
+  // Check if any filters are active
+  const hasActiveFilters = statusFilter || locationFilter || departmentFilter
+  
+  // Clear all filters
+  const clearAllFilters = () => {
+    setStatusFilter(null)
+    setLocationFilter(null)
+    setDepartmentFilter(null)
+  }
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -234,11 +244,29 @@ export function EmployeesTable({ users, isClient = false }: EmployeesTableProps)
             <div className="flex gap-2 flex-wrap">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="whitespace-nowrap">
+                  <Button 
+                    variant="outline" 
+                    className={`whitespace-nowrap ${hasActiveFilters ? 'bg-accent/10 border-accent' : ''}`}
+                  >
                     <Filter className="mr-2 size-4" />
                     Filter
+                    {hasActiveFilters && (
+                      <X className="ml-2 size-4" />
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
+              </DropdownMenu>
+              {hasActiveFilters && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={clearAllFilters}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <X className="mr-1 size-4" />
+                  Clear
+                </Button>
+              )}
                 <DropdownMenuContent align="end" className="w-56">
                   {/* Status Filter */}
                   <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
