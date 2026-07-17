@@ -392,3 +392,45 @@ export function getTotalBKOAssignments(): number {
     return 0
   }
 }
+
+// Payroll statistics
+export interface PayrollStats {
+  totalPayroll: number
+  averageSalary: number
+  overtimeCost: number
+  totalDeductions: number
+  employeeCount: number
+  totalNetPayroll: number
+}
+
+export function getPayrollStats(): PayrollStats {
+  // Mock payroll data based on employee count
+  const totalEmployees = employeeSchedules.length
+  
+  // Base salary average: $3,500 - $4,200 per employee
+  const averageSalary = 3850
+  const totalPayroll = totalEmployees * averageSalary
+  
+  // Overtime cost approximately 5% of total payroll
+  const overtimeCost = Math.round(totalPayroll * 0.053)
+  
+  // Deductions approximately 12% of total payroll
+  const totalDeductions = Math.round(totalPayroll * 0.121)
+  
+  // Net payroll = total + OT - deductions
+  const totalNetPayroll = totalPayroll + overtimeCost - totalDeductions
+  
+  return {
+    totalPayroll: Math.round(totalPayroll),
+    averageSalary: Math.round(averageSalary),
+    overtimeCost,
+    totalDeductions,
+    employeeCount: totalEmployees,
+    totalNetPayroll: Math.round(totalNetPayroll),
+  }
+}
+
+// Format currency for display
+export function formatCurrency(amount: number): string {
+  return `$${(amount / 1000).toFixed(1)}K`
+}

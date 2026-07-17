@@ -16,7 +16,7 @@ import {
   TrendingUp,
   TrendingDown
 } from 'lucide-react'
-import { getOverallAttendanceStats, getLocationAttendanceStats, getLateCheckIns } from '@/lib/data'
+import { getOverallAttendanceStats, getLocationAttendanceStats, getLateCheckIns, getPayrollStats, formatCurrency } from '@/lib/data'
 import { LocationFilter } from '@/components/reports/location-filter'
 import { EmployeeLocationFilter } from '@/components/reports/employee-location-filter'
 import { AttendanceLocationFilter } from '@/components/reports/attendance-location-filter'
@@ -67,6 +67,7 @@ export default function ReportsPage() {
   const overallStats = getOverallAttendanceStats()
   const locationStats = getLocationAttendanceStats()
   const lateCheckIns = getLateCheckIns()
+  const payrollStats = getPayrollStats()
 
   // Export handlers for Late Check-In Report
   const exportLatCheckInsPDF = () => {
@@ -433,22 +434,22 @@ export default function ReportsPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 rounded-lg bg-muted/30 border border-border">
               <span className="text-sm text-muted-foreground">Total Payroll</span>
-              <p className="text-2xl font-bold mt-1">$234.5K</p>
+              <p className="text-2xl font-bold mt-1">{formatCurrency(payrollStats.totalPayroll)}</p>
               <p className="text-xs text-muted-foreground">this period</p>
             </div>
             <div className="p-4 rounded-lg bg-muted/30 border border-border">
               <span className="text-sm text-muted-foreground">Avg Salary</span>
-              <p className="text-2xl font-bold mt-1">$3,850</p>
+              <p className="text-2xl font-bold mt-1">${payrollStats.averageSalary.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">per employee</p>
             </div>
             <div className="p-4 rounded-lg bg-muted/30 border border-border">
               <span className="text-sm text-muted-foreground">Overtime Cost</span>
-              <p className="text-2xl font-bold text-warning mt-1">$12.4K</p>
+              <p className="text-2xl font-bold text-warning mt-1">{formatCurrency(payrollStats.overtimeCost)}</p>
               <p className="text-xs text-muted-foreground">OT compensation</p>
             </div>
             <div className="p-4 rounded-lg bg-muted/30 border border-border">
               <span className="text-sm text-muted-foreground">Deductions</span>
-              <p className="text-2xl font-bold mt-1">$28.3K</p>
+              <p className="text-2xl font-bold mt-1">{formatCurrency(payrollStats.totalDeductions)}</p>
               <p className="text-xs text-muted-foreground">total deductions</p>
             </div>
           </div>
