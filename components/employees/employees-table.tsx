@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, Filter, MoreHorizontal, Eye, Pencil, Trash2, MapPin, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { Search, Filter, MoreHorizontal, Eye, Pencil, Trash2, MapPin, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X } from 'lucide-react'
 import { EmployeeProfileSheet } from './employee-profile-sheet'
 import { EmployeeEditDialog } from './employee-edit-dialog'
 import type { NewEmployee } from './add-employee-dialog'
