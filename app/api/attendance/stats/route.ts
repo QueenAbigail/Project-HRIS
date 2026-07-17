@@ -18,9 +18,7 @@ export async function GET(request: NextRequest) {
     }
     
     if (siteId && siteId !== 'all') {
-      where.location = {
-        id: siteId
-      }
+      where.locationId = siteId
     }
 
     // Get all attendance records for the day
