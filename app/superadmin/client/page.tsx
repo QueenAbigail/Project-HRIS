@@ -166,6 +166,7 @@ export default function ClientPage() {
           ? { siteId: editingItem.id, name: newItemName, code: newItemCode, latitude, longitude } 
           : { name: newItemName, code: newItemCode, latitude, longitude }
         const response = await fetch(`/api/companies/${editingCompanyId}/sites`, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
           throw new Error(errorData.error || 'Failed to save')
@@ -173,17 +174,19 @@ export default function ClientPage() {
         const result = await response.json()
 
         setCompanies(prev => prev.map(c => c.id === editingCompanyId ? { ...c, sites: editingItem ? c.sites.map(s => s.id === editingItem.id ? { id: s.id, name: newItemName, code: newItemCode, latitude, longitude } : s) : [...c.sites, { id: result.id, name: result.name, code: result.code, latitude: result.latitude, longitude: result.longitude }] } : c))
+        
+        // Close dialog immediately after successful save
+        setIsDialogOpen(false)
+        setEditingItem(null)
+        setNewItemName('')
+        setNewItemCode('')
+        setNewItemLatitude('')
+        setNewItemLongitude('')
+        setEditingCompanyId('')
+        setEditingType('')
+        
         toast({ title: 'Success', description: editingItem ? 'Site updated successfully' : 'Site added successfully' })
       }
-
-      setIsDialogOpen(false)
-      setEditingItem(null)
-      setNewItemName('')
-      setNewItemCode('')
-      setNewItemLatitude('')
-      setNewItemLongitude('')
-      setEditingCompanyId('')
-      setEditingType('')
     } catch (error: any) {
       const errorMessage = error?.message || 'Failed to save'
       toast({ title: 'Error', description: errorMessage, variant: 'destructive' })
