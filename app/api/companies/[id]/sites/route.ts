@@ -65,13 +65,16 @@ export async function PUT(
       )
     }
 
+    const latitudeValue = latitude !== null && latitude !== undefined ? String(latitude) : null
+    const longitudeValue = longitude !== null && longitude !== undefined ? String(longitude) : null
+
     const site = await prisma.site.update({
       where: { id: siteId },
       data: {
         name: name.trim(),
         code: code.trim().toUpperCase(),
-        latitude: latitude !== null && latitude !== undefined ? String(latitude) : null,
-        longitude: longitude !== null && longitude !== undefined ? String(longitude) : null,
+        latitude: latitudeValue,
+        longitude: longitudeValue,
       },
       select: {
         id: true,
