@@ -21,8 +21,8 @@ export async function POST(
       data: {
         name: name.trim(),
         code: code.trim().toUpperCase(),
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null,
+        latitude: latitude !== null && latitude !== undefined ? String(latitude) : null,
+        longitude: longitude !== null && longitude !== undefined ? String(longitude) : null,
         companyId,
       },
       select: {
@@ -70,8 +70,8 @@ export async function PUT(
       data: {
         name: name.trim(),
         code: code.trim().toUpperCase(),
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null,
+        latitude: latitude !== null && latitude !== undefined ? String(latitude) : null,
+        longitude: longitude !== null && longitude !== undefined ? String(longitude) : null,
       },
       select: {
         id: true,
