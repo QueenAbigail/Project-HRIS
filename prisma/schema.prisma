@@ -147,6 +147,7 @@ model User {
   patrols               Patrol[]
   deviceBindings        DeviceBinding[]
   notifications         Notification[]
+  payrolls              Payroll[]
   createdAt             DateTime                  @default(now())
   updatedAt             DateTime                  @updatedAt
   status                EmployeeStatus            @default(ACTIVE)
@@ -506,4 +507,22 @@ model Notification {
   @@index([userId, isRead])
   @@index([createdAt])
   @@map("notifications")
+}
+
+// Payroll model - for employee payslips and payroll records
+model Payroll {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  month       String   @db.VarChar(50) // e.g., 'Juli 2026'
+  publishDate DateTime @default(now()) @db.Date
+  pdfUrl      String?  // Supabase Storage URL for the payslip
+  status      String   @default("published") @db.VarChar(20)
+  createdAt   DateTime @default(now()) @db.Timestamptz()
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([month])
+  @@index([status])
+  @@map("payrolls")
 }
