@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Badge } from '@/components/ui/badge'
+import { SiteMarkerPopup } from './site-marker-popup'
 
 // Import location data from constants as fallback
 import { locationStats as fallbackLocationStats } from '@/lib/constants'
@@ -157,40 +158,16 @@ export default function MapSitesView() {
               }}
             >
               <Popup>
-                <div className="text-sm font-medium space-y-2 p-2">
-                  <h3 className="font-bold text-base">{location.name}</h3>
-                  <p className="text-xs text-muted-foreground">{location.code}</p>
-                  
-                  <div className="space-y-1">
-                    <div className="flex justify-between gap-4">
-                      <span>Total Staff:</span>
-                      <span className="font-semibold">{location.totalStaff}</span>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <span>Present:</span>
-                      <span className="font-semibold text-green-600">{location.presentCount}</span>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <span>Late Check-ins:</span>
-                      <span className="font-semibold text-orange-600">{location.lateCount}</span>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <span>Absent:</span>
-                      <span className="font-semibold text-red-600">{location.absentCount}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-2 border-t">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium">Occupancy Rate:</span>
-                      <Badge variant="outline">
-                        {location.totalStaff > 0 
-                          ? Math.round((location.presentCount / location.totalStaff) * 100) 
-                          : 0}%
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
+                <SiteMarkerPopup
+                  name={location.name}
+                  code={location.code}
+                  latitude={location.centerPoint.latitude}
+                  longitude={location.centerPoint.longitude}
+                  totalStaff={location.totalStaff}
+                  presentCount={location.presentCount}
+                  lateCount={location.lateCount}
+                  absentCount={location.absentCount}
+                />
               </Popup>
             </Marker>
           ))}
