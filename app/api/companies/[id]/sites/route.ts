@@ -17,20 +17,14 @@ export async function POST(
       )
     }
 
-    const latitudeValue = latitude !== null && latitude !== undefined ? String(latitude) : null
-    const longitudeValue = longitude !== null && longitude !== undefined ? String(longitude) : null
-
-    const createData: any = {
-      name: name.trim(),
-      code: code.trim().toUpperCase(),
-      companyId,
-    }
-
-    if (latitudeValue !== null) createData.latitude = latitudeValue
-    if (longitudeValue !== null) createData.longitude = longitudeValue
-
     const site = await prisma.site.create({
-      data: createData,
+      data: {
+        name: name.trim(),
+        code: code.trim().toUpperCase(),
+        companyId,
+        ...(latitude !== null && latitude !== undefined && { latitude: String(latitude) }),
+        ...(longitude !== null && longitude !== undefined && { longitude: String(longitude) }),
+      },
       select: {
         id: true,
         name: true,
@@ -63,7 +57,6 @@ export async function PUT(
 ) {
   try {
     const { siteId, name, code, latitude, longitude } = await req.json()
-    console.log('[v0-api-update] Request body:', { siteId, name, code, latitude, longitude })
 
     if (!siteId || !name || !name.trim() || !code || !code.trim()) {
       return NextResponse.json(
@@ -72,26 +65,14 @@ export async function PUT(
       )
     }
 
-    const latitudeValue = latitude !== null && latitude !== undefined ? String(latitude) : null
-    const longitudeValue = longitude !== null && longitude !== undefined ? String(longitude) : null
-    
-    console.log('[v0-api-update] Converted values:', { latitudeValue, longitudeValue })
-
-    // Build the update data object
-    const updateData: any = {
-      name: name.trim(),
-      code: code.trim().toUpperCase(),
-    }
-    
-    // Only add coordinates if they have values
-    if (latitudeValue !== null) updateData.latitude = latitudeValue
-    if (longitudeValue !== null) updateData.longitude = longitudeValue
-
-    console.log('[v0-api-update] Update data:', updateData)
-
     const site = await prisma.site.update({
       where: { id: siteId },
-      data: updateData,
+      data: {
+        name: name.trim(),
+        code: code.trim().toUpperCase(),
+        ...(latitude !== null && latitude !== undefined && { latitude: String(latitude) }),
+        ...(longitude !== null && longitude !== undefined && { longitude: String(longitude) }),
+      },
       select: {
         id: true,
         name: true,
@@ -101,11 +82,9 @@ export async function PUT(
       },
     })
 
-    console.log('[v0-api-update] Site updated successfully:', site)
     return NextResponse.json(site)
   } catch (error: any) {
-    console.error('[v0-api-update] Error:', error.message)
-    console.error('[v0-api-update] Full error:', error)
+    console.error('Error updating site:', error)
     if (error.code === 'P2002') {
       return NextResponse.json(
         { error: 'Site code already exists' },
@@ -113,7 +92,7 @@ export async function PUT(
       )
     }
     return NextResponse.json(
-      { error: error.message || 'Failed to update site' },
+      { error: 'Failed to update site' },
       { status: 500 }
     )
   }
