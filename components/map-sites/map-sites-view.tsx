@@ -86,13 +86,16 @@ export default function MapSitesView() {
       <div className="h-96 md:h-[600px] rounded-lg overflow-hidden border border-border">
         <MapContainer 
           center={mapCenter} 
-          zoom={7} 
+          zoom={7}
+          minZoom={3}
+          maxZoom={18}
           style={{ height: '100%', width: '100%' }}
           className="z-10"
         >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            noWrap={true}
           />
           
           {locationStats.map((location) => (
