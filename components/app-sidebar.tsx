@@ -302,6 +302,11 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
 
   const secondaryNavItems = [
     {
+      title: 'Map Site',
+      url: '/dashboard/map-sites',
+      icon: MapPin,
+    },
+    {
       title: 'Reports',
       url: '/dashboard/reports',
       icon: FileBarChart,
