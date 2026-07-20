@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { name, code } = await req.json()
+    const { name, code, latitude, longitude } = await req.json()
     const { id: companyId } = await params
 
     if (!name || !name.trim() || !code || !code.trim()) {
@@ -21,12 +21,16 @@ export async function POST(
       data: {
         name: name.trim(),
         code: code.trim().toUpperCase(),
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
         companyId,
       },
       select: {
         id: true,
         name: true,
         code: true,
+        latitude: true,
+        longitude: true,
       },
     })
 
@@ -52,7 +56,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { siteId, name, code } = await req.json()
+    const { siteId, name, code, latitude, longitude } = await req.json()
 
     if (!siteId || !name || !name.trim() || !code || !code.trim()) {
       return NextResponse.json(
@@ -66,11 +70,15 @@ export async function PUT(
       data: {
         name: name.trim(),
         code: code.trim().toUpperCase(),
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
       },
       select: {
         id: true,
         name: true,
         code: true,
+        latitude: true,
+        longitude: true,
       },
     })
 
