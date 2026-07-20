@@ -15,6 +15,8 @@ interface Site {
   id: string
   name: string
   code: string
+  latitude?: number | null
+  longitude?: number | null
 }
 
 interface Company {
@@ -32,6 +34,8 @@ export default function ClientPage() {
   const [editingType, setEditingType] = useState<'company' | 'site' | ''>('')
   const [newItemName, setNewItemName] = useState('')
   const [newItemCode, setNewItemCode] = useState('')
+  const [newItemLatitude, setNewItemLatitude] = useState('')
+  const [newItemLongitude, setNewItemLongitude] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -81,6 +85,8 @@ export default function ClientPage() {
     setEditingItem(null)
     setNewItemName('')
     setNewItemCode('')
+    setNewItemLatitude('')
+    setNewItemLongitude('')
     setEditingCompanyId(companyId)
     setIsDialogOpen(true)
   }
@@ -98,6 +104,8 @@ export default function ClientPage() {
     setEditingItem(site)
     setNewItemName(site.name)
     setNewItemCode(site.code)
+    setNewItemLatitude(site.latitude ? String(site.latitude) : '')
+    setNewItemLongitude(site.longitude ? String(site.longitude) : '')
     setEditingCompanyId(companyId)
     setIsDialogOpen(true)
   }
@@ -152,12 +160,16 @@ export default function ClientPage() {
         toast({ title: 'Success', description: editingItem ? 'Company updated' : 'Company added' })
       } else if (editingType === 'site') {
         const method = editingItem ? 'PUT' : 'POST'
-        const body = editingItem ? { siteId: editingItem.id, name: newItemName, code: newItemCode } : { name: newItemName, code: newItemCode }
+        const latitude = newItemLatitude ? parseFloat(newItemLatitude) : null
+        const longitude = newItemLongitude ? parseFloat(newItemLongitude) : null
+        const body = editingItem 
+          ? { siteId: editingItem.id, name: newItemName, code: newItemCode, latitude, longitude } 
+          : { name: newItemName, code: newItemCode, latitude, longitude }
         const response = await fetch(`/api/companies/${editingCompanyId}/sites`, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
         if (!response.ok) throw new Error('Failed to save')
         const result = await response.json()
 
-        setCompanies(prev => prev.map(c => c.id === editingCompanyId ? { ...c, sites: editingItem ? c.sites.map(s => s.id === editingItem.id ? { id: s.id, name: newItemName, code: newItemCode } : s) : [...c.sites, { id: result.id, name: result.name, code: result.code }] } : c))
+        setCompanies(prev => prev.map(c => c.id === editingCompanyId ? { ...c, sites: editingItem ? c.sites.map(s => s.id === editingItem.id ? { id: s.id, name: newItemName, code: newItemCode, latitude, longitude } : s) : [...c.sites, { id: result.id, name: result.name, code: result.code, latitude: result.latitude, longitude: result.longitude }] } : c))
         toast({ title: 'Success', description: editingItem ? 'Site updated' : 'Site added' })
       }
 
@@ -165,6 +177,8 @@ export default function ClientPage() {
       setEditingItem(null)
       setNewItemName('')
       setNewItemCode('')
+      setNewItemLatitude('')
+      setNewItemLongitude('')
       setEditingCompanyId('')
       setEditingType('')
     } catch (error) {
@@ -332,16 +346,42 @@ export default function ClientPage() {
               />
             </div>
             {editingType === 'site' && (
-              <div className="space-y-2">
-                <Label>Site Code</Label>
-                <Input
-                  value={newItemCode}
-                  onChange={(e) => setNewItemCode(e.target.value.toUpperCase())}
-                  placeholder="e.g., HOJ"
-                  maxLength={20}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
-                />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label>Site Code</Label>
+                  <Input
+                    value={newItemCode}
+                    onChange={(e) => setNewItemCode(e.target.value.toUpperCase())}
+                    placeholder="e.g., HOJ"
+                    maxLength={20}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Latitude</Label>
+                    <Input
+                      type="number"
+                      step="0.00000001"
+                      value={newItemLatitude}
+                      onChange={(e) => setNewItemLatitude(e.target.value)}
+                      placeholder="e.g., -6.2088"
+                      onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Longitude</Label>
+                    <Input
+                      type="number"
+                      step="0.00000001"
+                      value={newItemLongitude}
+                      onChange={(e) => setNewItemLongitude(e.target.value)}
+                      placeholder="e.g., 106.8456"
+                      onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
+                    />
+                  </div>
+                </div>
+              </>
             )}
             <Button onClick={handleSaveItem} className="w-full" disabled={isSaving}>
               {isSaving ? (

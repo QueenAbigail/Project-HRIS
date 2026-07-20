@@ -1,13 +1,21 @@
 // Centralized data layer for employee schedules, attendance, and late check-in detection
 
-// Location definitions
-export const locations = [
-  { id: 'HO', name: 'Head Office', code: 'HO' },
-  { id: 'PT-DT', name: 'Plaza Tower - Downtown', code: 'PT-DT' },
-  { id: 'RM', name: 'Riverside Mall', code: 'RM' },
-  { id: 'MB-CT', name: 'Metro Bank - Central', code: 'MB-CT' },
-  { id: 'CC-N', name: 'Corporate Center - North', code: 'CC-N' },
-  { id: 'IP-W', name: 'Industrial Park - West', code: 'IP-W' },
+// Location definitions with geographic coordinates
+interface Location {
+  id: string
+  name: string
+  code: string
+  latitude?: number
+  longitude?: number
+}
+
+export const locations: Location[] = [
+  { id: 'HO', name: 'Head Office', code: 'HO', latitude: -6.2088, longitude: 106.8456 },
+  { id: 'PT-DT', name: 'Plaza Tower - Downtown', code: 'PT-DT', latitude: -6.1751, longitude: 106.8650 },
+  { id: 'RM', name: 'Riverside Mall', code: 'RM', latitude: -6.1900, longitude: 106.8200 },
+  { id: 'MB-CT', name: 'Metro Bank - Central', code: 'MB-CT', latitude: -6.1750, longitude: 106.8300 },
+  { id: 'CC-N', name: 'Corporate Center - North', code: 'CC-N', latitude: -6.1650, longitude: 106.8900 },
+  { id: 'IP-W', name: 'Industrial Park - West', code: 'IP-W', latitude: -6.2420, longitude: 106.7780 },
 ] as const
 
 export type LocationId = typeof locations[number]['id']
@@ -207,19 +215,9 @@ export interface LocationStat {
 }
 
 export function getLocationStats(): LocationStat[] {
-  // Define center coordinates for each location (Jakarta area)
-  const locationCoordinates: Record<string, { lat: number; lng: number }> = {
-    'HO': { lat: -6.2088, lng: 106.8456 },      // Head Office - Jl. Sudirman
-    'PT-DT': { lat: -6.1751, lng: 106.8650 },   // Plaza Tower Downtown - Jl. Thamrin
-    'RM': { lat: -6.1900, lng: 106.8200 },      // Riverside Mall - South Jakarta
-    'MB-CT': { lat: -6.1750, lng: 106.8300 },   // Metro Bank Central - Central Jakarta
-    'CC-N': { lat: -6.1650, lng: 106.8900 },    // Corporate Center North - Kuningan
-    'IP-W': { lat: -6.2420, lng: 106.7780 },    // Industrial Park West
-  }
-
   return locations.map((location) => {
     // Count attendance records for this location
-    const locationAttendances = todayAttendance.filter(att => att.locationId === location.id)
+    const locationAttendances = todayAttendance.filter(att => att.locationId === location.id as LocationId)
     
     const presentCount = locationAttendances.filter(att => att.status === 'present').length
     const lateCount = locationAttendances.filter(att => att.status === 'late').length
@@ -227,17 +225,19 @@ export function getLocationStats(): LocationStat[] {
     const notCheckedInCount = locationAttendances.filter(att => att.status === 'not-checked-in').length
     
     // Get total staff assigned to this location
-    const totalStaff = employeeSchedules.filter(emp => emp.siteId === location.id).length
+    const totalStaff = employeeSchedules.filter(emp => emp.siteId === location.id as LocationId).length
 
-    const coords = locationCoordinates[location.id] || { lat: 0, lng: 0 }
+    // Use coordinates from location object, fallback to (0, 0) if not defined
+    const latitude = location.latitude || 0
+    const longitude = location.longitude || 0
 
     return {
       id: location.id,
       name: location.name,
       code: location.code,
       centerPoint: {
-        latitude: coords.lat,
-        longitude: coords.lng,
+        latitude,
+        longitude,
       },
       totalStaff,
       presentCount,

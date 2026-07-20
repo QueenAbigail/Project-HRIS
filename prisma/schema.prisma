@@ -81,6 +81,8 @@ model Site {
   name        String
   code        String                    @unique
   totalStaff  Int? // Optional, from stats
+  latitude    Decimal?                  @db.Decimal(10, 8) // Geographic latitude coordinate
+  longitude   Decimal?                  @db.Decimal(11, 8) // Geographic longitude coordinate
   companyId   String?
   company     Company?                  @relation(fields: [companyId], references: [id], onDelete: SetNull)
   users       User[]
