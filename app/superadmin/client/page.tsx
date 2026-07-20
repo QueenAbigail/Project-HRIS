@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
 import { Plus, MoreVertical, Pencil, Trash2, ChevronDown, Search, X, Loader2 } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 
 interface Site {
   id: string
@@ -26,7 +26,6 @@ interface Company {
 }
 
 export default function ClientPage() {
-  const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState('')
   const [companies, setCompanies] = useState<Company[]>([])
   const [editingItem, setEditingItem] = useState<Company | Site | null>(null)
@@ -128,18 +127,18 @@ export default function ClientPage() {
       setCompanies(prev => prev.map(c => c.id === companyId ? { ...c, sites: c.sites.filter(s => s.id !== siteId) } : c))
       toast({ title: 'Success', description: 'Site deleted successfully' })
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to delete site', variant: 'destructive' })
+      toast.error('Failed to delete site')
     }
   }
 
   const handleSaveItem = async () => {
     if (!newItemName.trim()) {
-      toast({ title: 'Error', description: 'Name is required', variant: 'destructive' })
+      toast.error('Name is required')
       return
     }
 
     if (editingType === 'site' && !newItemCode.trim()) {
-      toast({ title: 'Error', description: 'Code is required', variant: 'destructive' })
+      toast.error('Code is required')
       return
     }
 
@@ -157,7 +156,7 @@ export default function ClientPage() {
         } else {
           setCompanies(prev => [...prev, { id: result.id, name: result.name, sites: [] }])
         }
-        toast({ title: 'Success', description: editingItem ? 'Company updated' : 'Company added' })
+        toast.success(editingItem ? 'Company updated' : 'Company added')
       } else if (editingType === 'site') {
         const method = editingItem ? 'PUT' : 'POST'
         const latitude = newItemLatitude ? parseFloat(newItemLatitude) : null
@@ -185,11 +184,11 @@ export default function ClientPage() {
         setEditingCompanyId('')
         setEditingType('')
         
-        toast({ title: 'Success', description: editingItem ? 'Site updated successfully' : 'Site added successfully' })
+        toast.success(editingItem ? 'Site updated successfully' : 'Site added successfully')
       }
     } catch (error: any) {
       const errorMessage = error?.message || 'Failed to save'
-      toast({ title: 'Error', description: errorMessage, variant: 'destructive' })
+      toast.error(errorMessage)
     } finally {
       setIsSaving(false)
     }
