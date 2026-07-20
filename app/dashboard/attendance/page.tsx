@@ -39,6 +39,7 @@ export default function AttendancePage() {
   const [isGeneratingAttendance, setIsGeneratingAttendance] = useState(false)
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
   const [isClient, setIsClient] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const handleGenerateAttendance = async () => {
     setIsGeneratingAttendance(true)
@@ -61,8 +62,8 @@ export default function AttendancePage() {
       const data = await response.json()
       toast.success(data.message)
       console.log('[v0] Attendance generation details:', data.details)
-      // Refresh the attendance table
-      window.location.reload()
+      // Trigger re-fetch by updating the refresh key instead of full reload
+      setRefreshKey(prev => prev + 1)
     } catch (error) {
       console.error('[v0] Error triggering attendance generation:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to generate attendance records')
@@ -154,8 +155,8 @@ export default function AttendancePage() {
         )}
       </div>
 
-      <AttendanceStats siteId={selectedSite} dateRange={dateRange} />
-      <AttendanceTable siteId={selectedSite} dateRange={dateRange} department={selectedDepartment} />
+      <AttendanceStats key={refreshKey} siteId={selectedSite} dateRange={dateRange} />
+      <AttendanceTable key={refreshKey} siteId={selectedSite} dateRange={dateRange} department={selectedDepartment} />
     </div>
   )
 }

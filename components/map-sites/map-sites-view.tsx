@@ -1,0 +1,221 @@
+'use client'
+
+import { useMemo, useState, useEffect } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import { Badge } from '@/components/ui/badge'
+import { SiteMarkerPopup } from './site-marker-popup'
+
+// Import location data from constants as fallback
+import { locationStats as fallbackLocationStats } from '@/lib/constants'
+
+// Fix Leaflet marker icons
+const defaultIcon = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+})
+
+L.Marker.prototype.setIcon(defaultIcon)
+
+export default function MapSitesView() {
+  const [selectedSite, setSelectedSite] = useState<string | null>(null)
+  const [locationStats, setLocationStats] = useState<typeof fallbackLocationStats>([])
+  const [loading, setLoading] = useState(true)
+
+  // Fetch sites from database
+  useEffect(() => {
+    async function fetchSites() {
+      try {
+        const response = await fetch('/api/companies')
+        const companies = await response.json()
+        
+        // Build location stats from database sites
+        const stats: typeof fallbackLocationStats = []
+        
+        for (const company of companies) {
+          for (const site of company.sites) {
+            // Only include sites with coordinates
+            if (site.latitude && site.longitude) {
+              stats.push({
+                id: site.id,
+                name: site.name,
+                code: site.code,
+                centerPoint: {
+                  latitude: parseFloat(site.latitude),
+                  longitude: parseFloat(site.longitude),
+                },
+                totalStaff: 0, // Placeholder - would need additional query
+                presentCount: 0,
+                lateCount: 0,
+                absentCount: 0,
+                notCheckedInCount: 0,
+              })
+            }
+          }
+        }
+        
+        // If no sites with coordinates, use fallback
+        setLocationStats(stats.length > 0 ? stats : fallbackLocationStats)
+      } catch (error) {
+        console.error('Error fetching sites:', error)
+        setLocationStats(fallbackLocationStats)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSites()
+  }, [])
+
+  // Calculate center of map based on all locations
+  const mapCenter = useMemo(() => {
+    if (locationStats.length === 0) return [-6.2088, 106.8456] as [number, number] // Default to JABODETABEK
+    
+    const avgLat = locationStats.reduce((sum, loc) => sum + loc.centerPoint.latitude, 0) / locationStats.length
+    const avgLng = locationStats.reduce((sum, loc) => sum + loc.centerPoint.longitude, 0) / locationStats.length
+    
+    return [avgLat, avgLng] as [number, number]
+  }, [locationStats])
+
+  // Get color based on occupancy rate
+  const getMarkerColor = (presentCount: number, totalStaff: number) => {
+    if (totalStaff === 0) return '#999999'
+    const percentage = (presentCount / totalStaff) * 100
+    
+    if (percentage >= 80) return '#22c55e' // Green
+    if (percentage >= 60) return '#eab308' // Yellow
+    if (percentage >= 40) return '#f97316' // Orange
+    return '#ef4444' // Red
+  }
+
+  // Create custom HTML icon with badge
+  const createCustomIcon = (location: any) => {
+    const color = getMarkerColor(location.presentCount, location.totalStaff)
+    
+    return L.divIcon({
+      html: `
+        <div style="
+          background-color: ${color};
+          color: white;
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          font-size: 14px;
+          border: 3px solid white;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          cursor: pointer;
+        ">
+          ${location.presentCount}
+        </div>
+      `,
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
+      popupAnchor: [0, -20],
+      className: 'custom-icon',
+    })
+  }
+
+  if (typeof window === 'undefined' || loading) {
+    return <div className="h-96 bg-muted rounded-lg flex items-center justify-center">Loading map...</div>
+  }
+
+  return (
+    <div className="w-full space-y-4">
+      <div className="h-96 md:h-[600px] rounded-lg overflow-hidden border border-border">
+        <MapContainer 
+          center={mapCenter} 
+          zoom={7}
+          minZoom={3}
+          maxZoom={18}
+          maxBounds={[[-85.051129, -180], [85.051129, 180]]}
+          maxBoundsViscosity={1.0}
+          style={{ height: '100%', width: '100%' }}
+          className="z-10"
+        >
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            noWrap={true}
+          />
+          
+          {locationStats.map((location) => (
+            <Marker
+              key={location.id}
+              position={[location.centerPoint.latitude, location.centerPoint.longitude]}
+              icon={createCustomIcon(location)}
+              eventHandlers={{
+                click: () => setSelectedSite(location.id),
+              }}
+            >
+              <Popup>
+                <SiteMarkerPopup
+                  name={location.name}
+                  code={location.code}
+                  latitude={location.centerPoint.latitude}
+                  longitude={location.centerPoint.longitude}
+                  totalStaff={location.totalStaff}
+                  presentCount={location.presentCount}
+                  lateCount={location.lateCount}
+                  absentCount={location.absentCount}
+                />
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      </div>
+
+      {/* Legend */}
+      <div className="bg-muted/50 p-4 rounded-lg">
+        <h3 className="font-semibold text-sm mb-3">Occupancy Rate Legend</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full" style={{ backgroundColor: '#22c55e' }} />
+            <span className="text-xs">80% - 100%</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full" style={{ backgroundColor: '#eab308' }} />
+            <span className="text-xs">60% - 80%</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full" style={{ backgroundColor: '#f97316' }} />
+            <span className="text-xs">40% - 60%</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full" style={{ backgroundColor: '#ef4444' }} />
+            <span className="text-xs">0% - 40%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Site Stats Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-card p-4 rounded-lg border border-border">
+          <p className="text-sm text-muted-foreground">Total Sites</p>
+          <p className="text-2xl font-bold">{locationStats.length}</p>
+        </div>
+        <div className="bg-card p-4 rounded-lg border border-border">
+          <p className="text-sm text-muted-foreground">Total Staff</p>
+          <p className="text-2xl font-bold">{locationStats.reduce((sum, loc) => sum + loc.totalStaff, 0)}</p>
+        </div>
+        <div className="bg-card p-4 rounded-lg border border-border">
+          <p className="text-sm text-muted-foreground">Present Today</p>
+          <p className="text-2xl font-bold text-green-600">{locationStats.reduce((sum, loc) => sum + loc.presentCount, 0)}</p>
+        </div>
+        <div className="bg-card p-4 rounded-lg border border-border">
+          <p className="text-sm text-muted-foreground">Absent</p>
+          <p className="text-2xl font-bold text-red-600">{locationStats.reduce((sum, loc) => sum + loc.absentCount, 0)}</p>
+        </div>
+      </div>
+    </div>
+  )
+}

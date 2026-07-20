@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { name, code } = await req.json()
+    const { name, code, latitude, longitude } = await req.json()
     const { id: companyId } = await params
 
     if (!name || !name.trim() || !code || !code.trim()) {
@@ -22,11 +22,15 @@ export async function POST(
         name: name.trim(),
         code: code.trim().toUpperCase(),
         companyId,
+        ...(latitude !== null && latitude !== undefined && { latitude: String(latitude) }),
+        ...(longitude !== null && longitude !== undefined && { longitude: String(longitude) }),
       },
       select: {
         id: true,
         name: true,
         code: true,
+        latitude: true,
+        longitude: true,
       },
     })
 
@@ -52,7 +56,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { siteId, name, code } = await req.json()
+    const { siteId, name, code, latitude, longitude } = await req.json()
 
     if (!siteId || !name || !name.trim() || !code || !code.trim()) {
       return NextResponse.json(
@@ -66,11 +70,15 @@ export async function PUT(
       data: {
         name: name.trim(),
         code: code.trim().toUpperCase(),
+        ...(latitude !== null && latitude !== undefined && { latitude: String(latitude) }),
+        ...(longitude !== null && longitude !== undefined && { longitude: String(longitude) }),
       },
       select: {
         id: true,
         name: true,
         code: true,
+        latitude: true,
+        longitude: true,
       },
     })
 

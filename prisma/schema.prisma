@@ -61,6 +61,12 @@ enum CronJobName {
   LEAVE_PROCESSING
 }
 
+enum NotificationType {
+  SYSTEM
+  APPROVAL
+  ANNOUNCEMENT
+}
+
 enum PatrolStatus {
   NOT_STARTED
   IN_PROGRESS
@@ -75,6 +81,8 @@ model Site {
   name        String
   code        String                    @unique
   totalStaff  Int? // Optional, from stats
+  latitude    Decimal?                  @db.Decimal(10, 8) // Geographic latitude coordinate
+  longitude   Decimal?                  @db.Decimal(11, 8) // Geographic longitude coordinate
   companyId   String?
   company     Company?                  @relation(fields: [companyId], references: [id], onDelete: SetNull)
   users       User[]
@@ -140,6 +148,8 @@ model User {
   bulkImports           BulkImportLog[] @relation("BulkImports")
   patrols               Patrol[]
   deviceBindings        DeviceBinding[]
+  notifications         Notification[]
+  payrolls              Payroll[]
   createdAt             DateTime                  @default(now())
   updatedAt             DateTime                  @updatedAt
   status                EmployeeStatus            @default(ACTIVE)
@@ -234,7 +244,7 @@ model Leave {
 // BKO Assignments (Backup/Coverage assignments during leave)
 model BkoAssignment {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  leaveId      String   @db.Uuid
+  leaveId      String   @unique @db.Uuid
   leave        Leave    @relation(fields: [leaveId], references: [id], onDelete: Cascade)
   substituteId String   // Text reference to User id (which is cuid)
   substitute   User     @relation("BkoSubstitute", fields: [substituteId], references: [id], onDelete: Cascade)
@@ -358,7 +368,7 @@ model DeviceBinding {
   id            String   @id @default(cuid())
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deviceId      String   @unique // Unique device identifier from mobile app
+  deviceId      String   // Device identifier from mobile app
   deviceName    String   // e.g., "Samsung Galaxy S23 (Android)", "iPhone 14 Pro (iOS)"
   deviceType    String   // "mobile" or "app"
   appVersion    String?  // App version when bound
@@ -367,6 +377,7 @@ model DeviceBinding {
   isActive      Boolean  @default(true)
 
   @@unique([userId, deviceType]) // One mobile device + one app per user
+  @@unique([deviceId]) // Unique device identifier
   @@index([userId])
   @@index([deviceId])
   @@map("device_bindings")
@@ -478,4 +489,42 @@ model CronLog {
   @@index([jobName, createdAt])
   @@index([status])
   @@map("cron_logs")
+}
+
+// Notification model - for user notifications with RLS and Realtime support
+model Notification {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  type      NotificationType @default(SYSTEM)
+  isRead    Boolean          @default(false)
+  metadata  Json?            // Store extra details like request_id, entity_type, link_id, etc.
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// Payroll model - for employee payslips and payroll records
+model Payroll {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  month       String   @db.VarChar(50) // e.g., 'Juli 2026'
+  publishDate DateTime @default(now()) @db.Date
+  pdfUrl      String?  // Supabase Storage URL for the payslip
+  status      String   @default("published") @db.VarChar(20)
+  createdAt   DateTime @default(now()) @db.Timestamptz()
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([month])
+  @@index([status])
+  @@map("payrolls")
 }

@@ -226,6 +226,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   const [mounted, setMounted] = useState(false)
   const [localSystemSettings, setLocalSystemSettings] = useState<SystemSettings>({ appName: 'SecureGuard', appDescription: 'HR Administration' })
   const [loading, setLoading] = useState(!propSystemSettings)
+  const [pendingLeaveCount, setPendingLeaveCount] = useState<number>(5)
 
   const systemSettings = propSystemSettings || localSystemSettings
   const userRole = user?.role || null
@@ -268,11 +269,43 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
     }
   }, [propSystemSettings])
 
+  // Fetch pending leave request count
+  useEffect(() => {
+    const fetchPendingLeaveCount = async () => {
+      try {
+        const response = await fetch('/api/leaves/stats')
+        if (response.ok) {
+          const data = await response.json()
+          setPendingLeaveCount(data.pending || 0)
+        }
+      } catch (error) {
+        console.error('[v0] Failed to fetch pending leave count:', error)
+      }
+    }
+
+    fetchPendingLeaveCount()
+    // Refetch every 30 seconds
+    const interval = setInterval(fetchPendingLeaveCount, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
   if (loading) {
     return <Sidebar variant="inset" />
   }
 
+  // Update Leave Management badge with pending count
+  const mainNavItemsWithBadges = mainNavItems.map(item => 
+    item.title === 'Leave Management' 
+      ? { ...item, badge: pendingLeaveCount }
+      : item
+  )
+
   const secondaryNavItems = [
+    {
+      title: 'Map Site',
+      url: '/dashboard/map-sites',
+      icon: MapPin,
+    },
     {
       title: 'Reports',
       url: '/dashboard/reports',
@@ -295,8 +328,8 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   const isClientUser = userRole === 'CLIENT'
   
   let navItemsToShow = isClientUser 
-    ? mainNavItems.filter(item => item.title !== 'Payroll')
-    : mainNavItems
+    ? mainNavItemsWithBadges.filter(item => item.title !== 'Payroll')
+    : mainNavItemsWithBadges
   let menuLabel = 'Main Menu'
   
   if (isPayrollPage) {

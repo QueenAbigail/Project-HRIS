@@ -19,9 +19,10 @@ interface AttendanceStatsData {
 
 interface AttendanceStatsProps {
   siteId?: string
+  dateRange?: string
 }
 
-export function AttendanceStats({ siteId = 'all' }: AttendanceStatsProps) {
+export function AttendanceStats({ siteId = 'all', dateRange = 'today' }: AttendanceStatsProps) {
   const [stats, setStats] = useState<AttendanceStatsData | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -32,6 +33,22 @@ export function AttendanceStats({ siteId = 'all' }: AttendanceStatsProps) {
         if (siteId && siteId !== 'all') {
           params.append('siteId', siteId)
         }
+        
+        // Get date based on dateRange
+        const today = new Date()
+        let date = today.toISOString().split('T')[0]
+        
+        if (dateRange === 'today') {
+          date = today.toISOString().split('T')[0]
+        } else if (dateRange === 'this-week') {
+          // For week view, we might need to adjust, but let's keep it simple for now
+          date = today.toISOString().split('T')[0]
+        } else if (dateRange === 'this-month') {
+          // Same as today for now - stats API might need enhancement for ranges
+          date = today.toISOString().split('T')[0]
+        }
+        
+        params.append('date', date)
         
         const response = await fetch(`/api/attendance/stats?${params.toString()}`)
         if (response.ok) {
@@ -46,7 +63,7 @@ export function AttendanceStats({ siteId = 'all' }: AttendanceStatsProps) {
     }
 
     fetchStats()
-  }, [siteId])
+  }, [siteId, dateRange])
 
   if (loading || !stats) {
     return (

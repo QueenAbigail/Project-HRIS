@@ -9,12 +9,14 @@ import { Label } from '@/components/ui/label'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
 import { Plus, MoreVertical, Pencil, Trash2, ChevronDown, Search, X, Loader2 } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 
 interface Site {
   id: string
   name: string
   code: string
+  latitude?: number | null
+  longitude?: number | null
 }
 
 interface Company {
@@ -24,7 +26,6 @@ interface Company {
 }
 
 export default function ClientPage() {
-  const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState('')
   const [companies, setCompanies] = useState<Company[]>([])
   const [editingItem, setEditingItem] = useState<Company | Site | null>(null)
@@ -32,6 +33,8 @@ export default function ClientPage() {
   const [editingType, setEditingType] = useState<'company' | 'site' | ''>('')
   const [newItemName, setNewItemName] = useState('')
   const [newItemCode, setNewItemCode] = useState('')
+  const [newItemLatitude, setNewItemLatitude] = useState('')
+  const [newItemLongitude, setNewItemLongitude] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -81,6 +84,8 @@ export default function ClientPage() {
     setEditingItem(null)
     setNewItemName('')
     setNewItemCode('')
+    setNewItemLatitude('')
+    setNewItemLongitude('')
     setEditingCompanyId(companyId)
     setIsDialogOpen(true)
   }
@@ -98,6 +103,8 @@ export default function ClientPage() {
     setEditingItem(site)
     setNewItemName(site.name)
     setNewItemCode(site.code)
+    setNewItemLatitude(site.latitude ? String(site.latitude) : '')
+    setNewItemLongitude(site.longitude ? String(site.longitude) : '')
     setEditingCompanyId(companyId)
     setIsDialogOpen(true)
   }
@@ -120,18 +127,18 @@ export default function ClientPage() {
       setCompanies(prev => prev.map(c => c.id === companyId ? { ...c, sites: c.sites.filter(s => s.id !== siteId) } : c))
       toast({ title: 'Success', description: 'Site deleted successfully' })
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to delete site', variant: 'destructive' })
+      toast.error('Failed to delete site')
     }
   }
 
   const handleSaveItem = async () => {
     if (!newItemName.trim()) {
-      toast({ title: 'Error', description: 'Name is required', variant: 'destructive' })
+      toast.error('Name is required')
       return
     }
 
     if (editingType === 'site' && !newItemCode.trim()) {
-      toast({ title: 'Error', description: 'Code is required', variant: 'destructive' })
+      toast.error('Code is required')
       return
     }
 
@@ -149,26 +156,39 @@ export default function ClientPage() {
         } else {
           setCompanies(prev => [...prev, { id: result.id, name: result.name, sites: [] }])
         }
-        toast({ title: 'Success', description: editingItem ? 'Company updated' : 'Company added' })
+        toast.success(editingItem ? 'Company updated' : 'Company added')
       } else if (editingType === 'site') {
         const method = editingItem ? 'PUT' : 'POST'
-        const body = editingItem ? { siteId: editingItem.id, name: newItemName, code: newItemCode } : { name: newItemName, code: newItemCode }
+        const latitude = newItemLatitude ? parseFloat(newItemLatitude) : null
+        const longitude = newItemLongitude ? parseFloat(newItemLongitude) : null
+        const body = editingItem 
+          ? { siteId: editingItem.id, name: newItemName, code: newItemCode, latitude, longitude } 
+          : { name: newItemName, code: newItemCode, latitude, longitude }
         const response = await fetch(`/api/companies/${editingCompanyId}/sites`, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-        if (!response.ok) throw new Error('Failed to save')
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || 'Failed to save')
+        }
         const result = await response.json()
 
-        setCompanies(prev => prev.map(c => c.id === editingCompanyId ? { ...c, sites: editingItem ? c.sites.map(s => s.id === editingItem.id ? { id: s.id, name: newItemName, code: newItemCode } : s) : [...c.sites, { id: result.id, name: result.name, code: result.code }] } : c))
-        toast({ title: 'Success', description: editingItem ? 'Site updated' : 'Site added' })
+        setCompanies(prev => prev.map(c => c.id === editingCompanyId ? { ...c, sites: editingItem ? c.sites.map(s => s.id === editingItem.id ? { id: s.id, name: newItemName, code: newItemCode, latitude, longitude } : s) : [...c.sites, { id: result.id, name: result.name, code: result.code, latitude: result.latitude, longitude: result.longitude }] } : c))
+        
+        // Close dialog immediately after successful save
+        setIsDialogOpen(false)
+        setEditingItem(null)
+        setNewItemName('')
+        setNewItemCode('')
+        setNewItemLatitude('')
+        setNewItemLongitude('')
+        setEditingCompanyId('')
+        setEditingType('')
+        
+        toast.success(editingItem ? 'Site updated successfully' : 'Site added successfully')
       }
-
-      setIsDialogOpen(false)
-      setEditingItem(null)
-      setNewItemName('')
-      setNewItemCode('')
-      setEditingCompanyId('')
-      setEditingType('')
-    } catch (error) {
-      toast({ title: 'Error', description: 'Failed to save', variant: 'destructive' })
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Failed to save'
+      toast.error(errorMessage)
     } finally {
       setIsSaving(false)
     }
@@ -332,16 +352,42 @@ export default function ClientPage() {
               />
             </div>
             {editingType === 'site' && (
-              <div className="space-y-2">
-                <Label>Site Code</Label>
-                <Input
-                  value={newItemCode}
-                  onChange={(e) => setNewItemCode(e.target.value.toUpperCase())}
-                  placeholder="e.g., HOJ"
-                  maxLength={20}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
-                />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label>Site Code</Label>
+                  <Input
+                    value={newItemCode}
+                    onChange={(e) => setNewItemCode(e.target.value.toUpperCase())}
+                    placeholder="e.g., HOJ"
+                    maxLength={20}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Latitude</Label>
+                    <Input
+                      type="number"
+                      step="0.00000001"
+                      value={newItemLatitude}
+                      onChange={(e) => setNewItemLatitude(e.target.value)}
+                      placeholder="e.g., -6.2088"
+                      onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Longitude</Label>
+                    <Input
+                      type="number"
+                      step="0.00000001"
+                      value={newItemLongitude}
+                      onChange={(e) => setNewItemLongitude(e.target.value)}
+                      placeholder="e.g., 106.8456"
+                      onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
+                    />
+                  </div>
+                </div>
+              </>
             )}
             <Button onClick={handleSaveItem} className="w-full" disabled={isSaving}>
               {isSaving ? (

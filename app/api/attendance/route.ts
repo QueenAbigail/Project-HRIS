@@ -72,33 +72,33 @@ export async function GET(request: NextRequest) {
     switch (dateRange) {
       case 'today':
         dateStart = startOfDay(now)
-        dateEnd = startOfDay(now)
+        dateEnd = endOfDay(now)
         break
       case 'yesterday':
         const yesterday = subDays(now, 1)
         dateStart = startOfDay(yesterday)
-        dateEnd = startOfDay(yesterday)
+        dateEnd = endOfDay(yesterday)
         break
       case 'week':
         const weekStart = startOfWeek(now, { weekStartsOn: 1 }) // Monday start
         const weekEnd = endOfWeek(now, { weekStartsOn: 1 })
         dateStart = startOfDay(weekStart)
-        dateEnd = startOfDay(weekEnd)
+        dateEnd = endOfDay(weekEnd)
         break
       case 'month':
         const monthStart = startOfMonth(now)
         const monthEnd = endOfMonth(now)
         dateStart = startOfDay(monthStart)
-        dateEnd = startOfDay(monthEnd)
+        dateEnd = endOfDay(monthEnd)
         break
       case 'custom':
         const customDate = new Date(date)
         dateStart = startOfDay(customDate)
-        dateEnd = startOfDay(customDate)
+        dateEnd = endOfDay(customDate)
         break
       default:
         dateStart = startOfDay(now)
-        dateEnd = startOfDay(now)
+        dateEnd = endOfDay(now)
     }
 
     console.log("[v0] Attendance API - Date range:", { dateRange, dateStart: dateStart.toISOString(), dateEnd: dateEnd.toISOString() })
