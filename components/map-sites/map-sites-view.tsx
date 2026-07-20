@@ -74,13 +74,13 @@ export default function MapSitesView() {
 
   // Calculate center of map based on all locations
   const mapCenter = useMemo(() => {
-    if (locationStats.length === 0) return [0, 0] as [number, number]
+    if (locationStats.length === 0) return [-6.2088, 106.8456] as [number, number] // Default to JABODETABEK
     
     const avgLat = locationStats.reduce((sum, loc) => sum + loc.centerPoint.latitude, 0) / locationStats.length
     const avgLng = locationStats.reduce((sum, loc) => sum + loc.centerPoint.longitude, 0) / locationStats.length
     
     return [avgLat, avgLng] as [number, number]
-  }, [])
+  }, [locationStats])
 
   // Get color based on occupancy rate
   const getMarkerColor = (presentCount: number, totalStaff: number) => {
