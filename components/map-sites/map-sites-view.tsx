@@ -1,13 +1,13 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Badge } from '@/components/ui/badge'
 
-// Import location data from constants
-import { locationStats } from '@/lib/constants'
+// Import location data from constants as fallback
+import { locationStats as fallbackLocationStats } from '@/lib/constants'
 
 // Fix Leaflet marker icons
 const defaultIcon = L.icon({
@@ -24,6 +24,53 @@ L.Marker.prototype.setIcon(defaultIcon)
 
 export default function MapSitesView() {
   const [selectedSite, setSelectedSite] = useState<string | null>(null)
+  const [locationStats, setLocationStats] = useState<typeof fallbackLocationStats>([])
+  const [loading, setLoading] = useState(true)
+
+  // Fetch sites from database
+  useEffect(() => {
+    async function fetchSites() {
+      try {
+        const response = await fetch('/api/companies')
+        const companies = await response.json()
+        
+        // Build location stats from database sites
+        const stats: typeof fallbackLocationStats = []
+        
+        for (const company of companies) {
+          for (const site of company.sites) {
+            // Only include sites with coordinates
+            if (site.latitude && site.longitude) {
+              stats.push({
+                id: site.id,
+                name: site.name,
+                code: site.code,
+                centerPoint: {
+                  latitude: parseFloat(site.latitude),
+                  longitude: parseFloat(site.longitude),
+                },
+                totalStaff: 0, // Placeholder - would need additional query
+                presentCount: 0,
+                lateCount: 0,
+                absentCount: 0,
+                notCheckedInCount: 0,
+              })
+            }
+          }
+        }
+        
+        // If no sites with coordinates, use fallback
+        setLocationStats(stats.length > 0 ? stats : fallbackLocationStats)
+      } catch (error) {
+        console.error('Error fetching sites:', error)
+        setLocationStats(fallbackLocationStats)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSites()
+  }, [])
 
   // Calculate center of map based on all locations
   const mapCenter = useMemo(() => {
@@ -77,7 +124,7 @@ export default function MapSitesView() {
     })
   }
 
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || loading) {
     return <div className="h-96 bg-muted rounded-lg flex items-center justify-center">Loading map...</div>
   }
 
