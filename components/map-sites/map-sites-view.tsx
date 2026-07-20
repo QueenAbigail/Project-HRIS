@@ -89,6 +89,8 @@ export default function MapSitesView() {
           zoom={7}
           minZoom={3}
           maxZoom={18}
+          maxBounds={[[-85.051129, -180], [85.051129, 180]]}
+          maxBoundsViscosity={1.0}
           style={{ height: '100%', width: '100%' }}
           className="z-10"
         >
