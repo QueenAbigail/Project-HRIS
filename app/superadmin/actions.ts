@@ -654,15 +654,18 @@ export async function getImportAuditTrail(limit: number = 50) {
 // Auto-generate expected attendance records for today based on assignments
 export async function generateTodayAttendanceRecords() {
   try {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    // Calculate the date to create attendance for
+    // Since cron runs at 17:00 UTC (00:00 GMT+7 next day), we create attendance for tomorrow
+    const attendanceDate = new Date()
+    attendanceDate.setDate(attendanceDate.getDate() + 1)
+    attendanceDate.setHours(0, 0, 0, 0)
 
-    console.log('[v0] Starting attendance generation for date:', today.toISOString().split('T')[0])
+    console.log('[v0] Starting attendance generation for date:', attendanceDate.toISOString().split('T')[0])
 
-    // Get all schedules for today
+    // Get all schedules for the attendance date
     const todaysSchedules = await prisma.schedule.findMany({
       where: {
-        scheduleDate: today
+        scheduleDate: attendanceDate
       },
       include: {
         employee: {
@@ -677,7 +680,7 @@ export async function generateTodayAttendanceRecords() {
       }
     })
 
-    console.log('[v0] Found', todaysSchedules.length, 'schedules for today')
+    console.log('[v0] Found', todaysSchedules.length, 'schedules for attendance date')
 
     let createdCount = 0
     let skippedCount = 0
@@ -691,11 +694,11 @@ export async function generateTodayAttendanceRecords() {
         continue
       }
 
-      // Check if attendance record already exists for today
+      // Check if attendance record already exists for this date
       const existingAttendance = await prisma.attendance.findFirst({
         where: {
           userId: schedule.employeeId,
-          date: today
+          date: attendanceDate
         }
       })
 
@@ -710,8 +713,8 @@ export async function generateTodayAttendanceRecords() {
         where: {
           userId: schedule.employeeId,
           status: 'Approved',
-          startDate: { lte: today },
-          endDate: { gte: today }
+          startDate: { lte: attendanceDate },
+          endDate: { gte: attendanceDate }
         }
       })
 
@@ -742,7 +745,7 @@ export async function generateTodayAttendanceRecords() {
             userId: schedule.employeeId,
             locationId: userSiteId,
             shiftId: schedule.shiftId,
-            date: today,
+            date: attendanceDate,
             scheduledStart: finalScheduledStart,
             scheduledEnd: finalScheduledEnd,
             status: attendanceStatus,
