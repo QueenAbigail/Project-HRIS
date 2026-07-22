@@ -10,38 +10,42 @@ import { UpcomingLeaves } from '@/components/dashboard/upcoming-leaves'
 import type { Attendance, Leave, Shift, Site, User } from '@prisma/client'
 
 export default async function DashboardPage() {
-  // Get current user to determine data filtering
-  const currentUser = await getCurrentUser()
-  
-  if (!currentUser) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Unable to Load Dashboard</h1>
-          <p className="text-gray-600 mb-4">Could not retrieve your user information. Please log in again.</p>
-          <a href="/login" className="text-blue-600 hover:underline">
-            Return to Login
-          </a>
-        </div>
-      </div>
-    )
-  }
-
-  const today = new Date();
-  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
-  const weekAgo = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
-  
-  // Month start and end for leave count
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
-  
-  // Determine if user is a CLIENT (can see all sites in their company)
-  const isClient = currentUser.role === 'CLIENT'
-  const companyFilter = isClient ? { companyId: currentUser.companyId } : {}
-  const companyName = currentUser.site?.company?.name || 'your company'
-
   try {
+    // Get current user to determine data filtering
+    console.log('[v0] Dashboard: Starting page load')
+    const currentUser = await getCurrentUser()
+    console.log('[v0] Dashboard: Current user retrieved:', currentUser?.id)
+    
+    if (!currentUser) {
+      console.log('[v0] Dashboard: No current user found')
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Unable to Load Dashboard</h1>
+            <p className="text-gray-600 mb-4">Could not retrieve your user information. Please log in again.</p>
+            <a href="/login" className="text-blue-600 hover:underline">
+              Return to Login
+            </a>
+          </div>
+        </div>
+      )
+    }
+
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+    const weekAgo = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    // Month start and end for leave count
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+    
+    // Determine if user is a CLIENT (can see all sites in their company)
+    const isClient = currentUser.role === 'CLIENT'
+    const companyFilter = isClient ? { companyId: currentUser.companyId } : {}
+    const companyName = currentUser.site?.company?.name || 'your company'
+
+    console.log('[v0] Dashboard: Starting data fetch...')
     const [
       companies,
       sites,
@@ -314,6 +318,7 @@ export default async function DashboardPage() {
 
 
 
+    console.log('[v0] Dashboard: Data fetch completed, rendering page')
     return (
       <div className="space-y-6">
         <div>
@@ -340,14 +345,17 @@ export default async function DashboardPage() {
       </div>
     )
   } catch (error) {
-    console.error('[v0] Dashboard error:', error instanceof Error ? error.message : error)
+    console.error('[v0] Dashboard page error:', error instanceof Error ? error.message : String(error))
+    console.error('[v0] Full error:', error)
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="text-center px-4">
           <h1 className="text-2xl font-bold mb-4">Dashboard Error</h1>
           <p className="text-gray-600 mb-2">An error occurred while loading the dashboard.</p>
-          <p className="text-sm text-gray-500 mb-4">{error instanceof Error ? error.message : 'Unknown error'}</p>
-          <a href="/" className="text-blue-600 hover:underline">
+          <p className="text-sm text-gray-500 mb-4 font-mono break-words">
+            {error instanceof Error ? error.message : String(error)}
+          </p>
+          <a href="/" className="text-blue-600 hover:underline block mt-4">
             Return to Home
           </a>
         </div>
