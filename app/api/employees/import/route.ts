@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
               // Don't fail the import - proceed with database update
             }
           } else {
-            // New user - create auth account
+            // New user - try to create auth account
             console.log(`[v0] Creating new auth user for ${hrisEmail}`)
             const { data, error: authError } = await getSupabaseAdmin().auth.admin.createUser({
               email: hrisEmail,
@@ -180,12 +180,29 @@ export async function POST(request: NextRequest) {
             })
             
             if (authError) {
-              console.error(`[v0] Auth creation error for ${hrisEmail}:`, authError.message)
-              throw new Error(`Auth error: ${authError.message}`)
+              // Check if it's a "already registered" error
+              if (authError.message.includes('already been registered') || authError.message.includes('already exists')) {
+                console.log(`[v0] User already registered in auth: ${hrisEmail}, fetching existing user...`)
+                // User already exists - try to get them from listUsers
+                const { data: allUsers } = await getSupabaseAdmin().auth.admin.listUsers()
+                const foundUser = allUsers?.users?.find(u => u.email === hrisEmail)
+                if (foundUser) {
+                  console.log(`[v0] Found existing user: ${foundUser.id}`)
+                  userId = foundUser.id
+                  authData = { user: { id: userId } }
+                } else {
+                  console.error(`[v0] Could not find existing user after "already registered" error`)
+                  throw new Error(`Auth error: User exists but cannot be retrieved`)
+                }
+              } else {
+                console.error(`[v0] Auth creation error for ${hrisEmail}:`, authError.message)
+                throw new Error(`Auth error: ${authError.message}`)
+              }
+            } else {
+              console.log(`[v0] Auth user created successfully: ${data.user.id}`)
+              userId = data.user.id
+              authData = data
             }
-            console.log(`[v0] Auth user created successfully: ${data.user.id}`)
-            userId = data.user.id
-            authData = data
           }
         }
 
