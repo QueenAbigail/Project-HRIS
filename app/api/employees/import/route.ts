@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@supabase/supabase-js'
+import { randomUUID } from 'crypto'
 
 // Lazy initialize Supabase client to avoid build-time errors
 let supabaseAdmin: ReturnType<typeof createClient> | null = null
@@ -195,11 +196,8 @@ export async function POST(request: NextRequest) {
                   authData = { user: { id: userId } }
                 } else {
                   // User exists in auth but not in database
-                  // Generate a deterministic UUID from employeeCode to use as ID
-                  // This ensures the same employee always gets the same ID
-                  const { v5: uuidv5 } = await import('uuid')
-                  const NAMESPACE = '00000000-0000-0000-0000-000000000000'
-                  userId = uuidv5(employeeCode, NAMESPACE)
+                  // Generate a random UUID to use as ID
+                  userId = randomUUID()
                   console.log(`[v0] User exists in auth but not in database, using generated ID: ${userId}`)
                   authData = { user: { id: userId } }
                 }
