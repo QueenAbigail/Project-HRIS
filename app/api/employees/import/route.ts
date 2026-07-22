@@ -287,34 +287,43 @@ export async function POST(request: NextRequest) {
         }
 
         // Create or update user in database
+        console.log(`[v0] Row ${rowNum}: Checking if user exists in database (ID: ${userId})`)
         const dbUserExists = await prisma.user.findUnique({
           where: { id: userId },
           select: { id: true }
         })
+        console.log(`[v0] Row ${rowNum}: User exists in DB:`, dbUserExists ? 'YES' : 'NO')
         
         if (dbUserExists) {
           // Update existing user
+          console.log(`[v0] Row ${rowNum}: Updating existing user`)
           await prisma.user.update({
             where: { id: userId },
             data: userData
           })
+          console.log(`[v0] Row ${rowNum}: User updated successfully`)
         } else {
           // Create new user
+          console.log(`[v0] Row ${rowNum}: Creating new user with employee code: ${employeeCode}`)
+          console.log(`[v0] Row ${rowNum}: User data keys:`, Object.keys(userData))
           await prisma.user.create({
             data: userData
           })
+          console.log(`[v0] Row ${rowNum}: User created successfully`)
         }
 
         results.success++
       } catch (error) {
         results.failed++
         const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+        const fullError = error instanceof Error ? error.stack : JSON.stringify(error)
         results.errors.push({
           row: rowNum,
           name: row['Full Name'] || 'Unknown',
           error: errorMsg
         })
-        console.error(`[v0] Failed to import row ${rowNum}:`, errorMsg)
+        console.error(`[v0] Failed to import row ${rowNum}: ${errorMsg}`)
+        console.error(`[v0] Full error for row ${rowNum}:`, fullError)
       }
     }
 
