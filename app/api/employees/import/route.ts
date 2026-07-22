@@ -147,9 +147,23 @@ export async function POST(request: NextRequest) {
           const existingAuthUser = authUsers?.users.find(u => u.email === hrisEmail)
           
           if (existingAuthUser) {
-            // Email already registered in Auth - use that user's ID
+            // Email already registered in Auth - UPDATE instead of failing
+            // Update the user's metadata with new name and other details
             userId = existingAuthUser.id
             authData = { user: { id: userId } }
+            
+            // Try to update the auth user metadata (this doesn't fail the import)
+            try {
+              await getSupabaseAdmin().auth.admin.updateUserById(userId, {
+                user_metadata: { 
+                  name: row['Full Name'],
+                  employeeCode: employeeCode
+                }
+              })
+            } catch (updateError) {
+              console.warn(`[v0] Could not update auth metadata for ${hrisEmail}:`, updateError)
+              // Don't fail the import - proceed with database update
+            }
           } else {
             // New user - create auth account
             const { data, error: authError } = await getSupabaseAdmin().auth.admin.createUser({
