@@ -93,10 +93,6 @@ model Site {
   bulkImportRecords BulkImportRecord[] @relation("SiteBulkImports")
   shiftSwaps  ShiftSwap[]
   
-  // Payroll relations
-  salaryRules SalaryRule[] @relation("SiteSalaryRules")
-  deductionRules DeductionRule[] @relation("SiteDeductionRules")
-  
   createdAt   DateTime                  @default(now())
   updatedAt   DateTime                  @updatedAt
 
@@ -183,12 +179,6 @@ model User {
   swapsFrom             ShiftSwap[]               @relation("SwapFrom")
   swapsTo               ShiftSwap[]               @relation("SwapTo")
   schedules             Schedule[]                @relation("EmployeeSchedules")
-  
-  // Payroll relations
-  payrollCalculations   PayrollCalculation[]      @relation("UserPayrollCalculations")
-  overtimeHours         PayrollOvertimeHours[]    @relation("UserOvertimeHours")
-  deductionsApplied     PayrollDeductionsApplied[] @relation("UserDeductionsApplied")
-  bonuses               PayrollBonus[]            @relation("UserBonuses")
 
   @@index([siteId])
   @@index([companyId])
@@ -592,8 +582,7 @@ enum OvertimeHoursStatus {
 model SalaryRule {
   id                String    @id @default(cuid())
   positionId        String    // References position/job title
-  siteId            String
-  site              Site      @relation("SiteSalaryRules", fields: [siteId], references: [id], onDelete: Cascade)
+  siteId            String    // References site ID
   baseSalary        Decimal   @db.Decimal(15, 2) // Monthly base salary
   positionAllowance Decimal   @db.Decimal(15, 2) // Position-specific allowance (e.g., risk allowance)
   minimumWage       Decimal   @db.Decimal(15, 2) // Government minimum wage baseline
@@ -619,9 +608,6 @@ model OvertimeRule {
   status          String             @default("active") // active / inactive
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
-  
-  // Relations
-  overtimeHours   PayrollOvertimeHours[] @relation("OvertimeRuleHours")
 
   @@index([status])
   @@map("overtime_rules")
@@ -631,8 +617,7 @@ model OvertimeRule {
 model DeductionRule {
   id                    String                      @id @default(cuid())
   positionId            String                      // Position/job title
-  siteId                String
-  site                  Site                        @relation("SiteDeductionRules", fields: [siteId], references: [id], onDelete: Cascade)
+  siteId                String                      // References site ID
   name                  String                      // e.g., "Income Tax", "Health Insurance"
   type                  DeductionType               // tax, insurance, health, pension, special
   deductionType         DeductionCalculationType    // percentage or fixed_amount
@@ -644,9 +629,6 @@ model DeductionRule {
   status                String                      @default("active") // active / inactive
   createdAt             DateTime                    @default(now())
   updatedAt             DateTime                    @updatedAt
-  
-  // Relations
-  deductionsApplied     PayrollDeductionsApplied[]  @relation("DeductionRuleApplied")
 
   @@unique([positionId, siteId, type, riskLevel])
   @@index([siteId])
@@ -682,9 +664,8 @@ model PayrollPeriod {
 // TABLE 5: Payroll Calculations - Main table storing final calculated payroll
 model PayrollCalculation {
   id                  String                    @id @default(cuid())
-  userId              String
-  user                User                      @relation("UserPayrollCalculations", fields: [userId], references: [id], onDelete: Cascade)
-  payrollPeriodId     String
+  userId              String                    // References user ID
+  payrollPeriodId     String                    // References payroll period
   payrollPeriod       PayrollPeriod             @relation("PeriodCalculations", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
   
   // Salary components
@@ -722,12 +703,10 @@ model PayrollCalculation {
 // TABLE 6: Payroll Overtime Hours - Track overtime hours per employee per month
 model PayrollOvertimeHours {
   id              String                @id @default(cuid())
-  userId          String
-  user            User                  @relation("UserOvertimeHours", fields: [userId], references: [id], onDelete: Cascade)
-  payrollPeriodId String
+  userId          String                // References user ID
+  payrollPeriodId String                // References payroll period
   payrollPeriod   PayrollPeriod         @relation("PeriodOvertimeHours", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
-  overtimeRuleId  String
-  overtimeRule    OvertimeRule          @relation("OvertimeRuleHours", fields: [overtimeRuleId], references: [id], onDelete: Restrict)
+  overtimeRuleId  String                // References overtime rule
   
   date            DateTime              @db.Date // When overtime occurred
   hours           Decimal               @db.Decimal(5, 2) // Hours worked
@@ -753,12 +732,10 @@ model PayrollOvertimeHours {
 // TABLE 7: Payroll Deductions Applied - Track actual deductions per employee per month
 model PayrollDeductionsApplied {
   id                String                      @id @default(cuid())
-  userId            String
-  user              User                        @relation("UserDeductionsApplied", fields: [userId], references: [id], onDelete: Cascade)
-  payrollPeriodId   String
+  userId            String                      // References user ID
+  payrollPeriodId   String                      // References payroll period
   payrollPeriod     PayrollPeriod               @relation("PeriodDeductionsApplied", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
-  deductionRuleId   String
-  deductionRule     DeductionRule               @relation("DeductionRuleApplied", fields: [deductionRuleId], references: [id], onDelete: Restrict)
+  deductionRuleId   String                      // References deduction rule
   
   baseSalary        Decimal                     @db.Decimal(15, 2) // Used for percentage calculations
   deductionType     String                      // Stores type for reference
@@ -780,9 +757,8 @@ model PayrollDeductionsApplied {
 // TABLE 8: Payroll Bonuses - Track bonus allocations (manual only)
 model PayrollBonus {
   id              String            @id @default(cuid())
-  userId          String
-  user            User              @relation("UserBonuses", fields: [userId], references: [id], onDelete: Cascade)
-  payrollPeriodId String
+  userId          String            // References user ID
+  payrollPeriodId String            // References payroll period
   payrollPeriod   PayrollPeriod     @relation("PeriodBonuses", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
   
   type            BonusType         // performance, attendance, special, manual
