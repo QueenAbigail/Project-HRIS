@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@supabase/supabase-js'
-import { randomUUID } from 'crypto'
 
 // Lazy initialize Supabase client to avoid build-time errors
 let supabaseAdmin: ReturnType<typeof createClient> | null = null
@@ -195,11 +194,8 @@ export async function POST(request: NextRequest) {
                   userId = userInDb.id
                   authData = { user: { id: userId } }
                 } else {
-                  // User exists in auth but not in database
-                  // Generate a random UUID to use as ID
-                  userId = randomUUID()
-                  console.log(`[v0] User exists in auth but not in database, using generated ID: ${userId}`)
-                  authData = { user: { id: userId } }
+                  console.error(`[v0] User exists in auth but not in database: ${hrisEmail}`)
+                  throw new Error(`Auth error: User exists but not in database`)
                 }
               } else {
                 console.error(`[v0] Auth creation error for ${hrisEmail}:`, authError.message)
