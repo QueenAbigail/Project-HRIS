@@ -14,7 +14,17 @@ export default async function DashboardPage() {
   const currentUser = await getCurrentUser()
   
   if (!currentUser) {
-    return <div>Unable to load dashboard</div>
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Unable to Load Dashboard</h1>
+          <p className="text-gray-600 mb-4">Could not retrieve your user information. Please log in again.</p>
+          <a href="/login" className="text-blue-600 hover:underline">
+            Return to Login
+          </a>
+        </div>
+      </div>
+    )
   }
 
   const today = new Date();
@@ -31,17 +41,18 @@ export default async function DashboardPage() {
   const companyFilter = isClient ? { companyId: currentUser.companyId } : {}
   const companyName = currentUser.site?.company?.name || 'your company'
 
-  const [
-    companies,
-    sites,
-    shifts,
-    users,
-    todayAttendances,
-    weekAttendances,
-    recentLeaves,
-    assignments,
-    approvedLeavesThisMonth
-  ] = await Promise.all([
+  try {
+    const [
+      companies,
+      sites,
+      shifts,
+      users,
+      todayAttendances,
+      weekAttendances,
+      recentLeaves,
+      assignments,
+      approvedLeavesThisMonth
+    ] = await Promise.all([
     isClient ? prisma.company.findMany({ where: { id: currentUser.companyId } }) : prisma.company.findMany(),
     isClient ? prisma.site.findMany({ where: { companyId: currentUser.companyId }, include: { company: true } }) : prisma.site.findMany({ include: { company: true } }),
     prisma.shift.findMany(),
@@ -303,29 +314,44 @@ export default async function DashboardPage() {
 
 
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-balance">Dashboard Overview</h1>
-        <p className="text-muted-foreground">
-          Welcome back! Here&apos;s what&apos;s happening with your security team {isClient ? `at ${companyNameForDisplay}.` : 'across all locations.'}
-        </p>
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-balance">Dashboard Overview</h1>
+          <p className="text-muted-foreground">
+            Welcome back! Here&apos;s what&apos;s happening with your security team {isClient ? `at ${companyNameForDisplay}.` : 'across all locations.'}
+          </p>
+        </div>
+
+        <StatsCards stats={overallStats} />
+
+        {/* Location-based Attendance Overview */}
+        <LocationAttendance locationData={locationStatsByCompany} companyName={companyNameForDisplay} isClient={isClient} />
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <AttendanceChart chartData={chartData} />
+          <div className="space-y-6">
+            <LateCheckIns lateCheckIns={lateCheckIns} />
+            <UpcomingLeaves />
+          </div>
+        </div>
+
+
       </div>
-
-      <StatsCards stats={overallStats} />
-
-      {/* Location-based Attendance Overview */}
-      <LocationAttendance locationData={locationStatsByCompany} companyName={companyNameForDisplay} isClient={isClient} />
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <AttendanceChart chartData={chartData} />
-        <div className="space-y-6">
-          <LateCheckIns lateCheckIns={lateCheckIns} />
-          <UpcomingLeaves />
+    )
+  } catch (error) {
+    console.error('[v0] Dashboard error:', error instanceof Error ? error.message : error)
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Dashboard Error</h1>
+          <p className="text-gray-600 mb-2">An error occurred while loading the dashboard.</p>
+          <p className="text-sm text-gray-500 mb-4">{error instanceof Error ? error.message : 'Unknown error'}</p>
+          <a href="/" className="text-blue-600 hover:underline">
+            Return to Home
+          </a>
         </div>
       </div>
-
-
-    </div>
-  )
+    )
+  }
 }
