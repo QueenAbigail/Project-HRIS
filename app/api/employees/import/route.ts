@@ -2,10 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Lazy initialize Supabase client to avoid build-time errors
+let supabaseAdmin: ReturnType<typeof createClient> | null = null
+
+function getSupabaseAdmin() {
+  if (!supabaseAdmin) {
+    supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+  }
+  return supabaseAdmin
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -135,7 +143,7 @@ export async function POST(request: NextRequest) {
           authData = { user: { id: userId } }
         } else {
           // Check if email exists in Supabase Auth
-          const { data: authUsers, error: lookupError } = await supabaseAdmin.auth.admin.listUsers()
+          const { data: authUsers, error: lookupError } = await getSupabaseAdmin().auth.admin.listUsers()
           const existingAuthUser = authUsers?.users.find(u => u.email === hrisEmail)
           
           if (existingAuthUser) {
@@ -144,7 +152,7 @@ export async function POST(request: NextRequest) {
             authData = { user: { id: userId } }
           } else {
             // New user - create auth account
-            const { data, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            const { data, error: authError } = await getSupabaseAdmin().auth.admin.createUser({
               email: hrisEmail,
               password: 'promaxima',
               email_confirm: true,
