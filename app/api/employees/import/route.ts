@@ -182,17 +182,26 @@ export async function POST(request: NextRequest) {
             if (authError) {
               // Check if it's a "already registered" error
               if (authError.message.includes('already been registered') || authError.message.includes('already exists')) {
-                console.log(`[v0] User already registered in auth: ${hrisEmail}, fetching existing user...`)
-                // User already exists - try to get them from listUsers
-                const { data: allUsers } = await getSupabaseAdmin().auth.admin.listUsers()
-                const foundUser = allUsers?.users?.find(u => u.email === hrisEmail)
-                if (foundUser) {
-                  console.log(`[v0] Found existing user: ${foundUser.id}`)
-                  userId = foundUser.id
+                console.log(`[v0] User already registered in auth: ${hrisEmail}`)
+                // User exists in auth - check database first
+                const userInDb = await prisma.user.findUnique({
+                  where: { email: hrisEmail },
+                  select: { id: true }
+                })
+                
+                if (userInDb) {
+                  console.log(`[v0] Found existing user in database: ${userInDb.id}`)
+                  userId = userInDb.id
                   authData = { user: { id: userId } }
                 } else {
-                  console.error(`[v0] Could not find existing user after "already registered" error`)
-                  throw new Error(`Auth error: User exists but cannot be retrieved`)
+                  // User exists in auth but not in database
+                  // Generate a deterministic UUID from employeeCode to use as ID
+                  // This ensures the same employee always gets the same ID
+                  const { v5: uuidv5 } = await import('uuid')
+                  const NAMESPACE = '00000000-0000-0000-0000-000000000000'
+                  userId = uuidv5(employeeCode, NAMESPACE)
+                  console.log(`[v0] User exists in auth but not in database, using generated ID: ${userId}`)
+                  authData = { user: { id: userId } }
                 }
               } else {
                 console.error(`[v0] Auth creation error for ${hrisEmail}:`, authError.message)
