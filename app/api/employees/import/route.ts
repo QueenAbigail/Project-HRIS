@@ -142,13 +142,18 @@ export async function POST(request: NextRequest) {
           userId = existingUser.id
           authData = { user: { id: userId } }
         } else {
+          console.log(`[v0] Checking auth for new user ${employeeCode} (${hrisEmail})`)
           // Check if email exists in Supabase Auth
           const { data: authUsers, error: lookupError } = await getSupabaseAdmin().auth.admin.listUsers()
-          const existingAuthUser = authUsers?.users.find(u => u.email === hrisEmail)
+          console.log(`[v0] Auth list error: ${lookupError?.message || 'none'}, users found: ${authUsers?.users?.length || 0}`)
+          
+          const existingAuthUser = authUsers?.users?.find(u => u.email === hrisEmail)
+          console.log(`[v0] Existing auth user for ${hrisEmail}:`, existingAuthUser ? 'FOUND' : 'NOT FOUND')
           
           if (existingAuthUser) {
             // Email already registered in Auth - UPDATE instead of failing
             // Update the user's metadata with new name and other details
+            console.log(`[v0] Using existing auth user ${existingAuthUser.id}`)
             userId = existingAuthUser.id
             authData = { user: { id: userId } }
             
@@ -166,6 +171,7 @@ export async function POST(request: NextRequest) {
             }
           } else {
             // New user - create auth account
+            console.log(`[v0] Creating new auth user for ${hrisEmail}`)
             const { data, error: authError } = await getSupabaseAdmin().auth.admin.createUser({
               email: hrisEmail,
               password: 'promaxima',
@@ -173,7 +179,11 @@ export async function POST(request: NextRequest) {
               user_metadata: { name: row['Full Name'] }
             })
             
-            if (authError) throw new Error(`Auth error: ${authError.message}`)
+            if (authError) {
+              console.error(`[v0] Auth creation error for ${hrisEmail}:`, authError.message)
+              throw new Error(`Auth error: ${authError.message}`)
+            }
+            console.log(`[v0] Auth user created successfully: ${data.user.id}`)
             userId = data.user.id
             authData = data
           }
