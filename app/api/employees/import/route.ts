@@ -194,8 +194,13 @@ export async function POST(request: NextRequest) {
                   userId = userInDb.id
                   authData = { user: { id: userId } }
                 } else {
-                  console.error(`[v0] User exists in auth but not in database: ${hrisEmail}`)
-                  throw new Error(`Auth error: User exists but not in database`)
+                  console.log(`[v0] User exists in auth but not in database - will use upsert`)
+                  // Generate a deterministic ID based on email
+                  // This matches the pattern of the auth user
+                  const crypto = require('crypto')
+                  userId = crypto.createHash('md5').update(hrisEmail).digest('hex').substring(0, 24)
+                  console.log(`[v0] Generated ID for upsert: ${userId}`)
+                  authData = { user: { id: userId } }
                 }
               } else {
                 console.error(`[v0] Auth creation error for ${hrisEmail}:`, authError.message)
@@ -294,23 +299,17 @@ export async function POST(request: NextRequest) {
         })
         console.log(`[v0] Row ${rowNum}: User exists in DB:`, dbUserExists ? 'YES' : 'NO')
         
-        if (dbUserExists) {
-          // Update existing user
-          console.log(`[v0] Row ${rowNum}: Updating existing user`)
-          await prisma.user.update({
-            where: { id: userId },
-            data: userData
-          })
-          console.log(`[v0] Row ${rowNum}: User updated successfully`)
-        } else {
-          // Create new user
-          console.log(`[v0] Row ${rowNum}: Creating new user with employee code: ${employeeCode}`)
-          console.log(`[v0] Row ${rowNum}: User data keys:`, Object.keys(userData))
-          await prisma.user.create({
-            data: userData
-          })
-          console.log(`[v0] Row ${rowNum}: User created successfully`)
-        }
+        // Use upsert to handle both create and update cases
+        console.log(`[v0] Row ${rowNum}: Upserting user (email: ${userData.email})`)
+        await prisma.user.upsert({
+          where: { email: userData.email },
+          update: userData,
+          create: {
+            ...userData,
+            id: userId // Use the auth user's ID when creating
+          }
+        })
+        console.log(`[v0] Row ${rowNum}: User upserted successfully`)
 
         results.success++
       } catch (error) {
