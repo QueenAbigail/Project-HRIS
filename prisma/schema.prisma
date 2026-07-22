@@ -92,6 +92,11 @@ model Site {
   patrols     Patrol[]
   bulkImportRecords BulkImportRecord[] @relation("SiteBulkImports")
   shiftSwaps  ShiftSwap[]
+  
+  // Payroll relations
+  salaryRules SalaryRule[] @relation("SiteSalaryRules")
+  deductionRules DeductionRule[] @relation("SiteDeductionRules")
+  
   createdAt   DateTime                  @default(now())
   updatedAt   DateTime                  @updatedAt
 
@@ -178,6 +183,12 @@ model User {
   swapsFrom             ShiftSwap[]               @relation("SwapFrom")
   swapsTo               ShiftSwap[]               @relation("SwapTo")
   schedules             Schedule[]                @relation("EmployeeSchedules")
+  
+  // Payroll relations
+  payrollCalculations   PayrollCalculation[]      @relation("UserPayrollCalculations")
+  overtimeHours         PayrollOvertimeHours[]    @relation("UserOvertimeHours")
+  deductionsApplied     PayrollDeductionsApplied[] @relation("UserDeductionsApplied")
+  bonuses               PayrollBonus[]            @relation("UserBonuses")
 
   @@index([siteId])
   @@index([companyId])
@@ -511,7 +522,288 @@ model Notification {
   @@map("notifications")
 }
 
-// Payroll model - for employee payslips and payroll records
+// ============================================================================
+// PAYROLL SYSTEM TABLES
+// ============================================================================
+
+// Enum for payroll period status
+enum PayrollPeriodStatus {
+  draft
+  locked
+  approved
+  finalized
+  paid
+}
+
+// Enum for overtime rule types
+enum OvertimeRuleType {
+  regular_backup
+  national_holiday
+  overtime_weekly
+}
+
+// Enum for deduction types
+enum DeductionType {
+  tax
+  insurance
+  health
+  pension
+  special
+}
+
+// Enum for deduction calculation type
+enum DeductionCalculationType {
+  percentage
+  fixed_amount
+}
+
+// Enum for payroll calculation status
+enum PayrollCalculationStatus {
+  calculated
+  approved_for_payment
+  paid
+  adjusted
+}
+
+// Enum for bonus type
+enum BonusType {
+  performance
+  attendance
+  special
+  manual
+}
+
+// Enum for bonus status
+enum BonusStatus {
+  pending_approval
+  approved
+  rejected
+  included_in_payroll
+}
+
+// Enum for overtime hours status
+enum OvertimeHoursStatus {
+  pending
+  approved
+  rejected
+}
+
+// TABLE 1: Salary Rules - Store salary configuration by position + site
+model SalaryRule {
+  id                String    @id @default(cuid())
+  positionId        String    // References position/job title
+  siteId            String
+  site              Site      @relation("SiteSalaryRules", fields: [siteId], references: [id], onDelete: Cascade)
+  baseSalary        Decimal   @db.Decimal(15, 2) // Monthly base salary
+  positionAllowance Decimal   @db.Decimal(15, 2) // Position-specific allowance (e.g., risk allowance)
+  minimumWage       Decimal   @db.Decimal(15, 2) // Government minimum wage baseline
+  effectiveDate     DateTime  @db.Date
+  endDate           DateTime? @db.Date // If rule expires
+  status            String    @default("active") // active / inactive
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([positionId, siteId])
+  @@index([siteId])
+  @@index([status])
+  @@map("salary_rules")
+}
+
+// TABLE 2: Overtime Rules - Store overtime multiplier configurations
+model OvertimeRule {
+  id              String             @id @default(cuid())
+  type            OvertimeRuleType   // regular_backup, national_holiday, overtime_weekly
+  description     String             // e.g., "National Holiday Duty"
+  multiplier      Decimal            @db.Decimal(3, 2) // e.g., 1.5, 2.0, 2.5
+  maxHoursPerMonth Int?              // e.g., 20 hours max per month
+  status          String             @default("active") // active / inactive
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  
+  // Relations
+  overtimeHours   PayrollOvertimeHours[] @relation("OvertimeRuleHours")
+
+  @@index([status])
+  @@map("overtime_rules")
+}
+
+// TABLE 3: Deduction Rules - Store deduction rates by position + site
+model DeductionRule {
+  id                    String                      @id @default(cuid())
+  positionId            String                      // Position/job title
+  siteId                String
+  site                  Site                        @relation("SiteDeductionRules", fields: [siteId], references: [id], onDelete: Cascade)
+  name                  String                      // e.g., "Income Tax", "Health Insurance"
+  type                  DeductionType               // tax, insurance, health, pension, special
+  deductionType         DeductionCalculationType    // percentage or fixed_amount
+  value                 Decimal                     @db.Decimal(8, 4) // % or fixed amount
+  isApplicableToAll     Boolean                     @default(true) // Applies to all employees in this position/site
+  riskLevel             String?                     // low, medium, high - for health/insurance variations
+  effectiveDate         DateTime                    @db.Date
+  endDate               DateTime?                   @db.Date
+  status                String                      @default("active") // active / inactive
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+  
+  // Relations
+  deductionsApplied     PayrollDeductionsApplied[]  @relation("DeductionRuleApplied")
+
+  @@unique([positionId, siteId, type, riskLevel])
+  @@index([siteId])
+  @@index([status])
+  @@map("deduction_rules")
+}
+
+// TABLE 4: Payroll Periods - Define payroll periods and approval workflow
+model PayrollPeriod {
+  id                 String                @id @default(cuid())
+  month              DateTime              @db.Date // First day of month, e.g., 2026-07-01
+  startDate          DateTime              @db.Date
+  endDate            DateTime              @db.Date
+  status             PayrollPeriodStatus   @default(draft)
+  approvedBy         String?               // FK to User (admin/HRD who approved)
+  approvedAt         DateTime?
+  pdfGeneratedAt     DateTime?
+  notes              String?               @db.Text
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  
+  // Relations
+  calculations       PayrollCalculation[]  @relation("PeriodCalculations")
+  overtimeHours      PayrollOvertimeHours[] @relation("PeriodOvertimeHours")
+  deductionsApplied  PayrollDeductionsApplied[] @relation("PeriodDeductionsApplied")
+  bonuses            PayrollBonus[]        @relation("PeriodBonuses")
+
+  @@unique([month])
+  @@index([status])
+  @@map("payroll_periods")
+}
+
+// TABLE 5: Payroll Calculations - Main table storing final calculated payroll
+model PayrollCalculation {
+  id                  String                    @id @default(cuid())
+  userId              String
+  user                User                      @relation("UserPayrollCalculations", fields: [userId], references: [id], onDelete: Cascade)
+  payrollPeriodId     String
+  payrollPeriod       PayrollPeriod             @relation("PeriodCalculations", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
+  
+  // Salary components
+  baseSalary          Decimal                   @db.Decimal(15, 2)
+  positionAllowance   Decimal                   @db.Decimal(15, 2)
+  overtimeEarnings    Decimal                   @db.Decimal(15, 2) @default(0)
+  bonusAmount         Decimal                   @db.Decimal(15, 2) @default(0)
+  
+  // Deductions
+  totalDeductions     Decimal                   @db.Decimal(15, 2) @default(0)
+  
+  // Final amounts
+  grossSalary         Decimal                   @db.Decimal(15, 2) // base + allowance + overtime + bonus
+  netPay              Decimal                   @db.Decimal(15, 2) // grossSalary - totalDeductions
+  
+  // Status & adjustments
+  status              PayrollCalculationStatus  @default(calculated)
+  adjustmentAmount    Decimal?                  @db.Decimal(15, 2)
+  adjustmentReason    String?
+  
+  // Timestamps
+  calculatedAt        DateTime                  @default(now())
+  approvedAt          DateTime?
+  paidAt              DateTime?
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+
+  @@unique([userId, payrollPeriodId])
+  @@index([userId])
+  @@index([payrollPeriodId])
+  @@index([status])
+  @@map("payroll_calculations")
+}
+
+// TABLE 6: Payroll Overtime Hours - Track overtime hours per employee per month
+model PayrollOvertimeHours {
+  id              String                @id @default(cuid())
+  userId          String
+  user            User                  @relation("UserOvertimeHours", fields: [userId], references: [id], onDelete: Cascade)
+  payrollPeriodId String
+  payrollPeriod   PayrollPeriod         @relation("PeriodOvertimeHours", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
+  overtimeRuleId  String
+  overtimeRule    OvertimeRule          @relation("OvertimeRuleHours", fields: [overtimeRuleId], references: [id], onDelete: Restrict)
+  
+  date            DateTime              @db.Date // When overtime occurred
+  hours           Decimal               @db.Decimal(5, 2) // Hours worked
+  hourlyRate      Decimal               @db.Decimal(12, 2) // Base hourly rate calculated from salary
+  multiplier      Decimal               @db.Decimal(3, 2) // From overtime rule
+  totalAmount     Decimal               @db.Decimal(15, 2) // hours × hourlyRate × multiplier
+  
+  description     String?               // e.g., "Backup duty on 2026-07-15"
+  approvedBy      String?               // FK to User (manager approval)
+  approvedAt      DateTime?
+  status          OvertimeHoursStatus   @default(pending)
+  
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([userId])
+  @@index([payrollPeriodId])
+  @@index([overtimeRuleId])
+  @@index([status])
+  @@map("payroll_overtime_hours")
+}
+
+// TABLE 7: Payroll Deductions Applied - Track actual deductions per employee per month
+model PayrollDeductionsApplied {
+  id                String                      @id @default(cuid())
+  userId            String
+  user              User                        @relation("UserDeductionsApplied", fields: [userId], references: [id], onDelete: Cascade)
+  payrollPeriodId   String
+  payrollPeriod     PayrollPeriod               @relation("PeriodDeductionsApplied", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
+  deductionRuleId   String
+  deductionRule     DeductionRule               @relation("DeductionRuleApplied", fields: [deductionRuleId], references: [id], onDelete: Restrict)
+  
+  baseSalary        Decimal                     @db.Decimal(15, 2) // Used for percentage calculations
+  deductionType     String                      // Stores type for reference
+  deductionName     String                      // e.g., "Income Tax"
+  calculationType   DeductionCalculationType    // percentage or fixed_amount
+  baseValue         Decimal                     @db.Decimal(8, 4) // % or fixed amount
+  calculatedAmount  Decimal                     @db.Decimal(15, 2) // Actual deduction amount
+  
+  specialNotes      String?                     // e.g., "Company debt payment"
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+
+  @@index([userId])
+  @@index([payrollPeriodId])
+  @@index([deductionRuleId])
+  @@map("payroll_deductions_applied")
+}
+
+// TABLE 8: Payroll Bonuses - Track bonus allocations (manual only)
+model PayrollBonus {
+  id              String            @id @default(cuid())
+  userId          String
+  user            User              @relation("UserBonuses", fields: [userId], references: [id], onDelete: Cascade)
+  payrollPeriodId String
+  payrollPeriod   PayrollPeriod     @relation("PeriodBonuses", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
+  
+  type            BonusType         // performance, attendance, special, manual
+  amount          Decimal           @db.Decimal(15, 2)
+  reason          String            // Reason for bonus
+  status          BonusStatus       @default(pending_approval)
+  
+  approvedBy      String?           // FK to User (admin/manager approval)
+  approvedAt      DateTime?
+  notes           String?
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([payrollPeriodId])
+  @@index([status])
+  @@map("payroll_bonuses")
+}
+
+// Payroll model - for employee payslips and payroll records (PDF output)
 model Payroll {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId      String
