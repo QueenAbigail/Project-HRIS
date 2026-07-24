@@ -83,7 +83,7 @@ function LogoIcon({ src, alt, className }: { src: string; alt: string; className
           alt={alt}
           width={32}
           height={32}
-          className="rounded-full object-contain"
+          className="w-full h-full"
         />
       ) : (
         <Shield className="size-4" />
