@@ -396,7 +396,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                     <Link href={item.url} className="flex items-center min-w-0 gap-2">
                       <item.icon className="size-4 flex-shrink-0" />
                       <span className="truncate">{item.title}</span>
-                      {item.badge && (
+                      {item.badge > 0 && (
                         <Badge variant="secondary" className="ml-auto text-xs flex-shrink-0">
                           {item.badge}
                         </Badge>
