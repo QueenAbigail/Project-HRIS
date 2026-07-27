@@ -415,7 +415,7 @@ export function AddScheduleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{schedule ? 'Edit Schedule' : 'Add Manual Schedule'}</DialogTitle>
           <DialogDescription>
@@ -551,12 +551,13 @@ export function AddScheduleDialog({
                 <div className="space-y-3">
                   <div className="space-y-2">
                     <Label>Rotation Pattern</Label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 overflow-x-auto pb-2">
                       <Button
                         type="button"
                         variant={rotationCount === 2 ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => updateRotationCount(2)}
+                        className="flex-shrink-0"
                       >
                         2 Rotations
                       </Button>
@@ -565,6 +566,7 @@ export function AddScheduleDialog({
                         variant={rotationCount === 3 ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => updateRotationCount(3)}
+                        className="flex-shrink-0"
                       >
                         3 Rotations
                       </Button>
@@ -573,6 +575,7 @@ export function AddScheduleDialog({
                         variant={rotationCount === 4 ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => updateRotationCount(4)}
+                        className="flex-shrink-0"
                       >
                         4 Rotations
                       </Button>
