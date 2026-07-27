@@ -415,7 +415,7 @@ export function AddScheduleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto w-[90vw] max-w-4xl">
         <DialogHeader>
           <DialogTitle>{schedule ? 'Edit Schedule' : 'Add Manual Schedule'}</DialogTitle>
           <DialogDescription>
@@ -548,16 +548,16 @@ export function AddScheduleDialog({
                   />
                 </div>
 
-                <div className="space-y-3">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-1 space-y-2">
                     <Label>Rotation Pattern</Label>
-                    <div className="flex gap-2 overflow-x-auto pb-2">
+                    <div className="flex flex-col gap-2">
                       <Button
                         type="button"
                         variant={rotationCount === 2 ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => updateRotationCount(2)}
-                        className="flex-shrink-0"
+                        className="w-full"
                       >
                         2 Rotations
                       </Button>
@@ -566,7 +566,7 @@ export function AddScheduleDialog({
                         variant={rotationCount === 3 ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => updateRotationCount(3)}
-                        className="flex-shrink-0"
+                        className="w-full"
                       >
                         3 Rotations
                       </Button>
@@ -575,13 +575,13 @@ export function AddScheduleDialog({
                         variant={rotationCount === 4 ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => updateRotationCount(4)}
-                        className="flex-shrink-0"
+                        className="w-full"
                       >
                         4 Rotations
                       </Button>
                     </div>
                   </div>
-                  <div className="bg-muted p-3 rounded-md max-h-64 overflow-y-auto space-y-2">
+                  <div className="col-span-2 bg-muted p-3 rounded-md max-h-64 overflow-y-auto space-y-2">
                     {rotationPattern.map((pattern, idx) => (
                       <div key={idx} className="bg-background p-2.5 rounded border border-border space-y-2">
                         <div className="flex items-center justify-between gap-2">
