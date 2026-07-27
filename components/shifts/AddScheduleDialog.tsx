@@ -415,7 +415,7 @@ export function AddScheduleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] max-w-6xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto !max-w-6xl w-screen">
         <DialogHeader>
           <DialogTitle>{schedule ? 'Edit Schedule' : 'Add Manual Schedule'}</DialogTitle>
           <DialogDescription>
@@ -578,8 +578,8 @@ export function AddScheduleDialog({
                       </Button>
                     </div>
                   </div>
-                  <div className="bg-muted p-3 rounded-md">
-                    <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${rotationCount}, 1fr)` }}>
+                  <div className="bg-muted p-3 rounded-md overflow-x-auto">
+                    <div className="grid gap-3 min-w-full" style={{ gridTemplateColumns: `repeat(${rotationCount}, minmax(150px, 1fr))` }}>
                       {rotationPattern.map((pattern, idx) => (
                         <div key={idx} className="bg-background p-2.5 rounded border border-border space-y-2">
                         <div className="flex items-center justify-between gap-2">
