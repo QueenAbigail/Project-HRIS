@@ -215,13 +215,13 @@ export async function deleteShiftFromDb(shiftId: string) {
   }
   
   try {
-    // Check if shift has assignments
-    const assignments = await prisma.employeeShiftAssignment.count({
+    // Check if shift has schedules using it
+    const scheduleCount = await prisma.schedule.count({
       where: { shiftId }
     })
     
-    if (assignments > 0) {
-      throw new Error('Cannot delete shift with assigned employees')
+    if (scheduleCount > 0) {
+      throw new Error('Cannot delete shift that has assigned schedules')
     }
 
     await prisma.shift.delete({
