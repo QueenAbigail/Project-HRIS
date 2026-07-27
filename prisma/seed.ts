@@ -60,7 +60,7 @@ async function main() {
 
     // 1. Create user in Supabase Auth or get existing
     let userId: string
-    
+
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
       email: adminEmail,
       password: adminPassword,
@@ -134,7 +134,7 @@ async function main() {
         role: 'SUPER_ADMIN',
         status: 'ACTIVE',
         siteId: site.id,
-        employeeCode: 'ADMIN001',
+        employeeCode: 'ADMIN',
         allowMobileAttendance: true,
         allowWebAppAccess: true,
       },
