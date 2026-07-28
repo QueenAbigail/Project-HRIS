@@ -81,8 +81,14 @@ export default async function SystemLayout({ children, params }: LayoutProps) {
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="hidden md:block" />
+                  <BreadcrumbItem className="hidden md:block">
+                    <BreadcrumbLink href="/system">
+                      System
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="hidden md:block" />
                   <BreadcrumbItem>
-                    <BreadcrumbPage>{currentPage}</BreadcrumbPage>
+                    <BreadcrumbPage>{currentPage === 'System Management' ? 'System' : currentPage}</BreadcrumbPage>
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
