@@ -43,56 +43,36 @@ export default function BroadcastPage() {
 
         {/* Announcements Tab */}
         <TabsContent value="announcements" className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            {/* Main Content - 70% */}
-            <div className="col-span-2 space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Create New Announcement</CardTitle>
-                  <CardDescription>
-                    Post an announcement that will be sent as push notifications to selected recipients
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <CreateAnnouncementForm onSuccess={handleAnnouncementCreated} />
-                </CardContent>
-              </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Create New Announcement</CardTitle>
+              <CardDescription>
+                Post an announcement that will be sent as push notifications to selected recipients
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CreateAnnouncementForm onSuccess={handleAnnouncementCreated} />
+            </CardContent>
+          </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Posted Announcements</CardTitle>
-                  <CardDescription>
-                    View and manage all announcements
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <AnnouncementsList refreshTrigger={refreshAnnouncements} />
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* History - 30% */}
-            <div className="col-span-1">
-              <Card className="sticky top-0">
-                <CardHeader>
-                  <CardTitle>Notification History</CardTitle>
-                  <CardDescription>
-                    Recent notifications sent
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <NotificationHistory refreshTrigger={refreshNotifications} />
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Posted Announcements</CardTitle>
+              <CardDescription>
+                View and manage all announcements
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AnnouncementsList refreshTrigger={refreshAnnouncements} />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Push Notifications Tab */}
         <TabsContent value="notifications" className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
             {/* Main Content - 70% */}
-            <div className="col-span-2 space-y-4">
+            <div className="col-span-2">
               <Card>
                 <CardHeader>
                   <CardTitle>Send Push Notification</CardTitle>
@@ -110,9 +90,9 @@ export default function BroadcastPage() {
             <div className="col-span-1">
               <Card className="sticky top-0">
                 <CardHeader>
-                  <CardTitle>Notification History</CardTitle>
+                  <CardTitle>History</CardTitle>
                   <CardDescription>
-                    Recent notifications sent
+                    All notifications sent
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
