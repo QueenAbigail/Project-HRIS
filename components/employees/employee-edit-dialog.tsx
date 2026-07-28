@@ -25,6 +25,7 @@ import { Textarea } from '@/components/ui/textarea'
 import type { Employee } from './employee-profile-sheet'
 import { Camera, Eye, EyeOff } from 'lucide-react'
 import { updateEmployeeAction } from '@/app/actions/employee'
+import { toast } from 'sonner'
 
 interface EmployeeEditFormData {
   name: string
@@ -256,14 +257,20 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
       
       if (result.success) {
         onSave({ ...employee!, ...formData })
-        alert("Mantap Can! Data dan Password berhasil diupdate.")
+        toast.success('Employee data updated successfully', {
+          description: 'All changes have been saved.'
+        })
         onOpenChange(false)
       } else {
-        alert("Duh gagal simpan nih: " + result.error)
+        toast.error('Failed to save employee data', {
+          description: result.error || 'An error occurred while saving.'
+        })
       }
     } catch (error) {
       console.error(error)
-      alert("Ada masalah koneksi/sistem pas mau nyimpen")
+      toast.error('Connection error', {
+        description: 'Unable to save changes. Please check your connection and try again.'
+      })
     }
   }
 

@@ -25,6 +25,7 @@ import {
   DollarSign,
   Minus,
   Mail,
+  Megaphone,
 } from 'lucide-react'
 
 import {
@@ -81,9 +82,9 @@ function LogoIcon({ src, alt, className }: { src: string; alt: string; className
         <Image
           src={src}
           alt={alt}
-          width={32}
+          width={64}
           height={32}
-          className="rounded-lg object-cover"
+          className="w-auto h-full"
         />
       ) : (
         <Shield className="size-4" />
@@ -307,6 +308,11 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
       icon: MapPin,
     },
     {
+      title: 'Broadcast',
+      url: '/system/broadcast',
+      icon: Megaphone,
+    },
+    {
       title: 'Reports',
       url: '/dashboard/reports',
       icon: FileBarChart,
@@ -347,7 +353,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
           <SidebarMenuItem className="w-full">
             <SidebarMenuButton size="lg" asChild className="flex-1">
               <Link href="/dashboard" className="min-w-0">
-                <LogoIcon src={systemSettings.logoUrl || '/icon.svg'} alt={systemSettings.appName} className="flex aspect-square size-8 items-center justify-center flex-shrink-0" />
+                <LogoIcon src={systemSettings.logoUrl || '/koperasi_icon.png'} alt={systemSettings.appName} className="flex h-8 items-center justify-center flex-shrink-0" />
                 <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
                   <span className="truncate font-semibold">{systemSettings.appName}</span>
                   <span className="truncate text-xs text-muted-foreground">{systemSettings.appDescription}</span>
@@ -396,7 +402,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                     <Link href={item.url} className="flex items-center min-w-0 gap-2">
                       <item.icon className="size-4 flex-shrink-0" />
                       <span className="truncate">{item.title}</span>
-                      {item.badge && (
+                      {item.badge > 0 && (
                         <Badge variant="secondary" className="ml-auto text-xs flex-shrink-0">
                           {item.badge}
                         </Badge>

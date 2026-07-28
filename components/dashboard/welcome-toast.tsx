@@ -14,6 +14,9 @@ export function WelcomeToast({ userName }: WelcomeToastProps) {
   const minDurationMs = 2000 // Minimum 2 seconds to display the toast
 
   useEffect(() => {
+    // Only access sessionStorage on the client side after hydration
+    if (typeof window === 'undefined') return
+    
     // Check if login toast was already shown on the login page
     const loginToastShown = sessionStorage.getItem('loginToastShown')
     

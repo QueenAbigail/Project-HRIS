@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Clock, Download, Users, Plus } from 'lucide-react'
 import { toast } from 'sonner'
-import { Toaster } from '@/components/ui/sonner'
 import { ShiftFormDialog } from '@/components/shifts/ShiftFormDialog'
 import { ScheduleImportDialog } from '@/components/shifts/ScheduleImportDialog'
 import { ScheduleTable } from '@/components/shifts/ScheduleTable'
@@ -58,8 +57,6 @@ export default function SchedulesPage() {
 
   return (
     <div className="space-y-6">
-      <Toaster />
-      
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">Schedule Management</h1>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useEffect, useCallback } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -314,16 +315,22 @@ export function AddEmployeeDialog({
     // Tembak ke action
     const result = await createEmployeeAction(finalData)
 
-    if (result.success) {
-      onAddEmployee?.(finalData) 
-      alert("Mantap! Karyawan baru berhasil masuk.")
-      handleOpenChange(false) 
-    } else {
-      alert("Gagal simpan data: " + result.error)
-    }
+  if (result.success) {
+  onAddEmployee?.(finalData)
+  toast.success('Employee added successfully', {
+    description: 'The new employee has been created and added to the system.'
+  })
+  handleOpenChange(false)
+  } else {
+  toast.error('Failed to save employee data', {
+    description: result.error || 'An error occurred while saving.'
+  })
+  }
   } catch (error) {
-    console.error("System error:", error)
-    alert("Ada masalah koneksi/sistem.")
+  console.error("System error:", error)
+  toast.error('Connection error', {
+    description: 'Unable to save the employee. Please check your connection and try again.'
+  })
   }
 }
 

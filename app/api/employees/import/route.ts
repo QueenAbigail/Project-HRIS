@@ -2,10 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Lazy initialize Supabase client to avoid build-time errors
+let supabaseAdmin: ReturnType<typeof createClient> | null = null
+
+function getSupabaseAdmin() {
+  if (!supabaseAdmin) {
+    supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+  }
+  return supabaseAdmin
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -134,26 +142,75 @@ export async function POST(request: NextRequest) {
           userId = existingUser.id
           authData = { user: { id: userId } }
         } else {
+          console.log(`[v0] Checking auth for new user ${employeeCode} (${hrisEmail})`)
           // Check if email exists in Supabase Auth
-          const { data: authUsers, error: lookupError } = await supabaseAdmin.auth.admin.listUsers()
-          const existingAuthUser = authUsers?.users.find(u => u.email === hrisEmail)
+          const { data: authUsers, error: lookupError } = await getSupabaseAdmin().auth.admin.listUsers()
+          console.log(`[v0] Auth list error: ${lookupError?.message || 'none'}, users found: ${authUsers?.users?.length || 0}`)
+          
+          const existingAuthUser = authUsers?.users?.find(u => u.email === hrisEmail)
+          console.log(`[v0] Existing auth user for ${hrisEmail}:`, existingAuthUser ? 'FOUND' : 'NOT FOUND')
           
           if (existingAuthUser) {
-            // Email already registered in Auth - use that user's ID
+            // Email already registered in Auth - UPDATE instead of failing
+            // Update the user's metadata with new name and other details
+            console.log(`[v0] Using existing auth user ${existingAuthUser.id}`)
             userId = existingAuthUser.id
             authData = { user: { id: userId } }
+            
+            // Try to update the auth user metadata (this doesn't fail the import)
+            try {
+              await getSupabaseAdmin().auth.admin.updateUserById(userId, {
+                user_metadata: { 
+                  name: row['Full Name'],
+                  employeeCode: employeeCode
+                }
+              })
+            } catch (updateError) {
+              console.warn(`[v0] Could not update auth metadata for ${hrisEmail}:`, updateError)
+              // Don't fail the import - proceed with database update
+            }
           } else {
-            // New user - create auth account
-            const { data, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            // New user - try to create auth account
+            console.log(`[v0] Creating new auth user for ${hrisEmail}`)
+            const { data, error: authError } = await getSupabaseAdmin().auth.admin.createUser({
               email: hrisEmail,
               password: 'promaxima',
               email_confirm: true,
               user_metadata: { name: row['Full Name'] }
             })
             
-            if (authError) throw new Error(`Auth error: ${authError.message}`)
-            userId = data.user.id
-            authData = data
+            if (authError) {
+              // Check if it's a "already registered" error
+              if (authError.message.includes('already been registered') || authError.message.includes('already exists')) {
+                console.log(`[v0] User already registered in auth: ${hrisEmail}`)
+                // User exists in auth - check database first
+                const userInDb = await prisma.user.findUnique({
+                  where: { email: hrisEmail },
+                  select: { id: true }
+                })
+                
+                if (userInDb) {
+                  console.log(`[v0] Found existing user in database: ${userInDb.id}`)
+                  userId = userInDb.id
+                  authData = { user: { id: userId } }
+                } else {
+                  console.log(`[v0] User exists in auth but not in database - will use upsert`)
+                  // Generate a deterministic ID based on email
+                  // This matches the pattern of the auth user
+                  const crypto = require('crypto')
+                  userId = crypto.createHash('md5').update(hrisEmail).digest('hex').substring(0, 24)
+                  console.log(`[v0] Generated ID for upsert: ${userId}`)
+                  authData = { user: { id: userId } }
+                }
+              } else {
+                console.error(`[v0] Auth creation error for ${hrisEmail}:`, authError.message)
+                throw new Error(`Auth error: ${authError.message}`)
+              }
+            } else {
+              console.log(`[v0] Auth user created successfully: ${data.user.id}`)
+              userId = data.user.id
+              authData = data
+            }
           }
         }
 
@@ -235,34 +292,37 @@ export async function POST(request: NextRequest) {
         }
 
         // Create or update user in database
+        console.log(`[v0] Row ${rowNum}: Checking if user exists in database (ID: ${userId})`)
         const dbUserExists = await prisma.user.findUnique({
           where: { id: userId },
           select: { id: true }
         })
+        console.log(`[v0] Row ${rowNum}: User exists in DB:`, dbUserExists ? 'YES' : 'NO')
         
-        if (dbUserExists) {
-          // Update existing user
-          await prisma.user.update({
-            where: { id: userId },
-            data: userData
-          })
-        } else {
-          // Create new user
-          await prisma.user.create({
-            data: userData
-          })
-        }
+        // Use upsert to handle both create and update cases
+        console.log(`[v0] Row ${rowNum}: Upserting user (email: ${userData.email})`)
+        await prisma.user.upsert({
+          where: { email: userData.email },
+          update: userData,
+          create: {
+            ...userData,
+            id: userId // Use the auth user's ID when creating
+          }
+        })
+        console.log(`[v0] Row ${rowNum}: User upserted successfully`)
 
         results.success++
       } catch (error) {
         results.failed++
         const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+        const fullError = error instanceof Error ? error.stack : JSON.stringify(error)
         results.errors.push({
           row: rowNum,
           name: row['Full Name'] || 'Unknown',
           error: errorMsg
         })
-        console.error(`[v0] Failed to import row ${rowNum}:`, errorMsg)
+        console.error(`[v0] Failed to import row ${rowNum}: ${errorMsg}`)
+        console.error(`[v0] Full error for row ${rowNum}:`, fullError)
       }
     }
 

@@ -101,7 +101,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Cron job handler - triggered by Vercel Cron at 00:00 GMT+7 (17:00 UTC previous day)
+// Cron job handler - triggered by Vercel Cron at 17:00 UTC (00:00 GMT+7 next day)
+// Creates attendance records for the next day to align with GMT+7 timezone
 export async function GET(req: NextRequest) {
   try {
     // Verify this is a cron request from Vercel

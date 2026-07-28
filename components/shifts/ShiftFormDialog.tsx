@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
@@ -33,6 +34,7 @@ interface ShiftFormDialogProps {
 
 export function ShiftFormDialog({ shift, open, onOpenChange, onSuccess }: ShiftFormDialogProps) {
   const [loading, setLoading] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -161,33 +163,7 @@ export function ShiftFormDialog({ shift, open, onOpenChange, onSuccess }: ShiftF
                 <Button 
                   type="button" 
                   variant="destructive"
-                  onClick={async () => {
-                    if (!shift || !('id' in shift) || !shift.id) {
-                      toast.error('Invalid shift data')
-                      return
-                    }
-                    
-                    if (!confirm('Are you sure you want to delete this shift?')) return
-                    
-                    try {
-                      setLoading(true)
-                      await deleteShiftFromDb(shift.id)
-                      
-                      toast.success('Shift deleted successfully')
-                      onOpenChange(false)
-                      
-                      // Notify parent to refresh data
-                      if (onSuccess) {
-                        onSuccess()
-                      }
-                    } catch (error) {
-                      console.error('[v0] Error deleting shift:', error)
-                      const errorMessage = error instanceof Error ? error.message : 'Failed to delete shift'
-                      toast.error(errorMessage)
-                    } finally {
-                      setLoading(false)
-                    }
-                  }}
+                  onClick={() => setDeleteConfirmOpen(true)}
                   disabled={loading}
                 >
                   <Trash2 className="size-4 mr-2" />
@@ -204,6 +180,52 @@ export function ShiftFormDialog({ shift, open, onOpenChange, onSuccess }: ShiftF
           </form>
         </Form>
       </DialogContent>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Shift</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this shift? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!shift || !('id' in shift) || !shift.id) {
+                  toast.error('Invalid shift data')
+                  return
+                }
+                
+                try {
+                  setLoading(true)
+                  await deleteShiftFromDb(shift.id)
+                  
+                  toast.success('Shift deleted successfully')
+                  setDeleteConfirmOpen(false)
+                  onOpenChange(false)
+                  
+                  // Notify parent to refresh data
+                  if (onSuccess) {
+                    onSuccess()
+                  }
+                } catch (error) {
+                  console.error('[v0] Error deleting shift:', error)
+                  const errorMessage = error instanceof Error ? error.message : 'Failed to delete shift'
+                  toast.error(errorMessage)
+                } finally {
+                  setLoading(false)
+                }
+              }}
+              disabled={loading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   )
 }

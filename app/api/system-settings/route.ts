@@ -4,8 +4,13 @@ import { prisma } from '@/lib/prisma'
 export async function GET() {
   try {
     const settings = await prisma.systemSettings.findFirst()
+    // Return default settings if none found
     if (!settings) {
-      return NextResponse.json({ error: 'Settings not found' }, { status: 404 })
+      return NextResponse.json({
+        logoUrl: null,
+        appName: 'HR Administration',
+        appDescription: 'HR Administration System'
+      })
     }
     return NextResponse.json({
       logoUrl: settings.logoUrl,
@@ -13,7 +18,12 @@ export async function GET() {
       appDescription: settings.appDescription
     })
   } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+    // Return defaults on error instead of 500
+    console.error('[v0] System settings error:', error)
+    return NextResponse.json({
+      logoUrl: null,
+      appName: 'HR Administration',
+      appDescription: 'HR Administration System'
+    })
   }
 }

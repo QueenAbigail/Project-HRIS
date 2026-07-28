@@ -27,6 +27,9 @@ export function AttendanceStats({ siteId = 'all', dateRange = 'today' }: Attenda
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    setLoading(true)
+    setStats(null)
+    
     const fetchStats = async () => {
       try {
         const params = new URLSearchParams()

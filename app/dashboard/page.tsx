@@ -10,38 +10,53 @@ import { UpcomingLeaves } from '@/components/dashboard/upcoming-leaves'
 import type { Attendance, Leave, Shift, Site, User } from '@prisma/client'
 
 export default async function DashboardPage() {
-  // Get current user to determine data filtering
-  const currentUser = await getCurrentUser()
-  
-  if (!currentUser) {
-    return <div>Unable to load dashboard</div>
-  }
+  try {
+    // Get current user to determine data filtering
+    console.log('[v0] Dashboard: Starting page load')
+    const currentUser = await getCurrentUser()
+    console.log('[v0] Dashboard: Current user retrieved:', currentUser?.id)
+    
+    if (!currentUser) {
+      console.log('[v0] Dashboard: No current user found')
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Unable to Load Dashboard</h1>
+            <p className="text-gray-600 mb-4">Could not retrieve your user information. Please log in again.</p>
+            <a href="/login" className="text-blue-600 hover:underline">
+              Return to Login
+            </a>
+          </div>
+        </div>
+      )
+    }
 
-  const today = new Date();
-  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
-  const weekAgo = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
-  
-  // Month start and end for leave count
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
-  
-  // Determine if user is a CLIENT (can see all sites in their company)
-  const isClient = currentUser.role === 'CLIENT'
-  const companyFilter = isClient ? { companyId: currentUser.companyId } : {}
-  const companyName = currentUser.site?.company?.name || 'your company'
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+    const weekAgo = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    // Month start and end for leave count
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+    
+    // Determine if user is a CLIENT (can see all sites in their company)
+    const isClient = currentUser.role === 'CLIENT'
+    const companyFilter = isClient ? { companyId: currentUser.companyId } : {}
+    const companyName = currentUser.site?.company?.name || 'your company'
 
-  const [
-    companies,
-    sites,
-    shifts,
-    users,
-    todayAttendances,
-    weekAttendances,
-    recentLeaves,
-    assignments,
-    approvedLeavesThisMonth
-  ] = await Promise.all([
+    console.log('[v0] Dashboard: Starting data fetch...')
+    const [
+      companies,
+      sites,
+      shifts,
+      users,
+      todayAttendances,
+      weekAttendances,
+      recentLeaves,
+      assignments,
+      approvedLeavesThisMonth
+    ] = await Promise.all([
     isClient ? prisma.company.findMany({ where: { id: currentUser.companyId } }) : prisma.company.findMany(),
     isClient ? prisma.site.findMany({ where: { companyId: currentUser.companyId }, include: { company: true } }) : prisma.site.findMany({ include: { company: true } }),
     prisma.shift.findMany(),
@@ -303,29 +318,48 @@ export default async function DashboardPage() {
 
 
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-balance">Dashboard Overview</h1>
-        <p className="text-muted-foreground">
-          Welcome back! Here&apos;s what&apos;s happening with your security team {isClient ? `at ${companyNameForDisplay}.` : 'across all locations.'}
-        </p>
+    console.log('[v0] Dashboard: Data fetch completed, rendering page')
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-balance">Dashboard Overview</h1>
+          <p className="text-muted-foreground">
+            Welcome back! Here&apos;s what&apos;s happening with your security team {isClient ? `at ${companyNameForDisplay}.` : 'across all locations.'}
+          </p>
+        </div>
+
+        <StatsCards stats={overallStats} />
+
+        {/* Location-based Attendance Overview */}
+        <LocationAttendance locationData={locationStatsByCompany} companyName={companyNameForDisplay} isClient={isClient} />
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <AttendanceChart chartData={chartData} />
+          <div className="space-y-6">
+            <LateCheckIns lateCheckIns={lateCheckIns} />
+            <UpcomingLeaves />
+          </div>
+        </div>
+
+
       </div>
-
-      <StatsCards stats={overallStats} />
-
-      {/* Location-based Attendance Overview */}
-      <LocationAttendance locationData={locationStatsByCompany} companyName={companyNameForDisplay} isClient={isClient} />
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <AttendanceChart chartData={chartData} />
-        <div className="space-y-6">
-          <LateCheckIns lateCheckIns={lateCheckIns} />
-          <UpcomingLeaves />
+    )
+  } catch (error) {
+    console.error('[v0] Dashboard page error:', error instanceof Error ? error.message : String(error))
+    console.error('[v0] Full error:', error)
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="text-center px-4">
+          <h1 className="text-2xl font-bold mb-4">Dashboard Error</h1>
+          <p className="text-gray-600 mb-2">An error occurred while loading the dashboard.</p>
+          <p className="text-sm text-gray-500 mb-4 font-mono break-words">
+            {error instanceof Error ? error.message : String(error)}
+          </p>
+          <a href="/" className="text-blue-600 hover:underline block mt-4">
+            Return to Home
+          </a>
         </div>
       </div>
-
-
-    </div>
-  )
+    )
+  }
 }

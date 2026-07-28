@@ -82,17 +82,15 @@ export async function POST(request: NextRequest) {
 
     // Verify both employees have shifts on that date
     const swapDateObj = new Date(swapDate)
-    const shiftAssignments = await prisma.employeeShiftAssignment.findMany({
+    const schedules = await prisma.schedule.findMany({
       where: {
-        userId: { in: [employeeFromId, employeeToId] },
-        status: 'ACTIVE',
-        startDate: { lte: swapDateObj },
-        OR: [{ endDate: null }, { endDate: { gte: swapDateObj } }],
+        employeeId: { in: [employeeFromId, employeeToId] },
+        scheduleDate: swapDateObj,
       },
-      include: { shift: true, pattern: true },
+      include: { shift: true },
     })
 
-    if (shiftAssignments.length < 2) {
+    if (schedules.length < 2) {
       return NextResponse.json(
         { error: 'One or both employees do not have shifts assigned for this date' },
         { status: 400 }
