@@ -309,7 +309,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
     },
     {
       title: 'Broadcast',
-      url: '/superadmin/broadcast',
+      url: '/system/broadcast',
       icon: Megaphone,
     },
     {
