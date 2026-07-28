@@ -203,11 +203,6 @@ const adminNavItems = [
     icon: MapPin,
   },
   {
-    title: 'Broadcast',
-    url: '/superadmin/broadcast',
-    icon: Megaphone,
-  },
-  {
     title: 'Print QR Code',
     url: '/superadmin/print-qr-code',
     icon: Zap,
@@ -311,6 +306,11 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
       title: 'Map Site',
       url: '/dashboard/map-sites',
       icon: MapPin,
+    },
+    {
+      title: 'Broadcast',
+      url: '/superadmin/broadcast',
+      icon: Megaphone,
     },
     {
       title: 'Reports',
