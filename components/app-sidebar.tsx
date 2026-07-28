@@ -25,6 +25,7 @@ import {
   DollarSign,
   Minus,
   Mail,
+  Megaphone,
 } from 'lucide-react'
 
 import {
@@ -200,6 +201,11 @@ const adminNavItems = [
     title: 'GPS Locations',
     url: '/superadmin/gps-locations',
     icon: MapPin,
+  },
+  {
+    title: 'Broadcast',
+    url: '/superadmin/broadcast',
+    icon: Megaphone,
   },
   {
     title: 'Print QR Code',
