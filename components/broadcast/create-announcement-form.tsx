@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -31,9 +31,9 @@ export function CreateAnnouncementForm({ onSuccess }: CreateAnnouncementFormProp
   const [sites, setSites] = useState<Array<{ id: string; name: string }>>([])
 
   // Fetch data on mount
-  useState(() => {
+  useEffect(() => {
     fetchSitesAndEmployees()
-  })
+  }, [])
 
   const fetchSitesAndEmployees = async () => {
     try {
