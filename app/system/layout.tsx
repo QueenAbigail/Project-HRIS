@@ -2,21 +2,13 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { UnauthorizedAccess } from "@/components/superadmin/unauthorized-access"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+import { SystemBreadcrumb } from "@/components/system/system-breadcrumb"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getSystemSettings } from "@/lib/system"
 import Link from "next/link"
 import { LogOut } from "lucide-react"
-import { headers } from "next/headers"
 
 interface User {
   name: string | null
@@ -56,15 +48,6 @@ export default async function SystemLayout({ children, params }: LayoutProps) {
 
   const systemSettings = await getSystemSettings()
 
-  const pathNames: Record<string, string> = {
-    '/system': 'System Management',
-    '/system/broadcast': 'Broadcast',
-  }
-
-  const headersList = await headers()
-  const pathname = headersList.get('x-pathname') || '/system'
-  const currentPage = pathNames[pathname] || 'System'
-
   return (
     <>
       <UnauthorizedAccess userRole={user?.role || null} />
@@ -73,19 +56,7 @@ export default async function SystemLayout({ children, params }: LayoutProps) {
         <SidebarInset>
           <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border bg-card/50 backdrop-blur-sm px-4">
             <div className="flex items-center gap-2">
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="/system">
-                      System
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden md:block" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>{currentPage === 'System Management' ? 'System' : currentPage}</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
+              <SystemBreadcrumb />
             </div>
             <Link href="/dashboard">
               <Button 
