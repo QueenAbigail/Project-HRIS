@@ -123,6 +123,7 @@ const mainNavItems = [
     title: 'Leave Management',
     url: '/dashboard/leave',
     icon: CalendarDays,
+    badge: 0,
   },
 ]
 
