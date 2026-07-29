@@ -15,6 +15,7 @@ export function SystemBreadcrumb() {
 
   const pathNames: Record<string, string> = {
     '/system': 'System',
+    '/system/map-sites': 'Map Site',
     '/system/broadcast': 'Broadcast',
   }
 

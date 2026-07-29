@@ -304,7 +304,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   const secondaryNavItems = [
     {
       title: 'Map Site',
-      url: '/dashboard/map-sites',
+      url: '/system/map-sites',
       icon: MapPin,
     },
     {

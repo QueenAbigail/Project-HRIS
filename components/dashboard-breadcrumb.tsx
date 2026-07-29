@@ -20,7 +20,6 @@ export function DashboardBreadcrumb() {
     '/dashboard/patrol': 'Patrol Monitoring',
     '/dashboard/leave': 'Leave Management',
     '/dashboard/shifts': 'Shift Schedule',
-    '/dashboard/map-sites': 'Map Site',
     '/dashboard/reports': 'Reports',
     '/dashboard/settings': 'Settings',
     '/payroll': 'Payroll',
