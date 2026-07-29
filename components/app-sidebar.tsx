@@ -347,9 +347,9 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
 
   return (
     <Sidebar variant="inset" collapsible="icon" className="overflow-hidden">
-      <SidebarHeader className="border-b border-sidebar-border overflow-hidden">
+      <SidebarHeader className="border-b border-sidebar-border px-0">
         <SidebarMenu>
-          <SidebarMenuItem className="w-full">
+          <SidebarMenuItem className="w-full px-2">
             <SidebarMenuButton size="lg" asChild className="flex-1">
               <Link href="/dashboard" className="min-w-0">
                 <LogoIcon src={systemSettings.logoUrl || '/koperasi_icon.png'} alt={systemSettings.appName} className="flex h-8 items-center justify-center flex-shrink-0" />
@@ -360,16 +360,16 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          <SidebarMenuItem className="w-full -mx-2">
+          <SidebarMenuItem className="w-full px-2">
             <SidebarMenuButton
               onClick={toggleSidebar}
-              className="w-full px-2 h-9 flex items-center justify-center"
+              className="w-full h-9 flex items-center justify-center"
               title={state === 'expanded' ? 'Collapse sidebar' : 'Expand sidebar'}
             >
               <div className={`flex items-center justify-center transition-transform duration-300 ${state === 'collapsed' ? 'rotate-180' : ''}`}>
                 <ChevronLeft className="size-5" />
-                <ChevronLeft className="size-5 -ml-2" />
-                <ChevronLeft className="size-5 -ml-2" />
+                <ChevronLeft className="size-5 -ml-3" />
+                <ChevronLeft className="size-5 -ml-3" />
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
