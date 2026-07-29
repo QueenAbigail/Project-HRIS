@@ -229,7 +229,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   const [mounted, setMounted] = useState(false)
   const [localSystemSettings, setLocalSystemSettings] = useState<SystemSettings>({ appName: 'SecureGuard', appDescription: 'HR Administration' })
   const [loading, setLoading] = useState(!propSystemSettings)
-  const [pendingLeaveCount, setPendingLeaveCount] = useState<number>(5)
+  const [pendingLeaveCount, setPendingLeaveCount] = useState<number>(0)
 
   const systemSettings = propSystemSettings || localSystemSettings
   const userRole = user?.role || null
