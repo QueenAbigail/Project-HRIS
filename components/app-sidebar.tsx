@@ -363,10 +363,14 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
           <SidebarMenuItem className="w-full -mx-2">
             <SidebarMenuButton
               onClick={toggleSidebar}
-              className="w-full px-2 h-9"
+              className="w-full px-2 h-9 flex items-center justify-center"
               title={state === 'expanded' ? 'Collapse sidebar' : 'Expand sidebar'}
             >
-              <ChevronLeft className={`size-4 transition-transform duration-300 ${state === 'collapsed' ? 'rotate-180' : ''}`} />
+              <div className="flex flex-col items-center justify-center gap-0.5">
+                <ChevronLeft className={`size-3 transition-transform duration-300 ${state === 'collapsed' ? 'rotate-180' : ''}`} />
+                <ChevronLeft className={`size-3 transition-transform duration-300 ${state === 'collapsed' ? 'rotate-180' : ''}`} />
+                <ChevronLeft className={`size-3 transition-transform duration-300 ${state === 'collapsed' ? 'rotate-180' : ''}`} />
+              </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
