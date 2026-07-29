@@ -108,7 +108,6 @@ const mainNavItems = [
     title: 'Attendance',
     url: '/dashboard/attendance',
     icon: Clock,
-    badge: 12,
   },
   {
     title: 'Patrol Monitoring',
@@ -124,7 +123,6 @@ const mainNavItems = [
     title: 'Leave Management',
     url: '/dashboard/leave',
     icon: CalendarDays,
-    badge: 5,
   },
 ]
 
