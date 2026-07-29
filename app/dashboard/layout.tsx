@@ -18,7 +18,7 @@ interface User {
   position: string | null
   role: string
   employeeCode?: string | null
-  siteId?: string | null
+  siteName?: string | null
 }
 
 interface SystemSettings {
@@ -47,7 +47,11 @@ export default async function DashboardLayout({ children }: LayoutProps) {
       role: true,
       email: true,
       employeeCode: true,
-      siteId: true
+      site: {
+        select: {
+          name: true
+        }
+      }
     }
   })
 
@@ -61,7 +65,7 @@ export default async function DashboardLayout({ children }: LayoutProps) {
     <LoadingProvider>
       <SidebarProvider suppressHydrationWarning>
         <WelcomeToast userName={user?.name} />
-        <AppSidebar user={{ name: user.name, email: user.email, position: user.position, role: user.role, employeeCode: user.employeeCode, siteId: user.siteId }} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
+        <AppSidebar user={{ name: user.name, email: user.email, position: user.position, role: user.role, employeeCode: user.employeeCode, siteName: user.site?.name }} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
         <SidebarInset className="flex flex-col">
           <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card/50 backdrop-blur-sm px-4">
             <MobileHeader />

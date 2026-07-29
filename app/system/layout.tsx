@@ -16,7 +16,7 @@ interface User {
   role: string
   email?: string
   employeeCode?: string | null
-  siteId?: string | null
+  siteName?: string | null
 }
 
 interface SystemSettings {
@@ -48,7 +48,11 @@ export default async function SystemLayout({ children, params }: LayoutProps) {
       role: true,
       email: true,
       employeeCode: true,
-      siteId: true
+      site: {
+        select: {
+          name: true
+        }
+      }
     }
   }) as User | null
 

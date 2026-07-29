@@ -70,7 +70,7 @@ interface User {
   position: string | null
   role: string
   employeeCode?: string | null
-  siteId?: string | null
+  siteName?: string | null
 }
 
 interface Props {
@@ -478,8 +478,8 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                   {user?.employeeCode && (
                     <div>ID: <span className="text-foreground font-medium">{user.employeeCode}</span></div>
                   )}
-                  {user?.siteId && (
-                    <div>Site: <span className="text-foreground font-medium">{user.siteId}</span></div>
+                  {user?.siteName && (
+                    <div>Site: <span className="text-foreground font-medium">{user.siteName}</span></div>
                   )}
                   <div>Access Level: <span className="text-foreground font-medium">{getRoleDisplay(userRole)}</span></div>
                 </div>
