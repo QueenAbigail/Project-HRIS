@@ -17,6 +17,8 @@ export function SystemBreadcrumb() {
     '/system': 'System',
     '/system/map-sites': 'Map Site',
     '/system/broadcast': 'Broadcast',
+    '/system/reports': 'Reports',
+    '/system/settings': 'Settings',
   }
 
   const currentPage = pathNames[pathname] || 'System'

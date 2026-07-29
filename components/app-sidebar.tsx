@@ -314,12 +314,12 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
     },
     {
       title: 'Reports',
-      url: '/dashboard/reports',
+      url: '/system/reports',
       icon: FileBarChart,
     },
     {
       title: 'Settings',
-      url: '/dashboard/settings',
+      url: '/system/settings',
       icon: Settings,
     },
   ]
