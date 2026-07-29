@@ -366,10 +366,10 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
               className="w-full px-2 h-9 flex items-center justify-center"
               title={state === 'expanded' ? 'Collapse sidebar' : 'Expand sidebar'}
             >
-              <div className="flex flex-col items-center justify-center gap-0.5">
-                <ChevronLeft className={`size-3 transition-transform duration-300 ${state === 'collapsed' ? 'rotate-180' : ''}`} />
-                <ChevronLeft className={`size-3 transition-transform duration-300 ${state === 'collapsed' ? 'rotate-180' : ''}`} />
-                <ChevronLeft className={`size-3 transition-transform duration-300 ${state === 'collapsed' ? 'rotate-180' : ''}`} />
+              <div className={`flex items-center justify-center transition-transform duration-300 ${state === 'collapsed' ? 'rotate-180' : ''}`}>
+                <ChevronLeft className="size-5" />
+                <ChevronLeft className="size-5 -ml-2" />
+                <ChevronLeft className="size-5 -ml-2" />
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
