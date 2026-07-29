@@ -14,6 +14,9 @@ interface User {
   name: string | null
   position: string | null
   role: string
+  email?: string
+  employeeCode?: string | null
+  siteId?: string | null
 }
 
 interface SystemSettings {
@@ -39,7 +42,10 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
     select: { 
       name: true, 
       position: true, 
-      role: true 
+      role: true,
+      email: true,
+      employeeCode: true,
+      siteId: true
     }
   }) as User | null
 
