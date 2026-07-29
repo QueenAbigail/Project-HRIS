@@ -472,35 +472,47 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {mounted && (
-                  <DropdownMenuItem
-                    onClick={() => {
-                      const nextTheme = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'
-                      setTheme(nextTheme)
-                    }}
-                  >
-                    {theme === 'light' ? (
-                      <>
-                        {/* Sun icon for light mode */}
-                        <svg className="mr-2 size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="px-2 py-2">
+                    <div className="flex gap-1 bg-muted p-1 rounded-lg">
+                      <button
+                        onClick={() => setTheme('light')}
+                        className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          theme === 'light'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        title="Light theme"
+                      >
+                        <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1m-16 0H1m15.364 1.636l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
-                        Light
-                      </>
-                    ) : theme === 'dark' ? (
-                      <>
-                        {/* Moon icon for dark mode */}
-                        <svg className="mr-2 size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      </button>
+                      <button
+                        onClick={() => setTheme('system')}
+                        className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          theme === 'system'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        title="System theme"
+                      >
+                        <Monitor className="size-4" />
+                      </button>
+                      <button
+                        onClick={() => setTheme('dark')}
+                        className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          theme === 'dark'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        title="Dark theme"
+                      >
+                        <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                         </svg>
-                        Dark
-                      </>
-                    ) : (
-                      <>
-                        <Monitor className="mr-2 size-4" />
-                        System {resolvedTheme && `(${resolvedTheme.charAt(0).toUpperCase() + resolvedTheme.slice(1)})`}
-                      </>
-                    )}
-                  </DropdownMenuItem>
+                      </button>
+                    </div>
+                  </div>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
