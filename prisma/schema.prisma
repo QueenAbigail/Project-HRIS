@@ -133,6 +133,7 @@ model User {
   email                 String                    @unique
   personalEmail         String?
   initials              String?
+  avatar                String?
   department            String?
   position              String?
   role                  Role                      @default(STAFF)

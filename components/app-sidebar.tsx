@@ -46,6 +46,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useTheme } from 'next-themes'
 import { Badge } from '@/components/ui/badge'
+import { ChangePhotoModal } from '@/components/change-photo-modal'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -230,6 +231,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   const [localSystemSettings, setLocalSystemSettings] = useState<SystemSettings>({ appName: 'SecureGuard', appDescription: 'HR Administration' })
   const [loading, setLoading] = useState(!propSystemSettings)
   const [pendingLeaveCount, setPendingLeaveCount] = useState<number>(0)
+  const [isChangePhotoOpen, setIsChangePhotoOpen] = useState(false)
 
   const systemSettings = propSystemSettings || localSystemSettings
   const userRole = user?.role || null
@@ -244,6 +246,30 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
         return 'Head Office'
       default:
         return role
+    }
+  }
+
+  const handlePhotoUpload = async (file: File) => {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/user/avatar', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to upload photo')
+      }
+
+      toast.success('Profile photo updated successfully')
+      setIsChangePhotoOpen(false)
+      router.refresh()
+    } catch (error) {
+      console.error('[v0] Error uploading photo:', error)
+      toast.error('Failed to update profile photo')
+      throw error
     }
   }
 
@@ -484,7 +510,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                   <div>Access Level: <span className="text-foreground font-medium">{getRoleDisplay(userRole)}</span></div>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsChangePhotoOpen(true)}>
                   <Camera className="mr-2 size-4" />
                   Change Photo
                 </DropdownMenuItem>
@@ -555,6 +581,12 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+
+      <ChangePhotoModal
+        isOpen={isChangePhotoOpen}
+        onClose={() => setIsChangePhotoOpen(false)}
+        onUpload={handlePhotoUpload}
+      />
     </Sidebar>
   )
 }
