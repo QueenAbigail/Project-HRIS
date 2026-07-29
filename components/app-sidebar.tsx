@@ -12,9 +12,7 @@ import {
   Wallet,
   CalendarDays,
   FileBarChart,
-  Settings,
   Shield,
-  Bell,
   LogOut,
   ChevronDown,
   MapPin,
@@ -26,6 +24,7 @@ import {
   Minus,
   Mail,
   Megaphone,
+  Camera,
 } from 'lucide-react'
 
 import {
@@ -463,12 +462,8 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
-                  <Bell className="mr-2 size-4" />
-                  Notifications
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 size-4" />
-                  Settings
+                  <Camera className="mr-2 size-4" />
+                  Change Photo
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {mounted && (
