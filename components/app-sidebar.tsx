@@ -69,6 +69,8 @@ interface User {
   email: string
   position: string | null
   role: string
+  employeeCode?: string | null
+  siteId?: string | null
 }
 
 interface Props {
@@ -231,6 +233,19 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
 
   const systemSettings = propSystemSettings || localSystemSettings
   const userRole = user?.role || null
+  
+  // Map role codes to display names
+  const getRoleDisplay = (role: string | null | undefined): string => {
+    if (!role) return 'Unknown'
+    switch (role) {
+      case 'SUPER_ADMIN':
+        return 'Admin'
+      case 'HR_ADMIN':
+        return 'Head Office'
+      default:
+        return role
+    }
+  }
 
   useEffect(() => {
     setMounted(true)
@@ -459,9 +474,15 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                 className="w-[--radix-dropdown-menu-trigger-width]"
               >
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuLabel className="px-2 py-1.5 text-xs font-normal text-muted-foreground">
-                  Access Level: {userRole ?? 'Unknown'}
-                </DropdownMenuLabel>
+                <div className="px-2 py-2 space-y-1 text-xs text-muted-foreground">
+                  {user?.employeeCode && (
+                    <div>ID: <span className="text-foreground font-medium">{user.employeeCode}</span></div>
+                  )}
+                  {user?.siteId && (
+                    <div>Site: <span className="text-foreground font-medium">{user.siteId}</span></div>
+                  )}
+                  <div>Access Level: <span className="text-foreground font-medium">{getRoleDisplay(userRole)}</span></div>
+                </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <Camera className="mr-2 size-4" />
