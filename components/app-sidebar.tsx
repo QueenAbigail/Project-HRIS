@@ -347,11 +347,11 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
 
   return (
     <Sidebar variant="inset" collapsible="icon" className="overflow-hidden">
-      <SidebarHeader className="border-b border-sidebar-border px-0">
+      <SidebarHeader className="border-b border-sidebar-border px-0 overflow-visible">
         <SidebarMenu>
-          <SidebarMenuItem className="w-full px-2">
-            <SidebarMenuButton size="lg" asChild className="flex-1">
-              <Link href="/dashboard" className="min-w-0">
+          <SidebarMenuItem className="w-full px-2 overflow-visible">
+            <SidebarMenuButton size="lg" asChild className="flex-1 overflow-visible">
+              <Link href="/dashboard" className="min-w-0 overflow-visible">
                 <LogoIcon src={systemSettings.logoUrl || '/koperasi_icon.png'} alt={systemSettings.appName} className="flex h-8 items-center justify-center flex-shrink-0" />
                 <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
                   <span className="truncate font-semibold">{systemSettings.appName}</span>
