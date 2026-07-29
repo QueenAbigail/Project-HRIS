@@ -12,6 +12,7 @@ import {
   Wallet,
   CalendarDays,
   FileBarChart,
+  Settings,
   Shield,
   LogOut,
   ChevronDown,
@@ -25,6 +26,7 @@ import {
   Mail,
   Megaphone,
   Camera,
+  Bell,
 } from 'lucide-react'
 
 import {
