@@ -5,19 +5,10 @@ import { UnauthorizedAccess } from "@/components/superadmin/unauthorized-access"
 import { SystemBreadcrumb } from "@/components/system/system-breadcrumb"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { getUserData, type User } from "@/lib/get-user-data"
 import { getSystemSettings } from "@/lib/system"
 import Link from "next/link"
 import { LogOut } from "lucide-react"
-
-interface User {
-  name: string | null
-  position: string | null
-  role: string
-  email?: string
-  employeeCode?: string | null
-  siteName?: string | null
-}
 
 interface SystemSettings {
   appName: string
@@ -40,21 +31,7 @@ export default async function SystemLayout({ children, params }: LayoutProps) {
     redirect('/')
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: authUser.email },
-    select: { 
-      name: true, 
-      position: true, 
-      role: true,
-      email: true,
-      employeeCode: true,
-      site: {
-        select: {
-          name: true
-        }
-      }
-    }
-  }) as User | null
+  const user = await getUserData(authUser.email)
 
   const systemSettings = await getSystemSettings()
 

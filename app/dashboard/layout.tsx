@@ -7,19 +7,10 @@ import { MobileHeader } from "@/components/mobile-header"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { LoadingProvider } from "@/lib/loading-context"
 import { createClient } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
 import { getSystemSettings } from "@/lib/system"
+import { getUserData, type User } from "@/lib/get-user-data"
 import { redirect } from "next/navigation"
 import { DashboardBreadcrumb } from "@/components/dashboard-breadcrumb"
-
-interface User {
-  name: string | null
-  email: string
-  position: string | null
-  role: string
-  employeeCode?: string | null
-  siteName?: string | null
-}
 
 interface SystemSettings {
   appName: string
@@ -39,21 +30,7 @@ export default async function DashboardLayout({ children }: LayoutProps) {
     redirect('/')
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: authUser.email },
-    select: { 
-      name: true, 
-      position: true, 
-      role: true,
-      email: true,
-      employeeCode: true,
-      site: {
-        select: {
-          name: true
-        }
-      }
-    }
-  })
+  const user = await getUserData(authUser.email)
 
   if (!user) {
     redirect('/')
@@ -65,7 +42,7 @@ export default async function DashboardLayout({ children }: LayoutProps) {
     <LoadingProvider>
       <SidebarProvider suppressHydrationWarning>
         <WelcomeToast userName={user?.name} />
-        <AppSidebar user={{ name: user.name, email: user.email, position: user.position, role: user.role, employeeCode: user.employeeCode, siteName: user.site?.name }} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
+        <AppSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
         <SidebarInset className="flex flex-col">
           <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card/50 backdrop-blur-sm px-4">
             <MobileHeader />
