@@ -226,9 +226,27 @@ export function ChangePhotoModal({
     }
   }
 
+  // Reset state when modal closes
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      // Clear all state when closing
+      setPreview(null)
+      setSelectedFile(null)
+      setCroppedPreview(null)
+      setShowCropper(false)
+      setCrop({ x: 0, y: 0 })
+      setZoom(1)
+      setCroppedAreaPixels(null)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+    onClose()
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent className={showCropper && preview ? 'sm:max-w-2xl' : 'sm:max-w-md'}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Camera className="size-5" />
@@ -254,46 +272,49 @@ export function ChangePhotoModal({
             </div>
           )}
 
-          {/* Cropper */}
+          {/* Cropper - Side by Side Layout */}
           {showCropper && preview && (
-            <div className="space-y-3">
-              <div className="relative w-full bg-background rounded-lg overflow-hidden border border-border" style={{ height: '300px' }}>
-                <Cropper
-                  image={preview}
-                  crop={crop}
-                  zoom={zoom}
-                  aspect={1}
-                  cropShape="round"
-                  showGrid={false}
-                  onCropChange={setCrop}
-                  onCropAreaChange={handleOnCropComplete}
-                  onZoomChange={setZoom}
-                />
+            <div className="grid grid-cols-2 gap-4">
+              {/* Cropper on Left */}
+              <div className="space-y-3">
+                <div className="relative w-full bg-background rounded-lg overflow-hidden border border-border" style={{ height: '280px' }}>
+                  <Cropper
+                    image={preview}
+                    crop={crop}
+                    zoom={zoom}
+                    aspect={1}
+                    cropShape="round"
+                    showGrid={false}
+                    onCropChange={setCrop}
+                    onCropAreaChange={handleOnCropComplete}
+                    onZoomChange={setZoom}
+                  />
+                </div>
+
+                {/* Zoom Controls */}
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setZoom(Math.max(1, zoom - 0.1))}
+                  >
+                    <ZoomOut className="size-4" />
+                  </Button>
+                  <span className="text-sm text-muted-foreground w-12 text-center">
+                    {Math.round(zoom * 100)}%
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setZoom(Math.min(3, zoom + 0.1))}
+                  >
+                    <ZoomIn className="size-4" />
+                  </Button>
+                </div>
               </div>
 
-              {/* Zoom Controls */}
-              <div className="flex items-center justify-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setZoom(Math.max(1, zoom - 0.1))}
-                >
-                  <ZoomOut className="size-4" />
-                </Button>
-                <span className="text-sm text-muted-foreground w-12 text-center">
-                  {Math.round(zoom * 100)}%
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setZoom(Math.min(3, zoom + 0.1))}
-                >
-                  <ZoomIn className="size-4" />
-                </Button>
-              </div>
-
-              {/* Canvas-based Circular Preview */}
-              <div className="flex flex-col items-center gap-2 p-3 bg-muted rounded-lg">
+              {/* Preview on Right */}
+              <div className="flex flex-col items-center justify-center gap-3 p-4 bg-muted/50 rounded-lg">
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">Preview</p>
                 <canvas
                   ref={previewCanvasRef}
@@ -302,6 +323,9 @@ export function ChangePhotoModal({
                   className="rounded-full border-2 border-primary shadow-md"
                   style={{ display: 'block' }}
                 />
+                <p className="text-xs text-muted-foreground text-center">
+                  How your avatar will appear
+                </p>
               </div>
             </div>
           )}
