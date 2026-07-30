@@ -81,8 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Upload to Supabase Storage
-    const supabase = getSupabaseAdmin()
-    const filename = `${data.user.id}-${Date.now()}-${file.name}`
+    const filename = `${userId}-${Date.now()}-${file.name}`
     const buffer = await file.arrayBuffer()
 
     const { data: uploadData, error: uploadError } = await supabase.storage
