@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback, Suspense } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 import {
@@ -27,6 +27,8 @@ interface ChangePhotoModalProps {
   onUpload: (file: File) => Promise<void>
 }
 
+const PREVIEW_SIZE = 120
+
 export function ChangePhotoModal({
   isOpen,
   onClose,
@@ -42,6 +44,7 @@ export function ChangePhotoModal({
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
   const [croppedPreview, setCroppedPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null)
 
   const handleOnCropComplete = useCallback(
     (croppedArea: Area, croppedAreaPixels: Area) => {
@@ -49,6 +52,53 @@ export function ChangePhotoModal({
     },
     []
   )
+
+  // Update canvas preview whenever crop changes
+  useEffect(() => {
+    if (!preview || !croppedAreaPixels || !showCropper) return
+
+    const updatePreview = async () => {
+      const canvas = previewCanvasRef.current
+      if (!canvas) return
+
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+
+      try {
+        const img = new window.Image()
+        img.crossOrigin = 'anonymous'
+        img.onload = () => {
+          // Clear canvas
+          ctx.fillStyle = '#fff'
+          ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+          // Draw circular clipping
+          ctx.beginPath()
+          ctx.arc(PREVIEW_SIZE / 2, PREVIEW_SIZE / 2, PREVIEW_SIZE / 2, 0, Math.PI * 2)
+          ctx.clip()
+
+          // Draw the cropped image
+          const scale = img.width / croppedAreaPixels.width
+          ctx.drawImage(
+            img,
+            croppedAreaPixels.x,
+            croppedAreaPixels.y,
+            croppedAreaPixels.width,
+            croppedAreaPixels.height,
+            0,
+            0,
+            PREVIEW_SIZE,
+            PREVIEW_SIZE
+          )
+        }
+        img.src = preview
+      } catch (error) {
+        console.error('[v0] Error updating preview:', error)
+      }
+    }
+
+    updatePreview()
+  }, [preview, croppedAreaPixels, showCropper])
 
   const createImage = (url: string): Promise<HTMLImageElement> =>
     new Promise((resolve, reject) => {
@@ -185,7 +235,7 @@ export function ChangePhotoModal({
             Change Photo
           </DialogTitle>
           <DialogDescription>
-            Upload a new profile photo. Image should be at least 400x400px.
+            Upload and crop your profile photo for a circular avatar
           </DialogDescription>
         </DialogHeader>
 
@@ -193,7 +243,7 @@ export function ChangePhotoModal({
           {/* Current Avatar Display */}
           {currentAvatar && !preview && (
             <div className="flex justify-center">
-              <div className="relative size-32 rounded-full overflow-hidden border border-border">
+              <div className="relative size-32 rounded-full overflow-hidden border-2 border-border shadow-lg">
                 <Image
                   src={currentAvatar}
                   alt="Current avatar"
@@ -207,7 +257,7 @@ export function ChangePhotoModal({
           {/* Cropper */}
           {showCropper && preview && (
             <div className="space-y-3">
-              <div className="relative w-full bg-background rounded-lg overflow-hidden" style={{ height: '300px' }}>
+              <div className="relative w-full bg-background rounded-lg overflow-hidden border border-border" style={{ height: '300px' }}>
                 <Cropper
                   image={preview}
                   crop={crop}
@@ -242,36 +292,29 @@ export function ChangePhotoModal({
                 </Button>
               </div>
 
-              {/* Preview of Circular Avatar */}
-              <div className="flex flex-col items-center gap-2">
-                <p className="text-sm text-muted-foreground">Preview</p>
-                <div className="relative size-24 rounded-full overflow-hidden border-2 border-primary shadow-md">
-                  {croppedAreaPixels && (
-                    <div
-                      className="absolute w-full h-full"
-                      style={{
-                        backgroundImage: `url(${preview})`,
-                        backgroundPosition: `${-croppedAreaPixels.x}px ${-croppedAreaPixels.y}px`,
-                        backgroundSize: `${preview ? '100%' : 'auto'}`,
-                      }}
-                    />
-                  )}
-                </div>
+              {/* Canvas-based Circular Preview */}
+              <div className="flex flex-col items-center gap-2 p-3 bg-muted rounded-lg">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Preview</p>
+                <canvas
+                  ref={previewCanvasRef}
+                  width={PREVIEW_SIZE}
+                  height={PREVIEW_SIZE}
+                  className="rounded-full border-2 border-primary shadow-md"
+                  style={{ display: 'block' }}
+                />
               </div>
             </div>
           )}
 
           {/* Cropped Preview Before Upload */}
           {croppedPreview && !showCropper && (
-            <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col items-center gap-3 p-4 bg-muted/50 rounded-lg">
               <p className="text-sm text-muted-foreground">How it will appear</p>
-              <div className="relative size-32 rounded-full overflow-hidden border-2 border-primary shadow-md">
-                <img
-                  src={croppedPreview}
-                  alt="Cropped preview"
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              <img
+                src={croppedPreview}
+                alt="Cropped preview"
+                className="w-32 h-32 rounded-full border-2 border-primary shadow-md object-cover"
+              />
               <Button
                 type="button"
                 variant="outline"
@@ -289,7 +332,7 @@ export function ChangePhotoModal({
               onClick={() => fileInputRef.current?.click()}
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
-              className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+              className="relative rounded-lg border-2 border-dashed border-muted-foreground/25 p-8 text-center cursor-pointer hover:border-muted-foreground/50 hover:bg-muted/30 transition-all group"
             >
               <input
                 ref={fileInputRef}
@@ -298,19 +341,23 @@ export function ChangePhotoModal({
                 onChange={handleFileChange}
                 className="hidden"
               />
-              <Upload className="mx-auto size-8 text-muted-foreground mb-2" />
-              <p className="text-sm font-medium">Click to upload or drag and drop</p>
-              <p className="text-xs text-muted-foreground">
-                PNG, JPG, GIF up to 5MB
-              </p>
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex items-center justify-center size-12 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                  <Upload className="size-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Click to upload or drag and drop</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    PNG, JPG, GIF up to 5MB
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 p-3 bg-background rounded border border-border">
+                <p className="text-xs text-muted-foreground">
+                  Recommended size: 400×400px or larger for circular avatar
+                </p>
+              </div>
             </div>
-          )}
-
-          {/* Info Text */}
-          {!preview && (
-            <p className="text-xs text-muted-foreground text-center">
-              Recommended size: 400x400px or larger
-            </p>
           )}
         </div>
 
