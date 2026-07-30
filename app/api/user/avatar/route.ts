@@ -1,9 +1,10 @@
-import { createClient } from '@/lib/auth'
+import { createAdminClient } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { jwtVerify } from 'jose'
 
-// Lazy initialize Supabase client
+// Lazy initialize Supabase admin client
 let supabaseAdmin: ReturnType<typeof createSupabaseClient> | null = null
 
 function getSupabaseAdmin() {
@@ -18,11 +19,42 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await createClient()
-    const { data } = await auth.api.getSession()
+    // Get session from cookies (Supabase sets auth token in cookies)
+    const cookieHeader = request.headers.get('cookie') || ''
+    const supabase = await createAdminClient()
+    
+    // Try to get user from auth token in cookies
+    let userId: string | null = null
+    
+    // Check for auth token in cookie
+    const authCookie = cookieHeader.split(';').find(c => c.trim().startsWith('sb-access-token='))
+    if (authCookie) {
+      const token = authCookie.split('=')[1]
+      try {
+        const { data: verifyData } = await supabase.auth.admin.verifyJWT(token)
+        userId = verifyData?.sub
+      } catch (e) {
+        console.error('[v0] Avatar upload: Token verification failed', e)
+      }
+    }
 
-    if (!data?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // If token not found in cookie, check Authorization header
+    if (!userId) {
+      const authHeader = request.headers.get('authorization')
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.substring(7)
+        try {
+          const { data: verifyData } = await supabase.auth.admin.verifyJWT(token)
+          userId = verifyData?.sub
+        } catch (e) {
+          console.error('[v0] Avatar upload: Token verification failed', e)
+        }
+      }
+    }
+
+    if (!userId) {
+      console.error('[v0] Avatar upload: No valid authentication found')
+      return NextResponse.json({ error: 'Unauthorized - authentication required' }, { status: 401 })
     }
 
     const formData = await request.formData()
@@ -77,11 +109,12 @@ export async function POST(request: NextRequest) {
 
     // Update user avatar in database
     const updatedUser = await prisma.user.update({
-      where: { email: data.user.email },
+      where: { id: userId },
       data: { avatar: avatarUrl },
       select: { avatar: true },
     })
 
+    console.log('[v0] Avatar uploaded successfully for user:', userId)
     return NextResponse.json({ url: updatedUser.avatar }, { status: 200 })
   } catch (error) {
     console.error('[v0] Avatar upload error:', error)

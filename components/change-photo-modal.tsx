@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import dynamic from 'next/dynamic'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -140,17 +141,17 @@ export function ChangePhotoModal({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        alert('Please select an image file')
-        return
-      }
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file')
+      return
+    }
 
-      // Validate file size (5MB max)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB')
-        return
-      }
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB')
+      return
+    }
 
       setSelectedFile(file)
       const reader = new FileReader()
@@ -173,7 +174,7 @@ export function ChangePhotoModal({
       setShowCropper(false)
     } catch (error) {
       console.error('[v0] Error cropping image:', error)
-      alert('Failed to crop image')
+      toast.error('Failed to crop image')
     }
   }
 
@@ -210,7 +211,7 @@ export function ChangePhotoModal({
       onClose()
     } catch (error) {
       console.error('[v0] Error uploading photo:', error)
-      alert('Failed to upload photo')
+      toast.error('Failed to upload photo. Please try again.')
     } finally {
       setLoading(false)
     }
