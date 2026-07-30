@@ -350,36 +350,51 @@ export function ChangePhotoModal({
             </div>
           )}
 
-          {/* Upload Area */}
+          {/* Upload Area - Casual Design */}
           {!preview && (
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={handleDrop}
-              className="relative rounded-lg border-2 border-dashed border-muted-foreground/25 p-8 text-center cursor-pointer hover:border-muted-foreground/50 hover:bg-muted/30 transition-all group"
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <div className="flex flex-col items-center gap-3">
-                <div className="flex items-center justify-center size-12 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                  <Upload className="size-6 text-primary" />
+            <div className="space-y-4">
+              {/* Current Avatar Display */}
+              {currentAvatar && (
+                <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-muted/30">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Current photo</p>
+                  <div className="relative size-20 rounded-full overflow-hidden border-2 border-border shadow-sm">
+                    <img
+                      src={currentAvatar}
+                      alt="Current avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium">Click to upload or drag and drop</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    PNG, JPG, GIF up to 5MB
+              )}
+
+              {/* Upload Button Area - Casual Style */}
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleDrop}
+                className="relative rounded-xl p-6 text-center cursor-pointer transition-all group bg-gradient-to-br from-primary/5 to-transparent border border-primary/20 hover:border-primary/40 hover:from-primary/10"
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex items-center justify-center size-14 rounded-full bg-primary/15 group-hover:bg-primary/25 transition-all">
+                    <Camera className="size-7 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Upload new photo</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      or drag and drop
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground pt-2">
+                    PNG, JPG • up to 5MB
                   </p>
                 </div>
-              </div>
-              <div className="mt-4 p-3 bg-background rounded border border-border">
-                <p className="text-xs text-muted-foreground">
-                  Recommended size: 400×400px or larger for circular avatar
-                </p>
               </div>
             </div>
           )}
