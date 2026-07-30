@@ -1,7 +1,20 @@
 import { createClient } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { put } from '@vercel/blob'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+
+// Lazy initialize Supabase client
+let supabaseAdmin: ReturnType<typeof createSupabaseClient> | null = null
+
+function getSupabaseAdmin() {
+  if (!supabaseAdmin) {
+    supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+  }
+  return supabaseAdmin
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,17 +48,37 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Upload to Vercel Blob
-    const filename = `${data.user.email}-${Date.now()}-${file.name}`
-    const blob = await put(filename, file, {
-      access: 'public',
-      addRandomSuffix: false,
-    })
+    // Upload to Supabase Storage
+    const supabase = getSupabaseAdmin()
+    const filename = `${data.user.id}-${Date.now()}-${file.name}`
+    const buffer = await file.arrayBuffer()
+
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filename, buffer, {
+        contentType: file.type,
+        upsert: false,
+      })
+
+    if (uploadError) {
+      console.error('[v0] Supabase upload error:', uploadError)
+      return NextResponse.json(
+        { error: 'Failed to upload avatar' },
+        { status: 500 }
+      )
+    }
+
+    // Get public URL
+    const { data: publicData } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filename)
+
+    const avatarUrl = publicData.publicUrl
 
     // Update user avatar in database
     const updatedUser = await prisma.user.update({
       where: { email: data.user.email },
-      data: { avatar: blob.url },
+      data: { avatar: avatarUrl },
       select: { avatar: true },
     })
 
