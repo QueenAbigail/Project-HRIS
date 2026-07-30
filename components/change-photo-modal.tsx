@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useCallback, lazy, Suspense } from 'react'
+import { useState, useRef, useCallback, Suspense } from 'react'
+import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -14,7 +15,10 @@ import { Camera, Upload, X, ZoomIn, ZoomOut } from 'lucide-react'
 import Image from 'next/image'
 import type { Area, Point } from 'react-easy-crop'
 
-const Cropper = lazy(() => import('react-easy-crop'))
+const Cropper = dynamic(() => import('react-easy-crop'), {
+  ssr: false,
+  loading: () => <div className="w-full h-full flex items-center justify-center bg-muted">Loading cropper...</div>,
+})
 
 interface ChangePhotoModalProps {
   isOpen: boolean
@@ -204,19 +208,17 @@ export function ChangePhotoModal({
           {showCropper && preview && (
             <div className="space-y-3">
               <div className="relative w-full bg-background rounded-lg overflow-hidden" style={{ height: '300px' }}>
-                <Suspense fallback={<div className="w-full h-full flex items-center justify-center bg-muted">Loading cropper...</div>}>
-                  <Cropper
-                    image={preview}
-                    crop={crop}
-                    zoom={zoom}
-                    aspect={1}
-                    cropShape="round"
-                    showGrid={false}
-                    onCropChange={setCrop}
-                    onCropAreaChange={handleOnCropComplete}
-                    onZoomChange={setZoom}
-                  />
-                </Suspense>
+                <Cropper
+                  image={preview}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  cropShape="round"
+                  showGrid={false}
+                  onCropChange={setCrop}
+                  onCropAreaChange={handleOnCropComplete}
+                  onZoomChange={setZoom}
+                />
               </div>
 
               {/* Zoom Controls */}
