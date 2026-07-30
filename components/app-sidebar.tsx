@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { createClient } from '@/lib/auth'
 
 import {
   LayoutDashboard,
@@ -254,13 +255,26 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
       const formData = new FormData()
       formData.append('file', file)
 
+      // Get auth token from Supabase session
+      const supabase = await createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        toast.error('Authentication required. Please refresh and try again.')
+        throw new Error('No auth session found')
+      }
+
       const response = await fetch('/api/user/avatar', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: formData,
       })
 
       if (!response.ok) {
-        throw new Error('Failed to upload photo')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to upload photo')
       }
 
       toast.success('Profile photo updated successfully')
@@ -268,8 +282,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
       router.refresh()
     } catch (error) {
       console.error('[v0] Error uploading photo:', error)
-      toast.error('Failed to update profile photo')
-      throw error
+      toast.error(error instanceof Error ? error.message : 'Failed to update profile photo')
     }
   }
 
