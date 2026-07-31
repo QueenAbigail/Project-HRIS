@@ -497,7 +497,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="lg">
                   <Avatar className="size-8 flex-shrink-0">
-                    <AvatarImage src={user?.avatar || "/placeholder-user.jpg"} alt={displayName} />
+                    <AvatarImage src={user?.avatar || "/placeholder-user.jpg"} alt={displayName} className="transition-opacity duration-300" />
                     <AvatarFallback className="bg-primary/10 text-primary font-medium">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
