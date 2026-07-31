@@ -294,14 +294,14 @@ export default async function DashboardPage() {
     lateChangeFromLastWeek: 0, // TODO historical
   };
 
-  // chartData
+  // chartData - convert dates to strings for serialization
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const weekCounts: Record<string, { present: number; absent: number; late: number }> = {};
   days.forEach((dayShort, index) => {
     weekCounts[dayShort] = { present: 0, absent: 0, late: 0 };
   });
   weekAttendances.forEach((a) => {
-    const dayNum = new Date(a.date).getDay();
+    const dayNum = typeof a.date === 'string' ? new Date(a.date).getDay() : (a.date instanceof Date ? a.date.getDay() : 0);
     const dayShort = days[dayNum];
     if (weekCounts[dayShort]) {
       if (a.status === 'PRESENT') weekCounts[dayShort].present += 1;
@@ -314,6 +314,12 @@ export default async function DashboardPage() {
     present: weekCounts[d].present,
     absent: weekCounts[d].absent,
     late: weekCounts[d].late,
+  }));
+
+  // Serialize late check-ins to avoid Date serialization errors
+  const serializedLateCheckIns = lateCheckIns.map(item => ({
+    ...item,
+    // Already strings from formatTime function, no conversion needed
   }));
 
 
@@ -336,7 +342,7 @@ export default async function DashboardPage() {
         <div className="grid gap-6 lg:grid-cols-2">
           <AttendanceChart chartData={chartData} />
           <div className="space-y-6">
-            <LateCheckIns lateCheckIns={lateCheckIns} />
+            <LateCheckIns lateCheckIns={serializedLateCheckIns} />
             <UpcomingLeaves />
           </div>
         </div>
