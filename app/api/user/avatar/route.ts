@@ -19,7 +19,7 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    // Get Authorization header - client sends Bearer token
+    // Get Authorization header - client sends Bearer token from server action
     const authHeader = request.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
       console.error('[v0] Avatar upload: No authorization header')
