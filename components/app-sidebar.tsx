@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { getAuthToken } from '@/app/actions/get-auth-token'
 
 import {
   LayoutDashboard,
@@ -256,21 +255,10 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
       const formData = new FormData()
       formData.append('file', file)
 
-      // Get auth token from server (server action)
-      const token = await getAuthToken()
-      
-      if (!token) {
-        hasError = true
-        console.error('[v0] No auth token found')
-        toast.error('Authentication required. Please refresh and try again.')
-        return
-      }
-
+      // Cookies are sent automatically by the browser
       const response = await fetch('/api/user/avatar', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include', // Send cookies with request
         body: formData,
       })
 

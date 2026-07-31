@@ -1,8 +1,7 @@
-import { createAdminClient } from '@/lib/auth'
+import { createClient } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
-import { jwtVerify } from 'jose'
 
 // Lazy initialize Supabase admin client
 let supabaseAdmin: ReturnType<typeof createSupabaseClient> | null = null
@@ -19,35 +18,17 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    // Get Authorization header - client sends Bearer token from server action
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      console.error('[v0] Avatar upload: No authorization header')
-      return NextResponse.json({ error: 'Unauthorized - missing auth header' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7)
-    const adminClient = getSupabaseAdmin()
+    // Get authenticated user from cookies using the authenticated server client
+    const supabase = await createClient()
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
     
-    // Verify the JWT token using admin client
-    let userId: string | null = null
-    try {
-      const { data: verifyData, error: verifyError } = await adminClient.auth.admin.verifyJWT(token)
-      if (verifyError || !verifyData?.sub) {
-        console.error('[v0] Avatar upload: JWT verification failed', verifyError)
-        return NextResponse.json({ error: 'Unauthorized - invalid token' }, { status: 401 })
-      }
-      userId = verifyData.sub
-      console.log('[v0] Avatar upload: Token verified for user:', userId)
-    } catch (e) {
-      console.error('[v0] Avatar upload: Token verification exception', e)
-      return NextResponse.json({ error: 'Unauthorized - token verification failed' }, { status: 401 })
+    if (sessionError || !session?.user?.id) {
+      console.error('[v0] Avatar upload: No authenticated session', sessionError)
+      return NextResponse.json({ error: 'Unauthorized - authentication required' }, { status: 401 })
     }
 
-    if (!userId) {
-      console.error('[v0] Avatar upload: No user ID found')
-      return NextResponse.json({ error: 'Unauthorized - no user id' }, { status: 401 })
-    }
+    const userId = session.user.id
+    console.log('[v0] Avatar upload: Authenticated user:', userId)
 
     const formData = await request.formData()
     const file = formData.get('file') as File
