@@ -1,14 +1,11 @@
 'use server'
 
-import { createAdminClient } from '@/lib/auth'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/auth'
 
 export async function getAuthToken() {
   try {
-    const cookieStore = await cookies()
-    
-    // Get the session from cookies using the admin client
-    const supabase = await createAdminClient()
+    // Use the authenticated server client that reads from cookies
+    const supabase = await createClient()
     const { data: { session }, error } = await supabase.auth.getSession()
     
     if (error) {
@@ -21,7 +18,7 @@ export async function getAuthToken() {
       return null
     }
     
-    console.log('[v0] getAuthToken: Successfully retrieved token')
+    console.log('[v0] getAuthToken: Successfully retrieved token for user:', session.user?.email)
     return session.access_token
   } catch (error) {
     console.error('[v0] getAuthToken exception:', error)
