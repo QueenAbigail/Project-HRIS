@@ -27,12 +27,12 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.substring(7)
-    const supabaseAdmin = getSupabaseAdmin()
+    const adminClient = getSupabaseAdmin()
     
     // Verify the JWT token using admin client
     let userId: string | null = null
     try {
-      const { data: verifyData, error: verifyError } = await supabaseAdmin.auth.admin.verifyJWT(token)
+      const { data: verifyData, error: verifyError } = await adminClient.auth.admin.verifyJWT(token)
       if (verifyError || !verifyData?.sub) {
         console.error('[v0] Avatar upload: JWT verification failed', verifyError)
         return NextResponse.json({ error: 'Unauthorized - invalid token' }, { status: 401 })
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     const filename = `${userId}-${Date.now()}-${file.name}`
     const buffer = await file.arrayBuffer()
 
-    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+    const { data: uploadData, error: uploadError } = await adminClient.storage
       .from('avatars')
       .upload(filename, buffer, {
         contentType: file.type,
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get public URL
-    const { data: publicData } = supabaseAdmin.storage
+    const { data: publicData } = adminClient.storage
       .from('avatars')
       .getPublicUrl(filename)
 
