@@ -57,7 +57,8 @@ export async function POST(request: NextRequest) {
     const filename = `${userId}-${Date.now()}-${file.name}`
     const buffer = await file.arrayBuffer()
 
-    const { data: uploadData, error: uploadError } = await adminClient.storage
+    const supabaseAdmin = getSupabaseAdmin()
+    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from('avatars')
       .upload(filename, buffer, {
         contentType: file.type,
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get public URL
-    const { data: publicData } = adminClient.storage
+    const { data: publicData } = supabaseAdmin.storage
       .from('avatars')
       .getPublicUrl(filename)
 
