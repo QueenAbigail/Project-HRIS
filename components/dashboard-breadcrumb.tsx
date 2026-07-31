@@ -52,32 +52,22 @@ export function DashboardBreadcrumb() {
       isCurrent: pathname === '/dashboard'
     })
 
-    // Build path segments
+    // Build path segments for all parents and current
     let currentPath = ''
     for (let i = 0; i < segments.length; i++) {
       currentPath += `/${segments[i]}`
       
-      // Skip if it's already in the breadcrumbs (i.e., dashboard)
+      // Skip if it's dashboard (already added)
       if (currentPath === '/dashboard') continue
 
       const label = pathNames[currentPath]
-      if (label && currentPath !== pathname) {
+      if (label) {
         breadcrumbs.push({
           href: currentPath,
           label: label,
-          isCurrent: false
+          isCurrent: currentPath === pathname
         })
       }
-    }
-
-    // Add current page as the last item (not clickable)
-    if (pathname !== '/dashboard') {
-      const currentLabel = pathNames[pathname] || segments[segments.length - 1]
-      breadcrumbs.push({
-        href: pathname,
-        label: currentLabel,
-        isCurrent: true
-      })
     }
 
     return breadcrumbs
