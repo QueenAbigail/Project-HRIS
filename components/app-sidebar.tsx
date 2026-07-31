@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { getSupabaseSession } from '@/lib/supabase-client'
+import { getAuthToken } from '@/app/actions/get-auth-token'
 
 import {
   LayoutDashboard,
@@ -256,12 +256,12 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
       const formData = new FormData()
       formData.append('file', file)
 
-      // Get auth token from Supabase session (client-side)
-      const session = await getSupabaseSession()
+      // Get auth token from server (server action)
+      const token = await getAuthToken()
       
-      if (!session?.access_token) {
+      if (!token) {
         hasError = true
-        console.error('[v0] No auth session found')
+        console.error('[v0] No auth token found')
         toast.error('Authentication required. Please refresh and try again.')
         return
       }
@@ -269,7 +269,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
       const response = await fetch('/api/user/avatar', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: formData,
       })
