@@ -265,7 +265,26 @@ export default async function DashboardPage() {
     };
   });
 
-  const locationStats = locationStatsByCompany.flatMap((c) => c.sites);
+  // Ensure all date objects in locationStatsByCompany are serializable
+  const serializedLocationStatsByCompany = locationStatsByCompany.map((company) => ({
+    ...company,
+    sites: company.sites.map((site) => ({
+      siteId: site.siteId,
+      siteName: site.siteName,
+      totalStaff: site.totalStaff,
+      present: site.present,
+      absent: site.absent,
+      late: site.late,
+      lateMinutesTotal: site.lateMinutesTotal,
+      notCheckedIn: site.notCheckedIn,
+      onLeave: site.onLeave,
+      dayOff: site.dayOff,
+      expectedToWork: site.expectedToWork,
+      attendanceRate: site.attendanceRate,
+    }))
+  }));
+
+  const locationStats = serializedLocationStatsByCompany.flatMap((c) => c.sites);
 
   // overallStats
   const overallDayOff = Object.values(dayOffBySite).reduce((sum, count) => sum + (count as number), 0);
@@ -325,6 +344,14 @@ export default async function DashboardPage() {
 
 
     console.log('[v0] Dashboard: Data fetch completed, rendering page')
+    
+    // Debug: Check for non-serializable objects
+    console.log('[v0] DEBUG - overallStats:', JSON.stringify(overallStats, null, 2).substring(0, 200))
+    console.log('[v0] DEBUG - locationStatsByCompany type:', typeof locationStatsByCompany)
+    console.log('[v0] DEBUG - chartData sample:', chartData[0])
+    console.log('[v0] DEBUG - serializedLateCheckIns sample:', serializedLateCheckIns[0])
+    console.log('[v0] DEBUG - companyNameForDisplay:', companyNameForDisplay)
+    
     return (
       <div className="space-y-6">
         <div>
@@ -337,7 +364,7 @@ export default async function DashboardPage() {
         <StatsCards stats={overallStats} />
 
         {/* Location-based Attendance Overview */}
-        <LocationAttendance locationData={locationStatsByCompany} companyName={companyNameForDisplay} isClient={isClient} />
+        <LocationAttendance locationData={serializedLocationStatsByCompany} companyName={companyNameForDisplay} isClient={isClient} />
 
         <div className="grid gap-6 lg:grid-cols-2">
           <AttendanceChart chartData={chartData} />
