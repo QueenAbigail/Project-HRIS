@@ -7,6 +7,7 @@ export interface User {
   role: string
   employeeCode?: string | null
   siteName?: string | null
+  avatar?: string | null
 }
 
 export async function getUserData(email: string): Promise<User | null> {
@@ -18,6 +19,7 @@ export async function getUserData(email: string): Promise<User | null> {
       role: true,
       email: true,
       employeeCode: true,
+      avatar: true,
       site: {
         select: {
           name: true
@@ -34,6 +36,7 @@ export async function getUserData(email: string): Promise<User | null> {
     position: user.position,
     role: user.role,
     employeeCode: user.employeeCode,
+    avatar: user.avatar,
     siteName: user.site?.name
   }
 }
