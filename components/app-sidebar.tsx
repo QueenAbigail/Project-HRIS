@@ -251,6 +251,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   }
 
   const handlePhotoUpload = async (file: File) => {
+    let hasError = false
     try {
       const formData = new FormData()
       formData.append('file', file)
@@ -259,8 +260,10 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
       const session = await getSupabaseSession()
       
       if (!session?.access_token) {
+        hasError = true
+        console.error('[v0] No auth session found')
         toast.error('Authentication required. Please refresh and try again.')
-        throw new Error('No auth session found')
+        return
       }
 
       const response = await fetch('/api/user/avatar', {
@@ -272,10 +275,12 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
       })
 
       if (!response.ok) {
+        hasError = true
         const errorData = await response.json().catch(() => ({}))
         const errorMessage = errorData.error || `Upload failed with status ${response.status}`
         console.error('[v0] Upload error response:', { status: response.status, errorData })
-        throw new Error(errorMessage)
+        toast.error(errorMessage)
+        return
       }
 
       const result = await response.json()
@@ -284,8 +289,10 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
       setIsChangePhotoOpen(false)
       router.refresh()
     } catch (error) {
-      console.error('[v0] Error uploading photo:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to update profile photo')
+      if (!hasError) {
+        console.error('[v0] Error uploading photo:', error)
+        toast.error(error instanceof Error ? error.message : 'Failed to update profile photo')
+      }
     }
   }
 

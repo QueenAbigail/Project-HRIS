@@ -18,6 +18,11 @@ export function getSupabaseClient() {
 
 export async function getSupabaseSession() {
   const client = getSupabaseClient()
-  const { data } = await client.auth.getSession()
+  const { data, error } = await client.auth.getSession()
+  console.log('[v0] getSupabaseSession result:', { 
+    hasSession: !!data?.session, 
+    hasToken: !!data?.session?.access_token,
+    error 
+  })
   return data?.session
 }
