@@ -19,42 +19,34 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    // Get session from cookies (Supabase sets auth token in cookies)
-    const cookieHeader = request.headers.get('cookie') || ''
-    const supabase = await createAdminClient()
+    // Get Authorization header - client sends Bearer token
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      console.error('[v0] Avatar upload: No authorization header')
+      return NextResponse.json({ error: 'Unauthorized - missing auth header' }, { status: 401 })
+    }
+
+    const token = authHeader.substring(7)
+    const supabaseAdmin = getSupabaseAdmin()
     
-    // Try to get user from auth token in cookies
+    // Verify the JWT token using admin client
     let userId: string | null = null
-    
-    // Check for auth token in cookie
-    const authCookie = cookieHeader.split(';').find(c => c.trim().startsWith('sb-access-token='))
-    if (authCookie) {
-      const token = authCookie.split('=')[1]
-      try {
-        const { data: verifyData } = await supabase.auth.admin.verifyJWT(token)
-        userId = verifyData?.sub
-      } catch (e) {
-        console.error('[v0] Avatar upload: Token verification failed', e)
+    try {
+      const { data: verifyData, error: verifyError } = await supabaseAdmin.auth.admin.verifyJWT(token)
+      if (verifyError || !verifyData?.sub) {
+        console.error('[v0] Avatar upload: JWT verification failed', verifyError)
+        return NextResponse.json({ error: 'Unauthorized - invalid token' }, { status: 401 })
       }
-    }
-
-    // If token not found in cookie, check Authorization header
-    if (!userId) {
-      const authHeader = request.headers.get('authorization')
-      if (authHeader?.startsWith('Bearer ')) {
-        const token = authHeader.substring(7)
-        try {
-          const { data: verifyData } = await supabase.auth.admin.verifyJWT(token)
-          userId = verifyData?.sub
-        } catch (e) {
-          console.error('[v0] Avatar upload: Token verification failed', e)
-        }
-      }
+      userId = verifyData.sub
+      console.log('[v0] Avatar upload: Token verified for user:', userId)
+    } catch (e) {
+      console.error('[v0] Avatar upload: Token verification exception', e)
+      return NextResponse.json({ error: 'Unauthorized - token verification failed' }, { status: 401 })
     }
 
     if (!userId) {
-      console.error('[v0] Avatar upload: No valid authentication found')
-      return NextResponse.json({ error: 'Unauthorized - authentication required' }, { status: 401 })
+      console.error('[v0] Avatar upload: No user ID found')
+      return NextResponse.json({ error: 'Unauthorized - no user id' }, { status: 401 })
     }
 
     const formData = await request.formData()
