@@ -108,14 +108,14 @@ export async function POST(request: NextRequest) {
     const avatarUrl = publicData.publicUrl
 
     // Update user avatar in database
-    const updatedUser = await prisma.user.update({
+    await prisma.user.update({
       where: { id: userId },
       data: { avatar: avatarUrl },
-      select: { avatar: true },
     })
 
     console.log('[v0] Avatar uploaded successfully for user:', userId)
-    return NextResponse.json({ url: updatedUser.avatar }, { status: 200 })
+    // Return only plain string to avoid serialization issues
+    return NextResponse.json({ url: avatarUrl }, { status: 200 })
   } catch (error) {
     console.error('[v0] Avatar upload error:', error)
     return NextResponse.json(

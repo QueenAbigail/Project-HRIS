@@ -274,9 +274,13 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || 'Failed to upload photo')
+        const errorMessage = errorData.error || `Upload failed with status ${response.status}`
+        console.error('[v0] Upload error response:', { status: response.status, errorData })
+        throw new Error(errorMessage)
       }
 
+      const result = await response.json()
+      console.log('[v0] Upload successful, URL:', result.url)
       toast.success('Profile photo updated successfully')
       setIsChangePhotoOpen(false)
       router.refresh()
