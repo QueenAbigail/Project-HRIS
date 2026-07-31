@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { createClient } from '@/lib/auth'
+import { getSupabaseSession } from '@/lib/supabase-client'
 
 import {
   LayoutDashboard,
@@ -255,9 +255,8 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
       const formData = new FormData()
       formData.append('file', file)
 
-      // Get auth token from Supabase session
-      const supabase = await createClient()
-      const { data: { session } } = await supabase.auth.getSession()
+      // Get auth token from Supabase session (client-side)
+      const session = await getSupabaseSession()
       
       if (!session?.access_token) {
         toast.error('Authentication required. Please refresh and try again.')
