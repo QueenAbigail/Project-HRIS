@@ -354,20 +354,6 @@ export function ChangePhotoModal({
           {/* Upload Area - Casual Design */}
           {!preview && (
             <div className="space-y-4">
-              {/* Current Avatar Display */}
-              {currentAvatar && (
-                <div className="flex flex-col items-center gap-2 p-4 rounded-lg bg-muted/30">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Current photo</p>
-                  <div className="relative size-20 rounded-full overflow-hidden border-2 border-border shadow-sm">
-                    <img
-                      src={currentAvatar}
-                      alt="Current avatar"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                </div>
-              )}
-
               {/* Upload Button Area - Casual Style */}
               <div
                 onClick={() => fileInputRef.current?.click()}
