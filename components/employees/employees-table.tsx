@@ -362,7 +362,7 @@ export function EmployeesTable({ users, isClient = false }: EmployeesTableProps)
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="size-8">
-                          <AvatarImage src={`/avatars/${employee.id}.jpg`} alt={employee.name} />
+                          <AvatarImage src={employee.avatar || undefined} alt={employee.name} />
                           <AvatarFallback className="bg-primary/10 text-primary text-xs">
                             {employee.initials}
                           </AvatarFallback>
