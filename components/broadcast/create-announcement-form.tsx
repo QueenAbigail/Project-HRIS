@@ -136,9 +136,10 @@ export function CreateAnnouncementForm({ onSuccess }: CreateAnnouncementFormProp
       // Reset form
       setTitle('')
       setBody('')
-      setRecipientType('ALL_EMPLOYEE')
+      setRecipientType('ALL_EMPLOYEES')
       setSelectedSite('')
       setSelectedEmployees([])
+      setEmployeeSearch('')
       setPdfFile(null)
       
       onSuccess?.()
