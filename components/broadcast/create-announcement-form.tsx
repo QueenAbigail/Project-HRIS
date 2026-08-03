@@ -15,12 +15,12 @@ interface CreateAnnouncementFormProps {
   onSuccess?: () => void
 }
 
-type RecipientType = 'PERSONAL' | 'MULTI_SITE' | 'SITE_WIDE' | 'ALL_EMPLOYEE'
+type RecipientType = 'PERSONAL' | 'MULTI_SITE' | 'SITE_WIDE' | 'ALL_EMPLOYEES'
 
 export function CreateAnnouncementForm({ onSuccess }: CreateAnnouncementFormProps) {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
-  const [recipientType, setRecipientType] = useState<RecipientType>('ALL_EMPLOYEE')
+  const [recipientType, setRecipientType] = useState<RecipientType>('ALL_EMPLOYEES')
   const [selectedSite, setSelectedSite] = useState('')
   const [selectedEmployees, setSelectedEmployees] = useState<Array<{ id: string; name: string }>>([])
   const [employeeSearch, setEmployeeSearch] = useState('')
@@ -185,7 +185,7 @@ export function CreateAnnouncementForm({ onSuccess }: CreateAnnouncementFormProp
             <SelectItem value="PERSONAL">Personal (Specific Employees)</SelectItem>
             <SelectItem value="MULTI_SITE">Multi-Site (Specific Employees)</SelectItem>
             <SelectItem value="SITE_WIDE">Site Wide (All employees on selected site)</SelectItem>
-            <SelectItem value="ALL_EMPLOYEE">All Employee (All employees)</SelectItem>
+            <SelectItem value="ALL_EMPLOYEES">All Employee (All employees)</SelectItem>
           </SelectContent>
         </Select>
       </div>
