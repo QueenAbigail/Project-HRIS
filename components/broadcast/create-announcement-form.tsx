@@ -15,12 +15,12 @@ interface CreateAnnouncementFormProps {
   onSuccess?: () => void
 }
 
-type RecipientType = 'PERSONAL' | 'MULTI_SITE' | 'SITE_WIDE' | 'ALL_EMPLOYEE'
+type RecipientType = 'PERSONAL' | 'MULTI_SITE' | 'SITE_WIDE' | 'ALL_EMPLOYEES'
 
 export function CreateAnnouncementForm({ onSuccess }: CreateAnnouncementFormProps) {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
-  const [recipientType, setRecipientType] = useState<RecipientType>('ALL_EMPLOYEE')
+  const [recipientType, setRecipientType] = useState<RecipientType>('ALL_EMPLOYEES')
   const [selectedSite, setSelectedSite] = useState('')
   const [selectedEmployees, setSelectedEmployees] = useState<Array<{ id: string; name: string }>>([])
   const [employeeSearch, setEmployeeSearch] = useState('')
@@ -37,19 +37,16 @@ export function CreateAnnouncementForm({ onSuccess }: CreateAnnouncementFormProp
 
   const fetchSitesAndEmployees = async () => {
     try {
-      // For now, using mock data - will be replaced with actual API calls
-      setSites([
-        { id: '1', name: 'Site A' },
-        { id: '2', name: 'Site B' },
-        { id: '3', name: 'Site C' },
-      ])
-      setAvailableEmployees([
-        { id: 'e1', name: 'John Doe', code: 'EMP001' },
-        { id: 'e2', name: 'Jane Smith', code: 'EMP002' },
-        { id: 'e3', name: 'Bob Johnson', code: 'EMP003' },
-      ])
+      const response = await fetch('/api/broadcast/employees-and-sites')
+      if (!response.ok) {
+        throw new Error('Failed to fetch data')
+      }
+      const data = await response.json()
+      setSites(data.sites)
+      setAvailableEmployees(data.employees)
     } catch (error) {
-      console.error('Error fetching data:', error)
+      console.error('[v0] Error fetching data:', error)
+      toast.error('Failed to load employees and sites')
     }
   }
 
@@ -128,17 +125,21 @@ export function CreateAnnouncementForm({ onSuccess }: CreateAnnouncementFormProp
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create announcement')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to create announcement')
       }
 
-      toast.success('Announcement created successfully')
+      const result = await response.json()
+      console.log('[v0] Announcement created:', result)
+      toast.success(`Announcement created and sent to ${result.recipientCount} recipients`)
       
       // Reset form
       setTitle('')
       setBody('')
-      setRecipientType('ALL_EMPLOYEE')
+      setRecipientType('ALL_EMPLOYEES')
       setSelectedSite('')
       setSelectedEmployees([])
+      setEmployeeSearch('')
       setPdfFile(null)
       
       onSuccess?.()
@@ -185,7 +186,7 @@ export function CreateAnnouncementForm({ onSuccess }: CreateAnnouncementFormProp
             <SelectItem value="PERSONAL">Personal (Specific Employees)</SelectItem>
             <SelectItem value="MULTI_SITE">Multi-Site (Specific Employees)</SelectItem>
             <SelectItem value="SITE_WIDE">Site Wide (All employees on selected site)</SelectItem>
-            <SelectItem value="ALL_EMPLOYEE">All Employee (All employees)</SelectItem>
+            <SelectItem value="ALL_EMPLOYEES">All Employee (All employees)</SelectItem>
           </SelectContent>
         </Select>
       </div>

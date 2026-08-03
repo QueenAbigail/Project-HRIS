@@ -39,6 +39,7 @@ export interface Employee {
   name: string
   initials: string
   email: string
+  avatar?: string | null
   employeeCode?: string | null
   department: string
   position: string

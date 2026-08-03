@@ -13,15 +13,8 @@ import {
 } from "@/components/ui/breadcrumb"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { getUserData, type User } from "@/lib/get-user-data"
 import { getSystemSettings } from "@/lib/system"
-
-interface User {
-  name: string | null
-  email: string
-  position: string | null
-  role: string
-}
 
 interface SystemSettings {
   appName: string
@@ -45,14 +38,7 @@ export default async function PayrollLayout({ children }: LayoutProps) {
   let systemSettings: SystemSettings | null = null
 
   try {
-    user = (await prisma.user.findUnique({
-      where: { email: authUser.email },
-      select: { 
-        name: true, 
-        position: true, 
-        role: true 
-      }
-    })) as User | null
+    user = await getUserData(authUser.email)
   } catch (error) {
     console.error('[v0] Error fetching user from database:', error)
     user = null

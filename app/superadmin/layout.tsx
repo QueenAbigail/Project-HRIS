@@ -2,26 +2,13 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { UnauthorizedAccess } from "@/components/superadmin/unauthorized-access"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+import { SuperadminBreadcrumb } from "@/components/superadmin/superadmin-breadcrumb"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
+import { getUserData, type User } from "@/lib/get-user-data"
 import { getSystemSettings } from "@/lib/system"
 import Link from "next/link"
 import { LogOut } from "lucide-react"
-
-interface User {
-  name: string | null
-  position: string | null
-  role: string
-}
 
 interface SystemSettings {
   appName: string
@@ -41,33 +28,9 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
     redirect('/')
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: authUser.email },
-    select: { 
-      name: true, 
-      position: true, 
-      role: true 
-    }
-  }) as User | null
+  const user = await getUserData(authUser.email)
 
   const systemSettings = await getSystemSettings()
-
-  const pathNames: Record<string, string> = {
-    '/superadmin': 'Dashboard',
-    '/superadmin/information': 'Information',
-    '/superadmin/client': 'Client',
-    '/superadmin/structure': 'Structure',
-    '/superadmin/data': 'Data',
-    '/superadmin/schedules': 'Schedules',
-    '/superadmin/devices': 'Device Management',
-    '/superadmin/gps-locations': 'GPS Locations',
-    '/superadmin/print-qr-code': 'Print QR Code',
-    '/superadmin/email-templates': 'Email Templates',
-    '/superadmin/settings': 'Settings',
-  }
-
-  const pathname = '/superadmin'
-  const currentPage = pathNames[pathname] || 'Superadmin'
 
   return (
     <>
@@ -77,19 +40,7 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
         <SidebarInset>
         <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border bg-card/50 backdrop-blur-sm px-4">
           <div className="flex items-center gap-2">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/dashboard">
-                    Dashboard
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>{currentPage}</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
+            <SuperadminBreadcrumb />
           </div>
           <Link href="/dashboard">
             <Button 

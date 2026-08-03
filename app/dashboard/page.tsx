@@ -265,7 +265,26 @@ export default async function DashboardPage() {
     };
   });
 
-  const locationStats = locationStatsByCompany.flatMap((c) => c.sites);
+  // Ensure all date objects in locationStatsByCompany are serializable
+  const serializedLocationStatsByCompany = locationStatsByCompany.map((company) => ({
+    ...company,
+    sites: company.sites.map((site) => ({
+      siteId: site.siteId,
+      siteName: site.siteName,
+      totalStaff: site.totalStaff,
+      present: site.present,
+      absent: site.absent,
+      late: site.late,
+      lateMinutesTotal: site.lateMinutesTotal,
+      notCheckedIn: site.notCheckedIn,
+      onLeave: site.onLeave,
+      dayOff: site.dayOff,
+      expectedToWork: site.expectedToWork,
+      attendanceRate: site.attendanceRate,
+    }))
+  }));
+
+  const locationStats = serializedLocationStatsByCompany.flatMap((c) => c.sites);
 
   // overallStats
   const overallDayOff = Object.values(dayOffBySite).reduce((sum, count) => sum + (count as number), 0);
@@ -294,14 +313,14 @@ export default async function DashboardPage() {
     lateChangeFromLastWeek: 0, // TODO historical
   };
 
-  // chartData
+  // chartData - convert dates to strings for serialization
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const weekCounts: Record<string, { present: number; absent: number; late: number }> = {};
   days.forEach((dayShort, index) => {
     weekCounts[dayShort] = { present: 0, absent: 0, late: 0 };
   });
   weekAttendances.forEach((a) => {
-    const dayNum = new Date(a.date).getDay();
+    const dayNum = typeof a.date === 'string' ? new Date(a.date).getDay() : (a.date instanceof Date ? a.date.getDay() : 0);
     const dayShort = days[dayNum];
     if (weekCounts[dayShort]) {
       if (a.status === 'PRESENT') weekCounts[dayShort].present += 1;
@@ -316,9 +335,23 @@ export default async function DashboardPage() {
     late: weekCounts[d].late,
   }));
 
+  // Serialize late check-ins to avoid Date serialization errors
+  const serializedLateCheckIns = lateCheckIns.map(item => ({
+    ...item,
+    // Already strings from formatTime function, no conversion needed
+  }));
+
 
 
     console.log('[v0] Dashboard: Data fetch completed, rendering page')
+    
+    // Debug: Check for non-serializable objects
+    console.log('[v0] DEBUG - overallStats:', JSON.stringify(overallStats, null, 2).substring(0, 200))
+    console.log('[v0] DEBUG - locationStatsByCompany type:', typeof locationStatsByCompany)
+    console.log('[v0] DEBUG - chartData sample:', chartData[0])
+    console.log('[v0] DEBUG - serializedLateCheckIns sample:', serializedLateCheckIns[0])
+    console.log('[v0] DEBUG - companyNameForDisplay:', companyNameForDisplay)
+    
     return (
       <div className="space-y-6">
         <div>
@@ -331,12 +364,12 @@ export default async function DashboardPage() {
         <StatsCards stats={overallStats} />
 
         {/* Location-based Attendance Overview */}
-        <LocationAttendance locationData={locationStatsByCompany} companyName={companyNameForDisplay} isClient={isClient} />
+        <LocationAttendance locationData={serializedLocationStatsByCompany} companyName={companyNameForDisplay} isClient={isClient} />
 
         <div className="grid gap-6 lg:grid-cols-2">
           <AttendanceChart chartData={chartData} />
           <div className="space-y-6">
-            <LateCheckIns lateCheckIns={lateCheckIns} />
+            <LateCheckIns lateCheckIns={serializedLateCheckIns} />
             <UpcomingLeaves />
           </div>
         </div>

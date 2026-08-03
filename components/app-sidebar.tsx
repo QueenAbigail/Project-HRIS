@@ -14,7 +14,6 @@ import {
   FileBarChart,
   Settings,
   Shield,
-  Bell,
   LogOut,
   ChevronDown,
   MapPin,
@@ -26,6 +25,8 @@ import {
   Minus,
   Mail,
   Megaphone,
+  Camera,
+  Bell,
 } from 'lucide-react'
 
 import {
@@ -45,6 +46,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useTheme } from 'next-themes'
 import { Badge } from '@/components/ui/badge'
+import { ChangePhotoModal } from '@/components/change-photo-modal'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,6 +70,8 @@ interface User {
   email: string
   position: string | null
   role: string
+  employeeCode?: string | null
+  siteName?: string | null
 }
 
 interface Props {
@@ -108,7 +112,6 @@ const mainNavItems = [
     title: 'Attendance',
     url: '/dashboard/attendance',
     icon: Clock,
-    badge: 12,
   },
   {
     title: 'Patrol Monitoring',
@@ -124,7 +127,7 @@ const mainNavItems = [
     title: 'Leave Management',
     url: '/dashboard/leave',
     icon: CalendarDays,
-    badge: 5,
+    badge: 0,
   },
 ]
 
@@ -227,10 +230,60 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   const [mounted, setMounted] = useState(false)
   const [localSystemSettings, setLocalSystemSettings] = useState<SystemSettings>({ appName: 'SecureGuard', appDescription: 'HR Administration' })
   const [loading, setLoading] = useState(!propSystemSettings)
-  const [pendingLeaveCount, setPendingLeaveCount] = useState<number>(5)
+  const [pendingLeaveCount, setPendingLeaveCount] = useState<number>(0)
+  const [isChangePhotoOpen, setIsChangePhotoOpen] = useState(false)
 
   const systemSettings = propSystemSettings || localSystemSettings
   const userRole = user?.role || null
+  
+  // Map role codes to display names
+  const getRoleDisplay = (role: string | null | undefined): string => {
+    if (!role) return 'Unknown'
+    switch (role) {
+      case 'SUPER_ADMIN':
+        return 'Admin'
+      case 'HR_ADMIN':
+        return 'Head Office'
+      default:
+        return role
+    }
+  }
+
+  const handlePhotoUpload = async (file: File) => {
+    let hasError = false
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      // Cookies are sent automatically by the browser
+      const response = await fetch('/api/user/avatar', {
+        method: 'POST',
+        credentials: 'include', // Send cookies with request
+        body: formData,
+      })
+
+      if (!response.ok) {
+        hasError = true
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.error || `Upload failed with status ${response.status}`
+        console.error('[v0] Upload error response:', { status: response.status, errorData })
+        toast.error(errorMessage)
+        return
+      }
+
+      const result = await response.json()
+      console.log('[v0] Upload successful, URL:', result.url)
+      toast.success('Profile photo updated successfully')
+      setIsChangePhotoOpen(false)
+      // Refresh server-side data
+      router.refresh()
+    } catch (error) {
+      if (!hasError) {
+        console.error('[v0] Error uploading photo:', error)
+        toast.error(error instanceof Error ? error.message : 'Failed to update profile photo')
+      }
+    }
+  }
 
   useEffect(() => {
     setMounted(true)
@@ -304,7 +357,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
   const secondaryNavItems = [
     {
       title: 'Map Site',
-      url: '/dashboard/map-sites',
+      url: '/system/map-sites',
       icon: MapPin,
     },
     {
@@ -314,12 +367,12 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
     },
     {
       title: 'Reports',
-      url: '/dashboard/reports',
+      url: '/system/reports',
       icon: FileBarChart,
     },
     {
       title: 'Settings',
-      url: '/dashboard/settings',
+      url: '/system/settings',
       icon: Settings,
     },
   ]
@@ -348,11 +401,11 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
 
   return (
     <Sidebar variant="inset" collapsible="icon" className="overflow-hidden">
-      <SidebarHeader className="border-b border-sidebar-border overflow-hidden">
+      <SidebarHeader className="border-b border-sidebar-border px-0 overflow-visible">
         <SidebarMenu>
-          <SidebarMenuItem className="w-full">
-            <SidebarMenuButton size="lg" asChild className="flex-1">
-              <Link href="/dashboard" className="min-w-0">
+          <SidebarMenuItem className="w-full px-2 overflow-visible">
+            <SidebarMenuButton size="lg" asChild className="flex-1 overflow-visible">
+              <Link href="/dashboard" className="min-w-0 overflow-visible">
                 <LogoIcon src={systemSettings.logoUrl || '/koperasi_icon.png'} alt={systemSettings.appName} className="flex h-8 items-center justify-center flex-shrink-0" />
                 <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
                   <span className="truncate font-semibold">{systemSettings.appName}</span>
@@ -361,13 +414,17 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          <SidebarMenuItem className="w-full -mx-2">
+          <SidebarMenuItem className="w-full px-2">
             <SidebarMenuButton
               onClick={toggleSidebar}
-              className="w-full px-2 h-9"
+              className="w-full h-9 flex items-center justify-center"
               title={state === 'expanded' ? 'Collapse sidebar' : 'Expand sidebar'}
             >
-              <ChevronLeft className={`size-4 transition-transform duration-300 ${state === 'collapsed' ? 'rotate-180' : ''}`} />
+              <div className={`flex items-center justify-center transition-transform duration-300 ${state === 'collapsed' ? 'rotate-180' : ''}`}>
+                <ChevronLeft className="size-5" />
+                <ChevronLeft className="size-5 -ml-3" />
+                <ChevronLeft className="size-5 -ml-3" />
+              </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -440,7 +497,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="lg">
                   <Avatar className="size-8 flex-shrink-0">
-                    <AvatarImage src="/placeholder-user.jpg" alt={displayName} />
+                    <AvatarImage src={user?.avatar || "/placeholder-user.jpg"} alt={displayName} className="transition-opacity duration-300" />
                     <AvatarFallback className="bg-primary/10 text-primary font-medium">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
@@ -455,49 +512,63 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                 className="w-[--radix-dropdown-menu-trigger-width]"
               >
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuLabel className="px-2 py-1.5 text-xs font-normal text-muted-foreground">
-                  Access Level: {userRole ?? 'Unknown'}
-                </DropdownMenuLabel>
+                <div className="px-2 py-2 space-y-1 text-xs text-muted-foreground">
+                  {user?.employeeCode && (
+                    <div>ID: <span className="text-foreground font-medium">{user.employeeCode}</span></div>
+                  )}
+                  {user?.siteName && (
+                    <div>Site: <span className="text-foreground font-medium">{user.siteName}</span></div>
+                  )}
+                  <div>Access Level: <span className="text-foreground font-medium">{getRoleDisplay(userRole)}</span></div>
+                </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Bell className="mr-2 size-4" />
-                  Notifications
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 size-4" />
-                  Settings
+                <DropdownMenuItem onClick={() => setIsChangePhotoOpen(true)}>
+                  <Camera className="mr-2 size-4" />
+                  Change Photo
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {mounted && (
-                  <DropdownMenuItem
-                    onClick={() => {
-                      const nextTheme = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light'
-                      setTheme(nextTheme)
-                    }}
-                  >
-                    {theme === 'light' ? (
-                      <>
-                        {/* Sun icon for light mode */}
-                        <svg className="mr-2 size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="px-2 py-2">
+                    <div className="flex gap-1 bg-muted p-1 rounded-lg">
+                      <button
+                        onClick={() => setTheme('light')}
+                        className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          theme === 'light'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        title="Light theme"
+                      >
+                        <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1m-16 0H1m15.364 1.636l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
-                        Light
-                      </>
-                    ) : theme === 'dark' ? (
-                      <>
-                        {/* Moon icon for dark mode */}
-                        <svg className="mr-2 size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      </button>
+                      <button
+                        onClick={() => setTheme('system')}
+                        className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          theme === 'system'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        title="System theme"
+                      >
+                        <Monitor className="size-4" />
+                      </button>
+                      <button
+                        onClick={() => setTheme('dark')}
+                        className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          theme === 'dark'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        title="Dark theme"
+                      >
+                        <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                         </svg>
-                        Dark
-                      </>
-                    ) : (
-                      <>
-                        <Monitor className="mr-2 size-4" />
-                        System {resolvedTheme && `(${resolvedTheme.charAt(0).toUpperCase() + resolvedTheme.slice(1)})`}
-                      </>
-                    )}
-                  </DropdownMenuItem>
+                      </button>
+                    </div>
+                  </div>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -522,6 +593,13 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+
+      <ChangePhotoModal
+        isOpen={isChangePhotoOpen}
+        onClose={() => setIsChangePhotoOpen(false)}
+        currentAvatar={user?.avatar}
+        onUpload={handlePhotoUpload}
+      />
     </Sidebar>
   )
 }

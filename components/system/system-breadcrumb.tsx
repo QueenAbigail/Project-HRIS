@@ -15,7 +15,10 @@ export function SystemBreadcrumb() {
 
   const pathNames: Record<string, string> = {
     '/system': 'System',
+    '/system/map-sites': 'Map Site',
     '/system/broadcast': 'Broadcast',
+    '/system/reports': 'Reports',
+    '/system/settings': 'Settings',
   }
 
   const currentPage = pathNames[pathname] || 'System'
