@@ -46,6 +46,11 @@ export function AnnouncementsList({ refreshTrigger }: AnnouncementsListProps) {
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
+    // Initial fetch on component mount
+    fetchAnnouncements()
+  }, [])
+
+  useEffect(() => {
     fetchAnnouncements()
   }, [refreshTrigger])
 
