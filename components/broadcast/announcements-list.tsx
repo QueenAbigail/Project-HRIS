@@ -167,9 +167,9 @@ export function AnnouncementsList({ refreshTrigger }: AnnouncementsListProps) {
   const getRecipientTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       'PERSONAL': 'Personal',
-      'MULTI_SITE': 'Multi-Site Group',
+      'MULTI_SITE': 'Multi-Site',
       'SITE_WIDE': 'Site Wide',
-      'ALL_EMPLOYEE': 'All Employees',
+      'ALL_EMPLOYEES': 'All Employees',
     }
     return labels[type] || type
   }
@@ -179,7 +179,7 @@ export function AnnouncementsList({ refreshTrigger }: AnnouncementsListProps) {
       'PERSONAL': 'bg-blue-100 text-blue-800',
       'MULTI_SITE': 'bg-purple-100 text-purple-800',
       'SITE_WIDE': 'bg-orange-100 text-orange-800',
-      'ALL_EMPLOYEE': 'bg-red-100 text-red-800',
+      'ALL_EMPLOYEES': 'bg-red-100 text-red-800',
     }
     return colors[type] || 'bg-gray-100 text-gray-800'
   }
