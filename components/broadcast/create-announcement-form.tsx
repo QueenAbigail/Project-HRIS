@@ -37,19 +37,16 @@ export function CreateAnnouncementForm({ onSuccess }: CreateAnnouncementFormProp
 
   const fetchSitesAndEmployees = async () => {
     try {
-      // For now, using mock data - will be replaced with actual API calls
-      setSites([
-        { id: '1', name: 'Site A' },
-        { id: '2', name: 'Site B' },
-        { id: '3', name: 'Site C' },
-      ])
-      setAvailableEmployees([
-        { id: 'e1', name: 'John Doe', code: 'EMP001' },
-        { id: 'e2', name: 'Jane Smith', code: 'EMP002' },
-        { id: 'e3', name: 'Bob Johnson', code: 'EMP003' },
-      ])
+      const response = await fetch('/api/broadcast/employees-and-sites')
+      if (!response.ok) {
+        throw new Error('Failed to fetch data')
+      }
+      const data = await response.json()
+      setSites(data.sites)
+      setAvailableEmployees(data.employees)
     } catch (error) {
-      console.error('Error fetching data:', error)
+      console.error('[v0] Error fetching data:', error)
+      toast.error('Failed to load employees and sites')
     }
   }
 
@@ -128,10 +125,13 @@ export function CreateAnnouncementForm({ onSuccess }: CreateAnnouncementFormProp
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create announcement')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to create announcement')
       }
 
-      toast.success('Announcement created successfully')
+      const result = await response.json()
+      console.log('[v0] Announcement created:', result)
+      toast.success(`Announcement created and sent to ${result.recipientCount} recipients`)
       
       // Reset form
       setTitle('')
