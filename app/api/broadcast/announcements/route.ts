@@ -101,6 +101,8 @@ export async function POST(request: Request) {
     const siteId = formData.get('siteId') as string | null
     const employeeIds = formData.get('employeeIds') as string | null
 
+    console.log('[v0] Creating announcement with:', { title, body, recipientType, siteId, employeeIds })
+
     // Validation
     if (!title || !body || !recipientType) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -211,6 +213,7 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('[v0] Error creating announcement:', error)
-    return NextResponse.json({ error: 'Failed to create announcement' }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: `Failed to create announcement: ${errorMessage}` }, { status: 500 })
   }
 }
