@@ -74,6 +74,17 @@ enum PatrolStatus {
   MISSED
 }
 
+enum AnnouncementRecipientType {
+  ALL_EMPLOYEES
+  SITE_WIDE
+  DEPARTMENT_SPECIFIC
+}
+
+enum AnnouncementPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
 
 // Site model (from locations in constants.ts)
 model Site {
@@ -92,6 +103,7 @@ model Site {
   patrols     Patrol[]
   bulkImportRecords BulkImportRecord[] @relation("SiteBulkImports")
   shiftSwaps  ShiftSwap[]
+  announcements Announcement[] @relation("SiteAnnouncements")
   
   createdAt   DateTime                  @default(now())
   updatedAt   DateTime                  @updatedAt
@@ -180,6 +192,8 @@ model User {
   swapsFrom             ShiftSwap[]               @relation("SwapFrom")
   swapsTo               ShiftSwap[]               @relation("SwapTo")
   schedules             Schedule[]                @relation("EmployeeSchedules")
+  announcementsCreated  Announcement[]            @relation("AnnouncementCreatedBy")
+  announcementReadStatuses AnnouncementReadStatus[] @relation("AnnouncementReadStatus")
 
   @@index([siteId])
   @@index([companyId])
@@ -796,4 +810,55 @@ model Payroll {
   @@index([month])
   @@index([status])
   @@map("payrolls")
+}
+
+// Announcement model - for managing announcements and broadcasts
+model Announcement {
+  id                String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title             String
+  body              String                      @db.Text
+  createdBy         String
+  createdByUser     User                        @relation("AnnouncementCreatedBy", fields: [createdBy], references: [id], onDelete: Cascade)
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+  
+  recipientType     AnnouncementRecipientType   @default(ALL_EMPLOYEES)
+  recipientSiteId   String?                     // If site-specific
+  recipientSite     Site?                       @relation("SiteAnnouncements", fields: [recipientSiteId], references: [id], onDelete: SetNull)
+  recipientDepartment String?                   // If department-specific
+  
+  priority          AnnouncementPriority        @default(MEDIUM)
+  attachmentUrl     String?                     // PDF or other file URL from Supabase Storage
+  
+  isActive          Boolean                     @default(true)
+  expiresAt         DateTime?                   // Optional: auto-hide after date
+  
+  readStatuses      AnnouncementReadStatus[]
+
+  @@index([createdBy])
+  @@index([recipientType])
+  @@index([recipientSiteId])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@map("announcements")
+}
+
+// AnnouncementReadStatus model - tracks which users have read/dismissed announcements
+model AnnouncementReadStatus {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  announcementId  String        @db.Uuid
+  announcement    Announcement  @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User          @relation("AnnouncementReadStatus", fields: [userId], references: [id], onDelete: Cascade)
+  
+  readAt          DateTime?     // null = not read yet
+  dismissedAt     DateTime?     // When user dismissed/archived the announcement
+  createdAt       DateTime      @default(now())
+
+  @@unique([announcementId, userId])
+  @@index([userId])
+  @@index([announcementId])
+  @@index([readAt])
+  @@index([dismissedAt])
+  @@map("announcement_read_statuses")
 }
