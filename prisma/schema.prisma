@@ -77,7 +77,8 @@ enum PatrolStatus {
 enum AnnouncementRecipientType {
   ALL_EMPLOYEES
   SITE_WIDE
-  DEPARTMENT_SPECIFIC
+  PERSONAL
+  MULTI_SITE
 }
 
 enum AnnouncementPriority {
