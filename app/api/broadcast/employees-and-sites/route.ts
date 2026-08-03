@@ -21,7 +21,7 @@ export async function GET() {
       },
       where: {
         // Only active employees
-        status: { in: ['Active', 'ON_LEAVE', 'ACTIVE'] },
+        status: 'ACTIVE',
       },
       orderBy: { name: 'asc' },
     })
