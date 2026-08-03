@@ -1,12 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
-import { createClient } from '@supabase/supabase-js'
+import { getCurrentUser } from '@/lib/system'
+import { createAdminClient } from '@/lib/auth'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+let supabase: any = null
+
+async function getSupabaseClient() {
+  if (!supabase) {
+    supabase = await createAdminClient()
+  }
+  return supabase
+}
 
 // GET /api/broadcast/announcements/[id] - Get single announcement with analytics
 export async function GET(
@@ -82,12 +86,12 @@ export async function GET(
 
 // PUT /api/broadcast/announcements/[id] - Update announcement
 export async function PUT(
-  request: NextRequest,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-    if (!session?.user?.email) {
+    const user = await getCurrentUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -108,12 +112,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Announcement not found' }, { status: 404 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true },
-    })
-
-    if (!user || existing.createdBy !== user.id) {
+    if (existing.createdBy !== user.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
@@ -140,22 +139,13 @@ export async function PUT(
 
 // DELETE /api/broadcast/announcements/[id] - Delete announcement
 export async function DELETE(
-  request: NextRequest,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await auth()
-    if (!session?.user?.email) {
+    const user = await getCurrentUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true },
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     // Check if announcement exists and user has permission to delete
@@ -175,10 +165,11 @@ export async function DELETE(
     // Delete attachment from Supabase if exists
     if (announcement.attachmentUrl) {
       try {
+        const sb = await getSupabaseClient()
         const url = new URL(announcement.attachmentUrl)
         const fileName = url.pathname.split('/').pop()
         if (fileName) {
-          await supabase.storage.from('announcement').remove([fileName])
+          await sb.storage.from('announcement').remove([fileName])
         }
       } catch (err) {
         console.error('[v0] Error deleting attachment:', err)

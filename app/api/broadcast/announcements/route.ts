@@ -1,12 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
-import { createClient } from '@supabase/supabase-js'
+import { getCurrentUser } from '@/lib/system'
+import { createAdminClient } from '@/lib/auth'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+let supabase: any = null
+
+async function getSupabaseClient() {
+  if (!supabase) {
+    supabase = await createAdminClient()
+  }
+  return supabase
+}
 
 // GET /api/broadcast/announcements - Fetch announcements with search
 export async function GET(request: NextRequest) {
@@ -82,10 +86,10 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/broadcast/announcements - Create announcement + auto-create notifications
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const session = await auth()
-    if (!session?.user?.email) {
+    const user = await getCurrentUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -102,38 +106,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Get current user
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: { id: true },
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
     let attachmentUrl: string | null = null
 
     // Upload PDF if provided
     if (attachment && attachment.size > 0) {
-      const buffer = await attachment.arrayBuffer()
-      const fileName = `${Date.now()}-${attachment.name}`
-      const { data, error } = await supabase.storage
-        .from('announcement')
-        .upload(fileName, new Uint8Array(buffer), {
-          contentType: 'application/pdf',
-        })
+      try {
+        const sb = await getSupabaseClient()
+        const buffer = await attachment.arrayBuffer()
+        const fileName = `${Date.now()}-${attachment.name}`
+        const { data, error } = await sb.storage
+          .from('announcement')
+          .upload(fileName, new Uint8Array(buffer), {
+            contentType: 'application/pdf',
+          })
 
-      if (error) {
-        console.error('[v0] PDF upload error:', error)
+        if (error) {
+          console.error('[v0] PDF upload error:', error)
+          return NextResponse.json({ error: 'Failed to upload PDF' }, { status: 500 })
+        }
+
+        const { data: publicUrlData } = sb.storage
+          .from('announcement')
+          .getPublicUrl(fileName)
+
+        attachmentUrl = publicUrlData.publicUrl
+      } catch (uploadError) {
+        console.error('[v0] PDF upload exception:', uploadError)
         return NextResponse.json({ error: 'Failed to upload PDF' }, { status: 500 })
       }
-
-      const { data: publicUrlData } = supabase.storage
-        .from('announcement')
-        .getPublicUrl(fileName)
-
-      attachmentUrl = publicUrlData.publicUrl
     }
 
     // Determine target recipients
