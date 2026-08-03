@@ -367,7 +367,7 @@ model PatrolEvidence {
 
 // Device Binding model - restricts accounts to single device/app login
 model DeviceBinding {
-  id            String   @id @default(cuid())
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   deviceId      String   // Device identifier from mobile app
