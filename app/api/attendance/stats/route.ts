@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { startOfDay, endOfDay } from 'date-fns'
+import { calculateAttendanceStatus } from '@/lib/attendance-utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,7 +40,8 @@ export async function GET(request: NextRequest) {
     let totalLateMinutes = 0
 
     attendance.forEach((record) => {
-      const status = record.status || 'NOT_CHECKED_IN'
+      // Recalculate status based on check-in time and scheduled time
+      const status = calculateAttendanceStatus(record.actualCheckIn, record.shift?.startTime || record.scheduledStart)
       
       if (status === 'LATE') {
         lateCheckIns++
