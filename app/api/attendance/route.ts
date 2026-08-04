@@ -171,8 +171,14 @@ export async function GET(request: NextRequest) {
       ]
     })
 
-    console.log("[v0] Attendance API returning", filtered.length, "records for date range:", dateRange)
-    return NextResponse.json(filtered)
+    // Recalculate status for each record based on check-in/out times and scheduled times
+    const enrichedRecords = filtered.map((record: any) => ({
+      ...record,
+      status: calculateAttendanceStatus(record.actualCheckIn, record.shift?.startTime || record.scheduledStart)
+    }))
+
+    console.log("[v0] Attendance API returning", enrichedRecords.length, "records for date range:", dateRange)
+    return NextResponse.json(enrichedRecords)
   } catch (error) {
     console.error('[v0] Error fetching attendance:', {
       message: error instanceof Error ? error.message : String(error),
