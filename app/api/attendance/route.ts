@@ -247,10 +247,26 @@ export async function POST(request: NextRequest) {
         updateData.selfieCheckIn = selfieCheckIn
       }
 
-      // If actualCheckOut is provided, update check-out
+      // If actualCheckOut is provided, update check-out and ensure status is properly set
       if (actualCheckOut) {
         updateData.actualCheckOut = actualCheckOut
         updateData.selfieCheckOut = selfieCheckOut
+        
+        // Ensure status is set based on check-in time (if it wasn't already)
+        if (!updateData.status && existingAttendance.actualCheckIn) {
+          updateData.status = calculateAttendanceStatus(
+            existingAttendance.actualCheckIn, 
+            scheduledStart || existingAttendance.scheduledStart
+          )
+        }
+      }
+
+      // If no status was set during check-in or check-out, calculate it now
+      if (!updateData.status && existingAttendance.actualCheckIn) {
+        updateData.status = calculateAttendanceStatus(
+          existingAttendance.actualCheckIn,
+          scheduledStart || existingAttendance.scheduledStart
+        )
       }
 
       const updated = await prisma.attendance.update({
