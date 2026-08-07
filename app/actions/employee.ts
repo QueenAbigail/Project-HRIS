@@ -52,6 +52,8 @@ export async function updateEmployeeAction(userId: string, formData: any) {
       employmentStatus: { field: 'employmentStatus', type: 'string' },
       joinDate: { field: 'joinDate', type: 'date' },
       status: { field: 'status', type: 'enum' },
+      allowMobileAttendance: { field: 'allowMobileAttendance', type: 'boolean' },
+      allowWebAccess: { field: 'allowWebAppAccess', type: 'boolean' },
     }
 
     // Process each field
@@ -74,6 +76,8 @@ export async function updateEmployeeAction(userId: string, formData: any) {
         if (['ACTIVE', 'INACTIVE', 'SUSPENDED'].includes(statusValue)) {
           updateData[field] = statusValue
         }
+      } else if (type === 'boolean') {
+        updateData[field] = Boolean(value)
       } else if (type === 'string' && typeof value === 'string') {
         // Only add non-empty strings
         updateData[field] = value.trim()

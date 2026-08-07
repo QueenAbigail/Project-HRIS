@@ -179,8 +179,8 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
         accountNumber: employee.accountNumber || '',
         role: employee.role || 'STAFF',
         userStatus: employee.userStatus || 'ACTIVE',
-        allowMobileAttendance: false,
-        allowWebAccess: false,
+        allowMobileAttendance: Boolean(employee.allowMobileAttendance),
+        allowWebAccess: Boolean(employee.allowWebAppAccess),
       })
     }
   }, [employee, sites])

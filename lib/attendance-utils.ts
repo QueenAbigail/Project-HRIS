@@ -59,16 +59,17 @@ export function hasCheckedIn(status: string | null | undefined): boolean {
  * @param checkInTime - Check-in time in "HH:MM" format or ISO string
  * @param scheduledTime - Scheduled start time in "HH:MM" format or ISO string
  */
-export function isLateCheckIn(checkInTime: string | null | undefined, scheduledTime: string | null | undefined): boolean {
+export function isLateCheckIn(checkInTime: string | Date | null | undefined, scheduledTime: string | Date | null | undefined): boolean {
   if (!checkInTime || !scheduledTime) return false
   
   try {
-    // Extract HH:MM from either "HH:MM" or ISO datetime
-    const extractTime = (timeStr: string): number => {
+    // Extract HH:MM from either "HH:MM", ISO datetime, or Date values
+    const extractTime = (value: string | Date): number => {
+      const timeStr = value instanceof Date ? value.toISOString() : value
       const match = timeStr.match(/(\d{1,2}):(\d{2})/)
       if (!match) return 0
-      const hours = parseInt(match[1])
-      const minutes = parseInt(match[2])
+      const hours = parseInt(match[1], 10)
+      const minutes = parseInt(match[2], 10)
       return hours * 60 + minutes // Convert to minutes since midnight
     }
     
@@ -80,4 +81,16 @@ export function isLateCheckIn(checkInTime: string | null | undefined, scheduledT
     console.error('[v0] Error determining if late:', error)
     return false
   }
+}
+
+/**
+ * Calculate the canonical database status from check-in and scheduled times.
+ */
+export function calculateAttendanceStatus(
+  actualCheckIn: string | Date | null | undefined,
+  scheduledStart: string | Date | null | undefined,
+): string {
+  if (!actualCheckIn) return 'NOT_CHECKED_IN'
+  if (!scheduledStart) return 'PRESENT'
+  return isLateCheckIn(actualCheckIn, scheduledStart) ? 'LATE' : 'PRESENT'
 }
