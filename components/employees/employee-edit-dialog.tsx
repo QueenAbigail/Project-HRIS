@@ -63,6 +63,7 @@ interface EmployeeEditFormData {
   role?: string
   userStatus?: string
   allowMobileAttendance?: boolean
+  allowWebAppAccess?: boolean
   allowWebAccess?: boolean
 }
 
@@ -180,7 +181,7 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
         role: employee.role || 'STAFF',
         userStatus: employee.userStatus || 'ACTIVE',
         allowMobileAttendance: Boolean(employee.allowMobileAttendance),
-        allowWebAccess: Boolean(employee.allowWebAppAccess),
+        allowWebAccess: Boolean(employee.allowWebAppAccess ?? employee.allowWebAccess),
       })
     }
   }, [employee, sites])

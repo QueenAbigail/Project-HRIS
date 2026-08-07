@@ -134,6 +134,8 @@ async function EmployeesContent({
         ktaExpiry: true,
         certifications: true,
         employmentStatus: true,
+        allowMobileAttendance: true,
+        allowWebAppAccess: true,
         bankName: true,
         accountHolder: true,
         accountNumber: true,
@@ -199,6 +201,8 @@ async function EmployeesContent({
         ? format(user.ktaExpiry, 'yyyy-MM-dd')
         : '',
       employmentStatus: user.employmentStatus ?? '',
+      allowMobileAttendance: user.allowMobileAttendance,
+      allowWebAppAccess: user.allowWebAppAccess,
       bankName: user.bankName ?? '',
       accountHolder: user.accountHolder ?? '',
       accountNumber: user.accountNumber ?? '',
