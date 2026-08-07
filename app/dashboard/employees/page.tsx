@@ -134,6 +134,7 @@ async function EmployeesContent({
         ktaExpiry: true,
         certifications: true,
         employmentStatus: true,
+        role: true,
         allowMobileAttendance: true,
         allowWebAppAccess: true,
         bankName: true,
