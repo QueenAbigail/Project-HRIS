@@ -202,6 +202,8 @@ async function EmployeesContent({
         ? format(user.ktaExpiry, 'yyyy-MM-dd')
         : '',
       employmentStatus: user.employmentStatus ?? '',
+      role: user.role ?? 'STAFF',
+      userStatus: user.status ?? 'ACTIVE',
       allowMobileAttendance: user.allowMobileAttendance,
       allowWebAppAccess: user.allowWebAppAccess,
       bankName: user.bankName ?? '',

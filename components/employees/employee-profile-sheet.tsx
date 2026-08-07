@@ -70,6 +70,8 @@ export interface Employee {
   religion?: string
   maritalStatus?: string
   employmentStatus?: string
+  role?: string
+  userStatus?: string
   allowMobileAttendance?: boolean
   allowWebAppAccess?: boolean
   site?: { name: string }
