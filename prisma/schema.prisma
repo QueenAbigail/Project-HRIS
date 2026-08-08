@@ -281,7 +281,8 @@ model SystemSettings {
   logoUrl        String?
   appName        String  @default("SecureGuard")
   appDescription String  @default("HR Administration")
-
+  appVersions   String? @map("AppVersions")
+  
   @@map("system_settings")
 }
 
