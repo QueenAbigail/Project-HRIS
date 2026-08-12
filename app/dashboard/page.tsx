@@ -269,8 +269,8 @@ export default async function DashboardPage() {
   const serializedLocationStatsByCompany = locationStatsByCompany.map((company) => ({
     ...company,
     sites: company.sites.map((site) => ({
-      siteId: site.siteId,
-      siteName: site.siteName,
+      locationId: site.locationId,
+      locationName: site.locationName,
       totalStaff: site.totalStaff,
       present: site.present,
       absent: site.absent,
