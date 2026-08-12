@@ -150,6 +150,7 @@ export async function createEmployeeAction(formData: any) {
         email: hrisEmail, 
         personalEmail: formData.personalEmail,
         department: formData.department,
+        position: formData.position,
         role: formData.systemRole, // Pastikan dari frontend ngirim string yang match sama Enum lu
         
         // Relasi ke lokasi (site)
