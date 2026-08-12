@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
 import { subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
+import { resolveAttendanceStatus } from '@/lib/attendance-utils'
 
 // Helper function to calculate attendance status based on check-in time and scheduled time
 function calculateAttendanceStatus(actualCheckIn: string | null, scheduledStart: string | null): string {
@@ -171,10 +172,12 @@ export async function GET(request: NextRequest) {
       ]
     })
 
-    // Recalculate status for each record based on check-in/out times and scheduled times
+    // Resolve display status via the shared single-source-of-truth helper:
+    // derive PRESENT/LATE from the check-in, but trust the persisted ABSENT/LEAVE
+    // status that the auto-absent cron maintains (never downgrade ABSENT to Pending).
     const enrichedRecords = filtered.map((record: any) => ({
       ...record,
-      status: calculateAttendanceStatus(record.actualCheckIn, record.shift?.startTime || record.scheduledStart)
+      status: resolveAttendanceStatus(record)
     }))
 
     console.log("[v0] Attendance API returning", enrichedRecords.length, "records for date range:", dateRange)
