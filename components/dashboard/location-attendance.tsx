@@ -258,9 +258,9 @@ export function LocationAttendance({ locationData, companyName = 'all', isClient
                         const hasLateCheckIns = site.late > 0
                         const hasDayOff = site.dayOff > 0
                         return (
-                          <button
-                            onClick={() => handleLocationClick(site.locationId)}
-                            key={site.locationId}
+                        <button
+                          onClick={() => handleLocationClick(site.siteId)}
+                          key={site.siteId}
                             className={`w-full text-left p-3 rounded-lg border bg-secondary/20 hover:bg-secondary/40 hover:border-primary/50 transition-all cursor-pointer ${
                               hasLateCheckIns ? 'border-warning/30' : 'border-border'
                             }`}

@@ -229,6 +229,7 @@ export default async function DashboardPage() {
       companyOnLeave += onLeave;
 
       return {
+        siteId: site.id,
         locationId: site.code || site.id.slice(0, 6).toUpperCase(),
         locationName: site.name,
         totalStaff,
@@ -269,6 +270,7 @@ export default async function DashboardPage() {
   const serializedLocationStatsByCompany = locationStatsByCompany.map((company) => ({
     ...company,
     sites: company.sites.map((site) => ({
+      siteId: site.siteId,
       locationId: site.locationId,
       locationName: site.locationName,
       totalStaff: site.totalStaff,
