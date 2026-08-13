@@ -206,14 +206,19 @@ const details = employeeDetails[employee.id] || defaultDetails
     value == null || (typeof value === 'string' && value.trim() === '') ||
     (Array.isArray(value) && value.length === 0)
 
+  const certName = employee.certifications?.[0]
+  const hasCert = !!certName && certName !== 'none'
+
   const missingFields = fieldChecks
-    .filter((field) => isMissing(employee[field.key]))
+    .filter((field) => {
+      // KTA details are optional until a certification exists.
+      if (!hasCert && (field.key === 'ktaNumber' || field.key === 'ktaExpiry')) return false
+      return isMissing(employee[field.key])
+    })
     .map((field) => field.label)
 
   const hasMissingFields = missingFields.length > 0
 
-  const certName = employee.certifications?.[0];
-  const hasCert = !!certName && certName !== "none"; 
   const isKtaExpired = employee.ktaExpiry ? new Date(employee.ktaExpiry) < new Date() : false;
 
   return (
