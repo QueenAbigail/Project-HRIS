@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { AttendanceHeader } from '@/components/attendance/attendance-header'
 import { AttendanceStats } from '@/components/attendance/attendance-stats'
 import { AttendanceTable } from '@/components/attendance/attendance-table'
@@ -31,7 +31,23 @@ interface CurrentUser {
 
 export default function AttendancePage() {
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
   const [selectedSite, setSelectedSite] = useState('all')
+
+  // Update both local state and the URL query param so the address bar
+  // reflects the active site filter (and stays shareable/bookmarkable).
+  const handleSiteChange = (value: string) => {
+    setSelectedSite(value)
+    const params = new URLSearchParams(searchParams.toString())
+    if (value && value !== 'all') {
+      params.set('site', value)
+    } else {
+      params.delete('site')
+    }
+    const query = params.toString()
+    router.replace(query ? `${pathname}?${query}` : pathname)
+  }
   const [dateRange, setDateRange] = useState('today')
   const [selectedDepartment, setSelectedDepartment] = useState('all')
   const [sites, setSites] = useState<Site[]>([])
@@ -126,7 +142,7 @@ export default function AttendancePage() {
             <Building2 className="h-4 w-4" />
             Filter by Site
           </label>
-          <Select value={selectedSite} onValueChange={setSelectedSite}>
+          <Select value={selectedSite} onValueChange={handleSiteChange}>
             <SelectTrigger>
               <SelectValue placeholder={loadingSites ? 'Loading...' : 'Select site'} />
             </SelectTrigger>

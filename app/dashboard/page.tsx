@@ -8,6 +8,7 @@ import { LocationAttendance } from '@/components/dashboard/location-attendance'
 import { LateCheckIns } from '@/components/dashboard/late-checkins'
 import { UpcomingLeaves } from '@/components/dashboard/upcoming-leaves'
 import type { Attendance, Leave, Shift, Site, User } from '@prisma/client'
+import { tallyAttendance, computeAttendanceRate } from '@/lib/attendance-utils'
 
 export default async function DashboardPage() {
   try {
@@ -206,17 +207,18 @@ export default async function DashboardPage() {
     // Calculate site-level stats
     const siteStats = companySites.map((site) => {
       const siteAtt = todayAttendances.filter((a) => a.locationId === site.id);
-      const lateR = siteAtt.filter((a) => a.status === 'LATE');
-      const lateCount = lateR.length;
-      const lateMinutesTotal = lateR.reduce((sum, a) => sum + a.lateMinutes, 0);
+      // Canonical tally via the shared single-source-of-truth helper
+      const siteTally = tallyAttendance(siteAtt);
+      const lateCount = siteTally.late;
+      const lateMinutesTotal = siteTally.totalLateMinutes;
       const totalStaff = usersBySite[site.id] || 0;
       const dayOff = dayOffBySite[site.id] || 0;
       const expectedToWork = Math.max(0, totalStaff - dayOff);
-      const present = siteAtt.filter((a) => a.status === 'PRESENT').length;
-      const absent = siteAtt.filter((a) => a.status === 'ABSENT').length;
-      const notCheckedIn = siteAtt.filter((a) => a.status === 'NOT_CHECKED_IN').length;
+      const present = siteTally.present;
+      const absent = siteTally.absent;
+      const notCheckedIn = siteTally.notCheckedIn;
       const onLeave = recentLeaves.filter((l) => l.requester?.siteId === site.id).length;
-      const attendanceRate = expectedToWork > 0 ? Math.round(((present + lateCount) / expectedToWork) * 100) : 100;
+      const attendanceRate = computeAttendanceRate(present, lateCount, expectedToWork);
 
       // Accumulate for company totals
       companyTotalStaff += totalStaff;
@@ -229,6 +231,7 @@ export default async function DashboardPage() {
       companyOnLeave += onLeave;
 
       return {
+        siteId: site.id,
         locationId: site.code || site.id.slice(0, 6).toUpperCase(),
         locationName: site.name,
         totalStaff,
@@ -246,7 +249,7 @@ export default async function DashboardPage() {
 
     // Calculate company-level attendance rate
     const companyExpectedToWork = Math.max(0, companyTotalStaff - companyDayOff);
-    const companyAttendanceRate = companyExpectedToWork > 0 ? Math.round(((companyPresent + companyLate) / companyExpectedToWork) * 100) : 100;
+    const companyAttendanceRate = computeAttendanceRate(companyPresent, companyLate, companyExpectedToWork);
 
     return {
       companyId: company.id,
@@ -270,7 +273,8 @@ export default async function DashboardPage() {
     ...company,
     sites: company.sites.map((site) => ({
       siteId: site.siteId,
-      siteName: site.siteName,
+      locationId: site.locationId,
+      locationName: site.locationName,
       totalStaff: site.totalStaff,
       present: site.present,
       absent: site.absent,
@@ -288,14 +292,16 @@ export default async function DashboardPage() {
 
   // overallStats
   const overallDayOff = Object.values(dayOffBySite).reduce((sum, count) => sum + (count as number), 0);
-  const overallPresent = todayAttendances.filter((a) => a.status === 'PRESENT').length;
-  const overallAbsent = todayAttendances.filter((a) => a.status === 'ABSENT').length;
-  const overallLate = todayAttendances.filter((a) => a.status === 'LATE').length;
-  const overallNotCheckedIn = todayAttendances.filter((a) => a.status === 'NOT_CHECKED_IN').length;
-  const overallTotalLateMinutes = lateCheckIns.reduce((sum, l) => sum + l.lateMinutes, 0);
-  const overallAverageLate = lateCheckIns.length > 0 ? Math.round(overallTotalLateMinutes / lateCheckIns.length) : 0;
+  // Canonical overall tally via the shared single-source-of-truth helper
+  const overallTally = tallyAttendance(todayAttendances);
+  const overallPresent = overallTally.present;
+  const overallAbsent = overallTally.absent;
+  const overallLate = overallTally.late;
+  const overallNotCheckedIn = overallTally.notCheckedIn;
+  const overallTotalLateMinutes = overallTally.totalLateMinutes;
+  const overallAverageLate = overallTally.averageLateMinutes;
   const overallExpected = users.length - overallDayOff;
-  const overallRate = overallExpected > 0 ? Math.round(overallPresent / overallExpected * 100) : 100;
+  const overallRate = computeAttendanceRate(overallPresent, overallLate, overallExpected);
   const overallStats = {
     totalEmployees: users.length,
     presentToday: overallPresent,

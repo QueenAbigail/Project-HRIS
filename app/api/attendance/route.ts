@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
 import { subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
+import { resolveAttendanceStatus } from '@/lib/attendance-utils'
 
 // Helper function to calculate attendance status based on check-in time and scheduled time
 function calculateAttendanceStatus(actualCheckIn: string | null, scheduledStart: string | null): string {
@@ -171,8 +172,16 @@ export async function GET(request: NextRequest) {
       ]
     })
 
-    console.log("[v0] Attendance API returning", filtered.length, "records for date range:", dateRange)
-    return NextResponse.json(filtered)
+    // Resolve display status via the shared single-source-of-truth helper:
+    // derive PRESENT/LATE from the check-in, but trust the persisted ABSENT/LEAVE
+    // status that the auto-absent cron maintains (never downgrade ABSENT to Pending).
+    const enrichedRecords = filtered.map((record: any) => ({
+      ...record,
+      status: resolveAttendanceStatus(record)
+    }))
+
+    console.log("[v0] Attendance API returning", enrichedRecords.length, "records for date range:", dateRange)
+    return NextResponse.json(enrichedRecords)
   } catch (error) {
     console.error('[v0] Error fetching attendance:', {
       message: error instanceof Error ? error.message : String(error),
@@ -247,10 +256,26 @@ export async function POST(request: NextRequest) {
         updateData.selfieCheckIn = selfieCheckIn
       }
 
-      // If actualCheckOut is provided, update check-out
+      // If actualCheckOut is provided, update check-out and ensure status is properly set
       if (actualCheckOut) {
         updateData.actualCheckOut = actualCheckOut
         updateData.selfieCheckOut = selfieCheckOut
+        
+        // Ensure status is set based on check-in time (if it wasn't already)
+        if (!updateData.status && existingAttendance.actualCheckIn) {
+          updateData.status = calculateAttendanceStatus(
+            existingAttendance.actualCheckIn, 
+            scheduledStart || existingAttendance.scheduledStart
+          )
+        }
+      }
+
+      // If no status was set during check-in or check-out, calculate it now
+      if (!updateData.status && existingAttendance.actualCheckIn) {
+        updateData.status = calculateAttendanceStatus(
+          existingAttendance.actualCheckIn,
+          scheduledStart || existingAttendance.scheduledStart
+        )
       }
 
       const updated = await prisma.attendance.update({

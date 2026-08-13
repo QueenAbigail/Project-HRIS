@@ -281,7 +281,8 @@ model SystemSettings {
   logoUrl        String?
   appName        String  @default("SecureGuard")
   appDescription String  @default("HR Administration")
-
+  appVersions   String? @map("AppVersions")
+  
   @@map("system_settings")
 }
 
@@ -390,7 +391,7 @@ model DeviceBinding {
   deviceType    String   // "mobile" or "app"
   appVersion    String?  // App version when bound
   bindDate      DateTime @default(now())
-  lastUsed      DateTime @updatedAt
+  lastUsed      DateTime @default(now()) @updatedAt
   isActive      Boolean  @default(true)
 
   @@unique([userId, deviceType]) // One mobile device + one app per user

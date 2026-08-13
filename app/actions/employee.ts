@@ -4,11 +4,36 @@ import { createClient } from '@supabase/supabase-js'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 
-// Senjata rahasia lu: Kunci Master Supabase
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function friendlyEmployeeError(error: unknown): string {
+  const message = error instanceof Error ? error.message : ''
+
+  if (/Invalid (?:[A-Za-z ]+ )?Date|Expected Date object|Invalid value for argument.*Date/i.test(message)) {
+    return 'Please enter valid dates for Join Date, Birth Date, and KTA Expiry.'
+  }
+
+  if (/Unique constraint failed/i.test(message)) {
+    if (/email/i.test(message)) return 'This email address is already used by another employee.'
+    if (/employeeCode|hrisEmail/i.test(message)) return 'This employee ID is already used by another employee.'
+    return 'Some employee information is already in use.'
+  }
+
+  if (/Record to update not found|No User found/i.test(message)) {
+    return 'This employee could not be found. Please refresh the page and try again.'
+  }
+
+  if (/Foreign key constraint failed|site/i.test(message)) {
+    return 'The selected site is no longer available. Please choose another site.'
+  }
+
+  return 'Unable to save employee data. Please review the form and try again.'
+}
+
+function parseEmployeeDate(value: unknown, label: string): Date | null {
+  if (!value || (typeof value === 'string' && value.trim() === '')) return null
+  const date = value instanceof Date ? new Date(value.getTime()) : new Date(String(value))
+  if (Number.isNaN(date.getTime())) throw new Error(`Invalid ${label}`)
+  return date
+}
 
 // ==========================================
 // 1. ACTION BUAT UPDATE EMPLOYEE
@@ -52,6 +77,8 @@ export async function updateEmployeeAction(userId: string, formData: any) {
       employmentStatus: { field: 'employmentStatus', type: 'string' },
       joinDate: { field: 'joinDate', type: 'date' },
       status: { field: 'status', type: 'enum' },
+      allowMobileAttendance: { field: 'allowMobileAttendance', type: 'boolean' },
+      allowWebAccess: { field: 'allowWebAppAccess', type: 'boolean' },
     }
 
     // Process each field
@@ -65,15 +92,16 @@ export async function updateEmployeeAction(userId: string, formData: any) {
 
       const { field, type } = config as any
 
-      if (type === 'date' && typeof value === 'string') {
-        // Convert date string to DateTime
-        updateData[field] = new Date(value + 'T00:00:00Z')
+  if (type === 'date') {
+      updateData[field] = parseEmployeeDate(value, field)
       } else if (type === 'enum') {
         // Convert status to uppercase enum value
         const statusValue = value.toUpperCase()
         if (['ACTIVE', 'INACTIVE', 'SUSPENDED'].includes(statusValue)) {
           updateData[field] = statusValue
         }
+      } else if (type === 'boolean') {
+        updateData[field] = Boolean(value)
       } else if (type === 'string' && typeof value === 'string') {
         // Only add non-empty strings
         updateData[field] = value.trim()
@@ -110,8 +138,8 @@ export async function updateEmployeeAction(userId: string, formData: any) {
     return { success: true }
     
   } catch (error: any) {
-    console.error('[v0] Update error:', error.message)
-    return { success: false, error: error.message }
+    console.error('[v0] Update employee failed:', error)
+    return { success: false, error: friendlyEmployeeError(error) }
   }
 }
 
@@ -146,6 +174,7 @@ export async function createEmployeeAction(formData: any) {
         email: hrisEmail, 
         personalEmail: formData.personalEmail,
         department: formData.department,
+        position: formData.position,
         role: formData.systemRole, // Pastikan dari frontend ngirim string yang match sama Enum lu
         
         // Relasi ke lokasi (site)
@@ -155,9 +184,9 @@ export async function createEmployeeAction(formData: any) {
         },
 
         // Konversi string tanggal dari form jadi object Date buat Prisma
-        joinDate: formData.joinDate ? new Date(formData.joinDate) : null,
-        birthDate: formData.dob ? new Date(formData.dob) : null,
-        ktaExpiry: formData.ktaExpiry ? new Date(formData.ktaExpiry) : null,
+        joinDate: parseEmployeeDate(formData.joinDate, 'Join Date'),
+        birthDate: parseEmployeeDate(formData.dob, 'Birth Date'),
+        ktaExpiry: parseEmployeeDate(formData.ktaExpiry, 'KTA Expiry'),
 
         // Data teks & angka biasa
         phoneNumber: formData.phoneNumber,
@@ -205,6 +234,6 @@ export async function createEmployeeAction(formData: any) {
         .catch(err => console.error("Gagal rollback akun auth:", err))
     }
 
-    return { success: false, error: error.message }
+    return { success: false, error: friendlyEmployeeError(error) }
   }
 }

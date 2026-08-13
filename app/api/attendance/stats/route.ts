@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { startOfDay, endOfDay } from 'date-fns'
+import { tallyAttendance, computeAttendanceRate } from '@/lib/attendance-utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,38 +31,19 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Calculate stats
-    let presentToday = 0
-    let absentToday = 0
-    let lateCheckIns = 0
-    let onLeave = 0
-    let dayOff = 0
-    let totalLateMinutes = 0
-
-    attendance.forEach((record) => {
-      const status = record.status || 'NOT_CHECKED_IN'
-      
-      if (status === 'LATE') {
-        lateCheckIns++
-        presentToday++
-        totalLateMinutes += record.lateMinutes || 0
-      } else if (status === 'PRESENT') {
-        presentToday++
-      } else if (status === 'ABSENT') {
-        absentToday++
-      } else if (status === 'LEAVE') {
-        onLeave++
-      } else if (status === 'DAY_OFF') {
-        dayOff++
-      } else if (status === 'NOT_CHECKED_IN') {
-        absentToday++
-      }
-    })
+    // Calculate stats using the shared canonical tally (single source of truth)
+    const tally = tallyAttendance(attendance)
+    const presentToday = tally.present
+    const lateCheckIns = tally.late
+    const absentToday = tally.absent
+    const notCheckedIn = tally.notCheckedIn
+    const onLeave = tally.onLeave
+    const averageLateMinutes = tally.averageLateMinutes
+    const dayOff = 0
 
     const totalEmployees = attendance.length || 1 // Prevent division by zero
     const expectedToWork = totalEmployees - dayOff
-    const attendanceRate = expectedToWork > 0 ? Math.round((presentToday / expectedToWork) * 100) : 100
-    const averageLateMinutes = lateCheckIns > 0 ? Math.round(totalLateMinutes / lateCheckIns) : 0
+    const attendanceRate = computeAttendanceRate(presentToday, lateCheckIns, expectedToWork)
 
     // Count BKO assignments (if BKO table exists)
     let bkoCount = 0
@@ -85,6 +67,7 @@ export async function GET(request: NextRequest) {
       presentToday,
       absentToday,
       lateCheckIns,
+      notCheckedIn,
       averageLateMinutes,
       onLeave,
       dayOff,
