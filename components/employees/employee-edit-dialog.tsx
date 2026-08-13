@@ -260,9 +260,16 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
       const result = await updateEmployeeAction(employee!.id, formData)
       
       if (result.success) {
+        const savedSite = sites.find((site) => site.id === formData.location)
         onSave({
           ...employee!,
           ...formData,
+          // Keep the local employee row display value human-readable while the
+          // submitted form continues to use the database site ID.
+          location: savedSite
+            ? `${savedSite.company?.name || 'N/A'} - ${savedSite.name}`
+            : employee!.location,
+          locationCode: savedSite?.code || employee!.locationCode,
           certifications: formData.certifications
             ? formData.certifications.split(',').map((item) => item.trim()).filter(Boolean)
             : [],
