@@ -203,6 +203,7 @@ async function EmployeesContent({
         ? format(user.ktaExpiry, 'yyyy-MM-dd')
         : '',
       employmentStatus: user.employmentStatus ?? '',
+      certifications: Array.isArray(user.certifications) ? user.certifications : [],
       role: user.role ?? 'STAFF',
       userStatus: user.status ?? 'ACTIVE',
       allowMobileAttendance: user.allowMobileAttendance,

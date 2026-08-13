@@ -54,7 +54,7 @@ interface EmployeeEditFormData {
   joinDate?: string
   joinDateValue?: string
   employmentStatus?: string
-  certifications?: string
+  certifications?: string | string[]
   ktaNumber?: string
   ktaExpiry?: string
   supervisor?: string
@@ -172,7 +172,9 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
         taxId: employee.taxId || '***-**-0000',
         joinDate: employee.joinDateValue || employee.joinDate || '',
         employmentStatus: employee.employmentStatus || '',
-        certifications: employee.certifications?.join(', ') || '',
+        certifications: Array.isArray(employee.certifications)
+          ? employee.certifications.join(', ')
+          : employee.certifications || '',
         ktaNumber: employee.ktaNumber || '',
         ktaExpiry: employee.ktaExpiry || '',
         supervisor: employee.supervisor?.id || '',
@@ -258,7 +260,13 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
       const result = await updateEmployeeAction(employee!.id, formData)
       
       if (result.success) {
-        onSave({ ...employee!, ...formData })
+        onSave({
+          ...employee!,
+          ...formData,
+          certifications: formData.certifications
+            ? formData.certifications.split(',').map((item) => item.trim()).filter(Boolean)
+            : [],
+        })
         toast.success('Employee data updated successfully', {
           description: 'All changes have been saved.'
         })
