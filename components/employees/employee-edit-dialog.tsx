@@ -52,6 +52,7 @@ interface EmployeeEditFormData {
   bankAccount: string
   taxId: string
   joinDate?: string
+  joinDateValue?: string
   employmentStatus?: string
   certifications?: string
   ktaNumber?: string
@@ -169,7 +170,7 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
         emergencyContact: employee.emergencyContact || 'Emergency Contact - +1 (555) 000-0000',
         bankAccount: employee.bankAccount || '**** **** **** 0000',
         taxId: employee.taxId || '***-**-0000',
-        joinDate: employee.joinDate || '',
+        joinDate: employee.joinDateValue || employee.joinDate || '',
         employmentStatus: employee.employmentStatus || '',
         certifications: employee.certifications?.join(', ') || '',
         ktaNumber: employee.ktaNumber || '',
