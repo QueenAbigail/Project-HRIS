@@ -195,7 +195,7 @@ const details = employeeDetails[employee.id] || defaultDetails
         <SheetHeader className="pb-4">
           <div className="flex items-start gap-4">
             <Avatar className="size-16 border-2 border-primary/20">
-              <AvatarImage src={`/avatars/${employee.id}.jpg`} alt={employee.name} />
+              <AvatarImage src={employee.avatar || undefined} alt={employee.name} />
               <AvatarFallback className="bg-primary/10 text-primary text-xl">
                 {employee.initials}
               </AvatarFallback>
