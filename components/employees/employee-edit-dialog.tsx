@@ -304,7 +304,7 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
           <div className="flex items-center gap-3">
             <div className="relative">
               <Avatar className="size-12 border-2 border-border">
-                <AvatarImage src={`/avatars/${employee.id}.jpg`} alt={employee.name} />
+                <AvatarImage src={employee.avatar || undefined} alt={employee.name} />
                 <AvatarFallback className="bg-primary/10 text-primary text-sm">
                   {employee.initials}
                 </AvatarFallback>
