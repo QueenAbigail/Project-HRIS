@@ -20,15 +20,17 @@ interface AttendanceStatsData {
 interface AttendanceStatsProps {
   siteId?: string
   dateRange?: string
+  refreshKey?: number
 }
 
-export function AttendanceStats({ siteId = 'all', dateRange = 'today' }: AttendanceStatsProps) {
+export function AttendanceStats({ siteId = 'all', dateRange = 'today', refreshKey = 0 }: AttendanceStatsProps) {
   const [stats, setStats] = useState<AttendanceStatsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   useEffect(() => {
-    setLoading(true)
-    setStats(null)
+    let cancelled = false
+    setIsRefreshing(true)
     
     const fetchStats = async () => {
       try {
@@ -56,21 +58,26 @@ export function AttendanceStats({ siteId = 'all', dateRange = 'today' }: Attenda
         const response = await fetch(`/api/attendance/stats?${params.toString()}`)
         if (response.ok) {
           const data = await response.json()
-          setStats(data)
+          if (!cancelled) setStats(data)
         }
       } catch (error) {
         console.error('[v0] Failed to fetch attendance stats:', error)
       } finally {
-        setLoading(false)
+        if (!cancelled) {
+          setLoading(false)
+          setIsRefreshing(false)
+        }
       }
     }
 
     fetchStats()
-  }, [siteId, dateRange])
+    return () => { cancelled = true }
+  }, [siteId, dateRange, refreshKey])
 
-  if (loading || !stats) {
+  if (loading && !stats) {
     return (
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <div className={`grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 transition-opacity ${isRefreshing ? 'opacity-70' : 'opacity-100'}`} aria-busy={isRefreshing}>
+      {isRefreshing && <span className="sr-only">Updating attendance summary</span>}
         {[...Array(6)].map((_, i) => (
           <Card key={i} className="bg-card border-border">
             <CardContent className="p-3">
@@ -139,7 +146,8 @@ export function AttendanceStats({ siteId = 'all', dateRange = 'today' }: Attenda
   ]
 
   return (
-    <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <div className={`grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 transition-opacity ${isRefreshing ? 'opacity-70' : 'opacity-100'}`} aria-busy={isRefreshing}>
+      {isRefreshing && <span className="sr-only">Updating attendance summary</span>}
       {statConfig.map((stat) => (
         <Card 
           key={stat.title} 

@@ -65,13 +65,16 @@ interface AttendanceRecord {
 
 // Status formatting is now handled by attendance-utils.ts for consistent display across the app
 
-export function AttendanceTable({ siteId = 'all', dateRange = 'today', department = 'all' }: { siteId?: string; dateRange?: string; department?: string }) {
+export function AttendanceTable({ siteId = 'all', dateRange = 'today', department = 'all', refreshKey = 0 }: { siteId?: string; dateRange?: string; department?: string; refreshKey?: number }) {
   const [records, setRecords] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
+    setIsRefreshing(true)
     const fetchAttendance = async () => {
       try {
         const params = new URLSearchParams()
@@ -91,7 +94,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
         if (response.ok) {
           const data = await response.json()
           console.log("[v0] Attendance data received:", data)
-          setRecords(Array.isArray(data) ? data : [])
+          if (!cancelled) setRecords(Array.isArray(data) ? data : [])
         } else {
           const errorText = await response.text()
           console.error("[v0] API error response:", errorText)
@@ -99,12 +102,16 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
       } catch (error) {
         console.error('[v0] Failed to fetch attendance records:', error)
       } finally {
-        setLoading(false)
+        if (!cancelled) {
+          setLoading(false)
+          setIsRefreshing(false)
+        }
       }
     }
 
     fetchAttendance()
-  }, [siteId, dateRange, department])
+    return () => { cancelled = true }
+  }, [siteId, dateRange, department, refreshKey])
 
   const allRecords = records
   const lateRecords = records.filter(r => r.status === 'LATE')
@@ -180,7 +187,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
     </>
   )
 
-  if (loading) {
+  if (loading && records.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -195,7 +202,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
 
   return (
     <>
-      <Card>
+      <Card className={isRefreshing ? 'opacity-70 transition-opacity' : undefined} aria-busy={isRefreshing}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
             <CardTitle>Today's Attendance</CardTitle>

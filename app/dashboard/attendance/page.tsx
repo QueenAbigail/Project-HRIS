@@ -171,8 +171,8 @@ export default function AttendancePage() {
         )}
       </div>
 
-      <AttendanceStats key={refreshKey} siteId={selectedSite} dateRange={dateRange} />
-      <AttendanceTable key={refreshKey} siteId={selectedSite} dateRange={dateRange} department={selectedDepartment} />
+      <AttendanceStats refreshKey={refreshKey} siteId={selectedSite} dateRange={dateRange} />
+      <AttendanceTable refreshKey={refreshKey} siteId={selectedSite} dateRange={dateRange} department={selectedDepartment} />
     </div>
   )
 }
