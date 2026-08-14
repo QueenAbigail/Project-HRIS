@@ -102,8 +102,6 @@ export async function GET(request: NextRequest) {
         dateEnd = endOfDay(now)
     }
 
-    console.log("[v0] Attendance API - Date range:", { dateRange, dateStart: dateStart.toISOString(), dateEnd: dateEnd.toISOString() })
-
     // Build where clause - use gte for start and lte for end to match date-only comparison
     const where: any = {
       date: {
@@ -129,8 +127,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log("[v0] Fetching attendance with where clause:", JSON.stringify(where, null, 2))
-    console.log("[v0] Current user:", { id: currentUser?.id, role: currentUser?.role, companyId: currentUser?.companyId })
     const filtered = await prisma.attendance.findMany({
       where,
       include: {
@@ -180,7 +176,6 @@ export async function GET(request: NextRequest) {
       status: resolveAttendanceStatus(record)
     }))
 
-    console.log("[v0] Attendance API returning", enrichedRecords.length, "records for date range:", dateRange)
     return NextResponse.json(enrichedRecords)
   } catch (error) {
     console.error('[v0] Error fetching attendance:', {

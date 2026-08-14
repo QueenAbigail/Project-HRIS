@@ -92,16 +92,17 @@ export default function AttendancePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch current user
-        const userResponse = await fetch('/api/auth/me')
+        const [userResponse, sitesResponse] = await Promise.all([
+          fetch('/api/auth/me'),
+          fetch('/api/sites'),
+        ])
+
         if (userResponse.ok) {
           const userData = await userResponse.json()
           setCurrentUser(userData)
           setIsClient(userData.role === 'CLIENT')
         }
 
-        // Fetch sites
-        const sitesResponse = await fetch('/api/sites')
         if (sitesResponse.ok) {
           const sitesData = await sitesResponse.json()
           setSites(sitesData)

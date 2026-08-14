@@ -22,14 +22,28 @@ export async function GET(request: NextRequest) {
       where.locationId = siteId
     }
 
-    // Get all attendance records for the day
-    const attendance = await prisma.attendance.findMany({
+    // Fetch only fields needed by the canonical tally; stats do not need
+    // the full employee or location relations.
+    const attendancePromise = prisma.attendance.findMany({
       where,
-      include: {
-        user: true,
-        location: true,
-      }
+      select: {
+        actualCheckIn: true,
+        status: true,
+        lateMinutes: true,
+      },
     })
+
+    const bkoPromise = prisma.bko.findMany({
+      where: {
+        date: {
+          gte: startOfDay(new Date(date)),
+          lte: endOfDay(new Date(date)),
+        },
+        ...(siteId && siteId !== 'all' ? { backupEmployee: { siteId } } : {}),
+      },
+    }).catch(() => [])
+
+    const [attendance, bkoAssignments] = await Promise.all([attendancePromise, bkoPromise])
 
     // Calculate stats using the shared canonical tally (single source of truth)
     const tally = tallyAttendance(attendance)
@@ -45,23 +59,7 @@ export async function GET(request: NextRequest) {
     const expectedToWork = totalEmployees - dayOff
     const attendanceRate = computeAttendanceRate(presentToday, lateCheckIns, expectedToWork)
 
-    // Count BKO assignments (if BKO table exists)
-    let bkoCount = 0
-    try {
-      const bkoAssignments = await prisma.bko.findMany({
-        where: {
-          date: {
-            gte: startOfDay(new Date(date)),
-            lte: endOfDay(new Date(date)),
-          },
-          ...(siteId && siteId !== 'all' ? { backupEmployee: { siteId } } : {})
-        }
-      })
-      bkoCount = bkoAssignments.length
-    } catch {
-      // BKO table may not exist yet
-      bkoCount = 0
-    }
+    const bkoCount = bkoAssignments.length
 
     return NextResponse.json({
       presentToday,
