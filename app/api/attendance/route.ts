@@ -191,6 +191,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const currentUser = await getCurrentUser()
+
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (currentUser.role !== 'SUPER_ADMIN' && currentUser.role !== 'HR_ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const body = await request.json()
     const {
       userId,
@@ -215,6 +225,32 @@ export async function POST(request: NextRequest) {
         { error: 'userId and locationId are required' },
         { status: 400 }
       )
+    }
+
+    const targetEmployee = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, companyId: true, siteId: true, status: true },
+    })
+    const targetLocation = await prisma.site.findUnique({
+      where: { id: locationId },
+      select: { id: true, companyId: true },
+    })
+
+    if (!targetEmployee || !targetLocation) {
+      return NextResponse.json({ error: 'Employee or location not found' }, { status: 404 })
+    }
+
+    if (targetEmployee.status !== 'ACTIVE') {
+      return NextResponse.json({ error: 'Attendance cannot be changed for an inactive employee' }, { status: 400 })
+    }
+
+    const hasCompanyAccess =
+      currentUser.role === 'SUPER_ADMIN' ||
+      (!!currentUser.companyId && currentUser.companyId === targetEmployee.companyId)
+    const hasSiteAccess = targetEmployee.siteId === targetLocation.id
+
+    if (!hasCompanyAccess || !hasSiteAccess) {
+      return NextResponse.json({ error: 'You do not have access to this employee or location' }, { status: 403 })
     }
 
     const date = new Date()
