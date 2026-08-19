@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
+import { getBusinessDateRangeForPreset } from '@/lib/timezone'
 import { UserCheck, UserX, Clock, AlertTriangle, CalendarOff, Shield, RefreshCw } from 'lucide-react'
 
 interface AttendanceStatsData {
@@ -48,27 +49,13 @@ export function AttendanceStats({ siteId = 'all', dateRange = 'today', customDat
           params.set('department', department)
         }
         
-        const today = new Date()
-        const end = new Date(today)
-        const start = new Date(today)
-        const day = today.getDay()
-
         if (dateRange === 'custom' && customDateFrom && customDateTo) {
           params.set('dateFrom', customDateFrom)
           params.set('dateTo', customDateTo)
-        } else if (dateRange === 'yesterday') {
-          start.setDate(start.getDate() - 1)
-          end.setDate(end.getDate() - 1)
-        } else if (dateRange === 'week') {
-          start.setDate(start.getDate() - (day === 0 ? 6 : day - 1))
-        } else if (dateRange === 'month') {
-          start.setDate(1)
-        }
-
-        if (dateRange !== 'custom' || !customDateFrom || !customDateTo) {
-          const formatDate = (value: Date) => value.toISOString().split('T')[0]
-          params.set('dateFrom', formatDate(start))
-          params.set('dateTo', formatDate(end))
+        } else {
+          const range = getBusinessDateRangeForPreset(dateRange || 'today')
+          params.set('dateFrom', range.dateFrom)
+          params.set('dateTo', range.dateTo)
         }
         
         const response = await fetch(`/api/attendance/stats?${params.toString()}`)

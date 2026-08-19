@@ -18,6 +18,7 @@ import { Clock, AlertTriangle, MapPin, Loader2, Eye, RefreshCw } from 'lucide-re
 import type { GpsCoordinates } from '@/lib/constants'
 import { formatAttendanceStatus, getAttendanceLabel, getStatusStyles } from '@/lib/attendance-utils'
 import { AttendanceDetailsModal } from './attendance-details-modal'
+import { getBusinessDateRangeForPreset, formatBusinessDate } from '@/lib/timezone'
 
 interface AttendanceRecord {
   id: string
@@ -88,6 +89,10 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
         if (dateRange === 'custom' && customDateFrom && customDateTo) {
           params.set('dateFrom', customDateFrom)
           params.set('dateTo', customDateTo)
+        } else {
+          const range = getBusinessDateRangeForPreset(dateRange || 'today')
+          params.set('dateFrom', range.dateFrom)
+          params.set('dateTo', range.dateTo)
         }
         if (department && department !== 'all') {
           params.append('department', department)
@@ -177,7 +182,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
                 : 'Unknown'}
           </TableCell>
           <TableCell className="text-xs text-muted-foreground">
-            {record.date ? new Date(record.date).toLocaleDateString() : '--'}
+            {record.date ? formatBusinessDate(record.date.slice(0, 10)) : '--'}
           </TableCell>
           <TableCell className="text-xs text-muted-foreground">
             {record.actualCheckIn ? record.actualCheckIn.split('T')[1]?.substring(0, 5) || '--:--' : '--:--'}

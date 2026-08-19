@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { startOfDay, endOfDay } from 'date-fns'
+import { getBusinessDate, getBusinessDateRange } from '@/lib/timezone'
 import { tallyAttendance, computeAttendanceRate } from '@/lib/attendance-utils'
 import { getCurrentUser } from '@/lib/system'
 
@@ -25,15 +25,13 @@ export async function GET(request: NextRequest) {
     if (!isUnrestricted && requestedSite && requestedSite.companyId !== currentUser.companyId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
-    const dateFrom = searchParams.get('dateFrom') || searchParams.get('date') || new Date().toISOString().split('T')[0]
+    const dateFrom = searchParams.get('dateFrom') || searchParams.get('date') || getBusinessDate()
     const dateTo = searchParams.get('dateTo') || dateFrom
+    const { from: rangeStart, to: rangeEnd } = getBusinessDateRange(dateFrom, dateTo)
 
-    // Build one range shared by all stats queries.
+    // Build one range shared by all stats queries using Asia/Jakarta boundaries.
     const where: any = {
-      date: {
-        gte: startOfDay(new Date(dateFrom)),
-        lte: endOfDay(new Date(dateTo)),
-      }
+      date: { gte: rangeStart, lte: rangeEnd },
     }
     
     const department = searchParams.get('department')
@@ -54,8 +52,8 @@ export async function GET(request: NextRequest) {
     const scheduledEmployeesPromise = prisma.schedule.findMany({
       where: {
         scheduleDate: {
-          gte: startOfDay(new Date(dateFrom)),
-          lte: endOfDay(new Date(dateTo)),
+          gte: rangeStart,
+          lte: rangeEnd,
         },
         employee: employeeWhere,
       },
@@ -65,8 +63,8 @@ export async function GET(request: NextRequest) {
     const approvedLeavesPromise = prisma.leave.findMany({
       where: {
         status: 'Approved',
-        startDate: { lte: endOfDay(new Date(dateTo)) },
-        endDate: { gte: startOfDay(new Date(dateFrom)) },
+        startDate: { lte: rangeEnd },
+        endDate: { gte: rangeStart },
         user: employeeWhere,
       },
       select: { userId: true, startDate: true, endDate: true },
@@ -87,8 +85,8 @@ export async function GET(request: NextRequest) {
       where: {
         status: 'Aktif',
         leave: {
-          startDate: { lte: endOfDay(new Date(dateTo)) },
-          endDate: { gte: startOfDay(new Date(dateFrom)) },
+          startDate: { lte: rangeEnd },
+          endDate: { gte: rangeStart },
         },
         substitute: {
           status: 'ACTIVE',
