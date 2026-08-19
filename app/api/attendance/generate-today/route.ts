@@ -42,7 +42,7 @@ async function handleAttendanceGeneration() {
     })
   } catch (error) {
     const duration = Date.now() - startTime
-    const errorMessage = error instanceof Error ? error.message : 'Failed to generate attendance records'
+    const errorMessage = 'Failed to generate attendance records'
     
     console.error('[v0] Error generating attendance:', error)
 

@@ -193,7 +193,7 @@ export async function GET(request: NextRequest) {
       stack: error instanceof Error ? error.stack : undefined
     })
     return NextResponse.json(
-      { error: 'Failed to fetch attendance records', details: error instanceof Error ? error.message : String(error) },
+      { error: 'Failed to fetch attendance records' },
       { status: 500 }
     )
   }
