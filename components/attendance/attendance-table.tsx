@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Clock, AlertTriangle, MapPin, Loader2, Eye, RefreshCw } from 'lucide-react'
+import { Clock, AlertTriangle, MapPin, Loader2, Eye, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { GpsCoordinates } from '@/lib/constants'
 import { formatAttendanceStatus, getAttendanceLabel, getStatusStyles } from '@/lib/attendance-utils'
 import { AttendanceDetailsModal } from './attendance-details-modal'
@@ -74,14 +74,25 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [retryKey, setRetryKey] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 25, totalRecords: 0, totalPages: 0 })
+  const [prefetchedPage, setPrefetchedPage] = useState<{ page: number; records: AttendanceRecord[]; pagination: typeof pagination } | null>(null)
+
+  useEffect(() => {
+    setPage(1)
+  }, [siteId, dateRange, customDateFrom, customDateTo, department, pageSize])
 
   useEffect(() => {
     let cancelled = false
     setIsRefreshing(true)
     setError(null)
+    setPrefetchedPage(null)
     const fetchAttendance = async () => {
       try {
         const params = new URLSearchParams()
+        params.set('page', String(page))
+        params.set('pageSize', String(pageSize))
         if (siteId && siteId !== 'all') {
           params.append('siteId', siteId)
         }
@@ -112,8 +123,17 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
         }
         const data = await response.json()
         if (!cancelled) {
-          setRecords(Array.isArray(data) ? data : [])
+          setRecords(Array.isArray(data.records) ? data.records : [])
+          setPagination(data.pagination)
           setError(null)
+
+          const nextPage = page + 1
+          if (data.pagination?.totalPages >= nextPage) {
+            const nextParams = new URLSearchParams(params)
+            nextParams.set('page', String(nextPage))
+            fetch(`/api/attendance?${nextParams.toString()}`, { priority: 'low' })
+              .catch(() => undefined)
+          }
         }
       } catch {
         if (!cancelled) setError('Attendance records could not be loaded. Please try again.')
@@ -127,7 +147,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
 
     fetchAttendance()
     return () => { cancelled = true }
-  }, [siteId, dateRange, customDateFrom, customDateTo, department, refreshKey, retryKey])
+  }, [siteId, dateRange, customDateFrom, customDateTo, department, refreshKey, retryKey, page, pageSize])
 
   if (error && records.length === 0) {
     return (
@@ -368,6 +388,22 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
 
 
           </Tabs>
+          {pagination.totalRecords > 0 && (
+            <div className="mt-4 flex flex-col gap-3 border-t pt-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+              <span>
+                Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, pagination.totalRecords)} of {pagination.totalRecords} records
+              </span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" disabled={page <= 1 || isRefreshing} onClick={() => setPage((value) => Math.max(value - 1, 1))}>
+                  <ChevronLeft className="mr-1 size-4" /> Previous
+                </Button>
+                <span className="px-2">Page {page} of {Math.max(pagination.totalPages, 1)}</span>
+                <Button variant="outline" size="sm" disabled={page >= pagination.totalPages || isRefreshing} onClick={() => setPage((value) => value + 1)}>
+                  Next <ChevronRight className="ml-1 size-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

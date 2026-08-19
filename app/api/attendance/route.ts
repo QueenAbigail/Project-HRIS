@@ -66,6 +66,8 @@ export async function GET(request: NextRequest) {
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
+    const page = Math.max(Number.parseInt(searchParams.get('page') || '1', 10) || 1, 1)
+    const pageSize = Math.min(Math.max(Number.parseInt(searchParams.get('pageSize') || '25', 10) || 25, 10), 50)
 
     // Calculate date range based on dateRange parameter
     let dateStart: Date
@@ -137,7 +139,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const filtered = await prisma.attendance.findMany({
+    const [totalRecords, filtered] = await Promise.all([
+      prisma.attendance.count({ where }),
+      prisma.attendance.findMany({
       where,
       include: {
         user: {
@@ -174,9 +178,13 @@ export async function GET(request: NextRequest) {
       },
       orderBy: [
         { date: 'desc' },
-        { actualCheckIn: 'desc' }
-      ]
-    })
+        { actualCheckIn: 'desc' },
+        { id: 'desc' },
+      ],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    ])
 
     // Resolve display status via the shared single-source-of-truth helper:
     // derive PRESENT/LATE from the check-in, but trust the persisted ABSENT/LEAVE
@@ -186,7 +194,15 @@ export async function GET(request: NextRequest) {
       status: resolveAttendanceStatus(record)
     }))
 
-    return NextResponse.json(enrichedRecords)
+    return NextResponse.json({
+      records: enrichedRecords,
+      pagination: {
+        page,
+        pageSize,
+        totalRecords,
+        totalPages: Math.ceil(totalRecords / pageSize),
+      },
+    })
   } catch (error) {
     console.error('[v0] Error fetching attendance:', {
       message: error instanceof Error ? error.message : String(error),
