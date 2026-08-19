@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Clock, AlertTriangle, MapPin, Loader2, Eye } from 'lucide-react'
+import { Clock, AlertTriangle, MapPin, Loader2, Eye, RefreshCw } from 'lucide-react'
 import type { GpsCoordinates } from '@/lib/constants'
 import { formatAttendanceStatus, getAttendanceLabel, getStatusStyles } from '@/lib/attendance-utils'
 import { AttendanceDetailsModal } from './attendance-details-modal'
@@ -71,10 +71,13 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [retryKey, setRetryKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
     setIsRefreshing(true)
+    setError(null)
     const fetchAttendance = async () => {
       try {
         const params = new URLSearchParams()
@@ -90,19 +93,25 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
           params.append('department', department)
         }
 
-        const url = `/api/attendance?${params.toString()}`
-        console.log("[v0] Fetching attendance from:", url)
-        const response = await fetch(url)
-        if (response.ok) {
-          const data = await response.json()
-          console.log("[v0] Attendance data received:", data)
-          if (!cancelled) setRecords(Array.isArray(data) ? data : [])
-        } else {
-          const errorText = await response.text()
-          console.error("[v0] API error response:", errorText)
+        const response = await fetch(`/api/attendance?${params.toString()}`)
+        if (!response.ok) {
+          const message = response.status === 401
+            ? 'Your session has expired. Please sign in again.'
+            : response.status === 403
+              ? "You don't have permission to view this site's attendance."
+              : response.status === 404
+                ? 'The selected site could not be found.'
+                : 'Attendance records could not be loaded. Please try again.'
+          if (!cancelled) setError(message)
+          return
         }
-      } catch (error) {
-        console.error('[v0] Failed to fetch attendance records:', error)
+        const data = await response.json()
+        if (!cancelled) {
+          setRecords(Array.isArray(data) ? data : [])
+          setError(null)
+        }
+      } catch {
+        if (!cancelled) setError('Attendance records could not be loaded. Please try again.')
       } finally {
         if (!cancelled) {
           setLoading(false)
@@ -113,7 +122,24 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
 
     fetchAttendance()
     return () => { cancelled = true }
-  }, [siteId, dateRange, customDateFrom, customDateTo, department, refreshKey])
+  }, [siteId, dateRange, customDateFrom, customDateTo, department, refreshKey, retryKey])
+
+  if (error && records.length === 0) {
+    return (
+      <Card role="alert">
+        <CardContent className="flex items-center justify-between gap-4 p-6">
+          <div>
+            <p className="font-medium text-destructive">Unable to load attendance records</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setRetryKey((key) => key + 1)}>
+            <RefreshCw className="mr-2 size-4" />
+            Try again
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
 
   const allRecords = records
   const lateRecords = records.filter(r => r.status === 'LATE')

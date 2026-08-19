@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { UserCheck, UserX, Clock, AlertTriangle, CalendarOff, Shield } from 'lucide-react'
+import { UserCheck, UserX, Clock, AlertTriangle, CalendarOff, Shield, RefreshCw } from 'lucide-react'
 
 interface AttendanceStatsData {
   presentToday: number
@@ -30,10 +30,13 @@ export function AttendanceStats({ siteId = 'all', dateRange = 'today', customDat
   const [stats, setStats] = useState<AttendanceStatsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [retryKey, setRetryKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
     setIsRefreshing(true)
+    setError(null)
     
     const fetchStats = async () => {
       try {
@@ -69,12 +72,24 @@ export function AttendanceStats({ siteId = 'all', dateRange = 'today', customDat
         }
         
         const response = await fetch(`/api/attendance/stats?${params.toString()}`)
-        if (response.ok) {
-          const data = await response.json()
-          if (!cancelled) setStats(data)
+        if (!response.ok) {
+          const message = response.status === 401
+            ? 'Your session has expired. Please sign in again.'
+            : response.status === 403
+              ? "You don't have permission to view this site's attendance."
+              : response.status === 404
+                ? 'The selected site could not be found.'
+                : 'Attendance summary could not be loaded. Please try again.'
+          if (!cancelled) setError(message)
+          return
         }
-      } catch (error) {
-        console.error('[v0] Failed to fetch attendance stats:', error)
+        const data = await response.json()
+        if (!cancelled) {
+          setStats(data)
+          setError(null)
+        }
+      } catch {
+        if (!cancelled) setError('Attendance summary could not be loaded. Please try again.')
       } finally {
         if (!cancelled) {
           setLoading(false)
@@ -85,7 +100,22 @@ export function AttendanceStats({ siteId = 'all', dateRange = 'today', customDat
 
     fetchStats()
     return () => { cancelled = true }
-  }, [siteId, dateRange, customDateFrom, customDateTo, department, refreshKey])
+  }, [siteId, dateRange, customDateFrom, customDateTo, department, refreshKey, retryKey])
+
+  if (error && !stats) {
+    return (
+      <div role="alert" className="col-span-full flex items-center justify-between gap-4 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm">
+        <div>
+          <p className="font-medium text-destructive">Unable to load attendance summary</p>
+          <p className="text-muted-foreground">{error}</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setRetryKey((key) => key + 1)}>
+          <RefreshCw className="mr-2 size-4" />
+          Try again
+        </Button>
+      </div>
+    )
+  }
 
   if (loading && !stats) {
     return (
