@@ -22,10 +22,11 @@ interface AttendanceStatsProps {
   dateRange?: string
   customDateFrom?: string
   customDateTo?: string
+  department?: string
   refreshKey?: number
 }
 
-export function AttendanceStats({ siteId = 'all', dateRange = 'today', customDateFrom = '', customDateTo = '', refreshKey = 0 }: AttendanceStatsProps) {
+export function AttendanceStats({ siteId = 'all', dateRange = 'today', customDateFrom = '', customDateTo = '', department = 'all', refreshKey = 0 }: AttendanceStatsProps) {
   const [stats, setStats] = useState<AttendanceStatsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -39,6 +40,9 @@ export function AttendanceStats({ siteId = 'all', dateRange = 'today', customDat
         const params = new URLSearchParams()
         if (siteId && siteId !== 'all') {
           params.append('siteId', siteId)
+        }
+        if (department && department !== 'all') {
+          params.set('department', department)
         }
         
         const today = new Date()
@@ -81,7 +85,7 @@ export function AttendanceStats({ siteId = 'all', dateRange = 'today', customDat
 
     fetchStats()
     return () => { cancelled = true }
-  }, [siteId, dateRange, customDateFrom, customDateTo, refreshKey])
+  }, [siteId, dateRange, customDateFrom, customDateTo, department, refreshKey])
 
   if (loading && !stats) {
     return (

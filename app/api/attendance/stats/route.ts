@@ -19,9 +19,19 @@ export async function GET(request: NextRequest) {
       }
     }
     
+    const department = searchParams.get('department')
     if (siteId && siteId !== 'all') {
       where.locationId = siteId
     }
+    if (department && department !== 'all') {
+      where.user = { department }
+    }
+
+    const employeeWhere: Record<string, unknown> = { status: 'ACTIVE' }
+    if (siteId && siteId !== 'all') employeeWhere.siteId = siteId
+    if (department && department !== 'all') employeeWhere.department = department
+
+    const employeeCountPromise = prisma.user.count({ where: employeeWhere })
 
     // Fetch only fields needed by the canonical tally; stats do not need
     // the full employee or location relations.
@@ -54,7 +64,11 @@ export async function GET(request: NextRequest) {
         }).catch(() => [])
       : Promise.resolve([])
 
-    const [attendance, bkoAssignments] = await Promise.all([attendancePromise, bkoPromise])
+    const [attendance, bkoAssignments, totalEmployees] = await Promise.all([
+      attendancePromise,
+      bkoPromise,
+      employeeCountPromise,
+    ])
 
     // Calculate stats using the shared canonical tally (single source of truth)
     const tally = tallyAttendance(attendance)
@@ -66,8 +80,7 @@ export async function GET(request: NextRequest) {
     const averageLateMinutes = tally.averageLateMinutes
     const dayOff = 0
 
-    const totalEmployees = attendance.length || 1 // Prevent division by zero
-    const expectedToWork = totalEmployees - dayOff
+    const expectedToWork = Math.max(totalEmployees - dayOff, 0)
     const attendanceRate = computeAttendanceRate(presentToday, lateCheckIns, expectedToWork)
 
     const bkoCount = bkoAssignments.length
