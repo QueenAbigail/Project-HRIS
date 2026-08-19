@@ -64,6 +64,8 @@ export async function GET(request: NextRequest) {
     const dateRange = searchParams.get('dateRange') || 'today'
     const department = searchParams.get('department')
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
+    const dateFrom = searchParams.get('dateFrom')
+    const dateTo = searchParams.get('dateTo')
 
     // Calculate date range based on dateRange parameter
     let dateStart: Date
@@ -93,9 +95,8 @@ export async function GET(request: NextRequest) {
         dateEnd = endOfDay(monthEnd)
         break
       case 'custom':
-        const customDate = new Date(date)
-        dateStart = startOfDay(customDate)
-        dateEnd = endOfDay(customDate)
+        dateStart = startOfDay(new Date(dateFrom || date))
+        dateEnd = endOfDay(new Date(dateTo || dateFrom || date))
         break
       default:
         dateStart = startOfDay(now)

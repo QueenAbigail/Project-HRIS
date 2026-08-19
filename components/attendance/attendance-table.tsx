@@ -65,7 +65,7 @@ interface AttendanceRecord {
 
 // Status formatting is now handled by attendance-utils.ts for consistent display across the app
 
-export function AttendanceTable({ siteId = 'all', dateRange = 'today', department = 'all', refreshKey = 0 }: { siteId?: string; dateRange?: string; department?: string; refreshKey?: number }) {
+export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDateFrom = '', customDateTo = '', department = 'all', refreshKey = 0 }: { siteId?: string; dateRange?: string; customDateFrom?: string; customDateTo?: string; department?: string; refreshKey?: number }) {
   const [records, setRecords] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -82,6 +82,10 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
           params.append('siteId', siteId)
         }
         params.set('dateRange', dateRange || 'today')
+        if (dateRange === 'custom' && customDateFrom && customDateTo) {
+          params.set('dateFrom', customDateFrom)
+          params.set('dateTo', customDateTo)
+        }
         if (department && department !== 'all') {
           params.append('department', department)
         }
@@ -109,7 +113,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
 
     fetchAttendance()
     return () => { cancelled = true }
-  }, [siteId, dateRange, department, refreshKey])
+  }, [siteId, dateRange, customDateFrom, customDateTo, department, refreshKey])
 
   const allRecords = records
   const lateRecords = records.filter(r => r.status === 'LATE')
@@ -204,7 +208,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
             <CardTitle>
-              {dateRange === 'yesterday' ? "Yesterday's Attendance" : dateRange === 'week' ? "This Week's Attendance" : dateRange === 'month' ? "This Month's Attendance" : "Today's Attendance"}
+              {dateRange === 'yesterday' ? "Yesterday's Attendance" : dateRange === 'week' ? "This Week's Attendance" : dateRange === 'month' ? "This Month's Attendance" : dateRange === 'custom' && customDateFrom && customDateTo ? `Attendance: ${customDateFrom} – ${customDateTo}` : "Today's Attendance"}
             </CardTitle>
             <CardDescription>
               Attendance records with schedule integration

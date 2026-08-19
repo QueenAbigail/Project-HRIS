@@ -3,6 +3,16 @@
 import { useState, useEffect, Suspense } from 'react'
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Calendar } from 'lucide-react'
 import {
   Select,
@@ -36,7 +46,9 @@ interface MasterDataItem {
 interface AttendanceHeaderProps {
   siteId?: string
   dateRange?: string
-  onDateRangeChange?: (range: string) => void
+  customDateFrom?: string
+  customDateTo?: string
+  onDateRangeChange?: (range: string, dateFrom?: string, dateTo?: string) => void
   selectedDepartment?: string
   onDepartmentChange?: (dept: string) => void
   isClient?: boolean
@@ -45,6 +57,8 @@ interface AttendanceHeaderProps {
 export function AttendanceHeader({ 
   siteId = 'all',
   dateRange = 'today',
+  customDateFrom = '',
+  customDateTo = '',
   onDateRangeChange,
   selectedDepartment = 'all',
   onDepartmentChange,
@@ -53,6 +67,21 @@ export function AttendanceHeader({
   const [openCalendarSheet, setOpenCalendarSheet] = useState(false)
   const [departments, setDepartments] = useState<MasterDataItem[]>([])
   const [loadingDepartments, setLoadingDepartments] = useState(true)
+  const [customOpen, setCustomOpen] = useState(false)
+  const [draftDateFrom, setDraftDateFrom] = useState(customDateFrom)
+  const [draftDateTo, setDraftDateTo] = useState(customDateTo)
+
+  const openCustomRange = () => {
+    setDraftDateFrom(customDateFrom)
+    setDraftDateTo(customDateTo)
+    setCustomOpen(true)
+  }
+
+  const applyCustomRange = () => {
+    if (!draftDateFrom || !draftDateTo || draftDateFrom > draftDateTo) return
+    onDateRangeChange?.('custom', draftDateFrom, draftDateTo)
+    setCustomOpen(false)
+  }
 
   useEffect(() => {
     const fetchDepartments = async () => {
@@ -94,7 +123,7 @@ export function AttendanceHeader({
               <Calendar className="size-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Date Range:</span>
             </div>
-            <Select value={dateRange} onValueChange={(value) => onDateRangeChange?.(value)}>
+            <Select value={dateRange} onValueChange={(value) => value === 'custom' ? openCustomRange() : onDateRangeChange?.(value)}>
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Select period" />
               </SelectTrigger>
@@ -106,6 +135,11 @@ export function AttendanceHeader({
                 <SelectItem value="custom">Custom Range</SelectItem>
               </SelectContent>
             </Select>
+            {dateRange === 'custom' && (
+              <Button type="button" variant="outline" onClick={openCustomRange} className="w-full sm:w-auto">
+                {customDateFrom && customDateTo ? `${customDateFrom} – ${customDateTo}` : 'Choose dates'}
+              </Button>
+            )}
             <Select value={selectedDepartment} onValueChange={(value) => onDepartmentChange?.(value)}>
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder={loadingDepartments ? "Loading..." : "Department"} />
@@ -130,6 +164,29 @@ export function AttendanceHeader({
           </Button>
         </div>
       </div>
+
+      <Dialog open={customOpen} onOpenChange={setCustomOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Select Custom Date Range</DialogTitle>
+            <DialogDescription>Choose the same period for attendance cards and table.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label htmlFor="attendance-date-from">Start Date</Label>
+              <Input id="attendance-date-from" type="date" value={draftDateFrom} onChange={(event) => setDraftDateFrom(event.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="attendance-date-to">End Date</Label>
+              <Input id="attendance-date-to" type="date" value={draftDateTo} min={draftDateFrom || undefined} onChange={(event) => setDraftDateTo(event.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setCustomOpen(false)}>Cancel</Button>
+            <Button type="button" disabled={!draftDateFrom || !draftDateTo || draftDateFrom > draftDateTo} onClick={applyCustomRange}>Apply</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Sheet open={openCalendarSheet} onOpenChange={setOpenCalendarSheet}>
         <SheetContent side="right" className="w-full sm:w-96 overflow-y-auto">

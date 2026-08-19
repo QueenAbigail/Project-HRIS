@@ -49,7 +49,15 @@ export default function AttendancePage() {
     router.replace(query ? `${pathname}?${query}` : pathname)
   }
   const [dateRange, setDateRange] = useState('today')
+  const [customDateFrom, setCustomDateFrom] = useState('')
+  const [customDateTo, setCustomDateTo] = useState('')
   const [selectedDepartment, setSelectedDepartment] = useState('all')
+
+  const handleDateRangeChange = (range: string, dateFrom?: string, dateTo?: string) => {
+    setDateRange(range)
+    if (dateFrom) setCustomDateFrom(dateFrom)
+    if (dateTo) setCustomDateTo(dateTo)
+  }
   const [sites, setSites] = useState<Site[]>([])
   const [loadingSites, setLoadingSites] = useState(true)
   const [isGeneratingAttendance, setIsGeneratingAttendance] = useState(false)
@@ -130,7 +138,9 @@ export default function AttendancePage() {
       <AttendanceHeader 
         siteId={selectedSite} 
         dateRange={dateRange}
-        onDateRangeChange={setDateRange}
+        customDateFrom={customDateFrom}
+        customDateTo={customDateTo}
+        onDateRangeChange={handleDateRangeChange}
         selectedDepartment={selectedDepartment}
         onDepartmentChange={setSelectedDepartment}
         isClient={isClient}
@@ -172,8 +182,8 @@ export default function AttendancePage() {
         )}
       </div>
 
-      <AttendanceStats refreshKey={refreshKey} siteId={selectedSite} dateRange={dateRange} />
-      <AttendanceTable refreshKey={refreshKey} siteId={selectedSite} dateRange={dateRange} department={selectedDepartment} />
+      <AttendanceStats refreshKey={refreshKey} siteId={selectedSite} dateRange={dateRange} customDateFrom={customDateFrom} customDateTo={customDateTo} />
+      <AttendanceTable refreshKey={refreshKey} siteId={selectedSite} dateRange={dateRange} customDateFrom={customDateFrom} customDateTo={customDateTo} department={selectedDepartment} />
     </div>
   )
 }

@@ -20,10 +20,12 @@ interface AttendanceStatsData {
 interface AttendanceStatsProps {
   siteId?: string
   dateRange?: string
+  customDateFrom?: string
+  customDateTo?: string
   refreshKey?: number
 }
 
-export function AttendanceStats({ siteId = 'all', dateRange = 'today', refreshKey = 0 }: AttendanceStatsProps) {
+export function AttendanceStats({ siteId = 'all', dateRange = 'today', customDateFrom = '', customDateTo = '', refreshKey = 0 }: AttendanceStatsProps) {
   const [stats, setStats] = useState<AttendanceStatsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -44,7 +46,10 @@ export function AttendanceStats({ siteId = 'all', dateRange = 'today', refreshKe
         const start = new Date(today)
         const day = today.getDay()
 
-        if (dateRange === 'yesterday') {
+        if (dateRange === 'custom' && customDateFrom && customDateTo) {
+          params.set('dateFrom', customDateFrom)
+          params.set('dateTo', customDateTo)
+        } else if (dateRange === 'yesterday') {
           start.setDate(start.getDate() - 1)
           end.setDate(end.getDate() - 1)
         } else if (dateRange === 'week') {
@@ -53,9 +58,11 @@ export function AttendanceStats({ siteId = 'all', dateRange = 'today', refreshKe
           start.setDate(1)
         }
 
-        const formatDate = (value: Date) => value.toISOString().split('T')[0]
-        params.set('dateFrom', formatDate(start))
-        params.set('dateTo', formatDate(end))
+        if (dateRange !== 'custom' || !customDateFrom || !customDateTo) {
+          const formatDate = (value: Date) => value.toISOString().split('T')[0]
+          params.set('dateFrom', formatDate(start))
+          params.set('dateTo', formatDate(end))
+        }
         
         const response = await fetch(`/api/attendance/stats?${params.toString()}`)
         if (response.ok) {
@@ -74,7 +81,7 @@ export function AttendanceStats({ siteId = 'all', dateRange = 'today', refreshKe
 
     fetchStats()
     return () => { cancelled = true }
-  }, [siteId, dateRange, refreshKey])
+  }, [siteId, dateRange, customDateFrom, customDateTo, refreshKey])
 
   if (loading && !stats) {
     return (
