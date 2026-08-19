@@ -31,7 +31,26 @@ export async function GET(request: NextRequest) {
     if (siteId && siteId !== 'all') employeeWhere.siteId = siteId
     if (department && department !== 'all') employeeWhere.department = department
 
-    const employeeCountPromise = prisma.user.count({ where: employeeWhere })
+    const scheduledEmployeesPromise = prisma.schedule.findMany({
+      where: {
+        scheduleDate: {
+          gte: startOfDay(new Date(dateFrom)),
+          lte: endOfDay(new Date(dateTo)),
+        },
+        employee: employeeWhere,
+      },
+      select: { employeeId: true, scheduleDate: true },
+    })
+
+    const approvedLeavesPromise = prisma.leave.findMany({
+      where: {
+        status: 'Approved',
+        startDate: { lte: endOfDay(new Date(dateTo)) },
+        endDate: { gte: startOfDay(new Date(dateFrom)) },
+        user: employeeWhere,
+      },
+      select: { userId: true, startDate: true, endDate: true },
+    })
 
     // Fetch only fields needed by the canonical tally; stats do not need
     // the full employee or location relations.
@@ -64,11 +83,34 @@ export async function GET(request: NextRequest) {
         }).catch(() => [])
       : Promise.resolve([])
 
-    const [attendance, bkoAssignments, totalEmployees] = await Promise.all([
+    const [attendance, bkoAssignments, scheduledEmployees, approvedLeaves] = await Promise.all([
       attendancePromise,
       bkoPromise,
-      employeeCountPromise,
+      scheduledEmployeesPromise,
+      approvedLeavesPromise,
     ])
+
+    const leaveKeys = new Set(
+      approvedLeaves.flatMap((leave) => {
+        const start = new Date(leave.startDate)
+        const end = new Date(leave.endDate)
+        return scheduledEmployees
+          .filter((schedule) => schedule.employeeId === leave.userId)
+          .filter((schedule) => {
+            const scheduleDate = new Date(schedule.scheduleDate)
+            return scheduleDate >= start && scheduleDate <= end
+          })
+          .map((schedule) => `${schedule.employeeId}:${new Date(schedule.scheduleDate).toISOString().slice(0, 10)}`)
+      }),
+    )
+
+    const scheduledKeys = new Set(
+      scheduledEmployees.map((schedule) => `${schedule.employeeId}:${new Date(schedule.scheduleDate).toISOString().slice(0, 10)}`),
+    )
+    const dayOff = 0
+    const onLeave = leaveKeys.size
+    const totalEmployees = scheduledKeys.size
+    const expectedToWork = Math.max(totalEmployees - onLeave, 0)
 
     // Calculate stats using the shared canonical tally (single source of truth)
     const tally = tallyAttendance(attendance)
@@ -76,11 +118,7 @@ export async function GET(request: NextRequest) {
     const lateCheckIns = tally.late
     const absentToday = tally.absent
     const notCheckedIn = tally.notCheckedIn
-    const onLeave = tally.onLeave
     const averageLateMinutes = tally.averageLateMinutes
-    const dayOff = 0
-
-    const expectedToWork = Math.max(totalEmployees - dayOff, 0)
     const attendanceRate = computeAttendanceRate(presentToday, lateCheckIns, expectedToWork)
 
     const bkoCount = bkoAssignments.length
