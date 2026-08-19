@@ -83,27 +83,23 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // BKO is optional in some deployments; do not fail the whole stats API
-    // when the generated Prisma client does not expose that model.
-    const bkoModel = (prisma as typeof prisma & {
-      bko?: {
-        findMany: (args: { where: Record<string, unknown> }) => Promise<unknown[]>
-      }
-    }).bko
+    const bkoPromise = prisma.bkoAssignment.count({
+      where: {
+        status: 'Aktif',
+        leave: {
+          startDate: { lte: endOfDay(new Date(dateTo)) },
+          endDate: { gte: startOfDay(new Date(dateFrom)) },
+        },
+        substitute: {
+          status: 'ACTIVE',
+          ...(siteId && siteId !== 'all' ? { siteId } : {}),
+          ...(department && department !== 'all' ? { department } : {}),
+          ...(!isUnrestricted ? { companyId: currentUser.companyId } : {}),
+        },
+      },
+    })
 
-    const bkoPromise = bkoModel
-      ? bkoModel.findMany({
-          where: {
-            date: {
-              gte: startOfDay(new Date(dateFrom)),
-              lte: endOfDay(new Date(dateTo)),
-            },
-            ...(siteId && siteId !== 'all' ? { backupEmployee: { siteId } } : {}),
-          },
-        }).catch(() => [])
-      : Promise.resolve([])
-
-    const [attendance, bkoAssignments, scheduledEmployees, approvedLeaves] = await Promise.all([
+    const [attendance, bkoCount, scheduledEmployees, approvedLeaves] = await Promise.all([
       attendancePromise,
       bkoPromise,
       scheduledEmployeesPromise,
@@ -140,8 +136,6 @@ export async function GET(request: NextRequest) {
     const notCheckedIn = tally.notCheckedIn
     const averageLateMinutes = tally.averageLateMinutes
     const attendanceRate = computeAttendanceRate(presentToday, lateCheckIns, expectedToWork)
-
-    const bkoCount = bkoAssignments.length
 
     return NextResponse.json({
       presentToday,
