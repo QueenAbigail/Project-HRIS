@@ -112,9 +112,18 @@ export async function GET(request: NextRequest) {
     }
     
     if (siteId && siteId !== 'all') {
+      const requestedSite = await prisma.site.findUnique({
+        where: { id: siteId },
+        select: { id: true, companyId: true },
+      })
+      if (!requestedSite) {
+        return NextResponse.json({ error: 'Site not found' }, { status: 404 })
+      }
+      if (isClient && requestedSite.companyId !== currentUser?.companyId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
       where.locationId = siteId
     } else if (isClient) {
-      // For CLIENT users, only show their company's locations
       where.location = {
         company: {
           id: currentUser?.companyId

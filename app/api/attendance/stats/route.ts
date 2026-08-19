@@ -2,12 +2,29 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { startOfDay, endOfDay } from 'date-fns'
 import { tallyAttendance, computeAttendanceRate } from '@/lib/attendance-utils'
+import { getCurrentUser } from '@/lib/system'
 
 export async function GET(request: NextRequest) {
   try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
-    
     const siteId = searchParams.get('siteId')
+    const requestedSite = siteId && siteId !== 'all'
+      ? await prisma.site.findUnique({ select: { id: true, companyId: true }, where: { id: siteId } })
+      : null
+
+    if (siteId && siteId !== 'all' && !requestedSite) {
+      return NextResponse.json({ error: 'Site not found' }, { status: 404 })
+    }
+
+    const isUnrestricted = currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'HR_ADMIN'
+    if (!isUnrestricted && requestedSite && requestedSite.companyId !== currentUser.companyId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
     const dateFrom = searchParams.get('dateFrom') || searchParams.get('date') || new Date().toISOString().split('T')[0]
     const dateTo = searchParams.get('dateTo') || dateFrom
 
@@ -22,6 +39,8 @@ export async function GET(request: NextRequest) {
     const department = searchParams.get('department')
     if (siteId && siteId !== 'all') {
       where.locationId = siteId
+    } else if (!isUnrestricted) {
+      where.location = { company: { id: currentUser.companyId } }
     }
     if (department && department !== 'all') {
       where.user = { department }
@@ -29,6 +48,7 @@ export async function GET(request: NextRequest) {
 
     const employeeWhere: Record<string, unknown> = { status: 'ACTIVE' }
     if (siteId && siteId !== 'all') employeeWhere.siteId = siteId
+    else if (!isUnrestricted) employeeWhere.companyId = currentUser.companyId
     if (department && department !== 'all') employeeWhere.department = department
 
     const scheduledEmployeesPromise = prisma.schedule.findMany({
