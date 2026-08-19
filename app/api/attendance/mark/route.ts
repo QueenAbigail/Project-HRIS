@@ -6,7 +6,7 @@ interface MarkAttendanceRequest {
   userId: string
   date: string // YYYY-MM-DD
   locationId: string
-  status: 'PRESENT' | 'LATE' | 'ABSENT' | 'LEAVE' | 'NOT_CHECKED_IN'
+  status?: 'PRESENT' | 'LATE' | 'ABSENT' | 'LEAVE' | 'NOT_CHECKED_IN'
   checkInTime?: string // HH:MM
   checkOutTime?: string // HH:MM
   notes?: string
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const body: MarkAttendanceRequest = await request.json()
 
     // Validate required fields
-    if (!body.userId || !body.date || !body.locationId || !body.status) {
+    if (!body.userId || !body.date || !body.locationId) {
       return NextResponse.json(
         { error: 'Missing required fields: userId, date, locationId, status' },
         { status: 400 }
@@ -55,6 +55,10 @@ export async function POST(request: NextRequest) {
       actualCheckOut.setHours(hours, minutes, 0, 0)
     }
 
+    const derivedStatus = actualCheckIn
+      ? (body.lateMinutes && body.lateMinutes > 0 ? 'LATE' : 'PRESENT')
+      : (body.status || 'NOT_CHECKED_IN')
+
     // Check if attendance record already exists for this user and date
     const existingAttendance = await prisma.attendance.findUnique({
       where: {
@@ -75,7 +79,7 @@ export async function POST(request: NextRequest) {
         },
         data: {
           locationId: body.locationId,
-          status: body.status,
+          status: derivedStatus,
           actualCheckIn,
           actualCheckOut,
           lateMinutes: body.lateMinutes || 0,
@@ -89,7 +93,7 @@ export async function POST(request: NextRequest) {
           userId: body.userId,
           date: attendanceDate,
           locationId: body.locationId,
-          status: body.status,
+          status: derivedStatus,
           actualCheckIn,
           actualCheckOut,
           lateMinutes: body.lateMinutes || 0,

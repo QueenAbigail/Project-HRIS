@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Clock, AlertTriangle, MapPin, Loader2, Eye, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { GpsCoordinates } from '@/lib/constants'
-import { formatAttendanceStatus, getAttendanceLabel, getStatusStyles } from '@/lib/attendance-utils'
+import { formatAttendanceStatus, getAttendanceLabel, getStatusStyles, resolveAttendanceStatus } from '@/lib/attendance-utils'
 import { AttendanceDetailsModal } from './attendance-details-modal'
 import { getBusinessDateRangeForPreset, formatBusinessDate } from '@/lib/timezone'
 
@@ -167,10 +167,11 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
   }
 
   const allRecords = records
-  const lateRecords = records.filter(r => r.status === 'LATE')
-  const presentRecords = records.filter(r => r.status === 'PRESENT')
-  const absentRecords = records.filter(r => r.status === 'ABSENT')
-  const pendingRecords = records.filter(r => r.status === 'NOT_CHECKED_IN')
+  const statusRecords = records.map((record) => ({ record, status: resolveAttendanceStatus(record) }))
+  const lateRecords = statusRecords.filter(({ status }) => status === 'LATE').map(({ record }) => record)
+  const presentRecords = statusRecords.filter(({ status }) => status === 'PRESENT').map(({ record }) => record)
+  const absentRecords = statusRecords.filter(({ status }) => status === 'ABSENT').map(({ record }) => record)
+  const pendingRecords = statusRecords.filter(({ status }) => status === 'NOT_CHECKED_IN').map(({ record }) => record)
 
   const openGoogleMaps = (gps: GpsCoordinates) => {
     const url = `https://www.google.com/maps?q=${gps.latitude},${gps.longitude}`
@@ -211,8 +212,8 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
             {record.actualCheckOut ? record.actualCheckOut.split('T')[1]?.substring(0, 5) || '--:--' : '--:--'}
           </TableCell>
           <TableCell>
-            <Badge variant="outline" className={getStatusStyles(record.status)}>
-              {getAttendanceLabel(record.status)}
+            <Badge variant="outline" className={getStatusStyles(resolveAttendanceStatus(record))}>
+              {getAttendanceLabel(resolveAttendanceStatus(record))}
             </Badge>
           </TableCell>
           <TableCell>
