@@ -94,7 +94,6 @@ export function ChangePhotoModal({
         }
         img.src = preview
       } catch (error) {
-        console.error('[v0] Error updating preview:', error)
       }
     }
 
@@ -173,7 +172,6 @@ export function ChangePhotoModal({
       setCroppedPreview(cropped)
       setShowCropper(false)
     } catch (error) {
-      console.error('[v0] Error cropping image:', error)
       toast.error('Failed to crop image')
     }
   }
@@ -210,7 +208,6 @@ export function ChangePhotoModal({
       setShowCropper(false)
       onClose()
     } catch (error) {
-      console.error('[v0] Error uploading photo:', error)
       toast.error('Failed to upload photo. Please try again.')
     } finally {
       setLoading(false)

@@ -6,9 +6,32 @@ import { revalidatePath } from 'next/cache'
 
 function friendlyEmployeeError(error: unknown): string {
   const message = error instanceof Error ? error.message : ''
+  const invalidField = message.match(/^INVALID_EMPLOYEE_FIELD:(.+)$/)
+
+  if (invalidField) {
+    return `Please enter a valid ${invalidField[1].trim()}.`
+  }
 
   if (/Invalid (?:[A-Za-z ]+ )?Date|Expected Date object|Invalid value for argument.*Date/i.test(message)) {
-    return 'Please enter valid dates for Join Date, Birth Date, and KTA Expiry.'
+    const dateField = message.match(/argument [`'](joinDate|birthDate|ktaExpiry)[`']/i)?.[1]
+    const dateLabels: Record<string, string> = {
+      joinDate: 'Join Date',
+      birthDate: 'Birth Date',
+      ktaExpiry: 'KTA Expiry',
+    }
+    return dateField
+      ? `Please enter a valid ${dateLabels[dateField]}.`
+      : 'Please check the Join Date, Birth Date, or KTA Expiry field and enter a valid date.'
+  }
+
+  const argumentField = message.match(/Argument [`']([A-Za-z0-9_]+)[`']/i)?.[1]
+  if (argumentField) {
+    const labels: Record<string, string> = {
+      name: 'Name', email: 'Email', personalEmail: 'Personal Email', department: 'Department',
+      position: 'Position', siteId: 'Location', companyId: 'Company', joinDate: 'Join Date',
+      birthDate: 'Birth Date', ktaExpiry: 'KTA Expiry', employmentStatus: 'Employment Status',
+    }
+    if (labels[argumentField]) return `Please check the ${labels[argumentField]} field.`
   }
 
   if (/Unique constraint failed/i.test(message)) {
@@ -31,7 +54,7 @@ function friendlyEmployeeError(error: unknown): string {
 function parseEmployeeDate(value: unknown, label: string): Date | null {
   if (!value || (typeof value === 'string' && value.trim() === '')) return null
   const date = value instanceof Date ? new Date(value.getTime()) : new Date(String(value))
-  if (Number.isNaN(date.getTime())) throw new Error(`Invalid ${label}`)
+  if (Number.isNaN(date.getTime())) throw new Error(`INVALID_EMPLOYEE_FIELD:${label}`)
   return date
 }
 

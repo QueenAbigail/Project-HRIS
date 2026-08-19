@@ -91,17 +91,14 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
           const types = await typesRes.json()
           setLeaveTypes(types)
         } else {
-          console.error('[v0] Leave types fetch failed:', typesRes.status, await typesRes.text())
         }
 
         if (deptsRes.ok) {
           const depts = await deptsRes.json()
           setDepartments(depts)
         } else {
-          console.error('[v0] Departments fetch failed:', deptsRes.status, await deptsRes.text())
         }
       } catch (error) {
-        console.error('[v0] Failed to fetch filters:', error)
       } finally {
         setLoadingFilters(false)
       }
@@ -123,7 +120,6 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
           setEmployees(data)
         }
       } catch (error) {
-        console.error('[v0] Failed to fetch employees:', error)
       } finally {
         setLoadingEmployees(false)
       }
@@ -202,7 +198,6 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
         alert(`Error: ${error.message || 'Failed to create leave request'}`)
       }
     } catch (error) {
-      console.error('[v0] Error submitting leave request:', error)
       alert('Failed to submit leave request')
     } finally {
       setSubmitting(false)

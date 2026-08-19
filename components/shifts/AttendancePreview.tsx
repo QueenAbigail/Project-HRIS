@@ -73,7 +73,6 @@ export function AttendancePreview({
         const data = await response.json()
         setPreview(data)
       } catch (err) {
-        console.error('[v0] Error generating attendance preview:', err)
         setError(err instanceof Error ? err.message : 'Unknown error')
       } finally {
         setLoading(false)

@@ -56,7 +56,6 @@ export function NotificationHistory({ refreshTrigger }: NotificationHistoryProps
         },
       ])
     } catch (error) {
-      console.error('Error fetching notifications:', error)
       toast.error('Failed to fetch notifications')
     } finally {
       setIsLoading(false)

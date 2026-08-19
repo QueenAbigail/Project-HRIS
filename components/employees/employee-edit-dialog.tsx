@@ -52,8 +52,9 @@ interface EmployeeEditFormData {
   bankAccount: string
   taxId: string
   joinDate?: string
+  joinDateValue?: string
   employmentStatus?: string
-  certifications?: string
+  certifications?: string | string[]
   ktaNumber?: string
   ktaExpiry?: string
   supervisor?: string
@@ -169,9 +170,11 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
         emergencyContact: employee.emergencyContact || 'Emergency Contact - +1 (555) 000-0000',
         bankAccount: employee.bankAccount || '**** **** **** 0000',
         taxId: employee.taxId || '***-**-0000',
-        joinDate: employee.joinDate || '',
+        joinDate: employee.joinDateValue || employee.joinDate || '',
         employmentStatus: employee.employmentStatus || '',
-        certifications: employee.certifications?.join(', ') || '',
+        certifications: Array.isArray(employee.certifications)
+          ? employee.certifications.join(', ')
+          : employee.certifications || '',
         ktaNumber: employee.ktaNumber || '',
         ktaExpiry: employee.ktaExpiry || '',
         supervisor: employee.supervisor?.id || '',
@@ -226,7 +229,6 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
 
         dataFetchedRef.current = true
       } catch (error) {
-        console.error('[v0] Failed to fetch data:', error)
       } finally {
         setLoadingData(false)
       }
@@ -257,7 +259,20 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
       const result = await updateEmployeeAction(employee!.id, formData)
       
       if (result.success) {
-        onSave({ ...employee!, ...formData })
+        const savedSite = sites.find((site) => site.id === formData.location)
+        onSave({
+          ...employee!,
+          ...formData,
+          // Keep the local employee row display value human-readable while the
+          // submitted form continues to use the database site ID.
+          location: savedSite
+            ? `${savedSite.company?.name || 'N/A'} - ${savedSite.name}`
+            : employee!.location,
+          locationCode: savedSite?.code || employee!.locationCode,
+          certifications: formData.certifications
+            ? formData.certifications.split(',').map((item) => item.trim()).filter(Boolean)
+            : [],
+        })
         toast.success('Employee data updated successfully', {
           description: 'All changes have been saved.'
         })
@@ -268,7 +283,6 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
         })
       }
     } catch (error) {
-      console.error(error)
       toast.error('Connection error', {
         description: 'Unable to save changes. Please check your connection and try again.'
       })
@@ -288,7 +302,7 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
           <div className="flex items-center gap-3">
             <div className="relative">
               <Avatar className="size-12 border-2 border-border">
-                <AvatarImage src={`/avatars/${employee.id}.jpg`} alt={employee.name} />
+                <AvatarImage src={employee.avatar || undefined} alt={employee.name} />
                 <AvatarFallback className="bg-primary/10 text-primary text-sm">
                   {employee.initials}
                 </AvatarFallback>

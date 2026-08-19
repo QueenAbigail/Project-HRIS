@@ -64,6 +64,10 @@ export async function GET(request: NextRequest) {
     const dateRange = searchParams.get('dateRange') || 'today'
     const department = searchParams.get('department')
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
+    const dateFrom = searchParams.get('dateFrom')
+    const dateTo = searchParams.get('dateTo')
+    const page = Math.max(Number.parseInt(searchParams.get('page') || '1', 10) || 1, 1)
+    const pageSize = Math.min(Math.max(Number.parseInt(searchParams.get('pageSize') || '25', 10) || 25, 10), 50)
 
     // Calculate date range based on dateRange parameter
     let dateStart: Date
@@ -93,16 +97,13 @@ export async function GET(request: NextRequest) {
         dateEnd = endOfDay(monthEnd)
         break
       case 'custom':
-        const customDate = new Date(date)
-        dateStart = startOfDay(customDate)
-        dateEnd = endOfDay(customDate)
+        dateStart = startOfDay(new Date(dateFrom || date))
+        dateEnd = endOfDay(new Date(dateTo || dateFrom || date))
         break
       default:
         dateStart = startOfDay(now)
         dateEnd = endOfDay(now)
     }
-
-    console.log("[v0] Attendance API - Date range:", { dateRange, dateStart: dateStart.toISOString(), dateEnd: dateEnd.toISOString() })
 
     // Build where clause - use gte for start and lte for end to match date-only comparison
     const where: any = {
@@ -113,9 +114,18 @@ export async function GET(request: NextRequest) {
     }
     
     if (siteId && siteId !== 'all') {
+      const requestedSite = await prisma.site.findUnique({
+        where: { id: siteId },
+        select: { id: true, companyId: true },
+      })
+      if (!requestedSite) {
+        return NextResponse.json({ error: 'Site not found' }, { status: 404 })
+      }
+      if (isClient && requestedSite.companyId !== currentUser?.companyId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
       where.locationId = siteId
     } else if (isClient) {
-      // For CLIENT users, only show their company's locations
       where.location = {
         company: {
           id: currentUser?.companyId
@@ -129,9 +139,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log("[v0] Fetching attendance with where clause:", JSON.stringify(where, null, 2))
-    console.log("[v0] Current user:", { id: currentUser?.id, role: currentUser?.role, companyId: currentUser?.companyId })
-    const filtered = await prisma.attendance.findMany({
+    const [totalRecords, filtered] = await Promise.all([
+      prisma.attendance.count({ where }),
+      prisma.attendance.findMany({
       where,
       include: {
         user: {
@@ -168,9 +178,13 @@ export async function GET(request: NextRequest) {
       },
       orderBy: [
         { date: 'desc' },
-        { actualCheckIn: 'desc' }
-      ]
-    })
+        { actualCheckIn: 'desc' },
+        { id: 'desc' },
+      ],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    ])
 
     // Resolve display status via the shared single-source-of-truth helper:
     // derive PRESENT/LATE from the check-in, but trust the persisted ABSENT/LEAVE
@@ -180,15 +194,22 @@ export async function GET(request: NextRequest) {
       status: resolveAttendanceStatus(record)
     }))
 
-    console.log("[v0] Attendance API returning", enrichedRecords.length, "records for date range:", dateRange)
-    return NextResponse.json(enrichedRecords)
+    return NextResponse.json({
+      records: enrichedRecords,
+      pagination: {
+        page,
+        pageSize,
+        totalRecords,
+        totalPages: Math.ceil(totalRecords / pageSize),
+      },
+    })
   } catch (error) {
     console.error('[v0] Error fetching attendance:', {
       message: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
     })
     return NextResponse.json(
-      { error: 'Failed to fetch attendance records', details: error instanceof Error ? error.message : String(error) },
+      { error: 'Failed to fetch attendance records' },
       { status: 500 }
     )
   }
@@ -196,6 +217,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const currentUser = await getCurrentUser()
+
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (currentUser.role !== 'SUPER_ADMIN' && currentUser.role !== 'HR_ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const body = await request.json()
     const {
       userId,
@@ -220,6 +251,32 @@ export async function POST(request: NextRequest) {
         { error: 'userId and locationId are required' },
         { status: 400 }
       )
+    }
+
+    const targetEmployee = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, companyId: true, siteId: true, status: true },
+    })
+    const targetLocation = await prisma.site.findUnique({
+      where: { id: locationId },
+      select: { id: true, companyId: true },
+    })
+
+    if (!targetEmployee || !targetLocation) {
+      return NextResponse.json({ error: 'Employee or location not found' }, { status: 404 })
+    }
+
+    if (targetEmployee.status !== 'ACTIVE') {
+      return NextResponse.json({ error: 'Attendance cannot be changed for an inactive employee' }, { status: 400 })
+    }
+
+    const hasCompanyAccess =
+      currentUser.role === 'SUPER_ADMIN' ||
+      (!!currentUser.companyId && currentUser.companyId === targetEmployee.companyId)
+    const hasSiteAccess = targetEmployee.siteId === targetLocation.id
+
+    if (!hasCompanyAccess || !hasSiteAccess) {
+      return NextResponse.json({ error: 'You do not have access to this employee or location' }, { status: 403 })
     }
 
     const date = new Date()

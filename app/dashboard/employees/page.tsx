@@ -179,6 +179,7 @@ async function EmployeesContent({
       position: user.position ?? '',
       status,
       joinDate: user.joinDate ? format(user.joinDate, 'MMM d, yyyy') : '',
+      joinDateValue: user.joinDate ? format(user.joinDate, 'yyyy-MM-dd') : '',
       location: user.site ? `${user.site.company?.name || 'N/A'} - ${user.site.name}` : '',
       locationCode: user.site?.code ?? '',
       phone: user.phoneNumber ?? '',
@@ -202,6 +203,7 @@ async function EmployeesContent({
         ? format(user.ktaExpiry, 'yyyy-MM-dd')
         : '',
       employmentStatus: user.employmentStatus ?? '',
+      certifications: Array.isArray(user.certifications) ? user.certifications : [],
       role: user.role ?? 'STAFF',
       userStatus: user.status ?? 'ACTIVE',
       allowMobileAttendance: user.allowMobileAttendance,

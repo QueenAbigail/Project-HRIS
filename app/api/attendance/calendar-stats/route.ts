@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
+import { resolveAttendanceStatus } from '@/lib/attendance-utils'
+import { getBusinessDateRange } from '@/lib/timezone'
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,9 +23,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const start = new Date(startDate)
-    const end = new Date(endDate)
-    end.setHours(23, 59, 59, 999)
+    const { from: start, to: end } = getBusinessDateRange(startDate, endDate)
 
     // Get attendance records for the month
     const attendanceRecords = await prisma.attendance.findMany({
@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
       select: {
         date: true,
         status: true,
+        actualCheckIn: true,
         lateMinutes: true,
         userId: true,
       },
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
         attendanceByDate.set(dateKey, [])
       }
       attendanceByDate.get(dateKey)!.push({
-        status: record.status,
+        status: resolveAttendanceStatus(record),
         lateMinutes: record.lateMinutes || 0,
       })
     })

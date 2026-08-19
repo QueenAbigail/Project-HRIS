@@ -49,7 +49,15 @@ export default function AttendancePage() {
     router.replace(query ? `${pathname}?${query}` : pathname)
   }
   const [dateRange, setDateRange] = useState('today')
+  const [customDateFrom, setCustomDateFrom] = useState('')
+  const [customDateTo, setCustomDateTo] = useState('')
   const [selectedDepartment, setSelectedDepartment] = useState('all')
+
+  const handleDateRangeChange = (range: string, dateFrom?: string, dateTo?: string) => {
+    setDateRange(range)
+    if (dateFrom) setCustomDateFrom(dateFrom)
+    if (dateTo) setCustomDateTo(dateTo)
+  }
   const [sites, setSites] = useState<Site[]>([])
   const [loadingSites, setLoadingSites] = useState(true)
   const [isGeneratingAttendance, setIsGeneratingAttendance] = useState(false)
@@ -92,16 +100,17 @@ export default function AttendancePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch current user
-        const userResponse = await fetch('/api/auth/me')
+        const [userResponse, sitesResponse] = await Promise.all([
+          fetch('/api/auth/me'),
+          fetch('/api/sites'),
+        ])
+
         if (userResponse.ok) {
           const userData = await userResponse.json()
           setCurrentUser(userData)
           setIsClient(userData.role === 'CLIENT')
         }
 
-        // Fetch sites
-        const sitesResponse = await fetch('/api/sites')
         if (sitesResponse.ok) {
           const sitesData = await sitesResponse.json()
           setSites(sitesData)
@@ -129,7 +138,9 @@ export default function AttendancePage() {
       <AttendanceHeader 
         siteId={selectedSite} 
         dateRange={dateRange}
-        onDateRangeChange={setDateRange}
+        customDateFrom={customDateFrom}
+        customDateTo={customDateTo}
+        onDateRangeChange={handleDateRangeChange}
         selectedDepartment={selectedDepartment}
         onDepartmentChange={setSelectedDepartment}
         isClient={isClient}
@@ -171,8 +182,8 @@ export default function AttendancePage() {
         )}
       </div>
 
-      <AttendanceStats key={refreshKey} siteId={selectedSite} dateRange={dateRange} />
-      <AttendanceTable key={refreshKey} siteId={selectedSite} dateRange={dateRange} department={selectedDepartment} />
+      <AttendanceStats refreshKey={refreshKey} siteId={selectedSite} dateRange={dateRange} customDateFrom={customDateFrom} customDateTo={customDateTo} department={selectedDepartment} />
+      <AttendanceTable refreshKey={refreshKey} siteId={selectedSite} dateRange={dateRange} customDateFrom={customDateFrom} customDateTo={customDateTo} department={selectedDepartment} />
     </div>
   )
 }

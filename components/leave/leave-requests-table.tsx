@@ -69,7 +69,6 @@ export function LeaveRequestsTable() {
           setLeaves(data)
         }
       } catch (error) {
-        console.error('[v0] Failed to fetch leaves:', error)
       } finally {
         setLoading(false)
       }
@@ -93,10 +92,8 @@ export function LeaveRequestsTable() {
         // Trigger stats refresh
         window.dispatchEvent(new Event('leaveStatusUpdated'))
       } else {
-        console.error('[v0] API error:', data.error || 'Unknown error')
       }
     } catch (error) {
-      console.error('[v0] Failed to update leave status:', error)
     }
   }
 

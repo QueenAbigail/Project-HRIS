@@ -171,22 +171,54 @@ const details = employeeDetails[employee.id] || defaultDetails
   const [isExpandedAssignment, setIsExpandedAssignment] = useState(false)
   const [isExpandedKTA, setIsExpandedKTA] = useState(false)
 
-  // Dynamic check for missing administrative fields
+  // Keep this list aligned with the employee fields shown in the User model.
+  // System fields, IDs, relationships, and permission flags are intentionally excluded.
   const fieldChecks: { key: keyof Employee; label: string }[] = [
+    { key: 'name', label: 'Full Name' },
+    { key: 'email', label: 'Work Email' },
+    { key: 'employeeCode', label: 'Employee ID' },
     { key: 'personalEmail', label: 'Personal Email' },
+    { key: 'phoneNumber', label: 'Phone Number' },
+    { key: 'ktpNumber', label: 'KTP Number' },
+    { key: 'address', label: 'Address' },
+    { key: 'birthCity', label: 'Birth City' },
+    { key: 'birthDate', label: 'Birth Date' },
+    { key: 'gender', label: 'Gender' },
+    { key: 'religion', label: 'Religion' },
+    { key: 'maritalStatus', label: 'Marital Status' },
+    { key: 'bloodType', label: 'Blood Type' },
     { key: 'bpjsNumber', label: 'BPJS Number' },
     { key: 'npwpNumber', label: 'NPWP Number' },
     { key: 'ktaNumber', label: 'KTA Number' },
+    { key: 'ktaExpiry', label: 'KTA Expiry' },
+    { key: 'certifications', label: 'Certifications' },
+    { key: 'department', label: 'Department' },
+    { key: 'position', label: 'Position' },
+    { key: 'location', label: 'Placement Location' },
+    { key: 'joinDate', label: 'Join Date' },
+    { key: 'employmentStatus', label: 'Employment Status' },
+    { key: 'bankName', label: 'Bank Name' },
+    { key: 'accountHolder', label: 'Account Holder' },
+    { key: 'accountNumber', label: 'Account Number' },
   ]
 
+  const isMissing = (value: Employee[keyof Employee]) =>
+    value == null || (typeof value === 'string' && value.trim() === '') ||
+    (Array.isArray(value) && value.length === 0)
+
+  const certName = employee.certifications?.[0]
+  const hasCert = !!certName && certName !== 'none'
+
   const missingFields = fieldChecks
-    .filter((f) => !employee[f.key])
-    .map((f) => f.label)
+    .filter((field) => {
+      // KTA details are optional until a certification exists.
+      if (!hasCert && (field.key === 'ktaNumber' || field.key === 'ktaExpiry')) return false
+      return isMissing(employee[field.key])
+    })
+    .map((field) => field.label)
 
   const hasMissingFields = missingFields.length > 0
 
-  const certName = employee.certifications?.[0];
-  const hasCert = !!certName && certName !== "none"; 
   const isKtaExpired = employee.ktaExpiry ? new Date(employee.ktaExpiry) < new Date() : false;
 
   return (
@@ -195,7 +227,7 @@ const details = employeeDetails[employee.id] || defaultDetails
         <SheetHeader className="pb-4">
           <div className="flex items-start gap-4">
             <Avatar className="size-16 border-2 border-primary/20">
-              <AvatarImage src={`/avatars/${employee.id}.jpg`} alt={employee.name} />
+              <AvatarImage src={employee.avatar || undefined} alt={employee.name} />
               <AvatarFallback className="bg-primary/10 text-primary text-xl">
                 {employee.initials}
               </AvatarFallback>
