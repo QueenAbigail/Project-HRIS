@@ -229,7 +229,6 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
 
         dataFetchedRef.current = true
       } catch (error) {
-        console.error('[v0] Failed to fetch data:', error)
       } finally {
         setLoadingData(false)
       }
@@ -284,7 +283,6 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
         })
       }
     } catch (error) {
-      console.error(error)
       toast.error('Connection error', {
         description: 'Unable to save changes. Please check your connection and try again.'
       })

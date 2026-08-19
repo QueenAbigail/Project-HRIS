@@ -81,7 +81,6 @@ export function ShiftFormDialog({ shift, open, onOpenChange, onSuccess }: ShiftF
         onSuccess()
       }
     } catch (error) {
-      console.error('[v0] Error saving shift:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to save shift'
       toast.error(errorMessage)
     } finally {
@@ -211,7 +210,6 @@ export function ShiftFormDialog({ shift, open, onOpenChange, onSuccess }: ShiftF
                     onSuccess()
                   }
                 } catch (error) {
-                  console.error('[v0] Error deleting shift:', error)
                   const errorMessage = error instanceof Error ? error.message : 'Failed to delete shift'
                   toast.error(errorMessage)
                 } finally {

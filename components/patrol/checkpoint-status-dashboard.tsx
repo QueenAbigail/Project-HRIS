@@ -46,7 +46,6 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
           setCheckpoints(transformed)
         }
       } catch (error) {
-        console.error('Error fetching checkpoints:', error)
       } finally {
         setIsLoading(false)
       }

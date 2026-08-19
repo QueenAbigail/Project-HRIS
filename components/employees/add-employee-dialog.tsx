@@ -140,7 +140,6 @@ export function AddEmployeeDialog({
         // Mark data as fetched for caching
         dataFetchedRef.current = true
       } catch (error) {
-        console.error('[v0] Failed to fetch data:', error)
       } finally {
         setLoadingSites(false)
         setLoadingMasterData(false)
@@ -249,7 +248,6 @@ export function AddEmployeeDialog({
       // Download file
       XLSX.writeFile(wb, 'employee_template.xlsx')
     } catch (error) {
-      console.error('Failed to download template:', error)
     }
   }
 
@@ -327,7 +325,6 @@ export function AddEmployeeDialog({
   })
   }
   } catch (error) {
-  console.error("System error:", error)
   toast.error('Connection error', {
     description: 'Unable to save the employee. Please check your connection and try again.'
   })
@@ -357,7 +354,6 @@ export function AddEmployeeDialog({
       const result = await response.json()
 
       if (response.ok || result.success || result.failed) {
-        console.log('[v0] Import result:', result)
         setImportCount(result.success || 0)
         setImportFailed(result.failed || 0)
         setImportErrors(result.errors || [])
@@ -384,10 +380,8 @@ export function AddEmployeeDialog({
       } else {
         setImportStatus('error')
         setImportErrors([{ row: 0, error: result.error || 'Unknown error occurred' }])
-        console.error('[v0] Import failed:', result.error)
       }
     } catch (error) {
-      console.error('[v0] Upload error:', error)
       setImportStatus('error')
       setImportErrors([{ row: 0, error: error instanceof Error ? error.message : 'Upload failed' }])
     }

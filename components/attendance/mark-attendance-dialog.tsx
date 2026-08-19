@@ -127,7 +127,6 @@ export function MarkAttendanceDialog() {
           }
         }
       } catch (err) {
-        console.error('[v0] Error fetching data:', err)
         setError('Failed to load data')
       } finally {
         setLoading(false)
@@ -169,7 +168,6 @@ export function MarkAttendanceDialog() {
           setExistingAttendance(null)
         }
       } catch (err) {
-        console.error('[v0] Error checking attendance:', err)
         setExistingAttendance(null)
       } finally {
         setCheckingAttendance(false)
@@ -250,7 +248,6 @@ export function MarkAttendanceDialog() {
       })
       setSearchValue('')
     } catch (err) {
-      console.error('[v0] Error saving attendance:', err)
       setError(err instanceof Error ? err.message : 'Failed to save attendance')
     } finally {
       setSaving(false)

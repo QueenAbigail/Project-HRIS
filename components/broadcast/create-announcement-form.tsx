@@ -45,7 +45,6 @@ export function CreateAnnouncementForm({ onSuccess }: CreateAnnouncementFormProp
       setSites(data.sites)
       setAvailableEmployees(data.employees)
     } catch (error) {
-      console.error('[v0] Error fetching data:', error)
       toast.error('Failed to load employees and sites')
     }
   }
@@ -130,7 +129,6 @@ export function CreateAnnouncementForm({ onSuccess }: CreateAnnouncementFormProp
       }
 
       const result = await response.json()
-      console.log('[v0] Announcement created:', result)
       toast.success(`Announcement created and sent to ${result.recipientCount} recipients`)
       
       // Reset form
@@ -144,7 +142,6 @@ export function CreateAnnouncementForm({ onSuccess }: CreateAnnouncementFormProp
       
       onSuccess?.()
     } catch (error) {
-      console.error('Error creating announcement:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to create announcement')
     } finally {
       setIsLoading(false)

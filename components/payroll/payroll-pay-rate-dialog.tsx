@@ -175,7 +175,6 @@ export function PayrollPayRateDialog({
 
   const handleSave = () => {
     // In production, this would send data to your backend API
-    console.log('[v0] Saving payroll configuration:', config)
     setHasChanges(false)
     setShowSuccess(true)
     setTimeout(() => setShowSuccess(false), 3000)

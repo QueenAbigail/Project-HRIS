@@ -39,7 +39,6 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
           setPatrols(data)
         }
       } catch (error) {
-        console.error('Error fetching patrol records:', error)
       } finally {
         setIsLoading(false)
       }

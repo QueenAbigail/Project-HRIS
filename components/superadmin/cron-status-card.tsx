@@ -44,7 +44,6 @@ export function CronStatusCard() {
         setSummary(data.summary)
         setError(null)
       } catch (err) {
-        console.error('[v0] Error fetching cron logs:', err)
         setError(err instanceof Error ? err.message : 'Unknown error')
       } finally {
         setLoading(false)

@@ -25,7 +25,6 @@ export function UpcomingLeaves() {
           setLeaves(data)
         }
       } catch (error) {
-        console.error('[v0] Failed to fetch upcoming leaves:', error)
       } finally {
         setLoading(false)
       }

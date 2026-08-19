@@ -23,7 +23,6 @@ export function LeaveStats() {
         setStats(data)
       }
     } catch (error) {
-      console.error('[v0] Failed to fetch leave stats:', error)
     } finally {
       setLoading(false)
     }

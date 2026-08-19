@@ -64,7 +64,6 @@ export function AttendanceCalendar({ siteId = 'all' }: { siteId?: string }) {
           })
         }
       } catch (error) {
-        console.error('[v0] Failed to fetch calendar stats:', error)
       } finally {
         setLoading(false)
       }

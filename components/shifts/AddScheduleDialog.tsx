@@ -111,7 +111,6 @@ export function AddScheduleDialog({
           setEmployees(data || [])
         }
       } catch (error) {
-        console.error('Error loading employees:', error)
       }
     }
     
@@ -176,13 +175,7 @@ export function AddScheduleDialog({
     const start = new Date(rotationStartDate)
     const end = new Date(start.getTime() + rotationDuration * 24 * 60 * 60 * 1000)
     
-    console.log('[v0] Rotation schedule generation:', {
-      start: rotationStartDate,
-      end: end.toISOString(),
-      duration: rotationDuration,
-      patterns: rotationPattern.length,
-    })
-    
+
     let currentDay = 0
     let patternIndex = 0
     let d = new Date(start)
@@ -203,7 +196,6 @@ export function AddScheduleDialog({
           shiftId: pattern.shiftId,
         })
       } else {
-        console.warn('[v0] Rotation pattern missing shift and not off day:', pattern)
         break // Skip if shift not selected and not an off day
       }
       
@@ -217,7 +209,6 @@ export function AddScheduleDialog({
       }
     }
     
-    console.log('[v0] Generated schedules count:', schedules.length)
     return schedules
   }
 
@@ -243,7 +234,6 @@ export function AddScheduleDialog({
       }
 
       const rotationSchedules = generateRotationSchedules()
-      console.log('[v0] Generated rotation schedules:', rotationSchedules.length, rotationSchedules.slice(0, 3))
       
       if (rotationSchedules.length === 0) {
         toast.error('No schedules generated from pattern')
@@ -259,7 +249,6 @@ export function AddScheduleDialog({
           scheduleDate: s.date,
         }))
 
-        console.log('[v0] Schedules to create:', schedulesToCreate.length, schedulesToCreate.slice(0, 3))
 
         const response = await fetch('/api/schedules/bulk-create', {
           method: 'POST',
@@ -273,15 +262,12 @@ export function AddScheduleDialog({
 
         if (!response.ok) {
           const errorData = await response.json()
-          console.error('[v0] Bulk create error:', errorData)
           throw new Error(errorData.error || 'Failed to create schedules')
         }
         
         const result = await response.json()
-        console.log('[v0] Bulk create result:', result)
         
         if (result.created === 0 && result.errors) {
-          console.error('[v0] All schedules failed:', result.errors)
           toast.error(`Failed: ${result.errors[0]}`)
           return
         }

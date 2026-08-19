@@ -102,7 +102,6 @@ export function UnifiedRequestsTable() {
       unifiedRequests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       setRequests(unifiedRequests)
     } catch (error) {
-      console.error('[v0] Failed to fetch requests:', error)
     } finally {
       setLoading(false)
     }
@@ -125,7 +124,6 @@ export function UnifiedRequestsTable() {
         window.dispatchEvent(new Event('leaveStatusUpdated'))
       }
     } catch (error) {
-      console.error('[v0] Failed to update leave status:', error)
     }
   }
 
@@ -145,7 +143,6 @@ export function UnifiedRequestsTable() {
         )
       }
     } catch (error) {
-      console.error('[v0] Failed to update shift swap status:', error)
     }
   }
 

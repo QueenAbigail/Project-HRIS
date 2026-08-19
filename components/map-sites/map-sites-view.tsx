@@ -63,7 +63,6 @@ export default function MapSitesView() {
         // If no sites with coordinates, use fallback
         setLocationStats(stats.length > 0 ? stats : fallbackLocationStats)
       } catch (error) {
-        console.error('Error fetching sites:', error)
         setLocationStats(fallbackLocationStats)
       } finally {
         setLoading(false)

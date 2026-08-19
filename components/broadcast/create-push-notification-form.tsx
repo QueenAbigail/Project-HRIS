@@ -46,7 +46,6 @@ export function CreatePushNotificationForm({ onSuccess }: CreatePushNotification
         { id: 'e3', name: 'Bob Johnson', code: 'EMP003' },
       ])
     } catch (error) {
-      console.error('Error fetching data:', error)
     }
   }
 
@@ -119,7 +118,6 @@ export function CreatePushNotificationForm({ onSuccess }: CreatePushNotification
 
       onSuccess?.()
     } catch (error) {
-      console.error('Error sending notification:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to send notification')
     } finally {
       setIsLoading(false)

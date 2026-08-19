@@ -103,10 +103,8 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
       script.async = true
       script.onload = () => {
-        console.log('[v0] html2pdf library loaded successfully')
       }
       script.onerror = () => {
-        console.error('[v0] Failed to load html2pdf library')
       }
       document.head.appendChild(script)
     }
@@ -166,14 +164,12 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
     try {
       const element = document.getElementById('payslip-print-zone')
       if (!element) {
-        console.error('[v0] Element not found')
         alert('Error: Could not find payslip element')
         return
       }
 
       // Check if html2pdf is loaded
       if (typeof (window as any).html2pdf === 'undefined') {
-        console.error('[v0] html2pdf library not loaded yet')
         alert('PDF library is still loading. Please try again in a moment.')
         return
       }
@@ -188,12 +184,9 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
         jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' },
       }
 
-      console.log('[v0] Generating PDF...')
       const method = html2pdf.default ? html2pdf.default() : html2pdf()
       method.set(opt).from(element).save()
-      console.log('[v0] PDF generation initiated')
     } catch (error) {
-      console.error('[v0] Error generating PDF:', error)
       alert(`Failed to generate PDF: ${(error as Error).message}`)
     }
   }

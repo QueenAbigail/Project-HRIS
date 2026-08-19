@@ -266,20 +266,17 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
         hasError = true
         const errorData = await response.json().catch(() => ({}))
         const errorMessage = errorData.error || `Upload failed with status ${response.status}`
-        console.error('[v0] Upload error response:', { status: response.status, errorData })
         toast.error(errorMessage)
         return
       }
 
       const result = await response.json()
-      console.log('[v0] Upload successful, URL:', result.url)
       toast.success('Profile photo updated successfully')
       setIsChangePhotoOpen(false)
       // Refresh server-side data
       router.refresh()
     } catch (error) {
       if (!hasError) {
-        console.error('[v0] Error uploading photo:', error)
         toast.error(error instanceof Error ? error.message : 'Failed to update profile photo')
       }
     }
@@ -333,7 +330,6 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
           setPendingLeaveCount(data.pending || 0)
         }
       } catch (error) {
-        console.error('[v0] Failed to fetch pending leave count:', error)
       }
     }
 

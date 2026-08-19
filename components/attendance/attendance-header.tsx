@@ -92,7 +92,6 @@ export function AttendanceHeader({
           setDepartments(Array.isArray(data) ? data : [])
         }
       } catch (error) {
-        console.error('Failed to fetch departments:', error)
       } finally {
         setLoadingDepartments(false)
       }

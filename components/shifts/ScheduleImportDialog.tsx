@@ -107,7 +107,6 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
       setStep('preview')
       toast.success(`Parsed ${parsed.length} schedule entries`)
     } catch (error) {
-      console.error('Error parsing Excel:', error)
       toast.error('Failed to parse Excel file')
     } finally {
       setParsing(false)
@@ -141,7 +140,6 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
         resetDialog()
       }, 1000)
     } catch (error) {
-      console.error('Import error:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to import schedules')
       setStep('preview')
     } finally {

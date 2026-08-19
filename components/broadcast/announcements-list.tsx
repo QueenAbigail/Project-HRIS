@@ -68,7 +68,6 @@ export function AnnouncementsList({ refreshTrigger }: AnnouncementsListProps) {
       const data = await response.json()
       setAnnouncements(data.data)
     } catch (error) {
-      console.error('[v0] Error fetching announcements:', error)
       toast.error('Failed to fetch announcements')
     } finally {
       setIsLoading(false)
@@ -102,7 +101,6 @@ export function AnnouncementsList({ refreshTrigger }: AnnouncementsListProps) {
       setDeleteConfirmOpen(false)
       setDeleteTargetId(null)
     } catch (error) {
-      console.error('[v0] Error deleting announcement:', error)
       toast.error('Failed to delete announcement')
     } finally {
       setIsDeleting(false)
@@ -144,7 +142,6 @@ export function AnnouncementsList({ refreshTrigger }: AnnouncementsListProps) {
       setEditOpen(false)
       setEditingId(null)
     } catch (error) {
-      console.error('[v0] Error updating announcement:', error)
       toast.error('Failed to update announcement')
     } finally {
       setIsEditing(false)
@@ -159,7 +156,6 @@ export function AnnouncementsList({ refreshTrigger }: AnnouncementsListProps) {
       setSelectedAnalytics(data.analytics)
       setAnalyticsOpen(true)
     } catch (error) {
-      console.error('[v0] Error fetching analytics:', error)
       toast.error('Failed to load analytics')
     }
   }
