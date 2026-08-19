@@ -33,15 +33,25 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const bkoPromise = prisma.bko.findMany({
-      where: {
-        date: {
-          gte: startOfDay(new Date(date)),
-          lte: endOfDay(new Date(date)),
-        },
-        ...(siteId && siteId !== 'all' ? { backupEmployee: { siteId } } : {}),
-      },
-    }).catch(() => [])
+    // BKO is optional in some deployments; do not fail the whole stats API
+    // when the generated Prisma client does not expose that model.
+    const bkoModel = (prisma as typeof prisma & {
+      bko?: {
+        findMany: (args: { where: Record<string, unknown> }) => Promise<unknown[]>
+      }
+    }).bko
+
+    const bkoPromise = bkoModel
+      ? bkoModel.findMany({
+          where: {
+            date: {
+              gte: startOfDay(new Date(date)),
+              lte: endOfDay(new Date(date)),
+            },
+            ...(siteId && siteId !== 'all' ? { backupEmployee: { siteId } } : {}),
+          },
+        }).catch(() => [])
+      : Promise.resolve([])
 
     const [attendance, bkoAssignments] = await Promise.all([attendancePromise, bkoPromise])
 
