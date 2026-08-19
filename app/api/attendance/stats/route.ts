@@ -104,23 +104,28 @@ export async function GET(request: NextRequest) {
       approvedLeavesPromise,
     ])
 
-    const leaveKeys = new Set(
-      approvedLeaves.flatMap((leave) => {
-        const start = new Date(leave.startDate)
-        const end = new Date(leave.endDate)
-        return scheduledEmployees
-          .filter((schedule) => schedule.employeeId === leave.userId)
-          .filter((schedule) => {
-            const scheduleDate = new Date(schedule.scheduleDate)
-            return scheduleDate >= start && scheduleDate <= end
-          })
-          .map((schedule) => `${schedule.employeeId}:${new Date(schedule.scheduleDate).toISOString().slice(0, 10)}`)
-      }),
-    )
-
     const scheduledKeys = new Set(
       scheduledEmployees.map((schedule) => `${schedule.employeeId}:${new Date(schedule.scheduleDate).toISOString().slice(0, 10)}`),
     )
+    const scheduledDatesByEmployee = new Map<string, string[]>()
+    for (const schedule of scheduledEmployees) {
+      const dateKey = new Date(schedule.scheduleDate).toISOString().slice(0, 10)
+      const dates = scheduledDatesByEmployee.get(schedule.employeeId) || []
+      dates.push(dateKey)
+      scheduledDatesByEmployee.set(schedule.employeeId, dates)
+    }
+
+    const leaveKeys = new Set<string>()
+    for (const leave of approvedLeaves) {
+      const start = new Date(leave.startDate).getTime()
+      const end = new Date(leave.endDate).getTime()
+      for (const dateKey of scheduledDatesByEmployee.get(leave.userId) || []) {
+        const scheduleTime = new Date(`${dateKey}T00:00:00.000Z`).getTime()
+        if (scheduleTime >= start && scheduleTime <= end) {
+          leaveKeys.add(`${leave.userId}:${dateKey}`)
+        }
+      }
+    }
     const dayOff = 0
     const onLeave = leaveKeys.size
     const totalEmployees = scheduledKeys.size

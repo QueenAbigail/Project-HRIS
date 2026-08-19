@@ -87,9 +87,16 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
     let cancelled = false
     setIsRefreshing(true)
     setError(null)
-    setPrefetchedPage(null)
     const fetchAttendance = async () => {
       try {
+        if (prefetchedPage?.page === page && prefetchedPage.pagination.pageSize === pageSize) {
+          setRecords(prefetchedPage.records)
+          setPagination(prefetchedPage.pagination)
+          setPrefetchedPage(null)
+          setLoading(false)
+          setIsRefreshing(false)
+          return
+        }
         const params = new URLSearchParams()
         params.set('page', String(page))
         params.set('pageSize', String(pageSize))
@@ -132,6 +139,16 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
             const nextParams = new URLSearchParams(params)
             nextParams.set('page', String(nextPage))
             fetch(`/api/attendance?${nextParams.toString()}`, { priority: 'low' })
+              .then((prefetchResponse) => prefetchResponse.ok ? prefetchResponse.json() : null)
+              .then((prefetchedData) => {
+                if (!cancelled && prefetchedData?.pagination) {
+                  setPrefetchedPage({
+                    page: nextPage,
+                    records: Array.isArray(prefetchedData.records) ? prefetchedData.records : [],
+                    pagination: prefetchedData.pagination,
+                  })
+                }
+              })
               .catch(() => undefined)
           }
         }
