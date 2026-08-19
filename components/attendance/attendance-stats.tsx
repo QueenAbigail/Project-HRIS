@@ -39,21 +39,23 @@ export function AttendanceStats({ siteId = 'all', dateRange = 'today', refreshKe
           params.append('siteId', siteId)
         }
         
-        // Get date based on dateRange
         const today = new Date()
-        let date = today.toISOString().split('T')[0]
-        
-        if (dateRange === 'today') {
-          date = today.toISOString().split('T')[0]
-        } else if (dateRange === 'this-week') {
-          // For week view, we might need to adjust, but let's keep it simple for now
-          date = today.toISOString().split('T')[0]
-        } else if (dateRange === 'this-month') {
-          // Same as today for now - stats API might need enhancement for ranges
-          date = today.toISOString().split('T')[0]
+        const end = new Date(today)
+        const start = new Date(today)
+        const day = today.getDay()
+
+        if (dateRange === 'yesterday') {
+          start.setDate(start.getDate() - 1)
+          end.setDate(end.getDate() - 1)
+        } else if (dateRange === 'week') {
+          start.setDate(start.getDate() - (day === 0 ? 6 : day - 1))
+        } else if (dateRange === 'month') {
+          start.setDate(1)
         }
-        
-        params.append('date', date)
+
+        const formatDate = (value: Date) => value.toISOString().split('T')[0]
+        params.set('dateFrom', formatDate(start))
+        params.set('dateTo', formatDate(end))
         
         const response = await fetch(`/api/attendance/stats?${params.toString()}`)
         if (response.ok) {

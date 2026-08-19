@@ -81,9 +81,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
         if (siteId && siteId !== 'all') {
           params.append('siteId', siteId)
         }
-        if (dateRange) {
-          params.append('dateRange', dateRange)
-        }
+        params.set('dateRange', dateRange || 'today')
         if (department && department !== 'all') {
           params.append('department', department)
         }
@@ -205,7 +203,9 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', departmen
       <Card className={isRefreshing ? 'opacity-70 transition-opacity' : undefined} aria-busy={isRefreshing}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
-            <CardTitle>Today's Attendance</CardTitle>
+            <CardTitle>
+              {dateRange === 'yesterday' ? "Yesterday's Attendance" : dateRange === 'week' ? "This Week's Attendance" : dateRange === 'month' ? "This Month's Attendance" : "Today's Attendance"}
+            </CardTitle>
             <CardDescription>
               Attendance records with schedule integration
             </CardDescription>

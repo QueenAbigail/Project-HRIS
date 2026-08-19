@@ -8,13 +8,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     
     const siteId = searchParams.get('siteId')
-    const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
+    const dateFrom = searchParams.get('dateFrom') || searchParams.get('date') || new Date().toISOString().split('T')[0]
+    const dateTo = searchParams.get('dateTo') || dateFrom
 
-    // Build where clause
+    // Build one range shared by all stats queries.
     const where: any = {
       date: {
-        gte: startOfDay(new Date(date)),
-        lte: endOfDay(new Date(date)),
+        gte: startOfDay(new Date(dateFrom)),
+        lte: endOfDay(new Date(dateTo)),
       }
     }
     
@@ -45,8 +46,8 @@ export async function GET(request: NextRequest) {
       ? bkoModel.findMany({
           where: {
             date: {
-              gte: startOfDay(new Date(date)),
-              lte: endOfDay(new Date(date)),
+              gte: startOfDay(new Date(dateFrom)),
+              lte: endOfDay(new Date(dateTo)),
             },
             ...(siteId && siteId !== 'all' ? { backupEmployee: { siteId } } : {}),
           },
