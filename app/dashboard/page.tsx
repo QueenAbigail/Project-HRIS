@@ -336,31 +336,36 @@ export default async function DashboardPage() {
     attendanceRate: overallRate,
     activeLocations: sites.length,
     approvedLeavesThisMonth: approvedLeavesThisMonth,
-    lateChangeFromLastWeek: 0, // TODO historical
   };
 
-  // chartData - convert dates to strings for serialization
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const weekCounts: Record<string, { present: number; absent: number; late: number }> = {};
-  days.forEach((dayShort, index) => {
-    weekCounts[dayShort] = { present: 0, absent: 0, late: 0 };
-  });
+  // Build chart labels from the business timezone instead of server-local weekday names.
+  const chartDays = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(weekAgo)
+    date.setUTCDate(date.getUTCDate() + index)
+    return {
+      key: date.toISOString().slice(0, 10),
+      label: new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'Asia/Jakarta' }).format(date),
+    }
+  })
+  const weekCounts: Record<string, { present: number; absent: number; late: number }> = {}
+  chartDays.forEach(({ key }) => {
+    weekCounts[key] = { present: 0, absent: 0, late: 0 }
+  })
   weekAttendances.forEach((a) => {
-    const dayNum = typeof a.date === 'string' ? new Date(a.date).getDay() : (a.date instanceof Date ? a.date.getDay() : 0);
-    const dayShort = days[dayNum];
-      if (weekCounts[dayShort]) {
-        const status = resolveAttendanceStatus(a)
-        if (status === 'PRESENT') weekCounts[dayShort].present += 1
-        else if (status === 'LATE') weekCounts[dayShort].late += 1
-        else weekCounts[dayShort].absent += 1
-      }
-  });
-  const chartData = days.map((d) => ({
-    date: d,
-    present: weekCounts[d].present,
-    absent: weekCounts[d].absent,
-    late: weekCounts[d].late,
-  }));
+    const dateKey = new Date(a.date).toISOString().slice(0, 10)
+    if (weekCounts[dateKey]) {
+      const status = resolveAttendanceStatus(a)
+      if (status === 'PRESENT') weekCounts[dateKey].present += 1
+      else if (status === 'LATE') weekCounts[dateKey].late += 1
+      else weekCounts[dateKey].absent += 1
+    }
+  })
+  const chartData = chartDays.map(({ key, label }) => ({
+    date: label,
+    present: weekCounts[key].present,
+    absent: weekCounts[key].absent,
+    late: weekCounts[key].late,
+  }))
 
   // Serialize late check-ins to avoid Date serialization errors
   const serializedLateCheckIns = lateCheckIns.map(item => ({
