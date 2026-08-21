@@ -34,7 +34,6 @@ export default async function DashboardPage() {
     // Determine if user is a CLIENT (can see all sites in their company)
     const isClient = currentUser.role === 'CLIENT'
     const companyFilter = isClient ? { companyId: currentUser.companyId } : {}
-    const queryStartedAt = performance.now()
     const [
       companies,
       sites,
@@ -379,8 +378,6 @@ export default async function DashboardPage() {
       days: Math.max(1, Math.ceil((leave.endDate.getTime() - leave.startDate.getTime()) / 86400000) + 1),
     }))
 
-    console.info(`[dashboard] data queries completed in ${Math.round(performance.now() - queryStartedAt)}ms`)
-
     return (
       <div className="space-y-6">
         <div>
@@ -408,7 +405,6 @@ export default async function DashboardPage() {
     )
   } catch (error) {
     console.error('[v0] Dashboard page error:', error instanceof Error ? error.message : String(error))
-    console.error('[v0] Full error:', error)
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
         <div className="text-center px-4">

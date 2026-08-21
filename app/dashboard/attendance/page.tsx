@@ -79,13 +79,11 @@ export default function AttendancePage() {
       if (!response.ok) {
         const error = await response.json()
         toast.error(error.error || 'Failed to generate attendance')
-        console.error('[v0] Generation failed:', error)
         return
       }
 
       const data = await response.json()
       toast.success(data.message)
-      console.log('[v0] Attendance generation details:', data.details)
       // Trigger re-fetch by updating the refresh key instead of full reload
       setRefreshKey(prev => prev + 1)
     } catch (error) {
