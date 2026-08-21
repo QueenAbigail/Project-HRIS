@@ -103,7 +103,7 @@ export default async function DashboardPage() {
       take: 8,
       select: {
         id: true,
-        type: true,
+        leaveType: true,
         startDate: true,
         endDate: true,
         user: { select: { name: true, siteId: true } },
@@ -346,7 +346,7 @@ export default async function DashboardPage() {
 
     const upcomingLeaves = recentLeaves.map((leave) => ({
       name: leave.user?.name ?? 'Unknown',
-      type: leave.type,
+      type: leave.leaveType,
       startDate: leave.startDate.toISOString(),
       endDate: leave.endDate.toISOString(),
       days: Math.max(1, Math.ceil((leave.endDate.getTime() - leave.startDate.getTime()) / 86400000) + 1),
