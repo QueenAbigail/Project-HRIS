@@ -61,6 +61,22 @@ export function getBusinessDateTime(date = new Date()): string {
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`
 }
 
+/** Return UTC date bounds built from the current calendar date in Asia/Jakarta. */
+export function getBusinessDateBounds(date = new Date()) {
+  const businessDate = getBusinessDate(date)
+  const start = parseBusinessDate(businessDate)
+  const end = new Date(start)
+  end.setUTCDate(end.getUTCDate() + 1)
+
+  const weekAgo = new Date(start)
+  weekAgo.setUTCDate(weekAgo.getUTCDate() - 7)
+
+  const monthStart = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1))
+  const monthEnd = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1))
+
+  return { todayStart: start, todayEnd: end, weekAgo, monthStart, monthEnd }
+}
+
 /** Backwards-compatible GMT+7 helpers. */
 export function getCurrentTimeGMT7(): Date { return new Date() }
 export function toGMT7(date: Date): Date { return date }
