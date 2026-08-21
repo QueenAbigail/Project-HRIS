@@ -43,8 +43,8 @@ export function LocationAttendance({ locationData, companyName = 'all', isClient
     router.push(`/dashboard/attendance?site=${siteId}`)
   }
 
-  // Filter to only show client's company if CLIENT role
-  const filteredData = isClient ? locationData?.filter(company => company.companyName === companyName) : locationData
+  // Company scoping is enforced by the server-side dashboard query.
+  const filteredData = locationData
 
   if (!filteredData || filteredData.length === 0) {
     return (
