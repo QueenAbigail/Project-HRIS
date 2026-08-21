@@ -7,18 +7,14 @@ import { AttendanceChart } from '@/components/dashboard/attendance-chart'
 import { LocationAttendance } from '@/components/dashboard/location-attendance'
 import { LateCheckIns } from '@/components/dashboard/late-checkins'
 import { UpcomingLeaves } from '@/components/dashboard/upcoming-leaves'
-import type { Attendance, Leave, Shift, Site, User } from '@prisma/client'
 import { tallyAttendance, computeAttendanceRate } from '@/lib/attendance-utils'
 
 export default async function DashboardPage() {
   try {
     // Get current user to determine data filtering
-    console.log('[v0] Dashboard: Starting page load')
     const currentUser = await getCurrentUser()
-    console.log('[v0] Dashboard: Current user retrieved:', currentUser?.id)
     
     if (!currentUser) {
-      console.log('[v0] Dashboard: No current user found')
       return (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
@@ -44,13 +40,10 @@ export default async function DashboardPage() {
     // Determine if user is a CLIENT (can see all sites in their company)
     const isClient = currentUser.role === 'CLIENT'
     const companyFilter = isClient ? { companyId: currentUser.companyId } : {}
-    const companyName = currentUser.site?.company?.name || 'your company'
-
-    console.log('[v0] Dashboard: Starting data fetch...')
+    const queryStartedAt = performance.now()
     const [
       companies,
       sites,
-      shifts,
       users,
       todayAttendances,
       weekAttendances,
@@ -58,10 +51,9 @@ export default async function DashboardPage() {
       assignments,
       approvedLeavesThisMonth
     ] = await Promise.all([
-    isClient ? prisma.company.findMany({ where: { id: currentUser.companyId } }) : prisma.company.findMany(),
-    isClient ? prisma.site.findMany({ where: { companyId: currentUser.companyId }, include: { company: true } }) : prisma.site.findMany({ include: { company: true } }),
-    prisma.shift.findMany(),
-    prisma.user.findMany({ where: companyFilter, include: { site: true } }),
+    isClient ? prisma.company.findMany({ where: { id: currentUser.companyId }, select: { id: true, name: true } }) : prisma.company.findMany({ select: { id: true, name: true } }),
+    isClient ? prisma.site.findMany({ where: { companyId: currentUser.companyId }, select: { id: true, name: true, code: true, companyId: true } }) : prisma.site.findMany({ select: { id: true, name: true, code: true, companyId: true } }),
+    prisma.user.findMany({ where: companyFilter, select: { id: true, site: { select: { id: true } } } }),
     prisma.attendance.findMany({
       where: {
         date: {
@@ -70,10 +62,17 @@ export default async function DashboardPage() {
         },
         ...(isClient ? { user: { companyId: currentUser.companyId } } : {})
       },
-      include: {
-        user: true,
-        location: true,
-        shift: true
+      select: {
+        id: true,
+        userId: true,
+        status: true,
+        lateMinutes: true,
+        scheduledStart: true,
+        actualCheckIn: true,
+        locationId: true,
+        user: { select: { name: true, initials: true } },
+        location: { select: { name: true } },
+        shift: { select: { name: true } },
       }
     }),
     prisma.attendance.findMany({
@@ -84,10 +83,11 @@ export default async function DashboardPage() {
         },
         ...(isClient ? { user: { companyId: currentUser.companyId } } : {})
       },
-      include: {
-        user: true,
-        location: true,
-        shift: true
+      select: {
+        date: true,
+        status: true,
+        lateMinutes: true,
+        actualCheckIn: true,
       }
     }),
     prisma.leave.findMany({
@@ -101,13 +101,13 @@ export default async function DashboardPage() {
         startDate: 'desc'
       },
       take: 8,
-      include: {
-        user: {
-          include: {
-            site: true
-          }
-        },
-        bkoAssignments: true
+      select: {
+        id: true,
+        type: true,
+        startDate: true,
+        endDate: true,
+        user: { select: { name: true, siteId: true } },
+        bkoAssignments: { select: { id: true } },
       }
     }),
     // Query schedules for today to calculate day offs
@@ -119,11 +119,8 @@ export default async function DashboardPage() {
         },
         employee: isClient ? { site: { companyId: currentUser.companyId } } : {}
       },
-      include: {
-        employee: {
-          include: { site: true }
-        },
-        shift: true
+      select: {
+        employee: { select: { id: true } },
       }
     }),
     // Count approved leaves this month
@@ -141,8 +138,6 @@ export default async function DashboardPage() {
 
   // Extract company name for CLIENT users from the fetched companies
   const companyNameForDisplay = isClient && companies.length > 0 ? companies[0].name : currentUser.site?.company?.name || 'your company'
-
-  const todayDay = today.getDay();
 
   // usersBySite
   const usersBySite: Record<string, number> = {};
@@ -217,7 +212,7 @@ export default async function DashboardPage() {
       const present = siteTally.present;
       const absent = siteTally.absent;
       const notCheckedIn = siteTally.notCheckedIn;
-      const onLeave = recentLeaves.filter((l) => l.requester?.siteId === site.id).length;
+      const onLeave = recentLeaves.filter((l) => l.user?.siteId === site.id).length;
       const attendanceRate = computeAttendanceRate(present, lateCount, expectedToWork);
 
       // Accumulate for company totals
@@ -349,15 +344,16 @@ export default async function DashboardPage() {
 
 
 
-    console.log('[v0] Dashboard: Data fetch completed, rendering page')
-    
-    // Debug: Check for non-serializable objects
-    console.log('[v0] DEBUG - overallStats:', JSON.stringify(overallStats, null, 2).substring(0, 200))
-    console.log('[v0] DEBUG - locationStatsByCompany type:', typeof locationStatsByCompany)
-    console.log('[v0] DEBUG - chartData sample:', chartData[0])
-    console.log('[v0] DEBUG - serializedLateCheckIns sample:', serializedLateCheckIns[0])
-    console.log('[v0] DEBUG - companyNameForDisplay:', companyNameForDisplay)
-    
+    const upcomingLeaves = recentLeaves.map((leave) => ({
+      name: leave.user?.name ?? 'Unknown',
+      type: leave.type,
+      startDate: leave.startDate.toISOString(),
+      endDate: leave.endDate.toISOString(),
+      days: Math.max(1, Math.ceil((leave.endDate.getTime() - leave.startDate.getTime()) / 86400000) + 1),
+    }))
+
+    console.info(`[dashboard] data queries completed in ${Math.round(performance.now() - queryStartedAt)}ms`)
+
     return (
       <div className="space-y-6">
         <div>
@@ -376,7 +372,7 @@ export default async function DashboardPage() {
           <AttendanceChart chartData={chartData} />
           <div className="space-y-6">
             <LateCheckIns lateCheckIns={serializedLateCheckIns} />
-            <UpcomingLeaves />
+            <UpcomingLeaves leaves={upcomingLeaves} />
           </div>
         </div>
 
