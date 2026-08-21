@@ -42,6 +42,18 @@ function friendlyEmployeeError(error: unknown): string {
     return 'Please check the Employee Code. It is used to create the employee login email and must be valid.'
   }
 
+  if (/email.*already|already.*email|user already exists|already registered/i.test(message)) {
+    return 'This Employee Code is already registered. Please use a different Employee Code.'
+  }
+
+  if (/password should|password.*required|password.*must|password.*characters|weak password|invalid password/i.test(message)) {
+    return 'The employee login password is missing or invalid. Please provide a valid password.'
+  }
+
+  if (/Gagal bikin kunci akses|Auth\)/i.test(message)) {
+    return 'The employee login account could not be created. Please check the Employee Code and password, then try again.'
+  }
+
   if (/password/i.test(message) && /weak|short|characters|invalid/i.test(message)) {
     return 'The default login password does not meet the security requirements. Please contact an administrator.'
   }

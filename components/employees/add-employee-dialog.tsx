@@ -320,8 +320,8 @@ export function AddEmployeeDialog({
   })
   handleOpenChange(false)
   } else {
-  toast.error('Failed to save employee data', {
-    description: result.error || 'An error occurred while saving.'
+  toast.error('Could not add employee', {
+    description: result.error || 'The employee could not be saved. Please check the form and try again.'
   })
   }
   } catch (error) {
