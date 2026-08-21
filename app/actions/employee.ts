@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 
@@ -48,6 +48,10 @@ function friendlyEmployeeError(error: unknown): string {
 
   if (/password should|password.*required|password.*must|password.*characters|weak password|invalid password/i.test(message)) {
     return 'The employee login password is missing or invalid. Please provide a valid password.'
+  }
+
+  if (/supabaseAdmin is not defined|createAdminClient|Supabase configuration is missing/i.test(message)) {
+    return 'The employee login service is not configured correctly. Please contact the system administrator.'
   }
 
   if (/Gagal bikin kunci akses|Auth\)/i.test(message)) {
@@ -223,6 +227,7 @@ export async function createEmployeeAction(formData: any) {
     const hrisEmail = `${formData.employeeCode}@hris.com`.toLowerCase()
 
     // 2. Bikin Akun Login di Supabase Auth
+    const supabaseAdmin = await createAdminClient()
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: hrisEmail,
       password: formData.password,
@@ -298,6 +303,7 @@ export async function createEmployeeAction(formData: any) {
     // Kalau Prisma gagal nyimpen (misal KTP udah kepake), kita hapus juga akun Auth 
     // yang sempet kebuat di langkah 2 biar database lu ga ada akun zombie.
     if (authUserId) {
+      const supabaseAdmin = await createAdminClient()
       await supabaseAdmin.auth.admin.deleteUser(authUserId)
         .catch(err => console.error("Gagal rollback akun auth:", err))
     }
