@@ -57,8 +57,16 @@ function friendlyEmployeeError(error: unknown): string {
     return 'This employee could not be found. Please refresh the page and try again.'
   }
 
+  if (/INVALID_SITE_COMPANY/i.test(message)) {
+    return 'The selected location is not linked to a company. Please ask an administrator to fix the site setup.'
+  }
+
+  if (/INVALID_SITE/i.test(message)) {
+    return 'The selected location is no longer available. Please choose another location.'
+  }
+
   if (/Foreign key constraint failed|site/i.test(message)) {
-    return 'The selected site is no longer available. Please choose another site.'
+    return 'The selected location or company is no longer available. Please choose another location.'
   }
 
   return 'Unable to save employee data. Please review the form and try again.'
@@ -189,7 +197,14 @@ export async function createEmployeeAction(formData: any) {
     if (!formData.name?.trim()) throw new Error('INVALID_EMPLOYEE_FIELD:Full Name')
     if (!formData.employeeCode?.trim()) throw new Error('INVALID_EMPLOYEE_FIELD:Employee Code')
     if (!formData.siteId) throw new Error('INVALID_EMPLOYEE_FIELD:Location')
-    if (!formData.companyId) throw new Error('INVALID_EMPLOYEE_FIELD:Company')
+
+    const selectedSite = await prisma.site.findUnique({
+      where: { id: formData.siteId },
+      select: { id: true, companyId: true },
+    })
+    if (!selectedSite) throw new Error('INVALID_SITE:Location')
+    if (!selectedSite.companyId) throw new Error('INVALID_SITE_COMPANY:Location')
+    formData.companyId = selectedSite.companyId
 
     // 1. Sulap NIP/Employee Code jadi Email buat Supabase & Prisma
     // Asumsi di frontend lu ngirimnya pake properti `employeeCode`
