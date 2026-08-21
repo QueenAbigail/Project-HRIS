@@ -7,7 +7,7 @@ import { AttendanceChart } from '@/components/dashboard/attendance-chart'
 import { LocationAttendance } from '@/components/dashboard/location-attendance'
 import { LateCheckIns } from '@/components/dashboard/late-checkins'
 import { UpcomingLeaves } from '@/components/dashboard/upcoming-leaves'
-import { tallyAttendance, computeAttendanceRate } from '@/lib/attendance-utils'
+import { tallyAttendance, computeAttendanceRate, resolveAttendanceStatus } from '@/lib/attendance-utils'
 
 export default async function DashboardPage() {
   try {
@@ -325,11 +325,12 @@ export default async function DashboardPage() {
   weekAttendances.forEach((a) => {
     const dayNum = typeof a.date === 'string' ? new Date(a.date).getDay() : (a.date instanceof Date ? a.date.getDay() : 0);
     const dayShort = days[dayNum];
-    if (weekCounts[dayShort]) {
-      if (a.status === 'PRESENT') weekCounts[dayShort].present += 1;
-      else if (a.status === 'LATE') weekCounts[dayShort].late += 1;
-      else weekCounts[dayShort].absent += 1;
-    }
+      if (weekCounts[dayShort]) {
+        const status = resolveAttendanceStatus(a)
+        if (status === 'PRESENT') weekCounts[dayShort].present += 1
+        else if (status === 'LATE') weekCounts[dayShort].late += 1
+        else weekCounts[dayShort].absent += 1
+      }
   });
   const chartData = days.map((d) => ({
     date: d,
