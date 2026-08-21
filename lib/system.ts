@@ -1,5 +1,6 @@
 "use server"
 
+import { cache } from 'react'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/auth'
 
@@ -38,7 +39,7 @@ export async function getCurrentUserRole(): Promise<string | null> {
   }
 }
 
-export async function getCurrentUser(): Promise<User | null> {
+export const getCurrentUser = cache(async (): Promise<User | null> => {
   try {
     const supabase = await createClient()
     const { data: { user: authUser } } = await supabase.auth.getUser()
@@ -57,5 +58,5 @@ export async function getCurrentUser(): Promise<User | null> {
     console.error('[v0] Failed to fetch current user:', error)
     return null
   }
-}
+})
 
