@@ -325,8 +325,10 @@ export function AddEmployeeDialog({
   })
   }
   } catch (error) {
-  toast.error('Connection error', {
-    description: 'Unable to save the employee. Please check your connection and try again.'
+  toast.error('Could not add employee', {
+    description: error instanceof Error && error.message
+      ? error.message
+      : 'The employee could not be saved. Please check the form and try again.'
   })
   }
 }

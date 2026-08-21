@@ -34,13 +34,26 @@ function friendlyEmployeeError(error: unknown): string {
     if (labels[argumentField]) return `Please check the ${labels[argumentField]} field.`
   }
 
-  if (/Unique constraint failed/i.test(message)) {
-    if (/email/i.test(message)) return 'This email address is already used by another employee.'
-    if (/employeeCode|hrisEmail/i.test(message)) return 'This employee ID is already used by another employee.'
-    return 'Some employee information is already in use.'
+  if (/already registered|already been registered|user already exists|email.*already/i.test(message)) {
+    return 'This employee ID is already registered. Please use a different Employee Code.'
   }
 
-  if (/Record to update not found|No User found/i.test(message)) {
+  if (/invalid email|email address is invalid|email.*valid/i.test(message)) {
+    return 'Please check the Employee Code. It is used to create the employee login email and must be valid.'
+  }
+
+  if (/password/i.test(message) && /weak|short|characters|invalid/i.test(message)) {
+    return 'The default login password does not meet the security requirements. Please contact an administrator.'
+  }
+
+  if (/Unique constraint failed/i.test(message)) {
+    if (/email/i.test(message)) return 'This login email is already used by another employee. Please use a different Employee Code.'
+    if (/employeeCode|hrisEmail/i.test(message)) return 'This Employee Code is already used by another employee.'
+    if (/ktp|npwp|bpjs|kta/i.test(message)) return 'One of the employee identification numbers is already used by another employee.'
+    return 'Some employee information is already in use. Please check the Employee Code and identification numbers.'
+  }
+
+  if (/Foreign key constraint failed|site/i.test(message)) {
     return 'This employee could not be found. Please refresh the page and try again.'
   }
 
@@ -173,6 +186,11 @@ export async function createEmployeeAction(formData: any) {
   let authUserId = null; // Buat nyimpen ID kalau butuh di-rollback
 
   try {
+    if (!formData.name?.trim()) throw new Error('INVALID_EMPLOYEE_FIELD:Full Name')
+    if (!formData.employeeCode?.trim()) throw new Error('INVALID_EMPLOYEE_FIELD:Employee Code')
+    if (!formData.siteId) throw new Error('INVALID_EMPLOYEE_FIELD:Location')
+    if (!formData.companyId) throw new Error('INVALID_EMPLOYEE_FIELD:Company')
+
     // 1. Sulap NIP/Employee Code jadi Email buat Supabase & Prisma
     // Asumsi di frontend lu ngirimnya pake properti `employeeCode`
     const hrisEmail = `${formData.employeeCode}@hris.com`.toLowerCase()
