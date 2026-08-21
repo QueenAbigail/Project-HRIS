@@ -38,7 +38,8 @@ interface LocationAttendanceProps {
 export function LocationAttendance({ locationData, companyName = 'all', isClient = false }: LocationAttendanceProps) {
   const router = useRouter()
 
-  const handleLocationClick = (siteId: string) => {
+  const handleLocationClick = (siteId: string | null) => {
+    if (!siteId) return
     router.push(`/dashboard/attendance?site=${siteId}`)
   }
 
@@ -261,9 +262,10 @@ export function LocationAttendance({ locationData, companyName = 'all', isClient
                         <button
                           onClick={() => handleLocationClick(site.siteId)}
                           key={site.siteId}
-                            className={`w-full text-left p-3 rounded-lg border bg-secondary/20 hover:bg-secondary/40 hover:border-primary/50 transition-all cursor-pointer ${
-                              hasLateCheckIns ? 'border-warning/30' : 'border-border'
-                            }`}
+                            disabled={!site.siteId}
+                            className={`w-full text-left p-3 rounded-lg border bg-secondary/20 transition-all ${
+                              site.siteId ? 'hover:bg-secondary/40 hover:border-primary/50 cursor-pointer' : 'cursor-default opacity-80'
+                            } ${hasLateCheckIns ? 'border-warning/30' : 'border-border'}`}
                           >
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">

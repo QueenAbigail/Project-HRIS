@@ -70,7 +70,7 @@ export default async function DashboardPage() {
         scheduledStart: true,
         actualCheckIn: true,
         locationId: true,
-        user: { select: { name: true, initials: true } },
+        user: { select: { name: true, initials: true, companyId: true } },
         location: { select: { name: true } },
         shift: { select: { name: true } },
       }
@@ -243,6 +243,36 @@ export default async function DashboardPage() {
         attendanceRate,
       };
     });
+
+    const unknownAttendance = todayAttendances.filter(
+      (attendance) => !attendance.locationId && attendance.user?.companyId === company.id
+    )
+    if (unknownAttendance.length > 0) {
+      const unknownTally = tallyAttendance(unknownAttendance)
+      const unknownLateMinutes = unknownTally.totalLateMinutes
+      companyPresent += unknownTally.present
+      companyAbsent += unknownTally.absent
+      companyLate += unknownTally.late
+      companyLateMinutesTotal += unknownLateMinutes
+      companyNotCheckedIn += unknownTally.notCheckedIn
+      companyOnLeave += unknownTally.onLeave
+
+      siteStats.push({
+        siteId: null,
+        locationId: 'UNKNOWN',
+        locationName: 'Unknown',
+        totalStaff: 0,
+        present: unknownTally.present,
+        absent: unknownTally.absent,
+        late: unknownTally.late,
+        lateMinutesTotal: unknownLateMinutes,
+        notCheckedIn: unknownTally.notCheckedIn,
+        onLeave: unknownTally.onLeave,
+        dayOff: 0,
+        expectedToWork: 0,
+        attendanceRate: 0,
+      })
+    }
 
     // Calculate company-level attendance rate
     const companyExpectedToWork = Math.max(0, companyTotalStaff - companyDayOff);
