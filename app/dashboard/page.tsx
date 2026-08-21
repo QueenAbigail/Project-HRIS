@@ -93,12 +93,14 @@ export default async function DashboardPage() {
     prisma.leave.findMany({
       where: {
         status: {
-          in: ['PENDING', 'APPROVED']
+          in: ['Pending', 'Approved']
         },
+        endDate: { gte: todayStart },
+        startDate: { lte: monthEnd },
         ...(isClient ? { user: { companyId: currentUser.companyId } } : {})
       },
       orderBy: {
-        startDate: 'desc'
+        startDate: 'asc'
       },
       take: 8,
       select: {
@@ -126,7 +128,7 @@ export default async function DashboardPage() {
     // Count approved leaves this month
     prisma.leave.count({
       where: {
-        status: 'APPROVED',
+        status: 'Approved',
         startDate: {
           gte: monthStart,
           lte: monthEnd
