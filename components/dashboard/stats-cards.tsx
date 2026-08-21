@@ -2,7 +2,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, Clock, Calendar, UserCheck, UserX, MapPin, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react'
-import { getOverallAttendanceStats } from '@/lib/data'
 
 interface StatsCardsProps {
   stats: any
