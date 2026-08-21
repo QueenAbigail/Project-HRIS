@@ -71,7 +71,6 @@ export default function AttendancePage() {
       const response = await fetch('/api/attendance/generate-today', {
         method: 'POST',
         headers: {
-          'authorization': `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || 'development-secret'}`,
           'Content-Type': 'application/json'
         }
       })

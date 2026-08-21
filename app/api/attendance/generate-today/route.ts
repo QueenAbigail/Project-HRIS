@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateTodayAttendanceRecords } from '@/app/superadmin/actions'
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/system'
 
 // Shared handler for both manual (POST with auth header) and cron (GET) requests
 async function handleAttendanceGeneration() {
@@ -70,27 +71,19 @@ async function handleAttendanceGeneration() {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   try {
-    console.log('[v0] POST /api/attendance/generate-today called')
-    
-    // Verify the secret token for security
-    const authHeader = req.headers.get('authorization')
-    const expectedSecret = process.env.CRON_SECRET || 'development-secret'
-    
-    console.log('[v0] Auth header present:', !!authHeader)
-    console.log('[v0] CRON_SECRET env set:', !!process.env.CRON_SECRET)
-    console.log('[v0] Auth header value:', authHeader ? authHeader.substring(0, 20) + '...' : 'none')
-    
-    if (authHeader !== `Bearer ${expectedSecret}`) {
-      console.log('[v0] Authorization failed - token mismatch')
-      return NextResponse.json(
-        { error: 'Unauthorized - Invalid token' },
-        { status: 401 }
-      )
+    const currentUser = await getCurrentUser()
+    const allowedRoles = new Set(['SUPER_ADMIN', 'HR_ADMIN', 'SITE_ADMIN'])
+
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Authentication required', success: false }, { status: 401 })
     }
 
-    console.log('[v0] Authorization passed, calling generateTodayAttendanceRecords')
+    if (!allowedRoles.has(currentUser.role)) {
+      return NextResponse.json({ error: 'You do not have permission to generate attendance', success: false }, { status: 403 })
+    }
+
     return await handleAttendanceGeneration()
   } catch (error) {
     console.error('[v0] Error in POST handler:', error)
@@ -107,9 +100,9 @@ export async function GET(req: NextRequest) {
   try {
     // Verify this is a cron request from Vercel
     const authHeader = req.headers.get('authorization')
-    const expectedSecret = process.env.CRON_SECRET || 'development-secret'
-    
-    if (authHeader !== `Bearer ${expectedSecret}`) {
+    const expectedSecret = process.env.CRON_SECRET
+
+    if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
       return NextResponse.json(
         { error: 'Unauthorized cron request', success: false },
         { status: 401 }
