@@ -410,8 +410,8 @@ export default async function DashboardPage() {
         <div className="text-center px-4">
           <h1 className="text-2xl font-bold mb-4">Dashboard Error</h1>
           <p className="text-gray-600 mb-2">An error occurred while loading the dashboard.</p>
-          <p className="text-sm text-gray-500 mb-4 font-mono break-words">
-            {error instanceof Error ? error.message : String(error)}
+          <p className="text-gray-600 mb-4">
+            Please refresh the page and try again. If the problem continues, contact your administrator.
           </p>
           <a href="/" className="text-blue-600 hover:underline block mt-4">
             Return to Home
