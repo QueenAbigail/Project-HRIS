@@ -9,7 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import useSWR from 'swr'
 
 interface CheckpointStatus {
@@ -54,6 +55,14 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
   )
   const error = locationsError || recordsError
   const isLoading = locationsLoading || recordsLoading
+
+  useEffect(() => {
+    if (error) {
+      toast.error('Checkpoint status could not be loaded', {
+        description: 'Please check your connection or contact an administrator if the problem continues.',
+      })
+    }
+  }, [error])
 
   const checkpoints: CheckpointStatus[] = (locations ?? []).map((location) => {
     const lastPatrol = records?.find((record) => record.locationId === location.id)

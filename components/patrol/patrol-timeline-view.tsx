@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -30,16 +31,21 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
   const [patrols, setPatrols] = useState<PatrolRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
     const fetchPatrols = async () => {
       try {
-        const response = await fetch(`/api/patrol/records?siteId=${siteId}`)
-        if (response.ok) {
-          const data = await response.json()
-          setPatrols(data)
-        }
-      } catch (error) {
+        const response = await fetch(`/api/patrol/records?siteId=${encodeURIComponent(siteId)}`)
+        if (!response.ok) throw new Error('Patrol records request failed')
+        const data = await response.json()
+        setPatrols(data)
+        setHasError(false)
+      } catch {
+        setHasError(true)
+        toast.error('Patrol records could not be loaded', {
+          description: 'Please check your connection or contact an administrator if the problem continues.',
+        })
       } finally {
         setIsLoading(false)
       }
@@ -52,6 +58,10 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
 
   if (isLoading) {
     return <div className="text-center text-muted-foreground py-8">Loading patrol records...</div>
+  }
+
+  if (hasError) {
+    return <div className="py-8 text-center text-sm text-muted-foreground">Patrol records are temporarily unavailable.</div>
   }
 
   if (patrols.length === 0) {

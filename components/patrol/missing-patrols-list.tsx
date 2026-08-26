@@ -1,6 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
 import useSWR from 'swr'
+import { toast } from 'sonner'
 import { AlertTriangle, CheckCircle2, MapPin } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
@@ -41,6 +43,15 @@ export function MissingPatrolsList({ siteId }: MissingPatrolsListProps) {
 
   const isLoading = locationsLoading || recordsLoading
   const error = locationsError || recordsError
+
+  useEffect(() => {
+    if (error) {
+      toast.error('Missing patrol status could not be loaded', {
+        description: 'Please check your connection or contact an administrator if the problem continues.',
+      })
+    }
+  }, [error])
+
   const today = new Date().toISOString().slice(0, 10)
   const completedLocationIds = new Set(
     (records ?? [])
