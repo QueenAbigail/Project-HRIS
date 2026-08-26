@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
+import { BUSINESS_TIMEZONE } from '@/lib/timezone'
 
 export async function GET(request: NextRequest) {
   try {
@@ -65,7 +66,14 @@ export async function GET(request: NextRequest) {
       checkpoint: record.location.name,
       officer: record.user.name || 'Unknown',
       timestamp: record.clockInTime.toISOString(),
-      date: record.clockInTime.toISOString().slice(0, 10),
+      time: record.clockInTime.toLocaleTimeString('en-GB', {
+        timeZone: BUSINESS_TIMEZONE,
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+      }),
+      date: record.clockInTime.toLocaleDateString('en-CA', {
+        timeZone: BUSINESS_TIMEZONE,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+      }),
       gpsStatus: record.gpsVerified ? 'verified' : 'unverified' as const,
       gpsVerified: record.gpsVerified,
       photos: 0,

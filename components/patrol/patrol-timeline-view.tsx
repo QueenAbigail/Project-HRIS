@@ -17,6 +17,7 @@ interface PatrolRecord {
   checkpoint: string
   officer: string
   timestamp: string
+  time?: string
   date: string
   gpsStatus: 'verified' | 'unverified'
   photos: number
@@ -90,7 +91,7 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
                   <span className="font-medium">Officer:</span> {patrol.officer}
                 </p>
                 <p className="text-muted-foreground">
-                  <span className="font-medium">Time:</span> {patrol.timestamp} · {patrol.date}
+                  <span className="font-medium">Time:</span> {patrol.time ?? patrol.timestamp} · {patrol.date}
                 </p>
               </div>
 
