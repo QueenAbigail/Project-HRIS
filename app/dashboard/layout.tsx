@@ -43,7 +43,7 @@ export default async function DashboardLayout({ children }: LayoutProps) {
       <SidebarProvider suppressHydrationWarning>
         <WelcomeToast userName={user?.name} />
         <AppSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
-        <SidebarInset className="flex flex-col">
+        <SidebarInset className="flex min-w-0 flex-col">
           <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-card/50 backdrop-blur-sm px-4">
             <MobileHeader />
             <div className="flex items-center gap-2">
@@ -51,7 +51,7 @@ export default async function DashboardLayout({ children }: LayoutProps) {
             </div>
             <HeaderControls userRole={user?.role || null} />
           </header>
-          <main className="flex-1 overflow-auto p-4 md:p-6">
+          <main className="min-w-0 flex-1 overflow-auto p-4 md:p-6">
             {children}
           </main>
         </SidebarInset>

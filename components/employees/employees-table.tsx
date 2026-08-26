@@ -207,7 +207,7 @@ export function EmployeesTable({ users, isClient = false }: EmployeesTableProps)
 
   return (
     <>
-      <Card className="bg-card border-border">
+      <Card className="min-w-0 bg-card border-border">
         <CardHeader className="space-y-4 pb-2">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <CardTitle className="flex-1">Employee Directory</CardTitle>
@@ -339,8 +339,8 @@ export function EmployeesTable({ users, isClient = false }: EmployeesTableProps)
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="min-w-0 overflow-x-auto">
+            <Table className="min-w-[980px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Employee</TableHead>
@@ -370,13 +370,13 @@ export function EmployeesTable({ users, isClient = false }: EmployeesTableProps)
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono text-sm">{employee.employeeCode || employee.id}</TableCell>
+                    <TableCell className="max-w-32 whitespace-normal break-words font-mono text-sm">{employee.employeeCode || employee.id}</TableCell>
                     <TableCell className="hidden md:table-cell">
                       <div className="flex items-center gap-2">
                         <MapPin className="size-3 text-muted-foreground" />
                         <div>
-                          <p className="text-sm">{employee.location}</p>
-                          <p className="text-xs text-muted-foreground font-mono">{employee.locationCode}</p>
+                          <p className="max-w-48 whitespace-normal break-words text-sm">{employee.location}</p>
+                          <p className="max-w-48 whitespace-normal break-words text-xs text-muted-foreground font-mono">{employee.locationCode}</p>
                         </div>
                       </div>
                     </TableCell>
