@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import { Clock, CheckCircle, XCircle, Calendar, Loader2 } from 'lucide-react'
 
@@ -18,26 +19,31 @@ export function LeaveStats() {
   const fetchStats = async () => {
     try {
       const response = await fetch('/api/leaves/stats')
-      if (response.ok) {
-        const data = await response.json()
-        setStats(data)
-      }
-    } catch (error) {
+      if (!response.ok) throw new Error('Leave statistics request failed')
+      const data = await response.json()
+      setStats(data)
+    } catch {
+      toast.error('Leave statistics could not be loaded', {
+        description: 'Please check your connection or contact an administrator if the problem continues.',
+      })
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchStats()
-    
-    // Listen for leave status changes
     const handleLeaveUpdated = () => {
       fetchStats()
     }
+
+    const initialFetch = window.setTimeout(() => void fetchStats(), 0)
+    // Listen for leave status changes
     
     window.addEventListener('leaveStatusUpdated', handleLeaveUpdated)
-    return () => window.removeEventListener('leaveStatusUpdated', handleLeaveUpdated)
+    return () => {
+      window.clearTimeout(initialFetch)
+      window.removeEventListener('leaveStatusUpdated', handleLeaveUpdated)
+    }
   }, [])
 
   const statConfigs = [

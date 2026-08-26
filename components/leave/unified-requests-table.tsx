@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Check, X, FileText, Loader2, ArrowRight } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
+import { toast } from 'sonner'
 import { LeaveRequestDetailsModal } from './leave-request-details-modal'
 import { ShiftSwapDetailsModal } from './shift-swap-details-modal'
 
@@ -71,11 +72,7 @@ export function UnifiedRequestsTable() {
   const [leaveDetailsOpen, setLeaveDetailsOpen] = useState(false)
   const [swapDetailsOpen, setSwapDetailsOpen] = useState(false)
 
-  useEffect(() => {
-    fetchRequests()
-  }, [])
-
-  const fetchRequests = async () => {
+  async function fetchRequests() {
     setLoading(true)
     try {
       const [leavesRes, swapsRes] = await Promise.all([
@@ -83,8 +80,9 @@ export function UnifiedRequestsTable() {
         fetch('/api/shift-swaps'),
       ])
 
-      const leaves = leavesRes.ok ? await leavesRes.json() : []
-      const swaps = swapsRes.ok ? await swapsRes.json() : []
+      if (!leavesRes.ok || !swapsRes.ok) throw new Error('Leave requests could not be loaded')
+      const leaves = await leavesRes.json()
+      const swaps = await swapsRes.json()
 
       const unifiedRequests: UnifiedRequest[] = [
         ...leaves.map((leave: any) => ({
@@ -101,11 +99,19 @@ export function UnifiedRequestsTable() {
       // Sort by date descending
       unifiedRequests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       setRequests(unifiedRequests)
-    } catch (error) {
+    } catch {
+      toast.error('Leave requests could not be loaded', {
+        description: 'Please check your connection or contact an administrator if the problem continues.',
+      })
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    const initialFetch = window.setTimeout(() => void fetchRequests(), 0)
+    return () => window.clearTimeout(initialFetch)
+  }, [])
 
   const handleLeaveStatusChange = async (leaveId: string, newStatus: 'Approved' | 'Rejected') => {
     try {
@@ -115,15 +121,17 @@ export function UnifiedRequestsTable() {
         body: JSON.stringify({ status: newStatus }),
       })
 
-      if (response.ok) {
-        setRequests(
-          requests.map((r) =>
-            r.id === leaveId && r.type === 'leave' ? { ...r, status: newStatus } : r
-          )
+      if (!response.ok) throw new Error('Leave status update failed')
+      setRequests(
+        requests.map((r) =>
+          r.id === leaveId && r.type === 'leave' ? { ...r, status: newStatus } : r
         )
-        window.dispatchEvent(new Event('leaveStatusUpdated'))
-      }
-    } catch (error) {
+      )
+      window.dispatchEvent(new Event('leaveStatusUpdated'))
+    } catch {
+      toast.error('Leave request could not be updated', {
+        description: 'The status was not changed. Please try again later.',
+      })
     }
   }
 
@@ -135,14 +143,16 @@ export function UnifiedRequestsTable() {
         body: JSON.stringify({ status: newStatus }),
       })
 
-      if (response.ok) {
-        setRequests(
-          requests.map((r) =>
-            r.id === swapId && r.type === 'shiftswap' ? { ...r, status: newStatus } : r
-          )
+      if (!response.ok) throw new Error('Shift swap status update failed')
+      setRequests(
+        requests.map((r) =>
+          r.id === swapId && r.type === 'shiftswap' ? { ...r, status: newStatus } : r
         )
-      }
-    } catch (error) {
+      )
+    } catch {
+      toast.error('Shift swap request could not be updated', {
+        description: 'The status was not changed. Please try again later.',
+      })
     }
   }
 

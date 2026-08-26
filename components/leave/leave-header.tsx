@@ -36,6 +36,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface LeaveHeaderProps {
   isClient?: boolean
@@ -161,7 +162,9 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
     e.preventDefault()
     
     if (!formData.userId || !formData.leaveType || !formData.startDate || !formData.endDate) {
-      alert('Please fill in all required fields')
+      toast.error('Required information is missing', {
+        description: 'Please complete the employee, leave type, start date, and end date fields.',
+      })
       return
     }
 
@@ -180,25 +183,25 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
         }),
       })
 
-      if (response.ok) {
-        const result = await response.json()
-        setValidationInfo(result.validation)
-        
-        const message = result.validation?.dayBreakdown?.summary 
-          ? `Leave created successfully!\n\n${result.validation.dayBreakdown.summary}`
-          : 'Leave request created successfully'
-        
-        alert(message)
-        setFormData({ userId: '', leaveType: '', startDate: '', endDate: '', reason: '' })
-        setEmployeeSearchValue('')
-        setValidationInfo(null)
-        setOpenNewRequest(false)
-      } else {
-        const error = await response.json()
-        alert(`Error: ${error.message || 'Failed to create leave request'}`)
+      if (!response.ok) {
+        const error = await response.json().catch(() => null)
+        throw new Error(error?.error || error?.message || 'Failed to create leave request')
       }
+
+      const result = await response.json()
+      setValidationInfo(result.validation)
+      setFormData({ userId: '', leaveType: '', startDate: '', endDate: '', reason: '' })
+      setEmployeeSearchValue('')
+      setValidationInfo(null)
+      setOpenNewRequest(false)
+      toast.success('Leave request submitted', {
+        description: 'The leave request is now waiting for approval.',
+      })
+      window.dispatchEvent(new Event('leaveRequestCreated'))
     } catch (error) {
-      alert('Failed to submit leave request')
+      toast.error('Leave request could not be submitted', {
+        description: error instanceof Error ? error.message : 'Please try again later.',
+      })
     } finally {
       setSubmitting(false)
     }
