@@ -37,50 +37,44 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Fetch attendance records for the authorized site (representing patrol records)
-    const records = await prisma.attendance.findMany({
+    const records = await prisma.patrol.findMany({
       where: {
-        locationId: site.id,
+        siteId: site.id,
+        status: 'COMPLETED',
       },
       include: {
-        location: {
-          select: {
-            name: true,
-            code: true,
-          },
-        },
-        user: {
-          select: {
-            name: true,
-          },
-        },
+        patrolLocation: { select: { name: true } },
+        user: { select: { name: true } },
+        evidence: { select: { imageUrl: true, caption: true } },
       },
-      orderBy: { actualCheckIn: 'desc' },
+      orderBy: { checkInTime: 'desc' },
       take: 50,
     })
 
-    // Transform to patrol record format
-    const patrolRecords = records.map((record) => ({
-      id: record.id,
-      locationId: record.locationId,
-      checkpoint: record.location.name,
-      officer: record.user.name || 'Unknown',
-      timestamp: (record.actualCheckIn ?? record.date).toISOString(),
-      time: (record.actualCheckIn ?? record.date).toLocaleTimeString('en-GB', {
-        timeZone: BUSINESS_TIMEZONE,
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-      }),
-      date: (record.actualCheckIn ?? record.date).toLocaleDateString('en-CA', {
-        timeZone: BUSINESS_TIMEZONE,
-        year: 'numeric', month: '2-digit', day: '2-digit',
-      }),
-      gpsStatus: record.gpsVerified ? 'verified' : 'unverified' as const,
-      gpsVerified: record.gpsVerified,
-      photos: 0,
-      description: record.notes || null,
-      notes: record.notes || null,
-      evidence: [],
-    }))
+    const patrolRecords = records.map((record) => {
+      const timestamp = record.checkInTime ?? record.createdAt
+      return {
+        id: record.id,
+        locationId: record.patrolLocationId,
+        checkpoint: record.patrolLocation.name,
+        officer: record.user.name || 'Unknown',
+        timestamp: timestamp.toISOString(),
+        time: timestamp.toLocaleTimeString('en-GB', {
+          timeZone: BUSINESS_TIMEZONE,
+          hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+        }),
+        date: timestamp.toLocaleDateString('en-CA', {
+          timeZone: BUSINESS_TIMEZONE,
+          year: 'numeric', month: '2-digit', day: '2-digit',
+        }),
+        gpsStatus: record.gpsValidated ? 'verified' : 'unverified' as const,
+        gpsVerified: record.gpsValidated,
+        photos: record.evidence.length,
+        description: record.description || null,
+        notes: record.description || null,
+        evidence: record.evidence,
+      }
+    })
 
     return NextResponse.json(patrolRecords)
   } catch (error) {
