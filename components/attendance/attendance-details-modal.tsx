@@ -49,9 +49,15 @@ export function AttendanceDetailsModal({ open, onOpenChange, record }: Attendanc
 
   if (!record) return null
 
-  const formatTime = (timestamp: string) => {
+  const formatTime = (timestamp: string | Date) => {
     try {
-      return new Date(timestamp).toLocaleTimeString('en-GB', {
+      const value = timestamp instanceof Date ? timestamp.toISOString() : timestamp
+      // Prisma/JSON may return a local wall-clock timestamp without an offset.
+      // Treat it as already being in Jakarta rather than converting it twice.
+      const timezoneLessMatch = value.match(/T(\d{2}:\d{2}(?::\d{2})?)(?:\.\d+)?$/)
+      if (timezoneLessMatch) return timezoneLessMatch[1]
+
+      return new Date(value).toLocaleTimeString('en-GB', {
         timeZone: BUSINESS_TIMEZONE,
         hour: '2-digit',
         minute: '2-digit',
@@ -59,7 +65,7 @@ export function AttendanceDetailsModal({ open, onOpenChange, record }: Attendanc
         hour12: false,
       })
     } catch {
-      return timestamp
+      return String(timestamp)
     }
   }
 
