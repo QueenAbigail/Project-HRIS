@@ -52,18 +52,10 @@ export function AttendanceDetailsModal({ open, onOpenChange, record }: Attendanc
   const formatTime = (timestamp: string | Date) => {
     try {
       const value = timestamp instanceof Date ? timestamp.toISOString() : timestamp
-      // Prisma/JSON may return a local wall-clock timestamp without an offset.
-      // Treat it as already being in Jakarta rather than converting it twice.
-      const timezoneLessMatch = value.match(/T(\d{2}:\d{2}(?::\d{2})?)(?:\.\d+)?$/)
-      if (timezoneLessMatch) return timezoneLessMatch[1]
-
-      return new Date(value).toLocaleTimeString('en-GB', {
-        timeZone: BUSINESS_TIMEZONE,
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      })
+      // Attendance timestamps are stored as Jakarta wall-clock values by the app.
+      // Match the table by displaying the time portion without converting it again.
+      const timeMatch = value.match(/T(\d{2}:\d{2}(?::\d{2})?)/)
+      return timeMatch?.[1] ?? String(timestamp)
     } catch {
       return String(timestamp)
     }
