@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Check, X, FileText, Loader2, ArrowRight } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import { toast } from 'sonner'
+import { formatBusinessDate } from '@/lib/timezone'
 import { LeaveRequestDetailsModal } from './leave-request-details-modal'
 import { ShiftSwapDetailsModal } from './shift-swap-details-modal'
 
@@ -169,7 +170,7 @@ export function UnifiedRequestsTable() {
         department: request.user?.department || '--',
         typeLabel: leaveTypeMap[request.leaveType || '']?.label || request.leaveType,
         typeColor: leaveTypeMap[request.leaveType || '']?.color || 'bg-gray-500/10 text-gray-500 border-gray-500/20',
-        period: `${format(new Date(request.startDate), 'MMM d')} - ${format(new Date(request.endDate), 'MMM d, yyyy')}`,
+        period: `${formatBusinessDate(request.startDate)} - ${formatBusinessDate(request.endDate)}`,
         days: request.workingDaysCount ?? calculateDays(request.startDate, request.endDate),
       }
     } else {

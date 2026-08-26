@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog'
 import { Check, X, FileText, Loader2, ExternalLink } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
+import { formatBusinessDate } from '@/lib/timezone'
 
 interface LeaveRequest {
   id: string
@@ -151,8 +152,8 @@ export function LeaveRequestsTable() {
                   leaves.map((leave) => {
                     const leaveType = leaveTypeMap[leave.leaveType] || { label: leave.leaveType, color: 'bg-gray-500/10 text-gray-500 border-gray-500/20' }
                     const days = leave.workingDaysCount ?? calculateDays(leave.startDate, leave.endDate)
-                    const startFormatted = format(new Date(leave.startDate), 'MMM d, yyyy')
-                    const endFormatted = format(new Date(leave.endDate), 'MMM d, yyyy')
+                    const startFormatted = formatBusinessDate(leave.startDate)
+                    const endFormatted = formatBusinessDate(leave.endDate)
 
                     return (
                       <TableRow key={leave.id} className="hover:bg-muted/30">
@@ -229,7 +230,7 @@ export function LeaveRequestsTable() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Period</p>
-                  <p className="font-medium">{format(new Date(selectedLeave.startDate), 'MMM d, yyyy')} - {format(new Date(selectedLeave.endDate), 'MMM d, yyyy')}</p>
+                  <p className="font-medium">{formatBusinessDate(selectedLeave.startDate)} - {formatBusinessDate(selectedLeave.endDate)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Status</p>
