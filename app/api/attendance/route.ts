@@ -271,8 +271,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'You do not have access to this employee or location' }, { status: 403 })
     }
 
-    const date = new Date()
-    const dateOnly = startOfDay(date)
+    const dateOnly = getBusinessDateRange(getBusinessDate(), getBusinessDate()).from
 
     // Check if attendance record already exists for today
     const existingAttendance = await prisma.attendance.findUnique({
