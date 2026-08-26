@@ -164,12 +164,13 @@ const defaultDetails = {
 }
 
 export function EmployeeProfileSheet({ employee, open, onOpenChange, onEdit }: EmployeeProfileSheetProps) {
-  if (!employee) return null
-
-const details = employeeDetails[employee.id] || defaultDetails
   const [isExpanded, setIsExpanded] = useState(false)
   const [isExpandedAssignment, setIsExpandedAssignment] = useState(false)
   const [isExpandedKTA, setIsExpandedKTA] = useState(false)
+
+  if (!employee) return null
+
+  const details = employeeDetails[employee.id] || defaultDetails
 
   // Keep this list aligned with the employee fields shown in the User model.
   // System fields, IDs, relationships, and permission flags are intentionally excluded.
