@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/system'
 
 export async function GET(request: NextRequest) {
   try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const siteId = searchParams.get('siteId')
 
@@ -13,17 +19,27 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch attendance records for the site (representing patrol records)
+    const canViewAllSites = currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'HR_ADMIN'
+    const site = await prisma.site.findFirst({
+      where: {
+        id: siteId,
+        ...(canViewAllSites
+          ? {}
+          : currentUser.role === 'CLIENT'
+            ? { companyId: currentUser.companyId }
+            : { id: currentUser.siteId }),
+      },
+      select: { id: true },
+    })
+
+    if (!site) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // Fetch attendance records for the authorized site (representing patrol records)
     const records = await prisma.attendance.findMany({
       where: {
-        locationId: {
-          in: (
-            await prisma.attendanceLocation.findMany({
-              where: { siteId },
-              select: { id: true },
-            })
-          ).map((loc) => loc.id),
-        },
+        location: { siteId: site.id },
       },
       include: {
         location: {
