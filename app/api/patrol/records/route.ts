@@ -61,19 +61,16 @@ export async function GET(request: NextRequest) {
     // Transform to patrol record format
     const patrolRecords = records.map((record) => ({
       id: record.id,
+      locationId: record.locationId,
       checkpoint: record.location.name,
       officer: record.user.name || 'Unknown',
-      timestamp: record.clockInTime.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
-      date: record.clockInTime.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric' 
-      }),
+      timestamp: record.clockInTime.toISOString(),
+      date: record.clockInTime.toISOString().slice(0, 10),
       gpsStatus: record.gpsVerified ? 'verified' : 'unverified' as const,
-      photos: 0, // To be implemented with actual photo storage
-      description: record.notes || 'Patrol record',
+      gpsVerified: record.gpsVerified,
+      photos: 0,
+      description: record.notes || null,
+      notes: record.notes || null,
       evidence: [],
     }))
 

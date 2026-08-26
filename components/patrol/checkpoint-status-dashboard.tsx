@@ -2,7 +2,6 @@
 
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { MapPin, User, Clock, CheckCircle2, AlertCircle } from 'lucide-react'
 import {
   Dialog,
@@ -10,7 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import useSWR from 'swr'
 
 interface CheckpointStatus {
   id: string
@@ -27,34 +27,51 @@ interface CheckpointStatus {
 
 export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
   const [selectedCheckpoint, setSelectedCheckpoint] = useState<CheckpointStatus | null>(null)
-  const [checkpoints, setCheckpoints] = useState<CheckpointStatus[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const fetcher = async (url: string) => {
+    const response = await fetch(url)
+    if (!response.ok) throw new Error('Failed to load checkpoint data')
+    return response.json()
+  }
+  const { data: locations, error: locationsError, isLoading: locationsLoading } = useSWR<Array<{ id: string; name: string }>>(
+    siteId ? `/api/patrol/locations?siteId=${encodeURIComponent(siteId)}` : null,
+    fetcher,
+    { revalidateOnFocus: false }
+  )
+  const { data: records, error: recordsError, isLoading: recordsLoading } = useSWR<Array<{
+    id: string
+    locationId: string
+    officer: string
+    timestamp: string
+    gpsVerified: boolean
+    photos: number
+    notes: string | null
+  }>>(
+    siteId ? `/api/patrol/records?siteId=${encodeURIComponent(siteId)}` : null,
+    fetcher,
+    { revalidateOnFocus: false }
+  )
+  const error = locationsError || recordsError
+  const isLoading = locationsLoading || recordsLoading
 
-  useEffect(() => {
-    const fetchCheckpoints = async () => {
-      try {
-        const response = await fetch(`/api/patrol/locations?siteId=${siteId}`)
-        if (response.ok) {
-          const data = await response.json()
-          // Transform API data to component format
-          const transformed = data.map((location: any) => ({
-            id: location.id,
-            name: location.name,
-            status: 'pending' as const,
-            lastPatrol: undefined,
-          }))
-          setCheckpoints(transformed)
-        }
-      } catch (error) {
-      } finally {
-        setIsLoading(false)
-      }
+  const checkpoints: CheckpointStatus[] = (locations ?? []).map((location) => {
+    const lastPatrol = records?.find((record) => record.locationId === location.id)
+    return {
+      id: location.id,
+      name: location.name,
+      status: lastPatrol ? 'completed' : 'pending',
+      lastPatrol: lastPatrol
+        ? {
+            officer: lastPatrol.officer,
+            time: new Date(lastPatrol.timestamp).toLocaleTimeString('en-GB', {
+              timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+            }),
+            gpsVerified: lastPatrol.gpsVerified,
+            photosCount: lastPatrol.photos,
+            notes: lastPatrol.notes ?? undefined,
+          }
+        : undefined,
     }
-
-    if (siteId) {
-      fetchCheckpoints()
-    }
-  }, [siteId])
+  })
 
   const displayCheckpoints = checkpoints
 
@@ -93,6 +110,10 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
 
   if (isLoading) {
     return <div className="text-center text-muted-foreground py-8">Loading checkpoints...</div>
+  }
+
+  if (error) {
+    return <div className="text-center text-destructive py-8">Unable to load checkpoint status. Please try again.</div>
   }
 
   if (displayCheckpoints.length === 0) {
@@ -218,17 +239,8 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
 
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-2">Evidence</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Array.from({ length: selectedCheckpoint.lastPatrol.photosCount }).map(
-                        (_, idx) => (
-                          <img
-                            key={idx}
-                            src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=300&h=300&fit=crop"
-                            alt={`Evidence ${idx + 1}`}
-                            className="w-full h-32 object-cover rounded-lg"
-                          />
-                        )
-                      )}
+                    <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+                      Evidence photos are not available for this patrol record.
                     </div>
                   </div>
 
