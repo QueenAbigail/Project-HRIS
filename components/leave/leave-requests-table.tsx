@@ -150,7 +150,7 @@ export function LeaveRequestsTable() {
                 ) : (
                   leaves.map((leave) => {
                     const leaveType = leaveTypeMap[leave.leaveType] || { label: leave.leaveType, color: 'bg-gray-500/10 text-gray-500 border-gray-500/20' }
-                    const days = calculateDays(leave.startDate, leave.endDate)
+                    const days = leave.workingDaysCount ?? calculateDays(leave.startDate, leave.endDate)
                     const startFormatted = format(new Date(leave.startDate), 'MMM d, yyyy')
                     const endFormatted = format(new Date(leave.endDate), 'MMM d, yyyy')
 

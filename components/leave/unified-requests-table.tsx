@@ -170,7 +170,7 @@ export function UnifiedRequestsTable() {
         typeLabel: leaveTypeMap[request.leaveType || '']?.label || request.leaveType,
         typeColor: leaveTypeMap[request.leaveType || '']?.color || 'bg-gray-500/10 text-gray-500 border-gray-500/20',
         period: `${format(new Date(request.startDate), 'MMM d')} - ${format(new Date(request.endDate), 'MMM d, yyyy')}`,
-        days: calculateDays(request.startDate, request.endDate),
+        days: request.workingDaysCount ?? calculateDays(request.startDate, request.endDate),
       }
     } else {
       return {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
+import { countWeekdays } from '@/lib/leave-validation'
 
 export async function GET(request: NextRequest) {
   try {
@@ -56,30 +57,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Calculate working days - count days with schedules in the date range
-    const scheduledDays = await prisma.schedule.count({
-      where: {
-        employeeId: userId,
-        scheduleDate: {
-          gte: new Date(startDate),
-          lte: new Date(endDate),
-        },
-      },
-    })
+    const start = new Date(`${startDate}T00:00:00Z`)
+    const end = new Date(`${endDate}T00:00:00Z`)
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return NextResponse.json({ error: 'Start date and end date must be valid dates' }, { status: 400 })
+    }
+    if (start > end) {
+      return NextResponse.json({ error: 'End date must be on or after the start date' }, { status: 400 })
+    }
 
-    // Use scheduled days if available, otherwise fall back to calendar days
-    let workingDaysCount = scheduledDays > 0 ? scheduledDays : 
-      Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
-    
-    console.log('[v0] Leave validation - Working days calculated:', workingDaysCount, 'from', scheduledDays, 'scheduled days')
+    const workingDaysCount = countWeekdays(start, end)
+    if (workingDaysCount === 0) {
+      return NextResponse.json({ error: 'The selected date range contains no working days' }, { status: 400 })
+    }
 
     // Create the leave record
     const leave = await prisma.leave.create({
       data: {
         userId,
         leaveType,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: start,
+        endDate: end,
         reason: reason || null,
         attachmentUrl: attachmentUrl || null,
         status: 'Pending',
