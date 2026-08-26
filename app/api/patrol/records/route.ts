@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     // Fetch attendance records for the authorized site (representing patrol records)
     const records = await prisma.attendance.findMany({
       where: {
-        location: { siteId: site.id },
+        locationId: site.id,
       },
       include: {
         location: {
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: { clockInTime: 'desc' },
+      orderBy: { actualCheckIn: 'desc' },
       take: 50,
     })
 
@@ -65,12 +65,12 @@ export async function GET(request: NextRequest) {
       locationId: record.locationId,
       checkpoint: record.location.name,
       officer: record.user.name || 'Unknown',
-      timestamp: record.clockInTime.toISOString(),
-      time: record.clockInTime.toLocaleTimeString('en-GB', {
+      timestamp: (record.actualCheckIn ?? record.date).toISOString(),
+      time: (record.actualCheckIn ?? record.date).toLocaleTimeString('en-GB', {
         timeZone: BUSINESS_TIMEZONE,
         hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
       }),
-      date: record.clockInTime.toLocaleDateString('en-CA', {
+      date: (record.actualCheckIn ?? record.date).toLocaleDateString('en-CA', {
         timeZone: BUSINESS_TIMEZONE,
         year: 'numeric', month: '2-digit', day: '2-digit',
       }),

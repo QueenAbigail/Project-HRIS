@@ -63,7 +63,7 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
   }
 
   if (hasError) {
-    return <div className="py-8 text-center text-sm text-muted-foreground">Patrol records are temporarily unavailable.</div>
+    return <div className="py-8 text-center text-sm text-muted-foreground">No patrol records found for this site.</div>
   }
 
   if (patrols.length === 0) {
