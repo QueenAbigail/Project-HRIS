@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/system'
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const canApprove = ['SUPER_ADMIN', 'HR_ADMIN'].includes(currentUser.role)
+    if (!canApprove) {
+      return NextResponse.json({ error: 'Only HR administrators can update leave status' }, { status: 403 })
+    }
+
     const { id } = await params
     const { status } = await request.json()
 

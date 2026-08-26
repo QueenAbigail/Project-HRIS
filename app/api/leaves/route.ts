@@ -38,12 +38,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { userId, leaveType, startDate, endDate, reason, attachmentUrl, status } = body
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    if (!userId || !leaveType || !startDate || !endDate) {
+    const body = await request.json()
+    const { leaveType, startDate, endDate, reason, attachmentUrl } = body
+    const userId = currentUser.id
+
+    if (!leaveType || !startDate || !endDate) {
       return NextResponse.json(
-        { error: 'Missing required fields: userId, leaveType, startDate, endDate' },
+        { error: 'Missing required fields: leaveType, startDate, endDate' },
         { status: 400 }
       )
     }
@@ -74,7 +80,7 @@ export async function POST(request: NextRequest) {
         endDate: new Date(endDate),
         reason: reason || null,
         attachmentUrl: attachmentUrl || null,
-        status: status || 'Pending',
+        status: 'Pending',
         workingDaysCount,
       },
       include: {
@@ -94,7 +100,6 @@ export async function POST(request: NextRequest) {
       leave,
       validation: {
         workingDaysCount,
-        dayBreakdown: dayBreakdown ? JSON.parse(dayBreakdown) : null,
       },
     })
   } catch (error) {
