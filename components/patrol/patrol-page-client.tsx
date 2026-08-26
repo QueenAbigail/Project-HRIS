@@ -34,9 +34,6 @@ interface PatrolPageClientProps {
 }
 
 export function PatrolPageClient({ clients, sitesByClient }: PatrolPageClientProps) {
-  const [selectedSite, setSelectedSite] = useState<string>()
-  const [viewMode, setViewMode] = useState<'status' | 'timeline'>('status')
-
   // Flatten all sites from all clients
   const allSites: Site[] = []
   clients.forEach((client) => {
@@ -49,11 +46,8 @@ export function PatrolPageClient({ clients, sitesByClient }: PatrolPageClientPro
     })
   })
 
-  // Set first site on initial load
-  if (!selectedSite && allSites.length > 0) {
-    setSelectedSite(allSites[0].id)
-  }
-
+  const [selectedSite, setSelectedSite] = useState<string | undefined>(() => allSites[0]?.id)
+  const [viewMode, setViewMode] = useState<'status' | 'timeline'>('status')
   const currentSite = allSites.find((s) => s.id === selectedSite)
 
   // Show empty state if no sites available
