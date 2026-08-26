@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/error-boundaries -- this try/catch handles server data loading failures. */
 export const dynamic = 'force-dynamic'
 
 import { prisma } from '@/lib/prisma'
@@ -8,6 +9,7 @@ import { LocationAttendance } from '@/components/dashboard/location-attendance'
 import { LateCheckIns } from '@/components/dashboard/late-checkins'
 import { UpcomingLeaves } from '@/components/dashboard/upcoming-leaves'
 import { tallyAttendance, computeAttendanceRate, resolveAttendanceStatus } from '@/lib/attendance-utils'
+import Link from 'next/link'
 import { getBusinessDateBounds } from '@/lib/timezone'
 
 export default async function DashboardPage() {
@@ -21,9 +23,9 @@ export default async function DashboardPage() {
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Unable to Load Dashboard</h1>
             <p className="text-gray-600 mb-4">Could not retrieve your user information. Please log in again.</p>
-            <a href="/login" className="text-blue-600 hover:underline">
+            <Link href="/login" className="text-blue-600 hover:underline">
               Return to Login
-            </a>
+            </Link>
           </div>
         </div>
       )
@@ -418,9 +420,9 @@ export default async function DashboardPage() {
           <p className="text-gray-600 mb-4">
             Please refresh the page and try again. If the problem continues, contact your administrator.
           </p>
-          <a href="/" className="text-blue-600 hover:underline block mt-4">
+          <Link href="/" className="text-blue-600 hover:underline block mt-4">
             Return to Home
-          </a>
+          </Link>
         </div>
       </div>
     )

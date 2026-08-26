@@ -33,7 +33,7 @@ export default function AttendancePage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
-  const [selectedSite, setSelectedSite] = useState('all')
+  const [selectedSite, setSelectedSite] = useState(() => searchParams.get('site') ?? 'all')
 
   // Update both local state and the URL query param so the address bar
   // reflects the active site filter (and stays shareable/bookmarkable).
@@ -121,14 +121,6 @@ export default function AttendancePage() {
 
     fetchData()
   }, [])
-
-  useEffect(() => {
-    // Set site from query parameter if available
-    const siteParam = searchParams.get('site')
-    if (siteParam) {
-      setSelectedSite(siteParam)
-    }
-  }, [searchParams])
 
   return (
     <div className="space-y-6">

@@ -20,7 +20,7 @@ export function UpcomingShifts({ data }: UpcomingShiftsProps) {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Upcoming Shifts</CardTitle>
-              <CardDescription>Today's scheduled assignments</CardDescription>
+              <CardDescription>{"Today's scheduled assignments"}</CardDescription>
             </div>
             <Badge variant="outline" className="text-xs">No shifts</Badge>
           </div>
