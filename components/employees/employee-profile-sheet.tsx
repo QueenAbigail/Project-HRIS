@@ -45,6 +45,7 @@ export interface Employee {
   position: string
   status: string
   joinDate: string
+  companyName?: string
   location: string
   locationCode: string
   phone?: string

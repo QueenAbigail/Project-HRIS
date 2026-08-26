@@ -375,8 +375,8 @@ export function EmployeesTable({ users, isClient = false }: EmployeesTableProps)
                       <div className="flex items-center gap-2">
                         <MapPin className="size-3 text-muted-foreground" />
                         <div>
-                          <p className="max-w-48 whitespace-normal break-words text-sm">{employee.location}</p>
-                          <p className="max-w-48 whitespace-normal break-words text-xs text-muted-foreground font-mono">{employee.locationCode}</p>
+                          <p className="max-w-48 whitespace-normal break-words text-sm">{employee.companyName || 'N/A'}</p>
+                          <p className="max-w-48 whitespace-normal break-words text-xs text-muted-foreground">{employee.location}</p>
                         </div>
                       </div>
                     </TableCell>

@@ -180,6 +180,7 @@ async function EmployeesContent({
       status,
       joinDate: user.joinDate ? format(user.joinDate, 'MMM d, yyyy') : '',
       joinDateValue: user.joinDate ? format(user.joinDate, 'yyyy-MM-dd') : '',
+      companyName: user.site?.company?.name ?? '',
       location: user.site?.name ?? '',
       locationCode: user.site?.code ?? '',
       phone: user.phoneNumber ?? '',
