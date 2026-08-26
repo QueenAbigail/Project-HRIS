@@ -54,7 +54,7 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
     { revalidateOnFocus: false }
   )
   const error = locationsError || recordsError
-  const isLoading = locationsLoading || recordsLoading
+  const isLoading = locationsLoading || (locations !== undefined && locations.length > 0 && recordsLoading)
 
   useEffect(() => {
     if (error) {

@@ -35,6 +35,8 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
 
   useEffect(() => {
     const fetchPatrols = async () => {
+      setIsLoading(true)
+      setHasError(false)
       try {
         const response = await fetch(`/api/patrol/records?siteId=${encodeURIComponent(siteId)}`)
         if (!response.ok) throw new Error('Patrol records request failed')
@@ -51,9 +53,9 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
       }
     }
 
-    if (siteId) {
-      fetchPatrols()
-    }
+    if (!siteId) return
+
+    fetchPatrols()
   }, [siteId])
 
   if (isLoading) {
