@@ -4,9 +4,11 @@ import { getCurrentUser } from '@/lib/system'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get current user to check if CLIENT role
     const currentUser = await getCurrentUser()
-    const isClient = currentUser?.role === 'CLIENT'
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const isClient = currentUser.role === 'CLIENT'
     
     const leaves = await prisma.leave.findMany({
       where: isClient ? { user: { companyId: currentUser?.companyId } } : undefined,
