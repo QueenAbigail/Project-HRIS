@@ -41,7 +41,6 @@ export function AttendanceDetailsModal({ open, onOpenChange, record }: Attendanc
   // Clear images when modal closes to avoid memory leaks
   const handleOpenChange = useCallback((newOpen: boolean) => {
     if (!newOpen) {
-      setSelfieCheckIn(null)
       setSelfieCheckInError(null)
     }
     onOpenChange(newOpen)
