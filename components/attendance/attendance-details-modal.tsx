@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { MapPin, Clock, Camera, AlertTriangle, Loader2 } from 'lucide-react'
 import { getAttendanceLabel, getStatusStyles } from '@/lib/attendance-utils'
+import { BUSINESS_TIMEZONE } from '@/lib/timezone'
 import type { Attendance } from '@prisma/client'
 import dynamic from 'next/dynamic'
 
@@ -50,11 +51,12 @@ export function AttendanceDetailsModal({ open, onOpenChange, record }: Attendanc
 
   const formatTime = (timestamp: string) => {
     try {
-      return new Date(timestamp).toLocaleTimeString('en-GB', { 
-        hour: '2-digit', 
-        minute: '2-digit', 
+      return new Date(timestamp).toLocaleTimeString('en-GB', {
+        timeZone: BUSINESS_TIMEZONE,
+        hour: '2-digit',
+        minute: '2-digit',
         second: '2-digit',
-        hour12: false 
+        hour12: false,
       })
     } catch {
       return timestamp
@@ -70,7 +72,7 @@ export function AttendanceDetailsModal({ open, onOpenChange, record }: Attendanc
             Attendance Details
           </DialogTitle>
           <DialogDescription>
-            {record.date && new Date(record.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {record.date && new Date(record.date).toLocaleDateString('en-US', { timeZone: BUSINESS_TIMEZONE, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </DialogDescription>
         </DialogHeader>
 
