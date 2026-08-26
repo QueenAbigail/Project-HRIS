@@ -46,7 +46,9 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
     photos: number
     notes: string | null
   }>>(
-    siteId ? `/api/patrol/records?siteId=${encodeURIComponent(siteId)}` : null,
+    siteId && locations?.length
+      ? `/api/patrol/records?siteId=${encodeURIComponent(siteId)}`
+      : null,
     fetcher,
     { revalidateOnFocus: false }
   )
@@ -118,10 +120,17 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
 
   if (displayCheckpoints.length === 0) {
     return (
-      <div className="text-center text-muted-foreground py-12">
-        <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
-        <p>No patrol locations found for this site.</p>
-        <p className="text-sm mt-2">Create patrol locations in the admin panel to get started.</p>
+      <div className="flex flex-col items-center justify-center gap-4 py-14 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+          <MapPin className="h-7 w-7 text-primary" aria-hidden="true" />
+        </div>
+        <div className="flex flex-col gap-1">
+          <h3 className="text-base font-semibold text-foreground">No checkpoints set up yet</h3>
+          <p className="max-w-md text-sm leading-6 text-muted-foreground">
+            Add patrol checkpoints for this site before monitoring staff patrol activity.
+          </p>
+        </div>
+        <p className="text-xs text-muted-foreground">You can configure checkpoints from the site settings.</p>
       </div>
     )
   }
