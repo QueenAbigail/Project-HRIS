@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const res = NextResponse.next({
     request: {
       headers: req.headers,
@@ -52,17 +52,17 @@ export async function middleware(req: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
- 
+
   // Protect dashboard routes - redirect to login if no user
   if (req.nextUrl.pathname.startsWith('/dashboard') && !user) {
     return NextResponse.redirect(new URL('/', req.url))
   }
- 
+
   // Protect login page - redirect to dashboard if user exists
   if (req.nextUrl.pathname === '/' && user) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
- 
+
   return res
 }
 
@@ -73,4 +73,3 @@ export const config = {
     '/dashboard/:path*',
   ],
 }
-
