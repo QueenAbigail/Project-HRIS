@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     // Fetch attendance records for the authorized site (representing patrol records)
     const records = await prisma.attendance.findMany({
       where: {
-        location: { siteId: site.id },
+        locationId: site.id,
       },
       include: {
         location: {
