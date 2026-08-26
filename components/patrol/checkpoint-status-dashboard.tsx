@@ -130,7 +130,7 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
             Add patrol checkpoints for this site before monitoring staff patrol activity.
           </p>
         </div>
-        <p className="text-xs text-muted-foreground">You can configure checkpoints from the site settings.</p>
+        <p className="text-xs text-muted-foreground">You can configure checkpoints by contacting the admin.</p>
       </div>
     )
   }
