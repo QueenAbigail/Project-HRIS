@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
+import useSWR from 'swr'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -22,33 +23,26 @@ interface AttendanceDetailsModalProps {
 }
 
 export function AttendanceDetailsModal({ open, onOpenChange, record }: AttendanceDetailsModalProps) {
-  const [selfieCheckIn, setSelfieCheckIn] = useState<string | null>(null)
-  const [loadingImages, setLoadingImages] = useState(false)
-  const [selfieCheckInError, setSelfieCheckInError] = useState(false)
-
-  // Lazy load selfies when modal opens
-  useEffect(() => {
-    if (open && record) {
-      setLoadingImages(true)
-      // Construct proper public URLs from stored paths
-      // If selfieCheckIn is stored as a full URL, use it directly
-      // If it's a path like "uuid/filename.jpg", construct the full URL
-      if (record.selfieCheckIn) {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-        const checkInUrl = record.selfieCheckIn.startsWith('http')
-          ? record.selfieCheckIn
-          : `${supabaseUrl}/storage/v1/object/public/attendance-photos/${record.selfieCheckIn}`
-        setSelfieCheckIn(checkInUrl)
-      }
-      setLoadingImages(false)
-    }
-  }, [open, record])
+  const selfieKey = open && record?.selfieCheckIn
+    ? `/api/attendance/image?attendanceId=${encodeURIComponent(record.id)}`
+    : null
+  const { data: selfieData, isLoading: loadingImages, error: selfieFetchError } = useSWR<{ url: string }>(
+    selfieKey,
+    async (url) => {
+      const response = await fetch(url)
+      if (!response.ok) throw new Error('Selfie unavailable')
+      return response.json()
+    },
+    { revalidateOnFocus: false }
+  )
+  const selfieCheckIn = selfieData?.url ?? null
+  const [selfieCheckInError, setSelfieCheckInError] = useState<string | null>(null)
 
   // Clear images when modal closes to avoid memory leaks
   const handleOpenChange = useCallback((newOpen: boolean) => {
     if (!newOpen) {
       setSelfieCheckIn(null)
-      setSelfieCheckInError(false)
+      setSelfieCheckInError(null)
     }
     onOpenChange(newOpen)
   }, [onOpenChange])
@@ -132,13 +126,17 @@ export function AttendanceDetailsModal({ open, onOpenChange, record }: Attendanc
 
                 <div className="space-y-4">
                   {/* Check-in Selfie */}
-                  {selfieCheckIn && (
+                  {record.selfieCheckIn && (
                     <div className="space-y-2">
                       <p className="text-sm text-muted-foreground flex items-center gap-2 font-medium">
                         <Camera className="size-4" />
                         Selfie Verification
                       </p>
-                      {selfieCheckInError ? (
+                      {loadingImages ? (
+                        <div className="w-full max-w-xs h-64 rounded-lg border bg-muted/50 flex items-center justify-center">
+                          <Loader2 className="size-6 text-muted-foreground animate-spin" aria-label="Loading selfie" />
+                        </div>
+                      ) : selfieFetchError || selfieCheckInError === record.id || !selfieCheckIn ? (
                         <div className="w-full max-w-xs h-64 rounded-lg border bg-muted/50 flex items-center justify-center text-center p-4">
                           <div>
                             <Camera className="size-8 text-muted-foreground mb-2 mx-auto" />
@@ -146,11 +144,11 @@ export function AttendanceDetailsModal({ open, onOpenChange, record }: Attendanc
                           </div>
                         </div>
                       ) : (
-                        <img 
-                          src={selfieCheckIn} 
-                          alt="Check-in selfie" 
+                        <img
+                          src={selfieCheckIn}
+                          alt="Check-in selfie"
                           className="w-full max-w-xs rounded-lg border object-cover"
-                          onError={() => setSelfieCheckInError(true)}
+                          onError={() => setSelfieCheckInError(record.id)}
                         />
                       )}
                     </div>
