@@ -76,8 +76,7 @@ export default function AttendancePage() {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        toast.error(error.error || 'Failed to generate attendance')
+        toast.error('Unable to generate attendance records. Please try again.')
         return
       }
 
@@ -85,9 +84,8 @@ export default function AttendancePage() {
       toast.success(data.message)
       // Trigger re-fetch by updating the refresh key instead of full reload
       setRefreshKey(prev => prev + 1)
-    } catch (error) {
-      console.error('[v0] Error triggering attendance generation:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to generate attendance records')
+    } catch {
+      toast.error('Unable to generate attendance records. Please check your connection and try again.')
     } finally {
       setIsGeneratingAttendance(false)
     }
@@ -112,8 +110,8 @@ export default function AttendancePage() {
           const sitesData = await sitesResponse.json()
           setSites(sitesData)
         }
-      } catch (error) {
-        console.error('Failed to fetch data:', error)
+      } catch {
+        // Keep the page usable with its loading and empty states when data fails to load.
       } finally {
         setLoadingSites(false)
       }

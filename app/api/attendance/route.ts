@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
-import { subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
 import { resolveAttendanceStatus } from '@/lib/attendance-utils'
+import { getBusinessDate, getBusinessDateRange, getBusinessDateRangeForPreset } from '@/lib/timezone'
 
 // Helper function to calculate attendance status based on check-in time and scheduled time
 function calculateAttendanceStatus(actualCheckIn: string | null, scheduledStart: string | null): string {
@@ -63,46 +63,25 @@ export async function GET(request: NextRequest) {
     const siteId = searchParams.get('siteId')
     const dateRange = searchParams.get('dateRange') || 'today'
     const department = searchParams.get('department')
-    const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
+    const date = searchParams.get('date') || getBusinessDate()
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
     const page = Math.max(Number.parseInt(searchParams.get('page') || '1', 10) || 1, 1)
     const pageSize = Math.min(Math.max(Number.parseInt(searchParams.get('pageSize') || '25', 10) || 25, 10), 50)
 
-    // Calculate date range based on dateRange parameter
+    // Build every range from calendar dates in Asia/Jakarta, then map them to UTC.
     let dateStart: Date
     let dateEnd: Date
-    const now = new Date()
 
-    switch (dateRange) {
-      case 'today':
-        dateStart = startOfDay(now)
-        dateEnd = endOfDay(now)
-        break
-      case 'yesterday':
-        const yesterday = subDays(now, 1)
-        dateStart = startOfDay(yesterday)
-        dateEnd = endOfDay(yesterday)
-        break
-      case 'week':
-        const weekStart = startOfWeek(now, { weekStartsOn: 1 }) // Monday start
-        const weekEnd = endOfWeek(now, { weekStartsOn: 1 })
-        dateStart = startOfDay(weekStart)
-        dateEnd = endOfDay(weekEnd)
-        break
-      case 'month':
-        const monthStart = startOfMonth(now)
-        const monthEnd = endOfMonth(now)
-        dateStart = startOfDay(monthStart)
-        dateEnd = endOfDay(monthEnd)
-        break
-      case 'custom':
-        dateStart = startOfDay(new Date(dateFrom || date))
-        dateEnd = endOfDay(new Date(dateTo || dateFrom || date))
-        break
-      default:
-        dateStart = startOfDay(now)
-        dateEnd = endOfDay(now)
+    if (dateRange === 'custom') {
+      const customRange = getBusinessDateRange(dateFrom || date, dateTo || dateFrom || date)
+      dateStart = customRange.from
+      dateEnd = customRange.to
+    } else {
+      const presetRange = getBusinessDateRangeForPreset(dateRange, getBusinessDate())
+      const presetDates = getBusinessDateRange(presetRange.dateFrom, presetRange.dateTo)
+      dateStart = presetDates.from
+      dateEnd = presetDates.to
     }
 
     // Build where clause - use gte for start and lte for end to match date-only comparison
