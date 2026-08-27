@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/system'
+import { canManageLeaves } from '@/lib/leave-authorization'
 
 /**
  * Syncs approved leaves with attendance records
@@ -8,6 +10,12 @@ import { prisma } from '@/lib/prisma'
  */
 export async function POST(request: NextRequest) {
   try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!canManageLeaves(currentUser.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const body = await request.json()
     const { leaveId } = body
 
@@ -85,6 +93,9 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
     const startDate = searchParams.get('startDate')
