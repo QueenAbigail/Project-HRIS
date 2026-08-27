@@ -51,47 +51,42 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    
+
     try {
       const mappedEmail = `${email.trim()}@hris.com`
       const result = await login(mappedEmail, password, remember)
 
       if (result?.error) {
-      // Show different toast messages based on error type
-      if (result.error.includes('device') || result.error.includes('Device') || result.error.includes('bound')) {
-        toast.error('Device Not Authorized', {
-          description: 'This account is bound to another device. Contact your administrator to reset the device binding.',
-          duration: 5000,
-        })
-      } else if (result.error.includes('password') || result.error.includes('Password') || result.error.includes('incorrect')) {
-        toast.error('Invalid Credentials', {
-          description: 'The password you entered is incorrect. Please try again.',
-          duration: 4000,
-        })
-      } else if (result.error.includes('not found') || result.error.includes('does not exist')) {
-        toast.error('User Not Found', {
-          description: 'The employee number does not exist in the system.',
-          duration: 4000,
-        })
-      } else {
-        toast.error('Login Failed', {
-          description: result.error,
-          duration: 4000,
-        })
-      }
+        if (result.error.includes('device') || result.error.includes('Device') || result.error.includes('bound')) {
+          toast.error('Device Not Authorized', {
+            description: 'This account is bound to another device. Contact your administrator to reset the device binding.',
+            duration: 5000,
+          })
+        } else if (result.error.includes('password') || result.error.includes('Password') || result.error.includes('incorrect')) {
+          toast.error('Invalid Credentials', {
+            description: 'The password you entered is incorrect. Please try again.',
+            duration: 4000,
+          })
+        } else if (result.error.includes('not found') || result.error.includes('does not exist')) {
+          toast.error('User Not Found', {
+            description: 'The employee number does not exist in the system.',
+            duration: 4000,
+          })
+        } else {
+          toast.error('Login Failed', {
+            description: result.error,
+            duration: 4000,
+          })
+        }
         return
       }
 
-      // Show success toast immediately and mark that we showed it
-    if (result?.success) {
-      toast.success(`Welcome, ${result.userName}!`, {
-        description: 'Please wait while we redirect you to the dashboard.',
-        duration: 10000, // Long duration to persist through redirect and dashboard load
-      })
-      // Mark in sessionStorage that we've shown the toast, so dashboard doesn't show duplicate
-      sessionStorage.setItem('loginToastShown', 'true')
-      
-      // Redirect immediately
+      if (result?.success) {
+        toast.success(`Welcome, ${result.userName}!`, {
+          description: 'Please wait while we redirect you to the dashboard.',
+          duration: 10000,
+        })
+        sessionStorage.setItem('loginToastShown', 'true')
         router.replace('/dashboard')
       }
     } catch {
