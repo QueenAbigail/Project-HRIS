@@ -9,7 +9,7 @@ export async function GET() {
     // Get all allowed leave types from MasterData table
     const leaveTypes = await prisma.masterData.findMany({
       where: {
-        category: 'LeaveType',
+        category: 'leaveType',
         isActive: true,
       },
       orderBy: { value: 'asc' },
@@ -17,26 +17,9 @@ export async function GET() {
 
     console.log('[v0] Found leave types:', leaveTypes.length, leaveTypes)
 
-    // If no types configured in MasterData, return defaults
-    if (leaveTypes.length === 0) {
-      console.log('[v0] No leave types in MasterData, returning defaults')
-      return Response.json([
-        { value: 'Izin', label: 'Cuti' },
-        { value: 'Sakit', label: 'Sakit' },
-        { value: 'TukarShift', label: 'Tukar Shift' },
-      ])
-    }
-
-    // Map MasterData values to display labels
-    const labelMap: Record<string, string> = {
-      'Izin': 'Cuti',
-      'Sakit': 'Sakit',
-      'TukarShift': 'Tukar Shift',
-    }
-
-    const types = leaveTypes.map(type => ({
+    const types = leaveTypes.map((type) => ({
       value: type.value,
-      label: labelMap[type.value] || type.value,
+      label: type.value,
     }))
 
     return Response.json(types)

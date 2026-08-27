@@ -64,6 +64,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'End date must be on or after the start date' }, { status: 400 })
     }
 
+    const configuredLeaveType = await prisma.masterData.findFirst({
+      where: {
+        category: 'leaveType',
+        value: leaveType,
+        isActive: true,
+      },
+      select: { id: true },
+    })
+    if (!configuredLeaveType) {
+      return NextResponse.json({ error: 'Invalid or inactive leave type' }, { status: 400 })
+    }
+
     const workingDaysCount = countWeekdays(start, end)
     if (workingDaysCount === 0) {
       return NextResponse.json({ error: 'The selected date range contains no working days' }, { status: 400 })
