@@ -39,7 +39,7 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
 interface LeaveHeaderProps {
-  isClient?: boolean
+  canCreateLeave?: boolean
 }
 
 interface LeaveType {
@@ -59,7 +59,7 @@ interface Employee {
   email?: string
 }
 
-export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
+export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
   const [openNewRequest, setOpenNewRequest] = useState(false)
   const [openImageZoom, setOpenImageZoom] = useState(false)
   const [comboboxOpen, setComboboxOpen] = useState(false)
@@ -221,7 +221,7 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
           </p>
         </div>
         <div className="flex flex-col gap-2">
-          {!isClient && (
+          {canCreateLeave && (
             <Dialog open={openNewRequest} onOpenChange={setOpenNewRequest}>
               <DialogTrigger asChild>
                 <Button className="w-full">
