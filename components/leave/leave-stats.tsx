@@ -40,9 +40,11 @@ export function LeaveStats() {
     // Listen for leave status changes
     
     window.addEventListener('leaveStatusUpdated', handleLeaveUpdated)
+    window.addEventListener('leaveRequestCreated', handleLeaveUpdated)
     return () => {
       window.clearTimeout(initialFetch)
       window.removeEventListener('leaveStatusUpdated', handleLeaveUpdated)
+      window.removeEventListener('leaveRequestCreated', handleLeaveUpdated)
     }
   }, [])
 

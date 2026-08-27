@@ -111,7 +111,12 @@ export function UnifiedRequestsTable() {
 
   useEffect(() => {
     const initialFetch = window.setTimeout(() => void fetchRequests(), 0)
-    return () => window.clearTimeout(initialFetch)
+    const handleRequestCreated = () => void fetchRequests()
+    window.addEventListener('leaveRequestCreated', handleRequestCreated)
+    return () => {
+      window.clearTimeout(initialFetch)
+      window.removeEventListener('leaveRequestCreated', handleRequestCreated)
+    }
   }, [])
 
   const handleLeaveStatusChange = async (leaveId: string, newStatus: 'Approved' | 'Rejected') => {
