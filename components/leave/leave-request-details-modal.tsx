@@ -23,6 +23,23 @@ interface LeaveRequestDetailsModalProps {
   onReject: (id: string) => Promise<void>
 }
 
+function parseDayBreakdown(value: unknown): { summary?: string } | null {
+  if (!value) return null
+  if (typeof value === 'object' && value !== null) {
+    return value as { summary?: string }
+  }
+  if (typeof value !== 'string') return null
+
+  try {
+    const parsed: unknown = JSON.parse(value)
+    return typeof parsed === 'object' && parsed !== null
+      ? (parsed as { summary?: string })
+      : null
+  } catch {
+    return null
+  }
+}
+
 export function LeaveRequestDetailsModal({
   isOpen,
   onClose,
@@ -53,6 +70,8 @@ export function LeaveRequestDetailsModal({
       setLoading(false)
     }
   }
+
+  const dayBreakdown = parseDayBreakdown(leave.dayBreakdown)
 
   const leaveTypeMap: Record<string, { label: string }> = {
     Izin: { label: 'Cuti' },
@@ -135,18 +154,20 @@ export function LeaveRequestDetailsModal({
           )}
 
           {/* Working Days Breakdown */}
-          {leave.dayBreakdown && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <Label className="text-xs text-blue-900 font-medium block mb-2">
-                Leave Duration Breakdown
-              </Label>
-              <div className="text-sm text-blue-800 space-y-1">
-                {leave.dayBreakdown && JSON.parse(leave.dayBreakdown)?.summary && (
-                  <div>{JSON.parse(leave.dayBreakdown).summary}</div>
-                )}
-              </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <Label className="text-xs text-blue-900 font-medium block mb-2">
+              Leave Duration Breakdown
+            </Label>
+            <div className="text-sm text-blue-800 space-y-1">
+              {dayBreakdown?.summary ? (
+                <div>{dayBreakdown.summary}</div>
+              ) : leave.workingDaysCount != null ? (
+                <div>{leave.workingDaysCount} working day(s)</div>
+              ) : (
+                <div className="text-blue-700">Working-day breakdown unavailable</div>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Action Buttons */}
           {leave.status === 'Pending' && (
