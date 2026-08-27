@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
+import { getLeaveReadAuthorization, leaveAuthorizationResponse } from '@/lib/leave-authorization'
 import { countWeekdays } from '@/lib/leave-validation'
 
 export async function GET(request: NextRequest) {
   try {
-    const currentUser = await getCurrentUser()
-    if (!currentUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    const isClient = currentUser.role === 'CLIENT'
-    
+    const authorization = await getLeaveReadAuthorization()
+    if (!authorization.user) return leaveAuthorizationResponse(authorization.error)
+
     const leaves = await prisma.leave.findMany({
-      where: isClient ? { user: { companyId: currentUser?.companyId } } : undefined,
+      where: authorization.where,
       include: {
         user: {
           select: {
