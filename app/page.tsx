@@ -55,7 +55,7 @@ export default function LoginPage() {
 
     try {
       const mappedEmail = `${email.trim()}@hris.com`
-      const result = process.env.NEXT_PUBLIC_EMBEDDED_AUTH_COMPAT === 'true'
+      const result = Boolean(process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL)
         ? await (async () => {
             const supabase = createBrowserSupabaseClient()
             const { data, error } = await supabase.auth.signInWithPassword({
