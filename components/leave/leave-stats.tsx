@@ -15,14 +15,17 @@ interface Stats {
 export function LeaveStats() {
   const [stats, setStats] = useState<Stats>({ pending: 0, approvedThisMonth: 0, rejectedThisMonth: 0, onLeaveToday: 0 })
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
 
   const fetchStats = async () => {
+    setLoadError(false)
     try {
       const response = await fetch('/api/leaves/stats')
       if (!response.ok) throw new Error('Leave statistics request failed')
       const data = await response.json()
       setStats(data)
     } catch {
+      setLoadError(true)
       toast.error('Leave statistics could not be loaded', {
         description: 'Please check your connection or contact an administrator if the problem continues.',
       })
@@ -92,7 +95,7 @@ export function LeaveStats() {
               )}
             </div>
             <div>
-              <p className="text-2xl font-bold">{loading ? '-' : stat.value}</p>
+              <p className="text-2xl font-bold">{loading || loadError ? '—' : stat.value}</p>
               <p className="text-sm text-muted-foreground">{stat.title}</p>
             </div>
           </CardContent>

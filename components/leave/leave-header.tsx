@@ -88,18 +88,17 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
           fetch('/api/departments'),
         ])
 
-        if (typesRes.ok) {
-          const types = await typesRes.json()
-          setLeaveTypes(types)
-        } else {
+        if (!typesRes.ok || !deptsRes.ok) {
+          throw new Error('Leave form options could not be loaded')
         }
 
-        if (deptsRes.ok) {
-          const depts = await deptsRes.json()
-          setDepartments(depts)
-        } else {
-        }
-      } catch (error) {
+        const [types, depts] = await Promise.all([typesRes.json(), deptsRes.json()])
+        setLeaveTypes(types)
+        setDepartments(depts)
+      } catch {
+        toast.error('Leave form options could not be loaded', {
+          description: 'Please try again before creating a leave request.',
+        })
       } finally {
         setLoadingFilters(false)
       }
@@ -116,11 +115,14 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
       try {
         setLoadingEmployees(true)
         const response = await fetch('/api/employees/list')
-        if (response.ok) {
-          const data = await response.json()
-          setEmployees(data)
-        }
-      } catch (error) {
+        if (!response.ok) throw new Error('Employee list could not be loaded')
+        const data = await response.json()
+        setEmployees(data)
+      } catch {
+        setEmployees([])
+        toast.error('Employees could not be loaded', {
+          description: 'Please close and reopen the form, or try again later.',
+        })
       } finally {
         setLoadingEmployees(false)
       }

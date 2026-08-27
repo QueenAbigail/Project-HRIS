@@ -68,14 +68,16 @@ const statusStyles: Record<string, string> = {
 export function UnifiedRequestsTable() {
   const [requests, setRequests] = useState<UnifiedRequest[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [selectedLeave, setSelectedLeave] = useState<UnifiedRequest | null>(null)
   const [selectedSwap, setSelectedSwap] = useState<UnifiedRequest | null>(null)
   const [leaveDetailsOpen, setLeaveDetailsOpen] = useState(false)
   const [swapDetailsOpen, setSwapDetailsOpen] = useState(false)
 
   async function fetchRequests() {
-    setLoading(true)
-    try {
+  setLoading(true)
+  setLoadError(false)
+  try {
       const [leavesRes, swapsRes] = await Promise.all([
         fetch('/api/leaves'),
         fetch('/api/shift-swaps'),
@@ -101,6 +103,7 @@ export function UnifiedRequestsTable() {
       unifiedRequests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       setRequests(unifiedRequests)
     } catch {
+      setLoadError(true)
       toast.error('Leave requests could not be loaded', {
         description: 'Please check your connection or contact an administrator if the problem continues.',
       })
@@ -198,6 +201,18 @@ export function UnifiedRequestsTable() {
         </CardHeader>
         <CardContent className="flex items-center justify-center py-8">
           <Loader2 className="size-5 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader><CardTitle>Requests</CardTitle></CardHeader>
+        <CardContent className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+          <p className="text-sm text-destructive">Leave and shift swap requests could not be loaded.</p>
+          <Button variant="outline" size="sm" onClick={() => void fetchRequests()}>Try again</Button>
         </CardContent>
       </Card>
     )
