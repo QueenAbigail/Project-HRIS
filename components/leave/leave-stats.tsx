@@ -83,7 +83,16 @@ export function LeaveStats() {
   ]
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-2">
+      {loadError && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <span>Leave statistics are unavailable.</span>
+          <button type="button" className="font-medium underline underline-offset-4" onClick={() => void fetchStats()}>
+            Retry
+          </button>
+        </div>
+      )}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {statConfigs.map((stat) => (
         <Card key={stat.title} className="bg-card border-border">
           <CardContent className="flex items-center gap-4 p-4">
@@ -101,6 +110,7 @@ export function LeaveStats() {
           </CardContent>
         </Card>
       ))}
+      </div>
     </div>
   )
 }

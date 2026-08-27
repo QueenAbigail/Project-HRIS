@@ -75,6 +75,7 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
   const [departments, setDepartments] = useState<Department[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loadingFilters, setLoadingFilters] = useState(true)
+  const [filtersError, setFiltersError] = useState(false)
   const [loadingEmployees, setLoadingEmployees] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [validationInfo, setValidationInfo] = useState<any>(null)
@@ -82,6 +83,8 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
   // Fetch leave types and departments
   useEffect(() => {
     const fetchFilters = async () => {
+      setFiltersError(false)
+      setLoadingFilters(true)
       try {
         const [typesRes, deptsRes] = await Promise.all([
           fetch('/api/leaves/types'),
@@ -96,6 +99,7 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
         setLeaveTypes(types)
         setDepartments(depts)
       } catch {
+        setFiltersError(true)
         toast.error('Leave form options could not be loaded', {
           description: 'Please try again before creating a leave request.',
         })
@@ -306,7 +310,11 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
                     <SelectValue placeholder="Select leave type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {leaveTypes.map(type => (
+                    {filtersError ? (
+                      <SelectItem value="unavailable" disabled>Leave types unavailable</SelectItem>
+                    ) : leaveTypes.length === 0 && !loadingFilters ? (
+                      <SelectItem value="empty" disabled>No leave types configured</SelectItem>
+                    ) : leaveTypes.map(type => (
                       <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
                     ))}
                   </SelectContent>
