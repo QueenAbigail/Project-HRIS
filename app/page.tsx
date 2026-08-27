@@ -52,10 +52,11 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
     
-    const mappedEmail = `${email.trim()}@hris.com`
-    const result = await login(mappedEmail, password, remember)
-    
-    if (result?.error) {
+    try {
+      const mappedEmail = `${email.trim()}@hris.com`
+      const result = await login(mappedEmail, password, remember)
+
+      if (result?.error) {
       // Show different toast messages based on error type
       if (result.error.includes('device') || result.error.includes('Device') || result.error.includes('bound')) {
         toast.error('Device Not Authorized', {
@@ -78,11 +79,10 @@ export default function LoginPage() {
           duration: 4000,
         })
       }
-      setIsLoading(false)
-      return
-    }
+        return
+      }
 
-    // Show success toast immediately and mark that we showed it
+      // Show success toast immediately and mark that we showed it
     if (result?.success) {
       toast.success(`Welcome, ${result.userName}!`, {
         description: 'Please wait while we redirect you to the dashboard.',
@@ -92,7 +92,14 @@ export default function LoginPage() {
       sessionStorage.setItem('loginToastShown', 'true')
       
       // Redirect immediately
-      router.push('/dashboard')
+        router.replace('/dashboard')
+      }
+    } catch {
+      toast.error('Login failed', {
+        description: 'Please try again. If the issue continues, contact an administrator.',
+      })
+    } finally {
+      setIsLoading(false)
     }
   }
 
