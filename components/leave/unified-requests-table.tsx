@@ -51,14 +51,6 @@ interface UnifiedRequest {
   updatedAt: string
 }
 
-const leaveTypeMap: Record<string, { label: string; color: string }> = {
-  Izin: { label: 'Cuti', color: 'bg-primary/10 text-primary border-primary/20' },
-  Sakit: { label: 'Sakit', color: 'bg-chart-5/10 text-chart-5 border-chart-5/20' },
-  Darurat: { label: 'Darurat', color: 'bg-destructive/10 text-destructive border-destructive/20' },
-  Melahirkan: { label: 'Melahirkan', color: 'bg-pink-500/10 text-pink-500 border-pink-500/20' },
-  TukarShift: { label: 'Tukar Shift', color: 'bg-chart-2/10 text-chart-2 border-chart-2/20' },
-}
-
 const statusStyles: Record<string, string> = {
   'Pending': 'bg-warning/10 text-warning border-warning/20',
   'Approved': 'bg-success/10 text-success border-success/20',
@@ -176,8 +168,8 @@ export function UnifiedRequestsTable() {
       return {
         title: `${request.user?.name}`,
         department: request.user?.department || '--',
-        typeLabel: leaveTypeMap[request.leaveType || '']?.label || request.leaveType,
-        typeColor: leaveTypeMap[request.leaveType || '']?.color || 'bg-gray-500/10 text-gray-500 border-gray-500/20',
+        typeLabel: request.leaveType || 'Unknown',
+        typeColor: 'bg-muted text-muted-foreground border-border',
         period: `${formatBusinessDate(request.startDate)} - ${formatBusinessDate(request.endDate)}`,
         days: request.workingDaysCount ?? calculateDays(request.startDate, request.endDate),
       }

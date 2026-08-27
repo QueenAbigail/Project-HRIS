@@ -73,14 +73,6 @@ export function LeaveRequestDetailsModal({
 
   const dayBreakdown = parseDayBreakdown(leave.dayBreakdown)
 
-  const leaveTypeMap: Record<string, { label: string }> = {
-    Izin: { label: 'Cuti' },
-    Sakit: { label: 'Sakit' },
-    Darurat: { label: 'Darurat' },
-    Melahirkan: { label: 'Melahirkan' },
-    TukarShift: { label: 'Tukar Shift' },
-  }
-
   const statusColor = {
     Pending: 'bg-yellow-100 text-yellow-800',
     Approved: 'bg-green-100 text-green-800',
@@ -107,7 +99,7 @@ export function LeaveRequestDetailsModal({
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Leave Type</Label>
             <p className="text-sm font-medium">
-              {leaveTypeMap[leave.leaveType]?.label || leave.leaveType}
+              {leave.leaveType || 'Unknown'}
             </p>
           </div>
 
