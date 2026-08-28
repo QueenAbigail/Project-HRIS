@@ -259,12 +259,15 @@ export default function DashboardPage() {
         {/* User Attendance Activity */}
         <Card className="border border-border bg-card flex flex-col h-full min-h-[500px]">
           <CardHeader className="border-b border-border">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="size-5 text-destructive" />
-              <div>
-                <CardTitle>User Attendance</CardTitle>
-                <CardDescription>Recent attendance errors</CardDescription>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="size-5 text-destructive" />
+                <div>
+                  <CardTitle>User Attendance</CardTitle>
+                  <CardDescription>Recent attendance errors</CardDescription>
+                </div>
               </div>
+              <Button asChild variant="outline" size="sm"><Link href="/superadmin/activity/attendance">View all</Link></Button>
             </div>
           </CardHeader>
           <CardContent className="flex-1 pt-6">
@@ -290,12 +293,15 @@ export default function DashboardPage() {
         {/* User Change Activity */}
         <Card className="border border-border bg-card flex flex-col h-full min-h-[500px]">
           <CardHeader className="border-b border-border">
-            <div className="flex items-center gap-2">
-              <UserPlus className="size-5 text-primary" />
-              <div>
-                <CardTitle>User Change Activity</CardTitle>
-                <CardDescription>Recent changes to users and system events</CardDescription>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <UserPlus className="size-5 text-primary" />
+                <div>
+                  <CardTitle>User Change Activity</CardTitle>
+                  <CardDescription>Recent changes to users and system events</CardDescription>
+                </div>
               </div>
+              <Button asChild variant="outline" size="sm"><Link href="/superadmin/activity/change">View all</Link></Button>
             </div>
           </CardHeader>
           <CardContent className="flex-1 pt-6">
