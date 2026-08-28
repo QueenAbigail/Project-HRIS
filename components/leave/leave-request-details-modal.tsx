@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Check, X, FileText } from 'lucide-react'
 import { format } from 'date-fns'
+import { formatBusinessDate } from '@/lib/timezone'
 
 interface LeaveRequestDetailsModalProps {
   isOpen: boolean
@@ -107,8 +108,8 @@ export function LeaveRequestDetailsModal({
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Period</Label>
             <p className="text-sm font-medium">
-              {format(new Date(leave.startDate), 'MMM d, yyyy')} -{' '}
-              {format(new Date(leave.endDate), 'MMM d, yyyy')}
+              {formatBusinessDate(leave.startDate.slice(0, 10))} -{' '}
+              {formatBusinessDate(leave.endDate.slice(0, 10))}
             </p>
           </div>
 
