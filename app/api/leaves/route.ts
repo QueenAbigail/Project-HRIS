@@ -97,6 +97,7 @@ export async function POST(request: NextRequest) {
         attachmentUrl: attachmentUrl || null,
         status: 'Pending',
         workingDaysCount,
+        dayBreakdown: JSON.stringify({ summary: `${workingDaysCount} working day(s)` }),
       },
       include: {
         user: {
