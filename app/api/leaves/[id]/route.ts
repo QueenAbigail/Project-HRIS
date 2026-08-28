@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/system'
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const canApprove = ['SUPER_ADMIN', 'HR_ADMIN'].includes(currentUser.role)
+    if (!canApprove) {
+      return NextResponse.json({ error: 'Only HR administrators can update leave status' }, { status: 403 })
+    }
+
     const { id } = await params
     const { status } = await request.json()
 
@@ -32,34 +43,22 @@ export async function PATCH(
       }
     })
 
-    // If leave is approved, sync attendance records
+    // Sync the approval in the same server-side request. Calling another route
+    // over HTTP here loses the current session context and depends on NEXTAUTH_URL.
+    let syncedAttendanceCount = 0
     if (status === 'Approved') {
-      try {
-        console.log('[v0] Leave approved, syncing attendance records for user:', leave.userId)
-        
-        // Call the sync-leaves endpoint to update attendance records
-        const syncResponse = await fetch(
-          `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/attendance/sync-leaves`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ leaveId: id }),
-          }
-        )
-
-        if (syncResponse.ok) {
-          const syncResult = await syncResponse.json()
-          console.log('[v0] Attendance sync result:', syncResult)
-        } else {
-          console.error('[v0] Failed to sync attendance records:', syncResponse.statusText)
-        }
-      } catch (syncError) {
-        console.error('[v0] Error syncing attendance:', syncError)
-        // Don't fail the leave approval if sync fails, just log it
-      }
+      const syncResult = await prisma.attendance.updateMany({
+        where: {
+          userId: leave.userId,
+          date: { gte: leave.startDate, lte: leave.endDate },
+          status: { in: ['NOT_CHECKED_IN', 'ABSENT'] },
+        },
+        data: { status: 'LEAVE' },
+      })
+      syncedAttendanceCount = syncResult.count
     }
 
-    return NextResponse.json(leave)
+    return NextResponse.json({ ...leave, syncedAttendanceCount })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error('[v0] Error updating leave:', errorMessage)

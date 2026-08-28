@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
+import { canManageLeaves } from '@/lib/leave-authorization'
 
 // GET all shift swaps
 export async function GET(request: NextRequest) {
   try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const searchParams = request.nextUrl.searchParams
     const status = searchParams.get('status') // Filter by status (Pending, Approved, Rejected)
     const userId = searchParams.get('userId') // Filter by employee
@@ -35,6 +39,12 @@ export async function GET(request: NextRequest) {
 // POST create shift swap request
 export async function POST(request: NextRequest) {
   try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!canManageLeaves(currentUser.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const body = await request.json()
     const { employeeFromId, employeeToId, swapDate, siteId, reason } = body
 

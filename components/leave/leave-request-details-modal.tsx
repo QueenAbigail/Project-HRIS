@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Check, X, FileText } from 'lucide-react'
 import { format } from 'date-fns'
+import { formatBusinessDate } from '@/lib/timezone'
 
 interface LeaveRequestDetailsModalProps {
   isOpen: boolean
@@ -21,6 +22,23 @@ interface LeaveRequestDetailsModalProps {
   leave: any
   onApprove: (id: string) => Promise<void>
   onReject: (id: string) => Promise<void>
+}
+
+function parseDayBreakdown(value: unknown): { summary?: string } | null {
+  if (!value) return null
+  if (typeof value === 'object' && value !== null) {
+    return value as { summary?: string }
+  }
+  if (typeof value !== 'string') return null
+
+  try {
+    const parsed: unknown = JSON.parse(value)
+    return typeof parsed === 'object' && parsed !== null
+      ? (parsed as { summary?: string })
+      : null
+  } catch {
+    return null
+  }
 }
 
 export function LeaveRequestDetailsModal({
@@ -54,13 +72,7 @@ export function LeaveRequestDetailsModal({
     }
   }
 
-  const leaveTypeMap: Record<string, { label: string }> = {
-    Izin: { label: 'Cuti' },
-    Sakit: { label: 'Sakit' },
-    Darurat: { label: 'Darurat' },
-    Melahirkan: { label: 'Melahirkan' },
-    TukarShift: { label: 'Tukar Shift' },
-  }
+  const dayBreakdown = parseDayBreakdown(leave.dayBreakdown)
 
   const statusColor = {
     Pending: 'bg-yellow-100 text-yellow-800',
@@ -88,7 +100,7 @@ export function LeaveRequestDetailsModal({
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Leave Type</Label>
             <p className="text-sm font-medium">
-              {leaveTypeMap[leave.leaveType]?.label || leave.leaveType}
+              {leave.leaveType || 'Unknown'}
             </p>
           </div>
 
@@ -96,8 +108,8 @@ export function LeaveRequestDetailsModal({
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Period</Label>
             <p className="text-sm font-medium">
-              {format(new Date(leave.startDate), 'MMM d, yyyy')} -{' '}
-              {format(new Date(leave.endDate), 'MMM d, yyyy')}
+              {formatBusinessDate(leave.startDate.slice(0, 10))} -{' '}
+              {formatBusinessDate(leave.endDate.slice(0, 10))}
             </p>
           </div>
 
@@ -135,18 +147,20 @@ export function LeaveRequestDetailsModal({
           )}
 
           {/* Working Days Breakdown */}
-          {leave.dayBreakdown && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <Label className="text-xs text-blue-900 font-medium block mb-2">
-                Leave Duration Breakdown
-              </Label>
-              <div className="text-sm text-blue-800 space-y-1">
-                {leave.dayBreakdown && JSON.parse(leave.dayBreakdown)?.summary && (
-                  <div>{JSON.parse(leave.dayBreakdown).summary}</div>
-                )}
-              </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <Label className="text-xs text-blue-900 font-medium block mb-2">
+              Leave Duration Breakdown
+            </Label>
+            <div className="text-sm text-blue-800 space-y-1">
+              {dayBreakdown?.summary ? (
+                <div>{dayBreakdown.summary}</div>
+              ) : leave.workingDaysCount != null ? (
+                <div>{leave.workingDaysCount} working day(s)</div>
+              ) : (
+                <div className="text-blue-700">Working-day breakdown unavailable</div>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Action Buttons */}
           {leave.status === 'Pending' && (

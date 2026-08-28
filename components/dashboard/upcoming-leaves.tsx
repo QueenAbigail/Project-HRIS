@@ -1,6 +1,3 @@
-'use client'
-
-import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
@@ -12,26 +9,7 @@ interface UpcomingLeave {
   days: number
 }
 
-export function UpcomingLeaves() {
-  const [leaves, setLeaves] = useState<UpcomingLeave[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchUpcomingLeaves = async () => {
-      try {
-        const response = await fetch('/api/leaves/upcoming')
-        if (response.ok) {
-          const data = await response.json()
-          setLeaves(data)
-        }
-      } catch (error) {
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchUpcomingLeaves()
-  }, [])
+export function UpcomingLeaves({ leaves }: { leaves: UpcomingLeave[] }) {
 
   const getLeaveTypeColor = (type: string) => {
     switch (type.toLowerCase()) {
@@ -53,11 +31,7 @@ export function UpcomingLeaves() {
         <CardDescription>Approved leaves this month</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {loading ? (
-          <div className="flex items-center justify-center h-32 text-muted-foreground">
-            Loading...
-          </div>
-        ) : leaves.length === 0 ? (
+        {leaves.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
             No upcoming leaves
           </div>

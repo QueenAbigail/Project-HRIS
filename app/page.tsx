@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Shield, Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react'
 import { login } from '@/lib/auth'
+import { createClient as createBrowserSupabaseClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -51,48 +52,63 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    
-    const mappedEmail = `${email.trim()}@hris.com`
-    const result = await login(mappedEmail, password, remember)
-    
-    if (result?.error) {
-      // Show different toast messages based on error type
-      if (result.error.includes('device') || result.error.includes('Device') || result.error.includes('bound')) {
-        toast.error('Device Not Authorized', {
-          description: 'This account is bound to another device. Contact your administrator to reset the device binding.',
-          duration: 5000,
-        })
-      } else if (result.error.includes('password') || result.error.includes('Password') || result.error.includes('incorrect')) {
-        toast.error('Invalid Credentials', {
-          description: 'The password you entered is incorrect. Please try again.',
-          duration: 4000,
-        })
-      } else if (result.error.includes('not found') || result.error.includes('does not exist')) {
-        toast.error('User Not Found', {
-          description: 'The employee number does not exist in the system.',
-          duration: 4000,
-        })
-      } else {
-        toast.error('Login Failed', {
-          description: result.error,
-          duration: 4000,
-        })
-      }
-      setIsLoading(false)
-      return
-    }
 
-    // Show success toast immediately and mark that we showed it
-    if (result?.success) {
-      toast.success(`Welcome, ${result.userName}!`, {
-        description: 'Please wait while we redirect you to the dashboard.',
-        duration: 10000, // Long duration to persist through redirect and dashboard load
+    try {
+      const mappedEmail = `${email.trim()}@hris.com`
+      const result = Boolean(process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL)
+        ? await (async () => {
+            const supabase = createBrowserSupabaseClient()
+            const { data, error } = await supabase.auth.signInWithPassword({
+              email: mappedEmail,
+              password,
+            })
+            if (error) return { error: error.message }
+            return {
+              success: true,
+              userName: data.user?.user_metadata?.name || data.user?.email?.split('@')[0] || 'User',
+            }
+          })()
+        : await login(mappedEmail, password, remember)
+
+      if (result?.error) {
+        if (result.error.includes('device') || result.error.includes('Device') || result.error.includes('bound')) {
+          toast.error('Device Not Authorized', {
+            description: 'This account is bound to another device. Contact your administrator to reset the device binding.',
+            duration: 5000,
+          })
+        } else if (result.error.includes('password') || result.error.includes('Password') || result.error.includes('incorrect')) {
+          toast.error('Invalid Credentials', {
+            description: 'The password you entered is incorrect. Please try again.',
+            duration: 4000,
+          })
+        } else if (result.error.includes('not found') || result.error.includes('does not exist')) {
+          toast.error('User Not Found', {
+            description: 'The employee number does not exist in the system.',
+            duration: 4000,
+          })
+        } else {
+          toast.error('Login Failed', {
+            description: result.error,
+            duration: 4000,
+          })
+        }
+        return
+      }
+
+      if (result?.success) {
+        toast.success(`Welcome, ${result.userName}!`, {
+          description: 'Please wait while we redirect you to the dashboard.',
+          duration: 10000,
+        })
+        sessionStorage.setItem('loginToastShown', 'true')
+        router.replace('/dashboard')
+      }
+    } catch {
+      toast.error('Login failed', {
+        description: 'Please try again. If the issue continues, contact an administrator.',
       })
-      // Mark in sessionStorage that we've shown the toast, so dashboard doesn't show duplicate
-      sessionStorage.setItem('loginToastShown', 'true')
-      
-      // Redirect immediately
-      router.push('/dashboard')
+    } finally {
+      setIsLoading(false)
     }
   }
 

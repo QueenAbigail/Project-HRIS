@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import { Clock, CheckCircle, XCircle, Calendar, Loader2 } from 'lucide-react'
 
@@ -14,30 +15,40 @@ interface Stats {
 export function LeaveStats() {
   const [stats, setStats] = useState<Stats>({ pending: 0, approvedThisMonth: 0, rejectedThisMonth: 0, onLeaveToday: 0 })
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
 
   const fetchStats = async () => {
+    setLoadError(false)
     try {
       const response = await fetch('/api/leaves/stats')
-      if (response.ok) {
-        const data = await response.json()
-        setStats(data)
-      }
-    } catch (error) {
+      if (!response.ok) throw new Error('Leave statistics request failed')
+      const data = await response.json()
+      setStats(data)
+    } catch {
+      setLoadError(true)
+      toast.error('Leave statistics could not be loaded', {
+        description: 'Please check your connection or contact an administrator if the problem continues.',
+      })
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchStats()
-    
-    // Listen for leave status changes
     const handleLeaveUpdated = () => {
       fetchStats()
     }
+
+    const initialFetch = window.setTimeout(() => void fetchStats(), 0)
+    // Listen for leave status changes
     
     window.addEventListener('leaveStatusUpdated', handleLeaveUpdated)
-    return () => window.removeEventListener('leaveStatusUpdated', handleLeaveUpdated)
+    window.addEventListener('leaveRequestCreated', handleLeaveUpdated)
+    return () => {
+      window.clearTimeout(initialFetch)
+      window.removeEventListener('leaveStatusUpdated', handleLeaveUpdated)
+      window.removeEventListener('leaveRequestCreated', handleLeaveUpdated)
+    }
   }, [])
 
   const statConfigs = [
@@ -72,7 +83,16 @@ export function LeaveStats() {
   ]
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-2">
+      {loadError && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <span>Leave statistics are unavailable.</span>
+          <button type="button" className="font-medium underline underline-offset-4" onClick={() => void fetchStats()}>
+            Retry
+          </button>
+        </div>
+      )}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {statConfigs.map((stat) => (
         <Card key={stat.title} className="bg-card border-border">
           <CardContent className="flex items-center gap-4 p-4">
@@ -84,12 +104,13 @@ export function LeaveStats() {
               )}
             </div>
             <div>
-              <p className="text-2xl font-bold">{loading ? '-' : stat.value}</p>
+              <p className="text-2xl font-bold">{loading || loadError ? '—' : stat.value}</p>
               <p className="text-sm text-muted-foreground">{stat.title}</p>
             </div>
           </CardContent>
         </Card>
       ))}
+      </div>
     </div>
   )
 }

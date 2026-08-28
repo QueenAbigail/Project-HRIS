@@ -3,7 +3,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { Camera, MapPin, Clock, User, FileText } from 'lucide-react'
+import useSWR from 'swr'
+import { MapPin, Clock, User, FileText } from 'lucide-react'
 
 interface PatrolLocation {
   id: string
@@ -20,16 +21,21 @@ interface PatrolDetailDialogProps {
 }
 
 export function PatrolDetailDialog({ location, siteId, onClose }: PatrolDetailDialogProps) {
-  // Mock patrol data
-  const patrolData = {
-    completedAt: '08:30 AM',
-    gpsLocation: { lat: 6.2088, lng: 106.8456 },
-    description: 'All areas secured, no issues detected',
-    photos: [
-      { id: 1, url: '/api/placeholder/400/300', caption: 'Gate entrance area' },
-      { id: 2, url: '/api/placeholder/400/300', caption: 'Perimeter check' },
-    ],
-  }
+  const { data: patrols, isLoading } = useSWR<PatrolRecord[]>(
+    siteId ? `/api/patrol/records?siteId=${encodeURIComponent(siteId)}` : null,
+    async (url) => {
+      const response = await fetch(url)
+      if (!response.ok) throw new Error('Failed to load patrol details')
+      return response.json()
+    },
+    { revalidateOnFocus: false }
+  )
+  const patrolData = patrols?.find((patrol) => patrol.checkpoint === location.name)
+  const completedAt = patrolData?.timestamp
+    ? new Date(patrolData.timestamp).toLocaleTimeString('en-GB', {
+        timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+      })
+    : null
 
   return (
     <Dialog open={!!location} onOpenChange={onClose}>
@@ -58,7 +64,7 @@ export function PatrolDetailDialog({ location, siteId, onClose }: PatrolDetailDi
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <div className="flex-1">
                   <p className="text-xs text-muted-foreground">Completed At</p>
-                  <p className="text-sm font-medium">{patrolData.completedAt}</p>
+                  <p className="text-sm font-medium">{isLoading ? 'Loading...' : completedAt || 'No patrol recorded'}</p>
                 </div>
               </div>
 
@@ -74,22 +80,15 @@ export function PatrolDetailDialog({ location, siteId, onClose }: PatrolDetailDi
                 <FileText className="h-4 w-4 text-muted-foreground mt-1" />
                 <div className="flex-1">
                   <p className="text-xs text-muted-foreground">Description</p>
-                  <p className="text-sm font-medium mt-1">{patrolData.description}</p>
+                  <p className="text-sm font-medium mt-1">{patrolData?.description || 'No notes recorded.'}</p>
                 </div>
               </div>
             </div>
           </TabsContent>
 
           <TabsContent value="evidence" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              {patrolData.photos.map((photo) => (
-                <div key={photo.id} className="space-y-2">
-                  <div className="bg-muted rounded-lg aspect-video flex items-center justify-center">
-                    <Camera className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center">{photo.caption}</p>
-                </div>
-              ))}
+            <div className="rounded-lg border border-border bg-muted/30 p-4 text-center text-sm text-muted-foreground">
+              {patrolData?.photos ? `${patrolData.photos} evidence photo(s) recorded.` : 'No evidence photos recorded.'}
             </div>
           </TabsContent>
 
@@ -99,8 +98,8 @@ export function PatrolDetailDialog({ location, siteId, onClose }: PatrolDetailDi
                 <MapPin className="h-4 w-4 text-muted-foreground" />
                 <div className="flex-1">
                   <p className="text-xs text-muted-foreground">GPS Location</p>
-                  <p className="text-sm font-mono font-medium">
-                    {patrolData.gpsLocation.lat}, {patrolData.gpsLocation.lng}
+                  <p className="text-sm font-medium">
+                    {patrolData?.gpsStatus === 'verified' ? 'GPS verified' : 'GPS not verified'}
                   </p>
                 </div>
               </div>

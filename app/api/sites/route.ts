@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
         id: true,
         name: true,
         code: true,
+        companyId: true,
         company: {
           select: {
             name: true

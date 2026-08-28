@@ -143,9 +143,12 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
   const [loadingData, setLoadingData] = useState(false)
   const dataFetchedRef = useRef(false)
 
+  // This effect intentionally resets the editable form when the selected employee or sites change.
   useEffect(() => {
     if (employee) {
       const siteEntry = sites.find(s => s.name === employee.location || s.code === employee.locationCode)
+      // The form must reset when the selected employee changes; this is intentional state synchronization.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         name: employee.name || '',
         email: employee.email || '',

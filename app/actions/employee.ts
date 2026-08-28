@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 
@@ -34,18 +34,55 @@ function friendlyEmployeeError(error: unknown): string {
     if (labels[argumentField]) return `Please check the ${labels[argumentField]} field.`
   }
 
-  if (/Unique constraint failed/i.test(message)) {
-    if (/email/i.test(message)) return 'This email address is already used by another employee.'
-    if (/employeeCode|hrisEmail/i.test(message)) return 'This employee ID is already used by another employee.'
-    return 'Some employee information is already in use.'
+  if (/already registered|already been registered|user already exists|email.*already/i.test(message)) {
+    return 'This employee ID is already registered. Please use a different Employee Code.'
   }
 
-  if (/Record to update not found|No User found/i.test(message)) {
-    return 'This employee could not be found. Please refresh the page and try again.'
+  if (/invalid email|email address is invalid|email.*valid/i.test(message)) {
+    return 'Please check the Employee Code. It is used to create the employee login email and must be valid.'
+  }
+
+  if (/email.*already|already.*email|user already exists|already registered/i.test(message)) {
+    return 'This Employee Code is already registered. Please use a different Employee Code.'
+  }
+
+  if (/password should|password.*required|password.*must|password.*characters|weak password|invalid password/i.test(message)) {
+    return 'The employee login password is missing or invalid. Please provide a valid password.'
+  }
+
+  if (/supabaseAdmin is not defined|createAdminClient|Supabase configuration is missing/i.test(message)) {
+    return 'The employee login service is not configured correctly. Please contact the system administrator.'
+  }
+
+  if (/Gagal bikin kunci akses|Auth\)/i.test(message)) {
+    return 'The employee login account could not be created. Please check the Employee Code and password, then try again.'
+  }
+
+  if (/password/i.test(message) && /weak|short|characters|invalid/i.test(message)) {
+    return 'The default login password does not meet the security requirements. Please contact an administrator.'
+  }
+
+  if (/Unique constraint failed/i.test(message)) {
+    if (/email/i.test(message)) return 'This login email is already used by another employee. Please use a different Employee Code.'
+    if (/employeeCode|hrisEmail/i.test(message)) return 'This Employee Code is already used by another employee.'
+    if (/ktp|npwp|bpjs|kta/i.test(message)) return 'One of the employee identification numbers is already used by another employee.'
+    return 'Some employee information is already in use. Please check the Employee Code and identification numbers.'
   }
 
   if (/Foreign key constraint failed|site/i.test(message)) {
-    return 'The selected site is no longer available. Please choose another site.'
+    return 'This employee could not be found. Please refresh the page and try again.'
+  }
+
+  if (/INVALID_SITE_COMPANY/i.test(message)) {
+    return 'The selected location is not linked to a company. Please ask an administrator to fix the site setup.'
+  }
+
+  if (/INVALID_SITE/i.test(message)) {
+    return 'The selected location is no longer available. Please choose another location.'
+  }
+
+  if (/Foreign key constraint failed|site/i.test(message)) {
+    return 'The selected location or company is no longer available. Please choose another location.'
   }
 
   return 'Unable to save employee data. Please review the form and try again.'
@@ -173,11 +210,24 @@ export async function createEmployeeAction(formData: any) {
   let authUserId = null; // Buat nyimpen ID kalau butuh di-rollback
 
   try {
+    if (!formData.name?.trim()) throw new Error('INVALID_EMPLOYEE_FIELD:Full Name')
+    if (!formData.employeeCode?.trim()) throw new Error('INVALID_EMPLOYEE_FIELD:Employee Code')
+    if (!formData.siteId) throw new Error('INVALID_EMPLOYEE_FIELD:Location')
+
+    const selectedSite = await prisma.site.findUnique({
+      where: { id: formData.siteId },
+      select: { id: true, companyId: true },
+    })
+    if (!selectedSite) throw new Error('INVALID_SITE:Location')
+    if (!selectedSite.companyId) throw new Error('INVALID_SITE_COMPANY:Location')
+    formData.companyId = selectedSite.companyId
+
     // 1. Sulap NIP/Employee Code jadi Email buat Supabase & Prisma
     // Asumsi di frontend lu ngirimnya pake properti `employeeCode`
     const hrisEmail = `${formData.employeeCode}@hris.com`.toLowerCase()
 
     // 2. Bikin Akun Login di Supabase Auth
+    const supabaseAdmin = await createAdminClient()
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: hrisEmail,
       password: formData.password,
@@ -253,6 +303,7 @@ export async function createEmployeeAction(formData: any) {
     // Kalau Prisma gagal nyimpen (misal KTP udah kepake), kita hapus juga akun Auth 
     // yang sempet kebuat di langkah 2 biar database lu ga ada akun zombie.
     if (authUserId) {
+      const supabaseAdmin = await createAdminClient()
       await supabaseAdmin.auth.admin.deleteUser(authUserId)
         .catch(err => console.error("Gagal rollback akun auth:", err))
     }

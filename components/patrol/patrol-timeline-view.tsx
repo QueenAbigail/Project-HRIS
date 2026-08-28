@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,6 +18,7 @@ interface PatrolRecord {
   checkpoint: string
   officer: string
   timestamp: string
+  time?: string
   date: string
   gpsStatus: 'verified' | 'unverified'
   photos: number
@@ -29,28 +31,39 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
   const [patrols, setPatrols] = useState<PatrolRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
     const fetchPatrols = async () => {
+      setIsLoading(true)
+      setHasError(false)
       try {
-        const response = await fetch(`/api/patrol/records?siteId=${siteId}`)
-        if (response.ok) {
-          const data = await response.json()
-          setPatrols(data)
-        }
-      } catch (error) {
+        const response = await fetch(`/api/patrol/records?siteId=${encodeURIComponent(siteId)}`)
+        if (!response.ok) throw new Error('Patrol records request failed')
+        const data = await response.json()
+        setPatrols(data)
+        setHasError(false)
+      } catch {
+        setHasError(true)
+        toast.error('Patrol records could not be loaded', {
+          description: 'Please check your connection or contact an administrator if the problem continues.',
+        })
       } finally {
         setIsLoading(false)
       }
     }
 
-    if (siteId) {
-      fetchPatrols()
-    }
+    if (!siteId) return
+
+    fetchPatrols()
   }, [siteId])
 
   if (isLoading) {
     return <div className="text-center text-muted-foreground py-8">Loading patrol records...</div>
+  }
+
+  if (hasError) {
+    return <div className="py-8 text-center text-sm text-muted-foreground">No patrol records found for this site.</div>
   }
 
   if (patrols.length === 0) {
@@ -90,7 +103,7 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
                   <span className="font-medium">Officer:</span> {patrol.officer}
                 </p>
                 <p className="text-muted-foreground">
-                  <span className="font-medium">Time:</span> {patrol.timestamp} · {patrol.date}
+                  <span className="font-medium">Time:</span> {patrol.time ?? patrol.timestamp} · {patrol.date}
                 </p>
               </div>
 

@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
+import { getLeaveReadAuthorization, leaveAuthorizationResponse } from '@/lib/leave-authorization'
+import { countWeekdays } from '@/lib/leave-validation'
+import { canManageLeaves } from '@/lib/leave-authorization'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get current user to check if CLIENT role
-    const currentUser = await getCurrentUser()
-    const isClient = currentUser?.role === 'CLIENT'
-    
+    const authorization = await getLeaveReadAuthorization()
+    if (!authorization.user) return leaveAuthorizationResponse(authorization.error)
+
     const leaves = await prisma.leave.findMany({
-      where: isClient ? { user: { companyId: currentUser?.companyId } } : undefined,
+      where: authorization.where,
       include: {
         user: {
           select: {
@@ -18,6 +20,7 @@ export async function GET(request: NextRequest) {
             email: true,
             initials: true,
             department: true,
+            site: { select: { name: true } },
           }
         }
       },
@@ -38,44 +41,63 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { userId, leaveType, startDate, endDate, reason, attachmentUrl, status } = body
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    if (!canManageLeaves(currentUser.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
-    if (!userId || !leaveType || !startDate || !endDate) {
+    const body = await request.json()
+    const { leaveType, startDate, endDate, reason, attachmentUrl } = body
+    const userId = currentUser.id
+
+    if (!leaveType || !startDate || !endDate) {
       return NextResponse.json(
-        { error: 'Missing required fields: userId, leaveType, startDate, endDate' },
+        { error: 'Missing required fields: leaveType, startDate, endDate' },
         { status: 400 }
       )
     }
 
-    // Calculate working days - count days with schedules in the date range
-    const scheduledDays = await prisma.schedule.count({
-      where: {
-        employeeId: userId,
-        scheduleDate: {
-          gte: new Date(startDate),
-          lte: new Date(endDate),
-        },
-      },
-    })
+    const start = new Date(`${startDate}T00:00:00Z`)
+    const end = new Date(`${endDate}T00:00:00Z`)
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return NextResponse.json({ error: 'Start date and end date must be valid dates' }, { status: 400 })
+    }
+    if (start > end) {
+      return NextResponse.json({ error: 'End date must be on or after the start date' }, { status: 400 })
+    }
 
-    // Use scheduled days if available, otherwise fall back to calendar days
-    let workingDaysCount = scheduledDays > 0 ? scheduledDays : 
-      Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
-    
-    console.log('[v0] Leave validation - Working days calculated:', workingDaysCount, 'from', scheduledDays, 'scheduled days')
+    const configuredLeaveType = await prisma.masterData.findFirst({
+      where: {
+        category: 'leaveType',
+        value: leaveType,
+        isActive: true,
+      },
+      select: { id: true },
+    })
+    if (!configuredLeaveType) {
+      return NextResponse.json({ error: 'Invalid or inactive leave type' }, { status: 400 })
+    }
+
+    const workingDaysCount = countWeekdays(start, end)
+    if (workingDaysCount === 0) {
+      return NextResponse.json({ error: 'The selected date range contains no working days' }, { status: 400 })
+    }
 
     // Create the leave record
     const leave = await prisma.leave.create({
       data: {
         userId,
         leaveType,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        startDate: start,
+        endDate: end,
         reason: reason || null,
         attachmentUrl: attachmentUrl || null,
-        status: status || 'Pending',
+        status: 'Pending',
         workingDaysCount,
+        dayBreakdown: JSON.stringify({ summary: `${workingDaysCount} working day(s)` }),
       },
       include: {
         user: {
@@ -94,7 +116,6 @@ export async function POST(request: NextRequest) {
       leave,
       validation: {
         workingDaysCount,
-        dayBreakdown: dayBreakdown ? JSON.parse(dayBreakdown) : null,
       },
     })
   } catch (error) {

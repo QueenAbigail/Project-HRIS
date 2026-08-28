@@ -36,9 +36,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface LeaveHeaderProps {
-  isClient?: boolean
+  canCreateLeave?: boolean
 }
 
 interface LeaveType {
@@ -58,7 +59,7 @@ interface Employee {
   email?: string
 }
 
-export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
+export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
   const [openNewRequest, setOpenNewRequest] = useState(false)
   const [openImageZoom, setOpenImageZoom] = useState(false)
   const [comboboxOpen, setComboboxOpen] = useState(false)
@@ -74,6 +75,7 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
   const [departments, setDepartments] = useState<Department[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loadingFilters, setLoadingFilters] = useState(true)
+  const [filtersError, setFiltersError] = useState(false)
   const [loadingEmployees, setLoadingEmployees] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [validationInfo, setValidationInfo] = useState<any>(null)
@@ -81,24 +83,26 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
   // Fetch leave types and departments
   useEffect(() => {
     const fetchFilters = async () => {
+      setFiltersError(false)
+      setLoadingFilters(true)
       try {
         const [typesRes, deptsRes] = await Promise.all([
           fetch('/api/leaves/types'),
           fetch('/api/departments'),
         ])
 
-        if (typesRes.ok) {
-          const types = await typesRes.json()
-          setLeaveTypes(types)
-        } else {
+        if (!typesRes.ok || !deptsRes.ok) {
+          throw new Error('Leave form options could not be loaded')
         }
 
-        if (deptsRes.ok) {
-          const depts = await deptsRes.json()
-          setDepartments(depts)
-        } else {
-        }
-      } catch (error) {
+        const [types, depts] = await Promise.all([typesRes.json(), deptsRes.json()])
+        setLeaveTypes(types)
+        setDepartments(depts)
+      } catch {
+        setFiltersError(true)
+        toast.error('Leave form options could not be loaded', {
+          description: 'Please try again before creating a leave request.',
+        })
       } finally {
         setLoadingFilters(false)
       }
@@ -115,11 +119,14 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
       try {
         setLoadingEmployees(true)
         const response = await fetch('/api/employees/list')
-        if (response.ok) {
-          const data = await response.json()
-          setEmployees(data)
-        }
-      } catch (error) {
+        if (!response.ok) throw new Error('Employee list could not be loaded')
+        const data = await response.json()
+        setEmployees(data)
+      } catch {
+        setEmployees([])
+        toast.error('Employees could not be loaded', {
+          description: 'Please close and reopen the form, or try again later.',
+        })
       } finally {
         setLoadingEmployees(false)
       }
@@ -161,7 +168,9 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
     e.preventDefault()
     
     if (!formData.userId || !formData.leaveType || !formData.startDate || !formData.endDate) {
-      alert('Please fill in all required fields')
+      toast.error('Required information is missing', {
+        description: 'Please complete the employee, leave type, start date, and end date fields.',
+      })
       return
     }
 
@@ -180,25 +189,25 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
         }),
       })
 
-      if (response.ok) {
-        const result = await response.json()
-        setValidationInfo(result.validation)
-        
-        const message = result.validation?.dayBreakdown?.summary 
-          ? `Leave created successfully!\n\n${result.validation.dayBreakdown.summary}`
-          : 'Leave request created successfully'
-        
-        alert(message)
-        setFormData({ userId: '', leaveType: '', startDate: '', endDate: '', reason: '' })
-        setEmployeeSearchValue('')
-        setValidationInfo(null)
-        setOpenNewRequest(false)
-      } else {
-        const error = await response.json()
-        alert(`Error: ${error.message || 'Failed to create leave request'}`)
+      if (!response.ok) {
+        const error = await response.json().catch(() => null)
+        throw new Error(error?.error || error?.message || 'Failed to create leave request')
       }
+
+      const result = await response.json()
+      setValidationInfo(result.validation)
+      setFormData({ userId: '', leaveType: '', startDate: '', endDate: '', reason: '' })
+      setEmployeeSearchValue('')
+      setValidationInfo(null)
+      setOpenNewRequest(false)
+      toast.success('Leave request submitted', {
+        description: 'The leave request is now waiting for approval.',
+      })
+      window.dispatchEvent(new Event('leaveRequestCreated'))
     } catch (error) {
-      alert('Failed to submit leave request')
+      toast.error('Leave request could not be submitted', {
+        description: error instanceof Error ? error.message : 'Please try again later.',
+      })
     } finally {
       setSubmitting(false)
     }
@@ -216,7 +225,7 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
           </p>
         </div>
         <div className="flex flex-col gap-2">
-          {!isClient && (
+          {canCreateLeave && (
             <Dialog open={openNewRequest} onOpenChange={setOpenNewRequest}>
               <DialogTrigger asChild>
                 <Button className="w-full">
@@ -301,7 +310,11 @@ export function LeaveHeader({ isClient = false }: LeaveHeaderProps) {
                     <SelectValue placeholder="Select leave type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {leaveTypes.map(type => (
+                    {filtersError ? (
+                      <SelectItem value="unavailable" disabled>Leave types unavailable</SelectItem>
+                    ) : leaveTypes.length === 0 && !loadingFilters ? (
+                      <SelectItem value="empty" disabled>No leave types configured</SelectItem>
+                    ) : leaveTypes.map(type => (
                       <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
                     ))}
                   </SelectContent>

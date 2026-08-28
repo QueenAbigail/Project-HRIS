@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts'
+import { Users } from 'lucide-react'
 
 interface AttendanceChartProps {
   chartData: Array<{ date: string; present: number; absent: number; late: number }>;
@@ -18,9 +19,8 @@ export function AttendanceChart({ chartData }: AttendanceChartProps) {
         <CardContent className="flex items-center justify-center py-12">
           <div className="text-center">
             <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-import { Users } from 'lucide-react'
             <p className="text-lg font-medium text-muted-foreground mb-2">Belum ada data attendance mingguan</p>
-            <p className="text-sm text-muted-foreground">Grafik akan muncul setelah data tersedia</p>
+            <p className="text-sm text-muted-foreground">Grafik akan muncul setelah data tersedia.</p>
           </div>
         </CardContent>
       </Card>

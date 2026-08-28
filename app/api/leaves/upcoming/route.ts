@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getLeaveReadAuthorization, leaveAuthorizationResponse } from '@/lib/leave-authorization'
 import { startOfMonth, endOfMonth, format } from 'date-fns'
 
 export async function GET() {
   try {
+    const authorization = await getLeaveReadAuthorization()
+    if (!authorization.user) return leaveAuthorizationResponse(authorization.error)
+
     const now = new Date()
     now.setHours(0, 0, 0, 0) // Start of today
     const monthStart = startOfMonth(now)
@@ -13,6 +17,7 @@ export async function GET() {
     // This includes leaves from previous months that are still active, and future leaves
     const upcoming = await prisma.leave.findMany({
       where: {
+        ...authorization.where,
         status: 'Approved',
         endDate: { gte: now }, // Only leaves that haven't ended yet
       },

@@ -7,6 +7,20 @@ interface DayBreakdown {
   reason?: string
 }
 
+export function countWeekdays(startDate: Date, endDate: Date): number {
+  const start = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()))
+  const end = new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate()))
+
+  if (start > end) return 0
+
+  let count = 0
+  for (const current = new Date(start); current <= end; current.setUTCDate(current.getUTCDate() + 1)) {
+    const day = current.getUTCDay()
+    if (day >= 1 && day <= 5) count++
+  }
+  return count
+}
+
 interface WorkingDaysResult {
   workingDaysCount: number
   totalDays: number

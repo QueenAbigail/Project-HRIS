@@ -33,7 +33,7 @@ export default function AttendancePage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
-  const [selectedSite, setSelectedSite] = useState('all')
+  const [selectedSite, setSelectedSite] = useState(() => searchParams.get('site') ?? 'all')
 
   // Update both local state and the URL query param so the address bar
   // reflects the active site filter (and stays shareable/bookmarkable).
@@ -71,26 +71,21 @@ export default function AttendancePage() {
       const response = await fetch('/api/attendance/generate-today', {
         method: 'POST',
         headers: {
-          'authorization': `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || 'development-secret'}`,
           'Content-Type': 'application/json'
         }
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        toast.error(error.error || 'Failed to generate attendance')
-        console.error('[v0] Generation failed:', error)
+        toast.error('Unable to generate attendance records. Please try again.')
         return
       }
 
       const data = await response.json()
       toast.success(data.message)
-      console.log('[v0] Attendance generation details:', data.details)
       // Trigger re-fetch by updating the refresh key instead of full reload
       setRefreshKey(prev => prev + 1)
-    } catch (error) {
-      console.error('[v0] Error triggering attendance generation:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to generate attendance records')
+    } catch {
+      toast.error('Unable to generate attendance records. Please check your connection and try again.')
     } finally {
       setIsGeneratingAttendance(false)
     }
@@ -115,8 +110,8 @@ export default function AttendancePage() {
           const sitesData = await sitesResponse.json()
           setSites(sitesData)
         }
-      } catch (error) {
-        console.error('Failed to fetch data:', error)
+      } catch {
+        // Keep the page usable with its loading and empty states when data fails to load.
       } finally {
         setLoadingSites(false)
       }
@@ -124,14 +119,6 @@ export default function AttendancePage() {
 
     fetchData()
   }, [])
-
-  useEffect(() => {
-    // Set site from query parameter if available
-    const siteParam = searchParams.get('site')
-    if (siteParam) {
-      setSelectedSite(siteParam)
-    }
-  }, [searchParams])
 
   return (
     <div className="space-y-6">

@@ -15,6 +15,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Check, X, FileText, Loader2, ArrowRight } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
+import { toast } from 'sonner'
+import { formatBusinessDate } from '@/lib/timezone'
 import { LeaveRequestDetailsModal } from './leave-request-details-modal'
 import { ShiftSwapDetailsModal } from './shift-swap-details-modal'
 
@@ -27,6 +29,7 @@ interface UnifiedRequest {
     name: string
     initials: string | null
     department: string | null
+    site?: { name: string }
   }
   employeeFrom?: {
     name: string
@@ -49,14 +52,6 @@ interface UnifiedRequest {
   updatedAt: string
 }
 
-const leaveTypeMap: Record<string, { label: string; color: string }> = {
-  Izin: { label: 'Cuti', color: 'bg-primary/10 text-primary border-primary/20' },
-  Sakit: { label: 'Sakit', color: 'bg-chart-5/10 text-chart-5 border-chart-5/20' },
-  Darurat: { label: 'Darurat', color: 'bg-destructive/10 text-destructive border-destructive/20' },
-  Melahirkan: { label: 'Melahirkan', color: 'bg-pink-500/10 text-pink-500 border-pink-500/20' },
-  TukarShift: { label: 'Tukar Shift', color: 'bg-chart-2/10 text-chart-2 border-chart-2/20' },
-}
-
 const statusStyles: Record<string, string> = {
   'Pending': 'bg-warning/10 text-warning border-warning/20',
   'Approved': 'bg-success/10 text-success border-success/20',
@@ -66,25 +61,24 @@ const statusStyles: Record<string, string> = {
 export function UnifiedRequestsTable() {
   const [requests, setRequests] = useState<UnifiedRequest[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [selectedLeave, setSelectedLeave] = useState<UnifiedRequest | null>(null)
   const [selectedSwap, setSelectedSwap] = useState<UnifiedRequest | null>(null)
   const [leaveDetailsOpen, setLeaveDetailsOpen] = useState(false)
   const [swapDetailsOpen, setSwapDetailsOpen] = useState(false)
 
-  useEffect(() => {
-    fetchRequests()
-  }, [])
-
-  const fetchRequests = async () => {
-    setLoading(true)
-    try {
+  async function fetchRequests() {
+  setLoading(true)
+  setLoadError(false)
+  try {
       const [leavesRes, swapsRes] = await Promise.all([
         fetch('/api/leaves'),
         fetch('/api/shift-swaps'),
       ])
 
-      const leaves = leavesRes.ok ? await leavesRes.json() : []
-      const swaps = swapsRes.ok ? await swapsRes.json() : []
+      if (!leavesRes.ok || !swapsRes.ok) throw new Error('Leave requests could not be loaded')
+      const leaves = await leavesRes.json()
+      const swaps = await swapsRes.json()
 
       const unifiedRequests: UnifiedRequest[] = [
         ...leaves.map((leave: any) => ({
@@ -101,11 +95,25 @@ export function UnifiedRequestsTable() {
       // Sort by date descending
       unifiedRequests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       setRequests(unifiedRequests)
-    } catch (error) {
+    } catch {
+      setLoadError(true)
+      toast.error('Leave requests could not be loaded', {
+        description: 'Please check your connection or contact an administrator if the problem continues.',
+      })
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    const initialFetch = window.setTimeout(() => void fetchRequests(), 0)
+    const handleRequestCreated = () => void fetchRequests()
+    window.addEventListener('leaveRequestCreated', handleRequestCreated)
+    return () => {
+      window.clearTimeout(initialFetch)
+      window.removeEventListener('leaveRequestCreated', handleRequestCreated)
+    }
+  }, [])
 
   const handleLeaveStatusChange = async (leaveId: string, newStatus: 'Approved' | 'Rejected') => {
     try {
@@ -115,15 +123,17 @@ export function UnifiedRequestsTable() {
         body: JSON.stringify({ status: newStatus }),
       })
 
-      if (response.ok) {
-        setRequests(
-          requests.map((r) =>
-            r.id === leaveId && r.type === 'leave' ? { ...r, status: newStatus } : r
-          )
+      if (!response.ok) throw new Error('Leave status update failed')
+      setRequests(
+        requests.map((r) =>
+          r.id === leaveId && r.type === 'leave' ? { ...r, status: newStatus } : r
         )
-        window.dispatchEvent(new Event('leaveStatusUpdated'))
-      }
-    } catch (error) {
+      )
+      window.dispatchEvent(new Event('leaveStatusUpdated'))
+    } catch {
+      toast.error('Leave request could not be updated', {
+        description: 'The status was not changed. Please try again later.',
+      })
     }
   }
 
@@ -135,14 +145,16 @@ export function UnifiedRequestsTable() {
         body: JSON.stringify({ status: newStatus }),
       })
 
-      if (response.ok) {
-        setRequests(
-          requests.map((r) =>
-            r.id === swapId && r.type === 'shiftswap' ? { ...r, status: newStatus } : r
-          )
+      if (!response.ok) throw new Error('Shift swap status update failed')
+      setRequests(
+        requests.map((r) =>
+          r.id === swapId && r.type === 'shiftswap' ? { ...r, status: newStatus } : r
         )
-      }
-    } catch (error) {
+      )
+    } catch {
+      toast.error('Shift swap request could not be updated', {
+        description: 'The status was not changed. Please try again later.',
+      })
     }
   }
 
@@ -157,10 +169,10 @@ export function UnifiedRequestsTable() {
       return {
         title: `${request.user?.name}`,
         department: request.user?.department || '--',
-        typeLabel: leaveTypeMap[request.leaveType || '']?.label || request.leaveType,
-        typeColor: leaveTypeMap[request.leaveType || '']?.color || 'bg-gray-500/10 text-gray-500 border-gray-500/20',
-        period: `${format(new Date(request.startDate), 'MMM d')} - ${format(new Date(request.endDate), 'MMM d, yyyy')}`,
-        days: calculateDays(request.startDate, request.endDate),
+        typeLabel: request.leaveType || 'Unknown',
+        typeColor: 'bg-muted text-muted-foreground border-border',
+        period: `${formatBusinessDate(request.startDate)} - ${formatBusinessDate(request.endDate)}`,
+        days: request.workingDaysCount ?? calculateDays(request.startDate, request.endDate),
       }
     } else {
       return {
@@ -187,6 +199,18 @@ export function UnifiedRequestsTable() {
     )
   }
 
+  if (loadError) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader><CardTitle>Requests</CardTitle></CardHeader>
+        <CardContent className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+          <p className="text-sm text-destructive">Leave and shift swap requests could not be loaded.</p>
+          <Button variant="outline" size="sm" onClick={() => void fetchRequests()}>Try again</Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <>
       <Card className="bg-card border-border">
@@ -199,6 +223,7 @@ export function UnifiedRequestsTable() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Employee</TableHead>
+                  <TableHead>Site</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Period</TableHead>
                   <TableHead>Days</TableHead>
@@ -209,7 +234,7 @@ export function UnifiedRequestsTable() {
               <TableBody>
                 {requests.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       No requests found
                     </TableCell>
                   </TableRow>
@@ -233,6 +258,9 @@ export function UnifiedRequestsTable() {
                               <p className="text-xs text-muted-foreground">{display.department}</p>
                             </div>
                           </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {request.type === 'leave' ? request.user?.site?.name || '--' : '--'}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={display.typeColor}>

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
-import { subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
 import { resolveAttendanceStatus } from '@/lib/attendance-utils'
+import { getBusinessDate, getBusinessDateRange, getBusinessDateRangeForPreset } from '@/lib/timezone'
 
 // Helper function to calculate attendance status based on check-in time and scheduled time
 function calculateAttendanceStatus(actualCheckIn: string | null, scheduledStart: string | null): string {
@@ -63,46 +63,25 @@ export async function GET(request: NextRequest) {
     const siteId = searchParams.get('siteId')
     const dateRange = searchParams.get('dateRange') || 'today'
     const department = searchParams.get('department')
-    const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
+    const date = searchParams.get('date') || getBusinessDate()
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
     const page = Math.max(Number.parseInt(searchParams.get('page') || '1', 10) || 1, 1)
     const pageSize = Math.min(Math.max(Number.parseInt(searchParams.get('pageSize') || '25', 10) || 25, 10), 50)
 
-    // Calculate date range based on dateRange parameter
+    // Build every range from calendar dates in Asia/Jakarta, then map them to UTC.
     let dateStart: Date
     let dateEnd: Date
-    const now = new Date()
 
-    switch (dateRange) {
-      case 'today':
-        dateStart = startOfDay(now)
-        dateEnd = endOfDay(now)
-        break
-      case 'yesterday':
-        const yesterday = subDays(now, 1)
-        dateStart = startOfDay(yesterday)
-        dateEnd = endOfDay(yesterday)
-        break
-      case 'week':
-        const weekStart = startOfWeek(now, { weekStartsOn: 1 }) // Monday start
-        const weekEnd = endOfWeek(now, { weekStartsOn: 1 })
-        dateStart = startOfDay(weekStart)
-        dateEnd = endOfDay(weekEnd)
-        break
-      case 'month':
-        const monthStart = startOfMonth(now)
-        const monthEnd = endOfMonth(now)
-        dateStart = startOfDay(monthStart)
-        dateEnd = endOfDay(monthEnd)
-        break
-      case 'custom':
-        dateStart = startOfDay(new Date(dateFrom || date))
-        dateEnd = endOfDay(new Date(dateTo || dateFrom || date))
-        break
-      default:
-        dateStart = startOfDay(now)
-        dateEnd = endOfDay(now)
+    if (dateRange === 'custom') {
+      const customRange = getBusinessDateRange(dateFrom || date, dateTo || dateFrom || date)
+      dateStart = customRange.from
+      dateEnd = customRange.to
+    } else {
+      const presetRange = getBusinessDateRangeForPreset(dateRange, getBusinessDate())
+      const presetDates = getBusinessDateRange(presetRange.dateFrom, presetRange.dateTo)
+      dateStart = presetDates.from
+      dateEnd = presetDates.to
     }
 
     // Build where clause - use gte for start and lte for end to match date-only comparison
@@ -245,26 +224,39 @@ export async function POST(request: NextRequest) {
       notes
     } = body
 
-    // Validate required fields
-    if (!userId || !locationId) {
-      return NextResponse.json(
-        { error: 'userId and locationId are required' },
-        { status: 400 }
-      )
+    // The employee's assigned site is authoritative. Mobile may send locationId,
+    // but a missing value must never create an attendance row without a location.
+    if (!userId) {
+      return NextResponse.json({ error: 'Employee is required' }, { status: 400 })
     }
 
     const targetEmployee = await prisma.user.findUnique({
       where: { id: userId },
       select: { id: true, companyId: true, siteId: true, status: true },
     })
+
+    if (!targetEmployee) {
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 })
+    }
+
+    if (!targetEmployee.siteId) {
+      return NextResponse.json({ error: 'This employee has no assigned location' }, { status: 400 })
+    }
+
     const targetLocation = await prisma.site.findUnique({
-      where: { id: locationId },
+      where: { id: targetEmployee.siteId },
       select: { id: true, companyId: true },
     })
 
-    if (!targetEmployee || !targetLocation) {
-      return NextResponse.json({ error: 'Employee or location not found' }, { status: 404 })
+    if (!targetLocation) {
+      return NextResponse.json({ error: 'The employee assigned location no longer exists' }, { status: 404 })
     }
+
+    if (locationId && locationId !== targetLocation.id) {
+      return NextResponse.json({ error: 'The submitted location does not match the employee assigned location' }, { status: 400 })
+    }
+
+    const resolvedLocationId = targetLocation.id
 
     if (targetEmployee.status !== 'ACTIVE') {
       return NextResponse.json({ error: 'Attendance cannot be changed for an inactive employee' }, { status: 400 })
@@ -273,14 +265,13 @@ export async function POST(request: NextRequest) {
     const hasCompanyAccess =
       currentUser.role === 'SUPER_ADMIN' ||
       (!!currentUser.companyId && currentUser.companyId === targetEmployee.companyId)
-    const hasSiteAccess = targetEmployee.siteId === targetLocation.id
+    const hasSiteAccess = targetEmployee.siteId === resolvedLocationId
 
     if (!hasCompanyAccess || !hasSiteAccess) {
       return NextResponse.json({ error: 'You do not have access to this employee or location' }, { status: 403 })
     }
 
-    const date = new Date()
-    const dateOnly = startOfDay(date)
+    const dateOnly = getBusinessDateRange(getBusinessDate(), getBusinessDate()).from
 
     // Check if attendance record already exists for today
     const existingAttendance = await prisma.attendance.findUnique({
@@ -304,6 +295,10 @@ export async function POST(request: NextRequest) {
         gpsLng,
         gpsLat,
         notes,
+      }
+
+      if (!existingAttendance.locationId) {
+        updateData.locationId = resolvedLocationId
       }
 
       // If actualCheckIn is provided, update check-in and recalculate status
@@ -359,7 +354,7 @@ export async function POST(request: NextRequest) {
     const newAttendance = await prisma.attendance.create({
       data: {
         userId,
-        locationId,
+        locationId: resolvedLocationId,
         shiftId: shiftId || null,
         date: dateOnly,
         scheduledStart,

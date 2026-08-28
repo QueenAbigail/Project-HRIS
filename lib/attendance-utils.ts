@@ -186,5 +186,7 @@ export function tallyAttendance(records: AttendanceRecordLike[]): AttendanceTall
  * toward the rate even though the Present card only shows on-time arrivals.
  */
 export function computeAttendanceRate(present: number, late: number, expectedToWork: number): number {
-  return expectedToWork > 0 ? Math.round(((present + late) / expectedToWork) * 100) : 100
+  if (expectedToWork <= 0) return 0
+
+  return Math.min(100, Math.round(((present + late) / expectedToWork) * 100))
 }
