@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -371,19 +372,24 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* User Login Activity */}
         <Card className="border border-border bg-card flex flex-col h-full min-h-[500px]">
-          <CardHeader className="border-b border-border">
-            <div className="flex items-center gap-2">
-              <LogIn className="size-5 text-primary" />
-              <div>
-                <CardTitle>User Login Activity</CardTitle>
-                <CardDescription>Recent login records from system users</CardDescription>
+              <CardHeader className="border-b border-border">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <LogIn className="size-5 text-primary" />
+                <div>
+                  <CardTitle>User Login Activity</CardTitle>
+                  <CardDescription>Latest 20 login records</CardDescription>
+                </div>
               </div>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/superadmin/activity/login">View all</Link>
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="flex-1 pt-6">
             <ScrollArea className="h-full pr-4">
               <div className="space-y-3">
-                {filteredLoginActivities.map((activity) => (
+                {filteredLoginActivities.slice(0, 20).map((activity) => (
                   <div
                     key={activity.id}
                     className="rounded-lg border border-border bg-background p-4 hover:bg-muted transition-colors"
