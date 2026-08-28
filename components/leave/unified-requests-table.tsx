@@ -29,6 +29,7 @@ interface UnifiedRequest {
     name: string
     initials: string | null
     department: string | null
+    site?: { name: string }
   }
   employeeFrom?: {
     name: string
@@ -222,6 +223,7 @@ export function UnifiedRequestsTable() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Employee</TableHead>
+                  <TableHead>Site</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Period</TableHead>
                   <TableHead>Days</TableHead>
@@ -232,7 +234,7 @@ export function UnifiedRequestsTable() {
               <TableBody>
                 {requests.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       No requests found
                     </TableCell>
                   </TableRow>
@@ -256,6 +258,9 @@ export function UnifiedRequestsTable() {
                               <p className="text-xs text-muted-foreground">{display.department}</p>
                             </div>
                           </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {request.type === 'leave' ? request.user?.site?.name || '--' : '--'}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={display.typeColor}>

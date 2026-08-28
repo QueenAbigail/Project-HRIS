@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
             email: true,
             initials: true,
             department: true,
+            site: { select: { name: true } },
           }
         }
       },
