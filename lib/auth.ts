@@ -61,11 +61,17 @@ export async function login(email: string, password: string, remember: boolean) 
     return { error: 'Email and password are required' }
   }
 
-  return performLogin({
+  const result = await performLogin({
     email,
     password,
     channel: 'WEB',
   })
+
+  if (result.success) {
+    redirect('/dashboard')
+  }
+
+  return result
 }
 
 export async function logout() {
