@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import type { LoginActivityRecord } from '@/lib/auth-activity'
 
 const reasonFor = (result: string) => result === 'SUCCESS' ? 'Success' : result === 'FAILED_INVALID_CREDENTIALS' ? 'Invalid credentials — incorrect password or account not found' : result === 'FAILED_DEVICE_LIMIT' ? 'Device is already assigned to another account' : 'Authentication failed'
+const shortReasonFor = (result: string) => result === 'SUCCESS' ? 'Success' : result === 'FAILED_INVALID_CREDENTIALS' ? 'Invalid credentials' : result === 'FAILED_DEVICE_LIMIT' ? 'Device limit' : 'Authentication failed'
 export function LiveLoginActivityCard({ initialActivities }: { initialActivities: LoginActivityRecord[] }) {
   const [activities, setActivities] = useState(initialActivities)
   const [refreshing, setRefreshing] = useState(false)
@@ -37,7 +38,7 @@ export function LiveLoginActivityCard({ initialActivities }: { initialActivities
     <CardContent className="flex-1 pt-6"><ScrollArea className="h-full pr-4"><div className="space-y-3">
       {activities.map((activity) => { const [date, time] = activity.timestamp.split(' '); return <div key={activity.id} className="rounded-lg border border-border bg-background p-3">
         <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-sm font-medium">{activity.email}{activity.isDummy ? ' (demo)' : ''}</p><div className="mt-1 flex flex-wrap gap-1"><Badge variant="outline" className="text-[11px]">{date}</Badge><Badge variant="outline" className="text-[11px]">{time}</Badge></div></div><Badge variant={activity.result === 'SUCCESS' ? 'secondary' : 'destructive'} className="shrink-0 text-[11px]">{activity.result === 'SUCCESS' ? 'SUCCESS' : 'FAILED'}</Badge></div>
-        <div className="mt-2 flex flex-wrap items-center gap-1.5"><TooltipProvider><Tooltip><TooltipTrigger asChild><Badge variant="outline" className="cursor-help text-[11px]">{activity.channel}</Badge></TooltipTrigger><TooltipContent><p>IP address: {activity.ipAddress}</p><p className="mt-1 max-w-sm break-all">Device: {activity.device}</p></TooltipContent></Tooltip></TooltipProvider><Badge variant={activity.result === 'SUCCESS' ? 'secondary' : 'destructive'} className="max-w-[230px] truncate text-[11px]" title={reasonFor(activity.result)}>{reasonFor(activity.result)}</Badge></div>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5"><TooltipProvider><Tooltip><TooltipTrigger asChild><Badge variant="outline" className="cursor-help text-[11px]">{activity.channel}</Badge></TooltipTrigger><TooltipContent><p>IP address: {activity.ipAddress}</p><p className="mt-1 max-w-sm break-all">Device: {activity.device}</p></TooltipContent></Tooltip><Tooltip><TooltipTrigger asChild><Badge variant={activity.result === 'SUCCESS' ? 'secondary' : 'destructive'} className="max-w-[130px] cursor-help truncate text-[11px]">{shortReasonFor(activity.result)}</Badge></TooltipTrigger><TooltipContent><p className="max-w-sm">Reason: {reasonFor(activity.result)}</p></TooltipContent></Tooltip></TooltipProvider></div>
       </div> })}
     </div></ScrollArea></CardContent>
   </Card>
