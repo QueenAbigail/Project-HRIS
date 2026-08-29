@@ -61,6 +61,11 @@ export function getBusinessDateTime(date = new Date()): string {
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`
 }
 
+/** Format an instant for dashboard display in the business timezone. */
+export function formatBusinessDateTime(date: Date): string {
+  return getBusinessDateTime(date).replace('T', ' ')
+}
+
 /** Return UTC date bounds built from the current calendar date in Asia/Jakarta. */
 export function getBusinessDateBounds(date = new Date()) {
   const businessDate = getBusinessDate(date)
