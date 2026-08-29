@@ -73,7 +73,7 @@ export async function POST(request: Request) {
       if (error || !data.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       if (data.user.email?.toLowerCase() !== email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       userId = data.user.id
-    } else if (!['FAILED_INVALID_CREDENTIALS', 'FAILED_DEVICE_LIMIT'].includes(result)) {
+    } else if (!['FAILED_INVALID_CREDENTIALS', 'FAILED_DEVICE_LIMIT', ...attendanceResults].includes(result as string)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
