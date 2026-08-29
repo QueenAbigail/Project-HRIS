@@ -1,84 +1,37 @@
 'use client'
 
-import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, LogIn, Search } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { ArrowLeft, LogIn, RefreshCw, Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from '@/components/ui/pagination'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import type { LoginActivityRecord } from '@/lib/auth-activity'
 
-interface LoginActivity {
-  id: string
-  email: string
-  timestamp: string
-  ipAddress: string
-  device: string
+const reasonFor = (result: string) => result === 'SUCCESS' ? 'Success' : result === 'FAILED_INVALID_CREDENTIALS' ? 'Invalid credentials — incorrect password or account not found' : result === 'FAILED_DEVICE_LIMIT' ? 'Device is already assigned to another account' : 'Authentication failed'
+const shortReasonFor = (result: string) => result === 'SUCCESS' ? 'Success' : result === 'FAILED_INVALID_CREDENTIALS' ? 'Invalid credentials' : result === 'FAILED_DEVICE_LIMIT' ? 'Device limit' : 'Authentication failed'
+
+function ActivityRow({ activity }: { activity: LoginActivityRecord }) {
+  const [date, time] = activity.timestamp.split(' ')
+  return <div className="flex flex-col gap-3 rounded-lg border border-border bg-background p-4 md:flex-row md:items-center md:justify-between">
+    <div className="min-w-0"><div className="flex items-center gap-2"><p className="truncate font-medium">{activity.email}</p>{activity.isDummy && <Badge variant="outline" className="text-[10px]">DEMO</Badge>}</div><div className="mt-2 flex flex-wrap gap-1.5"><Badge variant="outline" className="text-[11px]">{date}</Badge><Badge variant="outline" className="text-[11px]">{time}</Badge></div></div>
+    <div className="flex flex-wrap items-center gap-1.5"><TooltipProvider><Tooltip><TooltipTrigger asChild><Badge variant="outline" className="cursor-help text-[11px]">{activity.channel}</Badge></TooltipTrigger><TooltipContent><p>IP address: {activity.ipAddress}</p><p className="mt-1 max-w-md break-all">Device: {activity.device}</p></TooltipContent></Tooltip><Tooltip><TooltipTrigger asChild><Badge variant={activity.result === 'SUCCESS' ? 'secondary' : 'destructive'} className="max-w-[150px] cursor-help truncate text-[11px]">{shortReasonFor(activity.result)}</Badge></TooltipTrigger><TooltipContent><p>Reason: {reasonFor(activity.result)}</p></TooltipContent></Tooltip></TooltipProvider></div>
+  </div>
 }
 
-const loginActivities: LoginActivity[] = [
-  { id: '1', email: 'john.doe@example.com', timestamp: '2025-05-07 14:32:15', ipAddress: '192.168.1.100', device: 'Chrome - Windows' },
-  { id: '2', email: 'jane.smith@example.com', timestamp: '2025-05-07 13:45:22', ipAddress: '192.168.1.101', device: 'Safari - macOS' },
-  { id: '3', email: 'admin@example.com', timestamp: '2025-05-07 12:15:00', ipAddress: '192.168.1.102', device: 'Firefox - Ubuntu' },
-  { id: '4', email: 'hr.manager@example.com', timestamp: '2025-05-07 10:30:45', ipAddress: '192.168.1.103', device: 'Chrome - Windows' },
-  { id: '5', email: 'finance.team@example.com', timestamp: '2025-05-07 09:12:30', ipAddress: '192.168.1.104', device: 'Safari - iOS' },
-  { id: '6', email: 'support@example.com', timestamp: '2025-05-06 16:45:20', ipAddress: '192.168.1.105', device: 'Chrome - Android' },
-  { id: '7', email: 'ops@example.com', timestamp: '2025-05-06 15:20:10', ipAddress: '192.168.1.106', device: 'Edge - Windows' },
-  { id: '8', email: 'marketing@example.com', timestamp: '2025-05-06 14:05:00', ipAddress: '192.168.1.107', device: 'Firefox - macOS' },
-]
-
 export default function LoginActivityPage() {
+  const [activities, setActivities] = useState<LoginActivityRecord[]>([])
   const [search, setSearch] = useState('')
+  const [channel, setChannel] = useState('ALL')
+  const [result, setResult] = useState('ALL')
   const [page, setPage] = useState(1)
+  const [loading, setLoading] = useState(false)
   const pageSize = 20
-  const filteredActivities = useMemo(() => loginActivities.filter((activity) => {
-    const query = search.toLowerCase()
-    return !query || [activity.email, activity.ipAddress, activity.device].some((value) => value.toLowerCase().includes(query))
-  }), [search])
-  const pageCount = Math.max(1, Math.ceil(filteredActivities.length / pageSize))
-  const visibleActivities = filteredActivities.slice((page - 1) * pageSize, page * pageSize)
-
-  return (
-    <main className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="icon" aria-label="Back to dashboard">
-            <Link href="/superadmin"><ArrowLeft data-icon="inline-start" /></Link>
-          </Button>
-          <div>
-            <div className="flex items-center gap-2"><LogIn className="size-5 text-primary" /><h1 className="text-3xl font-bold tracking-tight">User Login Activity</h1></div>
-            <p className="text-muted-foreground">All recent login records from system users</p>
-          </div>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Login records</CardTitle>
-          <CardDescription>Showing {visibleActivities.length} of {filteredActivities.length} records</CardDescription>
-          <div className="relative max-w-md pt-2">
-            <Search className="absolute left-3 top-1/2 mt-1 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Search email, IP, or device" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }} />
-          </div>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {visibleActivities.map((activity) => (
-            <div key={activity.id} className="flex flex-col gap-3 rounded-lg border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0"><p className="truncate font-medium">{activity.email}</p><p className="text-sm text-muted-foreground">{activity.timestamp}</p></div>
-              <div className="flex flex-wrap gap-2"><Badge variant="outline">{activity.ipAddress}</Badge><Badge variant="secondary">{activity.device}</Badge></div>
-            </div>
-          ))}
-          {visibleActivities.length === 0 && <p className="py-8 text-center text-muted-foreground">No login records found.</p>}
-          <Pagination className="pt-3">
-            <PaginationContent>
-              <PaginationItem><PaginationPrevious href={page > 1 ? `?page=${page - 1}` : undefined} onClick={(event) => { event.preventDefault(); if (page > 1) setPage(page - 1) }} /></PaginationItem>
-              <PaginationItem><span className="px-3 text-sm text-muted-foreground">Page {page} of {pageCount}</span></PaginationItem>
-              <PaginationItem><PaginationNext href={page < pageCount ? `?page=${page + 1}` : undefined} onClick={(event) => { event.preventDefault(); if (page < pageCount) setPage(page + 1) }} /></PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </CardContent>
-      </Card>
-    </main>
-  )
+  const loadActivities = async () => { setLoading(true); try { const response = await fetch('/api/superadmin/login-activity?limit=100', { cache: 'no-store' }); if (!response.ok) throw new Error('Unable to load activity'); setActivities((await response.json()).activities) } finally { setLoading(false) } }
+  const filtered = useMemo(() => activities.filter((activity) => { const query = search.toLowerCase(); return (!query || [activity.email, activity.ipAddress, activity.device, reasonFor(activity.result)].some((value) => value.toLowerCase().includes(query))) && (channel === 'ALL' || activity.channel === channel) && (result === 'ALL' || activity.result === result) }), [activities, channel, result, search])
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const visible = filtered.slice((page - 1) * pageSize, page * pageSize)
+  return <main className="flex flex-col gap-6"><div className="flex flex-wrap items-center justify-between gap-4"><div className="flex items-center gap-3"><Button asChild variant="ghost" size="icon" aria-label="Back to dashboard"><Link href="/superadmin"><ArrowLeft /></Link></Button><div><div className="flex items-center gap-2"><LogIn className="size-5 text-primary" /><h1 className="text-3xl font-bold tracking-tight">User Login Activity</h1></div><p className="text-muted-foreground">Real login records from the database, with demo records for comparison</p></div></div><Button type="button" variant="outline" onClick={() => void loadActivities()} disabled={loading}><RefreshCw className={loading ? 'mr-2 size-4 animate-spin' : 'mr-2 size-4'} />Refresh</Button></div><Card><CardHeader><CardTitle>Login records</CardTitle><CardDescription>Showing {visible.length} of {filtered.length} matching records</CardDescription><div className="flex flex-col gap-2 pt-2 md:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" placeholder="Search email, IP, device, or reason" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }} /></div><select className="h-10 rounded-md border border-input bg-background px-3 text-sm" value={channel} onChange={(event) => { setChannel(event.target.value); setPage(1) }} aria-label="Filter by channel"><option value="ALL">All channels</option><option value="WEB">Web</option><option value="MOBILE">Mobile</option></select><select className="h-10 rounded-md border border-input bg-background px-3 text-sm" value={result} onChange={(event) => { setResult(event.target.value); setPage(1) }} aria-label="Filter by result"><option value="ALL">All results</option><option value="SUCCESS">Success</option><option value="FAILED_INVALID_CREDENTIALS">Invalid credentials</option><option value="FAILED_DEVICE_LIMIT">Device limit</option><option value="FAILED_OTHER">Other failures</option></select></div></CardHeader><CardContent className="flex flex-col gap-3">{loading ? <p className="py-8 text-center text-muted-foreground">Loading login records...</p> : visible.length ? visible.map((activity) => <ActivityRow key={activity.id} activity={activity} />) : <p className="py-8 text-center text-muted-foreground">No login records found.</p>}<div className="flex items-center justify-center gap-4 pt-3"><Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Previous</Button><span className="text-sm text-muted-foreground">Page {page} of {pageCount}</span><Button variant="outline" size="sm" disabled={page >= pageCount} onClick={() => setPage((value) => value + 1)}>Next</Button></div></CardContent></Card></main>
 }
