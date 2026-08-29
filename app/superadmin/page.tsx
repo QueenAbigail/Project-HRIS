@@ -212,51 +212,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* User Login Activity */}
-        <LiveLoginActivityCard />
-        {/* User Login Activity (demo placeholder removed below) */}
-        <Card className="hidden border border-border bg-card flex flex-col h-full min-h-[500px]">
-              <CardHeader className="border-b border-border">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <LogIn className="size-5 text-primary" />
-                <div>
-                  <CardTitle>User Login Activity</CardTitle>
-                  <CardDescription>Latest 20 login records</CardDescription>
-                </div>
-              </div>
-              <Button asChild variant="outline" size="sm">
-                <Link href="/superadmin/activity/login">View all</Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="flex-1 pt-6">
-            <ScrollArea className="h-full pr-4">
-              <div className="space-y-3">
-                {loginActivities.slice(0, 20).map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="rounded-lg border border-border bg-background p-4 hover:bg-muted transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm text-foreground truncate">{activity.email}</p>
-                        <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className="text-xs">
-                        {activity.ipAddress}
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        {activity.device}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+        <LiveLoginActivityCard initialActivities={loginActivities} />
 
         {/* User Attendance Activity */}
         <Card className="border border-border bg-card flex flex-col h-full min-h-[500px]">
