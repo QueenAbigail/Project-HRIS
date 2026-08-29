@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Shield, Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react'
 import { login } from '@/lib/auth'
+import { isRedirectError } from 'next/dist/client/components/redirect-error'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -89,7 +90,11 @@ export default function LoginPage() {
         sessionStorage.setItem('loginToastShown', 'true')
         router.replace('/dashboard')
       }
-    } catch {
+    } catch (error) {
+      if (isRedirectError(error)) {
+        throw error
+      }
+
       toast.error('Login failed', {
         description: 'Please try again. If the issue continues, contact an administrator.',
       })
