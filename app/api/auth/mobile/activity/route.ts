@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     }
 
     let userId: string | undefined
-    const authorization = request.headers.get('authorization')?.trim()
+    const authorization = result === 'FAILED_DEVICE_LIMIT' ? null : request.headers.get('authorization')?.trim()
     if (authorization) {
       const bearerMatch = authorization.match(/^Bearer\s+(.+)$/i)
       const token = bearerMatch?.[1]?.trim()
