@@ -1,6 +1,7 @@
 'use server'
 
 import { createServerClient } from '@supabase/ssr'
+import { performLogin } from '@/lib/auth-login'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
@@ -60,24 +61,11 @@ export async function login(email: string, password: string, remember: boolean) 
     return { error: 'Email and password are required' }
   }
 
-  // 2. Tambahkan await pas manggil createClient
-  const supabase = await createClient()
-
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email, // Ingat: ini nerima dari app/page.tsx yang udah di-mapping pakai @hris.com
+  return performLogin({
+    email,
     password,
+    channel: 'WEB',
   })
-
-  if (error) {
-    console.error('Login error:', error)
-    return { error: error.message }
-  }
-
-  // Get user metadata that includes name
-  const userName = data?.user?.user_metadata?.name || data?.user?.email?.split('@')[0] || 'User'
-  
-  // Return success instead of redirecting immediately
-  return { success: true, userName }
 }
 
 export async function logout() {
