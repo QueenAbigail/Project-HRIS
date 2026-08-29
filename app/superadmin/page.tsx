@@ -7,14 +7,8 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { LayoutDashboard, LogIn, UserPlus, AlertTriangle, Clock, AlertCircle, Eye } from 'lucide-react'
 import { CronStatusCard } from '@/components/superadmin/cron-status-card'
+import { getLoginActivity } from '@/lib/auth-activity'
 
-interface LoginActivity {
-  id: string
-  email: string
-  timestamp: string
-  ipAddress: string
-  device: string
-}
 
 interface UserChangeActivity {
   id: string
@@ -24,18 +18,6 @@ interface UserChangeActivity {
   timestamp: string
   description: string
 }
-
-// Dummy data
-const loginActivities: LoginActivity[] = [
-  { id: '1', email: 'john.doe@example.com', timestamp: '2025-05-07 14:32:15', ipAddress: '192.168.1.100', device: 'Chrome - Windows' },
-  { id: '2', email: 'jane.smith@example.com', timestamp: '2025-05-07 13:45:22', ipAddress: '192.168.1.101', device: 'Safari - macOS' },
-  { id: '3', email: 'admin@example.com', timestamp: '2025-05-07 12:15:00', ipAddress: '192.168.1.102', device: 'Firefox - Ubuntu' },
-  { id: '4', email: 'hr.manager@example.com', timestamp: '2025-05-07 10:30:45', ipAddress: '192.168.1.103', device: 'Chrome - Windows' },
-  { id: '5', email: 'finance.team@example.com', timestamp: '2025-05-07 09:12:30', ipAddress: '192.168.1.104', device: 'Safari - iOS' },
-  { id: '6', email: 'support@example.com', timestamp: '2025-05-06 16:45:20', ipAddress: '192.168.1.105', device: 'Chrome - Android' },
-  { id: '7', email: 'ops@example.com', timestamp: '2025-05-06 15:20:10', ipAddress: '192.168.1.106', device: 'Edge - Windows' },
-  { id: '8', email: 'marketing@example.com', timestamp: '2025-05-06 14:05:00', ipAddress: '192.168.1.107', device: 'Firefox - macOS' },
-]
 
 const userChangeActivities: UserChangeActivity[] = [
   { 
@@ -126,7 +108,9 @@ const getActivityIcon = (type: string) => {
   }
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const loginActivities = await getLoginActivity(20)
+
   // Error counts
   const errorCounts = {
     login: 12,
