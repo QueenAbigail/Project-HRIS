@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Shield, Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react'
 import { login } from '@/lib/auth'
-import { createClient as createBrowserSupabaseClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -55,20 +54,7 @@ export default function LoginPage() {
 
     try {
       const mappedEmail = `${email.trim()}@hris.com`
-      const result = Boolean(process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL)
-        ? await (async () => {
-            const supabase = createBrowserSupabaseClient()
-            const { data, error } = await supabase.auth.signInWithPassword({
-              email: mappedEmail,
-              password,
-            })
-            if (error) return { error: error.message }
-            return {
-              success: true,
-              userName: data.user?.user_metadata?.name || data.user?.email?.split('@')[0] || 'User',
-            }
-          })()
-        : await login(mappedEmail, password, remember)
+      const result = await login(mappedEmail, password, remember)
 
       if (result?.error) {
         if (result.error.includes('device') || result.error.includes('Device') || result.error.includes('bound')) {
