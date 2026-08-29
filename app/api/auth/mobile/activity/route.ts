@@ -70,6 +70,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    if (!userId) {
+      const matchingUser = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true },
+      })
+      userId = matchingUser?.id
+    }
+
     await prisma.authActivityLog.create({ data: { email, channel, result, deviceId, ipAddress, userAgent, userId } })
     return NextResponse.json({ ok: true }, { status: 201 })
   } catch (error) {
