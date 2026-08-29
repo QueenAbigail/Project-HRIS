@@ -1,7 +1,5 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { canAccessWebsite } from '@/lib/authorization'
 
 export async function proxy(req: NextRequest) {
   const res = NextResponse.next({
@@ -58,16 +56,6 @@ export async function proxy(req: NextRequest) {
   // Protect dashboard routes - redirect to login if no user
   if (req.nextUrl.pathname.startsWith('/dashboard') && !user) {
     return NextResponse.redirect(new URL('/', req.url))
-  }
-
-  if (user && !req.nextUrl.pathname.startsWith('/access-denied')) {
-    const account = user.email
-      ? await prisma.user.findUnique({ where: { email: user.email }, select: { role: true } })
-      : null
-
-    if (!canAccessWebsite(account?.role)) {
-      return NextResponse.redirect(new URL('/access-denied', req.url))
-    }
   }
 
   // Protect login page - redirect to dashboard if user exists

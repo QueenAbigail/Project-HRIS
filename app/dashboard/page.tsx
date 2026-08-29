@@ -45,7 +45,7 @@ export default async function DashboardPage() {
       recentLeaves,
       assignments,
       approvedLeavesThisMonth
-    ] = await Promise.all([
+    ] = await prisma.$transaction([
     isClient ? prisma.company.findMany({ where: { id: currentUser.companyId }, select: { id: true, name: true } }) : prisma.company.findMany({ select: { id: true, name: true } }),
     isClient ? prisma.site.findMany({ where: { companyId: currentUser.companyId }, select: { id: true, name: true, code: true, companyId: true } }) : prisma.site.findMany({ select: { id: true, name: true, code: true, companyId: true } }),
     prisma.user.findMany({ where: companyFilter, select: { id: true, site: { select: { id: true } } } }),

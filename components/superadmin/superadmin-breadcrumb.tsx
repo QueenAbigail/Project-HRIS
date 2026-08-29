@@ -22,6 +22,9 @@ const pathNames: Record<string, string> = {
   '/superadmin/gps-locations': 'GPS Locations',
   '/superadmin/print-qr-code': 'Print QR Code',
   '/superadmin/email-templates': 'Email Templates',
+  '/superadmin/activity/login': 'Login Activity',
+  '/superadmin/activity/attendance': 'User Attendance',
+  '/superadmin/activity/change': 'Change Activity',
   '/superadmin/settings': 'Settings',
 }
 

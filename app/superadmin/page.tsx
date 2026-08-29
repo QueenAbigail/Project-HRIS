@@ -1,22 +1,14 @@
-'use client'
 
-import { useState, useMemo } from 'react'
+import Link from 'next/link'
+import { LiveLoginActivityCard } from '@/components/superadmin/live-login-activity-card'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { LayoutDashboard, LogIn, UserPlus, AlertTriangle, Clock, AlertCircle, Eye, Search, X } from 'lucide-react'
+import { LayoutDashboard, LogIn, UserPlus, AlertTriangle, Clock, AlertCircle, Eye } from 'lucide-react'
 import { CronStatusCard } from '@/components/superadmin/cron-status-card'
+import { getLoginActivity } from '@/lib/auth-activity'
 
-interface LoginActivity {
-  id: string
-  email: string
-  timestamp: string
-  ipAddress: string
-  device: string
-}
 
 interface UserChangeActivity {
   id: string
@@ -26,18 +18,6 @@ interface UserChangeActivity {
   timestamp: string
   description: string
 }
-
-// Dummy data
-const loginActivities: LoginActivity[] = [
-  { id: '1', email: 'john.doe@example.com', timestamp: '2025-05-07 14:32:15', ipAddress: '192.168.1.100', device: 'Chrome - Windows' },
-  { id: '2', email: 'jane.smith@example.com', timestamp: '2025-05-07 13:45:22', ipAddress: '192.168.1.101', device: 'Safari - macOS' },
-  { id: '3', email: 'admin@example.com', timestamp: '2025-05-07 12:15:00', ipAddress: '192.168.1.102', device: 'Firefox - Ubuntu' },
-  { id: '4', email: 'hr.manager@example.com', timestamp: '2025-05-07 10:30:45', ipAddress: '192.168.1.103', device: 'Chrome - Windows' },
-  { id: '5', email: 'finance.team@example.com', timestamp: '2025-05-07 09:12:30', ipAddress: '192.168.1.104', device: 'Safari - iOS' },
-  { id: '6', email: 'support@example.com', timestamp: '2025-05-06 16:45:20', ipAddress: '192.168.1.105', device: 'Chrome - Android' },
-  { id: '7', email: 'ops@example.com', timestamp: '2025-05-06 15:20:10', ipAddress: '192.168.1.106', device: 'Edge - Windows' },
-  { id: '8', email: 'marketing@example.com', timestamp: '2025-05-06 14:05:00', ipAddress: '192.168.1.107', device: 'Firefox - macOS' },
-]
 
 const userChangeActivities: UserChangeActivity[] = [
   { 
@@ -128,10 +108,8 @@ const getActivityIcon = (type: string) => {
   }
 }
 
-export default function DashboardPage() {
-  const [filterDate, setFilterDate] = useState('')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [timeFilter, setTimeFilter] = useState<'all' | 'today' | 'week' | 'month'>('all')
+export default async function DashboardPage() {
+  const loginActivities = await getLoginActivity(20)
 
   // Error counts
   const errorCounts = {
@@ -140,64 +118,6 @@ export default function DashboardPage() {
     patrol: 5,
     data: 8,
   }
-
-  // Helper function to check if timestamp is within filter range
-  const isWithinTimeRange = (timestamp: string) => {
-    if (timeFilter === 'all') return true
-    const date = new Date(timestamp)
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    
-    switch (timeFilter) {
-      case 'today':
-        return date >= today
-      case 'week':
-        const weekAgo = new Date(today)
-        weekAgo.setDate(weekAgo.getDate() - 7)
-        return date >= weekAgo
-      case 'month':
-        const monthAgo = new Date(today)
-        monthAgo.setMonth(monthAgo.getMonth() - 1)
-        return date >= monthAgo
-      default:
-        return true
-    }
-  }
-
-  // Filtered activities based on date, search, and time filter
-  const filteredLoginActivities = useMemo(() => {
-    return loginActivities.filter((activity) => {
-      const matchesDate = filterDate ? activity.timestamp.startsWith(filterDate) : true
-      const matchesSearch = searchQuery 
-        ? activity.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          activity.ipAddress.includes(searchQuery) ||
-          activity.device.toLowerCase().includes(searchQuery.toLowerCase())
-        : true
-      const matchesTime = isWithinTimeRange(activity.timestamp)
-      return matchesDate && matchesSearch && matchesTime
-    })
-  }, [filterDate, searchQuery, timeFilter])
-
-  const filteredUserChangeActivities = useMemo(() => {
-    return userChangeActivities.filter((activity) => {
-      const matchesDate = filterDate ? activity.timestamp.startsWith(filterDate) : true
-      const matchesSearch = searchQuery 
-        ? activity.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          activity.actor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          activity.description.toLowerCase().includes(searchQuery.toLowerCase())
-        : true
-      const matchesTime = isWithinTimeRange(activity.timestamp)
-      return matchesDate && matchesSearch && matchesTime
-    })
-  }, [filterDate, searchQuery, timeFilter])
-
-  const clearFilters = () => {
-    setFilterDate('')
-    setSearchQuery('')
-    setTimeFilter('all')
-  }
-
-  const hasActiveFilters = filterDate || searchQuery || timeFilter !== 'all'
 
   return (
     <div className="space-y-6">
@@ -271,136 +191,39 @@ export default function DashboardPage() {
       {/* Cron Status Monitor */}
       <CronStatusCard />
 
-      {/* Filter Section */}
-      <Card className="bg-card border-border">
-        <CardContent className="pt-6">
-          <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Search Input */}
-              <div className="md:col-span-2">
-                <label className="text-sm font-medium text-foreground mb-1.5 block">Search</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Search by name, email, IP, or description..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
+      {/* Activity monitoring */}
 
-              {/* Time Filter */}
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">Time Range</label>
-                <Select value={timeFilter} onValueChange={(v) => setTimeFilter(v as typeof timeFilter)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select time range" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Time</SelectItem>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="week">Last 7 Days</SelectItem>
-                    <SelectItem value="month">Last 30 Days</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
 
-              {/* Date Filter */}
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">Specific Date</label>
-                <Input
-                  type="date"
-                  value={filterDate}
-                  onChange={(e) => setFilterDate(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Active Filters & Clear */}
-            {hasActiveFilters && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm text-muted-foreground">Active filters:</span>
-                {searchQuery && (
-                  <Badge variant="secondary" className="gap-1">
-                    Search: {searchQuery}
-                    <X 
-                      className="size-3 cursor-pointer hover:text-destructive" 
-                      onClick={() => setSearchQuery('')}
-                    />
-                  </Badge>
-                )}
-                {timeFilter !== 'all' && (
-                  <Badge variant="secondary" className="gap-1">
-                    Time: {timeFilter}
-                    <X 
-                      className="size-3 cursor-pointer hover:text-destructive" 
-                      onClick={() => setTimeFilter('all')}
-                    />
-                  </Badge>
-                )}
-                {filterDate && (
-                  <Badge variant="secondary" className="gap-1">
-                    Date: {filterDate}
-                    <X 
-                      className="size-3 cursor-pointer hover:text-destructive" 
-                      onClick={() => setFilterDate('')}
-                    />
-                  </Badge>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearFilters}
-                  className="text-destructive hover:text-destructive"
-                >
-                  Clear All
-                </Button>
-              </div>
-            )}
-
-            {/* Results Count */}
-            <div className="text-sm text-muted-foreground">
-              Showing {filteredLoginActivities.length} login activities and {filteredUserChangeActivities.length} change activities
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* User Login Activity */}
+        <LiveLoginActivityCard initialActivities={loginActivities} />
+
+        {/* User Attendance Activity */}
         <Card className="border border-border bg-card flex flex-col h-full min-h-[500px]">
           <CardHeader className="border-b border-border">
-            <div className="flex items-center gap-2">
-              <LogIn className="size-5 text-primary" />
-              <div>
-                <CardTitle>User Login Activity</CardTitle>
-                <CardDescription>Recent login records from system users</CardDescription>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="size-5 text-destructive" />
+                <div>
+                  <CardTitle>User Attendance</CardTitle>
+                  <CardDescription>Recent attendance errors</CardDescription>
+                </div>
               </div>
+              <Button asChild variant="outline" size="sm"><Link href="/superadmin/activity/attendance">View all</Link></Button>
             </div>
           </CardHeader>
           <CardContent className="flex-1 pt-6">
             <ScrollArea className="h-full pr-4">
               <div className="space-y-3">
-                {filteredLoginActivities.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="rounded-lg border border-border bg-background p-4 hover:bg-muted transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-2">
+                {userChangeActivities.filter((activity) => activity.type === 'attendance_error').slice(0, 20).map((activity) => (
+                  <div key={activity.id} className="rounded-lg border border-border bg-background p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="mt-1 size-4 shrink-0 text-destructive" />
                       <div className="min-w-0">
-                        <p className="font-medium text-sm text-foreground truncate">{activity.email}</p>
-                        <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
+                        <p className="font-medium text-sm text-foreground">{activity.subject}</p>
+                        <p className="text-xs text-muted-foreground">{activity.description}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{activity.timestamp}</p>
                       </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className="text-xs">
-                        {activity.ipAddress}
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        {activity.device}
-                      </Badge>
                     </div>
                   </div>
                 ))}
@@ -412,18 +235,21 @@ export default function DashboardPage() {
         {/* User Change Activity */}
         <Card className="border border-border bg-card flex flex-col h-full min-h-[500px]">
           <CardHeader className="border-b border-border">
-            <div className="flex items-center gap-2">
-              <UserPlus className="size-5 text-primary" />
-              <div>
-                <CardTitle>User Change Activity</CardTitle>
-                <CardDescription>Recent changes to users and system events</CardDescription>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <UserPlus className="size-5 text-primary" />
+                <div>
+                  <CardTitle>User Change Activity</CardTitle>
+                  <CardDescription>Recent changes to users and system events</CardDescription>
+                </div>
               </div>
+              <Button asChild variant="outline" size="sm"><Link href="/superadmin/activity/change">View all</Link></Button>
             </div>
           </CardHeader>
           <CardContent className="flex-1 pt-6">
             <ScrollArea className="h-full pr-4">
               <div className="space-y-3">
-                {filteredUserChangeActivities.map((activity) => {
+                {userChangeActivities.filter((activity) => activity.type !== 'attendance_error').slice(0, 20).map((activity) => {
                   const { icon: Icon, color } = getActivityIcon(activity.type)
                   return (
                     <div

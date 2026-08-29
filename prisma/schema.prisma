@@ -61,6 +61,18 @@ enum CronJobName {
   LEAVE_PROCESSING
 }
 
+enum AuthChannel {
+  WEB
+  MOBILE
+}
+
+enum AuthResult {
+  SUCCESS
+  FAILED_INVALID_CREDENTIALS
+  FAILED_DEVICE_LIMIT
+  FAILED_OTHER
+}
+
 enum NotificationType {
   SYSTEM
   APPROVAL
@@ -163,6 +175,7 @@ model User {
   bulkImports           BulkImportLog[] @relation("BulkImports")
   patrols               Patrol[]
   deviceBindings        DeviceBinding[]
+  authActivityLogs      AuthActivityLog[]
   notifications         Notification[]
   payrolls              Payroll[]
   createdAt             DateTime                  @default(now())
@@ -399,6 +412,26 @@ model DeviceBinding {
   @@index([userId])
   @@index([deviceId])
   @@map("device_bindings")
+}
+
+// Auth Activity Log - records every login attempt (web + mobile) with outcome and reason
+model AuthActivityLog {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String?
+  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email        String     // As entered, kept even if user lookup fails
+  channel      AuthChannel
+  result       AuthResult
+  deviceId     String?    // Mobile only
+  ipAddress    String?
+  userAgent    String?    @db.Text
+  createdAt    DateTime   @default(now())
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([channel])
+  @@index([result])
+  @@map("auth_activity_logs")
 }
 
 // Enums for schedule patterns

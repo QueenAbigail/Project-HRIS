@@ -1,12 +1,9 @@
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
-import { UnauthorizedAccess } from "@/components/superadmin/unauthorized-access"
 import { SuperadminBreadcrumb } from "@/components/superadmin/superadmin-breadcrumb"
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/auth"
-import { getUserData, type User } from "@/lib/get-user-data"
-import { getSystemSettings } from "@/lib/system"
+import { getCurrentUser, getSystemSettings } from "@/lib/system"
 import Link from "next/link"
 import { LogOut } from "lucide-react"
 
@@ -21,20 +18,20 @@ export interface LayoutProps {
 }
 
 export default async function SuperadminLayout({ children }: LayoutProps) {
-  const supabase = await createClient()
-  const { data: { user: authUser } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
 
-  if (!authUser?.email) {
+  if (!user) {
     redirect('/')
   }
 
-  const user = await getUserData(authUser.email)
+  if (user.role !== 'SUPER_ADMIN') {
+    redirect('/dashboard')
+  }
 
   const systemSettings = await getSystemSettings()
 
   return (
     <>
-      <UnauthorizedAccess userRole={user?.role || null} />
       <SidebarProvider>
         <AppSidebar user={user} systemSettings={systemSettings || { appName: 'SecureGuard', appDescription: 'HR Administration' }} />
         <SidebarInset>

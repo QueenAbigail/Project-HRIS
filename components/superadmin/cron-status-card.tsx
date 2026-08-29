@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { AlertCircle, CheckCircle, Clock, Zap } from 'lucide-react'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { AlertCircle, CheckCircle, ChevronDown, Clock, Zap } from 'lucide-react'
 
 interface CronLog {
   id: string
@@ -32,6 +33,7 @@ export function CronStatusCard() {
   const [summary, setSummary] = useState<CronSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [recentRunsOpen, setRecentRunsOpen] = useState(false)
 
   useEffect(() => {
     const fetchCronLogs = async () => {
@@ -143,9 +145,19 @@ export function CronStatusCard() {
             </div>
 
             {/* Recent Runs */}
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold">Recent Runs</h4>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+            <Collapsible open={recentRunsOpen} onOpenChange={setRecentRunsOpen}>
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between rounded-md py-2 text-left text-sm font-semibold transition-colors hover:bg-muted/50"
+                  aria-label={`${recentRunsOpen ? 'Collapse' : 'Expand'} recent cron runs`}
+                >
+                  <span>Recent Runs</span>
+                  <ChevronDown className={`size-4 transition-transform ${recentRunsOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+              <div className="space-y-2 max-h-64 overflow-y-auto pt-2">
                 {logs.length > 0 ? (
                   logs.map((log) => (
                     <div
@@ -189,7 +201,8 @@ export function CronStatusCard() {
                   </div>
                 )}
               </div>
-            </div>
+              </CollapsibleContent>
+            </Collapsible>
           </>
         ) : (
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-700 rounded-lg p-4 text-sm text-blue-700 dark:text-blue-200 space-y-2">

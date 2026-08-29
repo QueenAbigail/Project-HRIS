@@ -6,9 +6,7 @@ import { WelcomeToast } from "@/components/dashboard/welcome-toast"
 import { MobileHeader } from "@/components/mobile-header"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { LoadingProvider } from "@/lib/loading-context"
-import { createClient } from "@/lib/auth"
-import { getSystemSettings } from "@/lib/system"
-import { getUserData, type User } from "@/lib/get-user-data"
+import { getCurrentUser, getSystemSettings } from "@/lib/system"
 import { redirect } from "next/navigation"
 import { DashboardBreadcrumb } from "@/components/dashboard-breadcrumb"
 
@@ -23,14 +21,7 @@ export interface LayoutProps {
 }
 
 export default async function DashboardLayout({ children }: LayoutProps) {
-  const supabase = await createClient()
-  const { data: { user: authUser } } = await supabase.auth.getUser()
-
-  if (!authUser?.email) {
-    redirect('/')
-  }
-
-  const user = await getUserData(authUser.email)
+  const user = await getCurrentUser()
 
   if (!user) {
     redirect('/')
