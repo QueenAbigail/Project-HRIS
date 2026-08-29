@@ -4,7 +4,6 @@ import { createServerClient } from '@supabase/ssr'
 import { performLogin } from '@/lib/auth-login'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 
 // Admin client for server-side operations (uses service role key)
 export async function createAdminClient() {
@@ -66,10 +65,6 @@ export async function login(email: string, password: string, remember: boolean) 
     password,
     channel: 'WEB',
   })
-
-  if (result.success) {
-    redirect('/dashboard')
-  }
 
   return result
 }
