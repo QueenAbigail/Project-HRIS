@@ -1,6 +1,6 @@
-'use client'
 
 import Link from 'next/link'
+import { LiveLoginActivityCard } from '@/components/superadmin/live-login-activity-card'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -212,7 +212,9 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* User Login Activity */}
-        <Card className="border border-border bg-card flex flex-col h-full min-h-[500px]">
+        <LiveLoginActivityCard />
+        {/* User Login Activity (demo placeholder removed below) */}
+        <Card className="hidden border border-border bg-card flex flex-col h-full min-h-[500px]">
               <CardHeader className="border-b border-border">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
