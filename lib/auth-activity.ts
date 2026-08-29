@@ -14,12 +14,6 @@ export type LoginActivityRecord = {
   isDummy?: boolean
 }
 
-const dummyLoginActivities: LoginActivityRecord[] = [
-  { id: 'dummy-1', email: 'demo.success@example.com', employeeName: 'Demo Success', employeeId: 'demo.success', timestamp: '2025-05-07 14:32:15', ipAddress: '192.168.1.100', device: 'Chrome - Windows', channel: 'WEB', result: 'SUCCESS', isDummy: true },
-  { id: 'dummy-2', email: 'demo.mobile@example.com', employeeName: 'Demo Mobile', employeeId: 'demo.mobile', timestamp: '2025-05-07 13:45:22', ipAddress: '192.168.1.101', device: 'Mobile demo device', channel: 'MOBILE', result: 'SUCCESS', isDummy: true },
-  { id: 'dummy-3', email: 'demo.failed@example.com', employeeName: 'Demo Failed', employeeId: 'demo.failed', timestamp: '2025-05-07 12:15:00', ipAddress: '192.168.1.102', device: 'Firefox - Ubuntu', channel: 'WEB', result: 'FAILED_INVALID_CREDENTIALS', isDummy: true },
-]
-
 export async function getLoginActivity(limit = 20): Promise<LoginActivityRecord[]> {
   const records = await prisma.authActivityLog.findMany({
     where: {
@@ -58,5 +52,5 @@ export async function getLoginActivity(limit = 20): Promise<LoginActivityRecord[
     }
   })
 
-  return [...realRecords, ...dummyLoginActivities].slice(0, limit + dummyLoginActivities.length)
+  return realRecords
 }
