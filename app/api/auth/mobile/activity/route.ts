@@ -55,18 +55,18 @@ export async function POST(request: Request) {
       const bearerMatch = authorization.match(/^Bearer\s+(.+)$/i)
       const token = bearerMatch?.[1]?.trim()
       if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-      if (!supabaseUrl || !serviceRoleKey) {
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+      const serverKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+      if (!supabaseUrl || !serverKey) {
         console.error('[v0] Mobile activity Supabase configuration is incomplete')
         return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
       }
-      const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } })
+      const supabase = createClient(supabaseUrl, serverKey, { auth: { autoRefreshToken: false, persistSession: false } })
       const { data, error } = await supabase.auth.getUser(token)
       if (error || !data.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       if (data.user.email?.toLowerCase() !== email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       userId = data.user.id
-    } else if (result !== 'FAILED_INVALID_CREDENTIALS') {
+    } else if (!['FAILED_INVALID_CREDENTIALS', 'FAILED_DEVICE_LIMIT'].includes(result)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
