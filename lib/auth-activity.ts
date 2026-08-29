@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { formatBusinessDateTime } from '@/lib/timezone'
 
 export type LoginActivityRecord = {
   id: string
@@ -38,7 +39,7 @@ export async function getLoginActivity(limit = 20): Promise<LoginActivityRecord[
     email: record.email,
     employeeName: user?.name ?? record.email.split('@')[0],
     employeeId: user?.employeeCode ?? record.email.split('@')[0],
-    timestamp: record.createdAt.toISOString().replace('T', ' ').slice(0, 19),
+    timestamp: formatBusinessDateTime(record.createdAt),
     ipAddress: record.ipAddress ?? 'Unknown IP',
     device: record.userAgent ?? 'Unknown device',
     channel: record.channel,
