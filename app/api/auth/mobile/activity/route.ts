@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     const userAgent = text(body.userAgent, 1000)
     const ipAddress = requestIp(request)
 
-    if (!email || !channel || !result || !deviceId || !userAgent || (result === 'SUCCESS' && !request.headers.get('authorization')?.startsWith('Bearer '))) {
+    if (!email || !channel || !result || !deviceId || !userAgent || (result === 'SUCCESS' && !/^Bearer\s+/i.test(request.headers.get('authorization')?.trim() || ''))) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     }
     if (result === 'FAILED_INVALID_CREDENTIALS' && limited(`${ipAddress || 'unknown'}:${email}`)) {
@@ -50,10 +50,12 @@ export async function POST(request: Request) {
     }
 
     let userId: string | undefined
-    const authorization = request.headers.get('authorization')
+    const authorization = request.headers.get('authorization')?.trim()
     if (authorization) {
-      const token = authorization.slice(7)
-      const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { autoRefreshToken: false, persistSession: false } })
+      const bearerMatch = authorization.match(/^Bearer\s+(.+)$/i)
+      const token = bearerMatch?.[1]?.trim()
+      if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const supabase = createClient(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { autoRefreshToken: false, persistSession: false } })
       const { data, error } = await supabase.auth.getUser(token)
       if (error || !data.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       if (data.user.email?.toLowerCase() !== email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
