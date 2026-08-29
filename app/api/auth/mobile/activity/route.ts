@@ -31,18 +31,25 @@ export async function POST(request: Request) {
     if (contentLength > MAX_BODY_BYTES) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
 
     const body = await request.json() as Record<string, unknown>
-    if (Object.keys(body).some((key) => !['email', 'channel', 'result', 'deviceId', 'userAgent'].includes(key))) {
+    if (Object.keys(body).some((key) => !['email', 'channel', 'action', 'result', 'deviceId', 'userAgent', 'latitude', 'longitude', 'isMockLocation', 'distance'].includes(key))) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     }
 
     const email = text(body.email, 320)?.toLowerCase()
     const channel = body.channel === 'MOBILE' ? 'MOBILE' : null
-    const result = ['SUCCESS', 'FAILED_INVALID_CREDENTIALS', 'FAILED_DEVICE_LIMIT', 'FAILED_OTHER'].includes(String(body.result)) ? body.result as 'SUCCESS' | 'FAILED_INVALID_CREDENTIALS' | 'FAILED_DEVICE_LIMIT' | 'FAILED_OTHER' : null
+    const attendanceResults = ['FAILED_GPS_DENIED', 'FAILED_GPS_TIMEOUT', 'FAILED_OUT_OF_RADIUS', 'FAILED_FAKE_GPS', 'FAILED_CAMERA_DENIED'] as const
+    const result = ['SUCCESS', 'FAILED_INVALID_CREDENTIALS', 'FAILED_DEVICE_LIMIT', 'FAILED_OTHER', ...attendanceResults].includes(String(body.result)) ? body.result as 'SUCCESS' | 'FAILED_INVALID_CREDENTIALS' | 'FAILED_DEVICE_LIMIT' | 'FAILED_OTHER' | typeof attendanceResults[number] : null
+    const action = body.action === 'ATTENDANCE_IN' || body.action === 'ATTENDANCE_OUT' ? body.action : null
+    const numberValue = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? value : null
+    const latitude = numberValue(body.latitude)
+    const longitude = numberValue(body.longitude)
+    const distance = numberValue(body.distance)
+    const isMockLocation = typeof body.isMockLocation === 'boolean' ? body.isMockLocation : null
     const deviceId = text(body.deviceId, 256)
     const userAgent = text(body.userAgent, 1000)
     const ipAddress = requestIp(request)
 
-    if (!email || !channel || !result || !deviceId || !userAgent || (result === 'SUCCESS' && !/^Bearer\s+/i.test(request.headers.get('authorization')?.trim() || ''))) {
+    if (!email || !channel || !result || !deviceId || !userAgent || (attendanceResults.includes(result as typeof attendanceResults[number]) && !action) || (result === 'FAILED_OUT_OF_RADIUS' && distance === null) || (result === 'FAILED_FAKE_GPS' && isMockLocation !== true) || (result === 'SUCCESS' && !/^Bearer\s+/i.test(request.headers.get('authorization')?.trim() || ''))) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     }
     if (result === 'FAILED_INVALID_CREDENTIALS' && limited(`${ipAddress || 'unknown'}:${email}`)) {
@@ -78,7 +85,7 @@ export async function POST(request: Request) {
       userId = matchingUser?.id
     }
 
-    await prisma.authActivityLog.create({ data: { email, channel, result, deviceId, ipAddress, userAgent, userId } })
+    await prisma.authActivityLog.create({ data: { email, channel, result, action, latitude, longitude, isMockLocation, distance, deviceId, ipAddress, userAgent, userId } })
     return NextResponse.json({ ok: true }, { status: 201 })
   } catch (error) {
     console.error('[v0] Failed to record mobile login activity:', error)

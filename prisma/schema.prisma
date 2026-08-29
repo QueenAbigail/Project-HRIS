@@ -71,6 +71,11 @@ enum AuthResult {
   FAILED_INVALID_CREDENTIALS
   FAILED_DEVICE_LIMIT
   FAILED_OTHER
+  FAILED_GPS_DENIED
+  FAILED_GPS_TIMEOUT
+  FAILED_OUT_OF_RADIUS
+  FAILED_FAKE_GPS
+  FAILED_CAMERA_DENIED
 }
 
 enum NotificationType {
@@ -422,6 +427,11 @@ model AuthActivityLog {
   email        String     // As entered, kept even if user lookup fails
   channel      AuthChannel
   result       AuthResult
+  action       String?    // ATTENDANCE_IN or ATTENDANCE_OUT
+  latitude     Float?
+  longitude    Float?
+  isMockLocation Boolean?
+  distance     Float?     // Distance from attendance point in meters
   deviceId     String?    // Mobile only
   ipAddress    String?
   userAgent    String?    @db.Text
