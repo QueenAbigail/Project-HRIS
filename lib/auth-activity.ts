@@ -38,6 +38,23 @@ const attendanceResults = [
   'FAILED_CAMERA_DENIED',
 ] as const
 
+export async function getActivityErrorCounts() {
+  const [login, attendance] = await Promise.all([
+    prisma.authActivityLog.count({
+      where: {
+        result: {
+          in: ['FAILED_INVALID_CREDENTIALS', 'FAILED_DEVICE_LIMIT', 'FAILED_OTHER'],
+        },
+      },
+    }),
+    prisma.authActivityLog.count({
+      where: { result: { in: [...attendanceResults] } },
+    }),
+  ])
+
+  return { login, attendance }
+}
+
 export async function getAttendanceActivity(limit = 20): Promise<AttendanceActivityRecord[]> {
   const records = await prisma.authActivityLog.findMany({
     where: { result: { in: [...attendanceResults] } },

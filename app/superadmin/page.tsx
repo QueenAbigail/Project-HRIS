@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { LayoutDashboard, LogIn, UserPlus, AlertTriangle, Clock } from 'lucide-react'
 import { CronStatusCard } from '@/components/superadmin/cron-status-card'
-import { getAttendanceActivity, getLoginActivity } from '@/lib/auth-activity'
+import { getActivityErrorCounts, getAttendanceActivity, getLoginActivity } from '@/lib/auth-activity'
 
 
 interface UserChangeActivity {
@@ -109,16 +109,11 @@ const getActivityIcon = (type: string) => {
 }
 
 export default async function DashboardPage() {
-  const [loginActivities, attendanceActivities] = await Promise.all([
+  const [loginActivities, attendanceActivities, errorCounts] = await Promise.all([
     getLoginActivity(20),
     getAttendanceActivity(20),
+    getActivityErrorCounts(),
   ])
-
-  // Summary counts
-  const errorCounts = {
-    login: 12,
-    attendance: 28,
-  }
 
   return (
     <div className="space-y-6">
