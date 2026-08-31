@@ -14,7 +14,7 @@ export default function InformationPage() {
   const [previewLogo, setPreviewLogo] = useState<string | null>(null)
   
   // 👉 State buat nampung data asli dari database
-  const [settings, setSettings] = useState({ appName: '', appDescription: '' })
+  const [settings, setSettings] = useState({ appName: '', appDescription: '', appVersions: '' })
   const [isLoading, setIsLoading] = useState(true)
 
   // 👉 Narik data pas halaman pertama kali dibuka
@@ -23,7 +23,8 @@ export default function InformationPage() {
       if (data) {
         setSettings({
           appName: data.appName,
-          appDescription: data.appDescription
+          appDescription: data.appDescription,
+          appVersions: data.appVersions ?? ''
         })
       }
       setIsLoading(false) // Matiin loading kalau data udah dapet
@@ -75,8 +76,20 @@ export default function InformationPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="appDescription">App Description</Label>
-                {/* 👉 Ini juga ngambil dari database */}
+                {/* 👉 Ini juga ngambil data dari database */}
                 <Input id="appDescription" name="appDescription" defaultValue={settings.appDescription} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="appVersions">Mobile App Version</Label>
+                <Input
+                  id="appVersions"
+                  name="appVersions"
+                  defaultValue={settings.appVersions}
+                  placeholder="1.1.0"
+                  pattern="[0-9]+\\.[0-9]+\\.[0-9]+"
+                  required
+                />
+                <p className="text-sm text-muted-foreground">The version mobile apps must match before they can continue.</p>
               </div>
             </div>
           </CardContent>

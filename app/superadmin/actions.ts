@@ -54,6 +54,11 @@ export async function updateSettings(formData: FormData) {
   // 3. Get text from form
   const appName = formData.get('appName') as string
   const appDescription = formData.get('appDescription') as string
+  const appVersions = formData.get('appVersions') as string
+
+  if (!appVersions || !/^\d+\.\d+\.\d+$/.test(appVersions.trim())) {
+    throw new Error('App version must use the format x.y.z, for example 1.1.0')
+  }
 
   // 4. Save to Database with Prisma
   await prisma.systemSettings.upsert({
@@ -61,12 +66,14 @@ export async function updateSettings(formData: FormData) {
     update: {
       appName,
       appDescription,
+      appVersions: appVersions.trim(),
       ...(logoUrl && { logoUrl }), // Only update logoUrl if a new one was uploaded
     },
     create: {
       id: 'default',
       appName,
       appDescription,
+      appVersions: appVersions.trim(),
       logoUrl,
     }
   })
