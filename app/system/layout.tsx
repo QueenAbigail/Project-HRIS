@@ -24,15 +24,19 @@ export interface LayoutProps {
 }
 
 export default async function SystemLayout({ children, params }: LayoutProps) {
+  // The (cached) settings read doesn't depend on the email, so start it early
+  // and resolve it together with the email-dependent user lookup.
+  const settingsPromise = getSystemSettings()
   const email = await getAuthEmail()
 
   if (!email) {
     redirect('/')
   }
 
-  const user = await getUserData(email)
-
-  const systemSettings = await getSystemSettings()
+  const [user, systemSettings] = await Promise.all([
+    getUserData(email),
+    settingsPromise,
+  ])
 
   return (
     <>

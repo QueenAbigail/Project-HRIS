@@ -21,13 +21,15 @@ export interface LayoutProps {
 }
 
 export default async function DashboardLayout({ children }: LayoutProps) {
-  const user = await getCurrentUser()
+  // Run the user lookup and (cached) settings read together instead of stacking them.
+  const [user, systemSettings] = await Promise.all([
+    getCurrentUser(),
+    getSystemSettings(),
+  ])
 
   if (!user) {
     redirect('/')
   }
-
-  const systemSettings = await getSystemSettings()
 
   return (
     <LoadingProvider>
