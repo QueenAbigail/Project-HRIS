@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
-import { LayoutDashboard, LogIn, UserPlus, AlertTriangle, Clock, AlertCircle, Eye } from 'lucide-react'
+import { LayoutDashboard, LogIn, UserPlus, AlertTriangle, Clock } from 'lucide-react'
 import { CronStatusCard } from '@/components/superadmin/cron-status-card'
 import { getAttendanceActivity, getLoginActivity } from '@/lib/auth-activity'
 
@@ -114,12 +114,10 @@ export default async function DashboardPage() {
     getAttendanceActivity(20),
   ])
 
-  // Error counts
+  // Summary counts
   const errorCounts = {
     login: 12,
     attendance: 28,
-    patrol: 5,
-    data: 8,
   }
 
   return (
@@ -133,7 +131,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Error Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="border border-border bg-card">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -162,33 +160,6 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border border-border bg-card">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Patrol Errors</p>
-                <p className="text-2xl font-bold text-foreground mt-1">{errorCounts.patrol}</p>
-              </div>
-              <div className="rounded-lg bg-primary/10 p-3">
-                <Eye className="size-6 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-border bg-card">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Data Errors</p>
-                <p className="text-2xl font-bold text-foreground mt-1">{errorCounts.data}</p>
-              </div>
-              <div className="rounded-lg bg-success/10 p-3">
-                <AlertCircle className="size-6 text-success" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Cron Status Monitor */}
