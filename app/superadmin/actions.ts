@@ -1,9 +1,10 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { getSwappedScheduleIfExists } from '@/lib/shift-swap-handler'
 import { createAdminClient } from '@/lib/auth'
+import { SYSTEM_SETTINGS_TAG } from '@/lib/system-settings'
 
 export async function updateSettings(formData: FormData) {
   // 1. Call Supabase Admin Client (for file upload with full permissions)
@@ -78,7 +79,8 @@ export async function updateSettings(formData: FormData) {
     }
   })
 
-  // 5. Revalidate paths so changes appear immediately
+  // 5. Rebuild the cached system settings so the new logo/name/version appears immediately
+  revalidateTag(SYSTEM_SETTINGS_TAG)
   revalidatePath('/dashboard', 'layout')
   revalidatePath('/superadmin', 'layout')
   revalidatePath('/', 'layout')

@@ -3,21 +3,12 @@
 import { cache } from 'react'
 import { prisma } from '@/lib/prisma'
 import { createClient } from '@/lib/auth'
+import { getSystemSettings as getCachedSystemSettings } from '@/lib/system-settings'
 
-import type { SystemSettings, User } from '@prisma/client'
+import type { User } from '@prisma/client'
 
-export async function getSystemSettings(): Promise<Omit<SystemSettings, 'id'> | null> {
-  try {
-    const settings = await prisma.systemSettings.findFirst()
-    return settings ? {
-      logoUrl: settings.logoUrl,
-      appName: settings.appName,
-      appDescription: settings.appDescription,
-    } : null
-  } catch (error) {
-    console.error('[v0] Failed to fetch system settings:', error)
-    return null
-  }
+export async function getSystemSettings() {
+  return getCachedSystemSettings()
 }
 
 export async function getCurrentUserRole(): Promise<string | null> {
