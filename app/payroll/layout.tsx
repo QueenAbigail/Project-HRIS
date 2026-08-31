@@ -12,7 +12,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/auth"
+import { getAuthEmail } from "@/lib/auth"
 import { getUserData, type User } from "@/lib/get-user-data"
 import { getSystemSettings } from "@/lib/system"
 
@@ -27,10 +27,9 @@ export interface LayoutProps {
 }
 
 export default async function PayrollLayout({ children }: LayoutProps) {
-  const supabase = await createClient()
-  const { data: { user: authUser } } = await supabase.auth.getUser()
+  const email = await getAuthEmail()
 
-  if (!authUser?.email) {
+  if (!email) {
     redirect('/')
   }
 
@@ -38,7 +37,7 @@ export default async function PayrollLayout({ children }: LayoutProps) {
   let systemSettings: SystemSettings | null = null
 
   try {
-    user = await getUserData(authUser.email)
+    user = await getUserData(email)
   } catch (error) {
     console.error('[v0] Error fetching user from database:', error)
     user = null
