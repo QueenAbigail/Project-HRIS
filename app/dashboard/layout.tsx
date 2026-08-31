@@ -1,3 +1,5 @@
+// Keeps all dashboard pages dynamic. Several child pages (e.g. /dashboard/patrol)
+// query the database at the top level and must not be prerendered at build time.
 export const dynamic = 'force-dynamic'
 
 import { AppSidebar } from "@/components/app-sidebar"
