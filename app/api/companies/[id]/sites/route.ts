@@ -1,11 +1,29 @@
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/system'
 import { NextRequest, NextResponse } from 'next/server'
+
+async function requireSuperAdmin() {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  if (user.role !== 'SUPER_ADMIN') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  return null
+}
 
 // POST create new site for a company
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
+
   try {
     const { name, code, latitude, longitude } = await req.json()
     const { id: companyId } = await params
@@ -55,6 +73,9 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
+
   try {
     const { siteId, name, code, latitude, longitude } = await req.json()
 
@@ -103,6 +124,9 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
+
   try {
     const { searchParams } = new URL(req.url)
     const siteId = searchParams.get('siteId')
