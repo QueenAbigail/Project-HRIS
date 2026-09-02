@@ -5,13 +5,22 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ShieldAlert } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 // 👉 Import fungsi penarik datanya juga
 import { updateSettings, updateMobileAppVersion, getSystemSettings } from '../actions'
 
 export default function InformationPage() {
   const [previewLogo, setPreviewLogo] = useState<string | null>(null)
+  const previewLogoRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (previewLogoRef.current) {
+        URL.revokeObjectURL(previewLogoRef.current)
+      }
+    }
+  }, [])
   
   // 👉 State buat nampung data asli dari database
   const [settings, setSettings] = useState({
@@ -40,7 +49,12 @@ export default function InformationPage() {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      if (previewLogoRef.current) {
+        URL.revokeObjectURL(previewLogoRef.current)
+      }
+
       const url = URL.createObjectURL(file)
+      previewLogoRef.current = url
       setPreviewLogo(url)
     }
   }
