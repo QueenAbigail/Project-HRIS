@@ -5,8 +5,21 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 import { getSwappedScheduleIfExists } from '@/lib/shift-swap-handler'
 import { createAdminClient } from '@/lib/auth'
 import { SYSTEM_SETTINGS_TAG } from '@/lib/system-settings'
+import { getCurrentUser } from '@/lib/system'
+
+async function requireSuperAdmin() {
+  const user = await getCurrentUser()
+
+  if (!user || user.role !== 'SUPER_ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  return user
+}
 
 export async function updateSettings(formData: FormData) {
+  await requireSuperAdmin()
+
   // 1. Call Supabase Admin Client (for file upload with full permissions)
   const supabase = await createAdminClient()
 
@@ -73,13 +86,15 @@ export async function updateSettings(formData: FormData) {
   })
 
   // 5. Rebuild the cached system settings so the new logo/name/version appears immediately
-  revalidateTag(SYSTEM_SETTINGS_TAG)
+  revalidateTag(SYSTEM_SETTINGS_TAG, 'max')
   revalidatePath('/dashboard', 'layout')
   revalidatePath('/superadmin', 'layout')
   revalidatePath('/', 'layout')
 }
 
 export async function updateMobileAppVersion(formData: FormData) {
+  await requireSuperAdmin()
+
   const appVersions = String(formData.get('appVersions') ?? '').trim()
 
   if (!/^\d+\.\d+\.\d+$/.test(appVersions)) {
