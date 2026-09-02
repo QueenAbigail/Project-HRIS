@@ -7,6 +7,13 @@ import { createAdminClient } from '@/lib/auth'
 import { SYSTEM_SETTINGS_TAG } from '@/lib/system-settings'
 import { getCurrentUser } from '@/lib/system'
 
+const MAX_LOGO_SIZE_BYTES = 5 * 1024 * 1024
+const ALLOWED_LOGO_TYPES = new Map([
+  ['image/png', 'png'],
+  ['image/jpeg', 'jpg'],
+  ['image/webp', 'webp'],
+])
+
 async function requireSuperAdmin() {
   const user = await getCurrentUser()
 
@@ -26,11 +33,20 @@ export async function updateSettings(formData: FormData) {
   const file = formData.get('logo') as File | null
   let logoUrl = null
 
-  // 2. If file exists, upload to Supabase Storage
+  // 2. If file exists, validate it before uploading to Supabase Storage
   if (file && file.size > 0) {
+    const fileExt = ALLOWED_LOGO_TYPES.get(file.type)
+
+    if (!fileExt) {
+      throw new Error('Logo must be a PNG, JPEG, or WebP image')
+    }
+
+    if (file.size > MAX_LOGO_SIZE_BYTES) {
+      throw new Error('Logo must be smaller than 5 MB')
+    }
+
     console.log('[v0] Uploading logo file:', { fileName: file.name, size: file.size })
-    
-    const fileExt = file.name.split('.').pop()
+
     const fileName = `${Date.now()}.${fileExt}`
     const filePath = `logos/${fileName}`
 
