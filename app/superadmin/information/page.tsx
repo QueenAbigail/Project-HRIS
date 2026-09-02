@@ -30,20 +30,36 @@ export default function InformationPage() {
     logoUrl: null as string | null,
   })
   const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
 
-  // 👉 Narik data pas halaman pertama kali dibuka
+  // Load settings once when the page opens. Always clear loading so a failed
+  // request renders a recoverable error state instead of a blank page.
   useEffect(() => {
-    getSystemSettings().then((data) => {
-      if (data) {
-        setSettings({
-          appName: data.appName,
-          appDescription: data.appDescription,
-          appVersions: data.appVersions ?? '',
-          logoUrl: data.logoUrl ?? null
-        })
-      }
-      setIsLoading(false) // Matiin loading kalau data udah dapet
-    })
+    let isMounted = true
+
+    getSystemSettings()
+      .then((data) => {
+        if (!isMounted) return
+
+        if (data) {
+          setSettings({
+            appName: data.appName,
+            appDescription: data.appDescription,
+            appVersions: data.appVersions ?? '',
+            logoUrl: data.logoUrl ?? null,
+          })
+        }
+      })
+      .catch(() => {
+        if (isMounted) setLoadError(true)
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,6 +78,17 @@ export default function InformationPage() {
   // Return null while loading to let skeleton handle loading state
   if (isLoading) {
     return null
+  }
+
+  if (loadError) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Unable to load system information</CardTitle>
+          <CardDescription>Please refresh the page and try again.</CardDescription>
+        </CardHeader>
+      </Card>
+    )
   }
 
   return (
