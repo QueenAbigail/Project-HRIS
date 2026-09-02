@@ -55,26 +55,19 @@ export async function updateSettings(formData: FormData) {
   // 3. Get text from form
   const appName = formData.get('appName') as string
   const appDescription = formData.get('appDescription') as string
-  const appVersions = formData.get('appVersions') as string
 
-  if (!appVersions || !/^\d+\.\d+\.\d+$/.test(appVersions.trim())) {
-    throw new Error('App version must use the format x.y.z, for example 1.1.0')
-  }
-
-  // 4. Save to Database with Prisma
+  // 4. Save global branding only. Mobile version has its own lightweight action.
   await prisma.systemSettings.upsert({
     where: { id: 'default' },
     update: {
       appName,
       appDescription,
-      appVersions: appVersions.trim(),
       ...(logoUrl && { logoUrl }), // Only update logoUrl if a new one was uploaded
     },
     create: {
       id: 'default',
       appName,
       appDescription,
-      appVersions: appVersions.trim(),
       logoUrl,
     }
   })
@@ -84,6 +77,23 @@ export async function updateSettings(formData: FormData) {
   revalidatePath('/dashboard', 'layout')
   revalidatePath('/superadmin', 'layout')
   revalidatePath('/', 'layout')
+}
+
+export async function updateMobileAppVersion(formData: FormData) {
+  const appVersions = String(formData.get('appVersions') ?? '').trim()
+
+  if (!/^\d+\.\d+\.\d+$/.test(appVersions)) {
+    throw new Error('App version must use the format x.y.z, for example 1.1.0')
+  }
+
+  await prisma.systemSettings.upsert({
+    where: { id: 'default' },
+    update: { appVersions },
+    create: {
+      id: 'default',
+      appVersions,
+    },
+  })
 }
 
 // Tambahkan ini di bagian paling bawah actions.ts

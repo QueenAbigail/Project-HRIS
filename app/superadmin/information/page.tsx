@@ -8,7 +8,7 @@ import { ShieldAlert } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 // 👉 Import fungsi penarik datanya juga
-import { updateSettings, getSystemSettings } from '../actions'
+import { updateSettings, updateMobileAppVersion, getSystemSettings } from '../actions'
 
 export default function InformationPage() {
   const [previewLogo, setPreviewLogo] = useState<string | null>(null)
@@ -79,23 +79,35 @@ export default function InformationPage() {
                 {/* 👉 Ini juga ngambil data dari database */}
                 <Input id="appDescription" name="appDescription" defaultValue={settings.appDescription} />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="appVersions">Mobile App Version</Label>
-                <Input
-                  id="appVersions"
-                  name="appVersions"
-                  defaultValue={settings.appVersions}
-                  placeholder="1.1.0"
-                  pattern="[0-9]+\\.[0-9]+\\.[0-9]+"
-                  required
-                />
-                <p className="text-sm text-muted-foreground">The version mobile apps must match before they can continue.</p>
-              </div>
             </div>
           </CardContent>
         </Card>
         <Button type="submit" className="w-full md:w-auto">
           Save Changes
+        </Button>
+      </form>
+
+      <form action={updateMobileAppVersion} className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Mobile Settings</CardTitle>
+            <CardDescription>Manage the mobile app version required to continue.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Label htmlFor="appVersions">Mobile App Version</Label>
+            <Input
+              id="appVersions"
+              name="appVersions"
+              defaultValue={settings.appVersions}
+              placeholder="1.1.0"
+              pattern="[0-9]+\\.[0-9]+\\.[0-9]+"
+              required
+            />
+            <p className="text-sm text-muted-foreground">The version mobile apps must match before they can continue.</p>
+          </CardContent>
+        </Card>
+        <Button type="submit" className="w-full md:w-auto">
+          Save Mobile Settings
         </Button>
       </form>
     </div>
