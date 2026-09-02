@@ -14,7 +14,12 @@ export default function InformationPage() {
   const [previewLogo, setPreviewLogo] = useState<string | null>(null)
   
   // 👉 State buat nampung data asli dari database
-  const [settings, setSettings] = useState({ appName: '', appDescription: '', appVersions: '' })
+  const [settings, setSettings] = useState({
+    appName: '',
+    appDescription: '',
+    appVersions: '',
+    logoUrl: null as string | null,
+  })
   const [isLoading, setIsLoading] = useState(true)
 
   // 👉 Narik data pas halaman pertama kali dibuka
@@ -24,7 +29,8 @@ export default function InformationPage() {
         setSettings({
           appName: data.appName,
           appDescription: data.appDescription,
-          appVersions: data.appVersions ?? ''
+          appVersions: data.appVersions ?? '',
+          logoUrl: data.logoUrl ?? null
         })
       }
       setIsLoading(false) // Matiin loading kalau data udah dapet
@@ -64,9 +70,16 @@ export default function InformationPage() {
             <div className="space-y-2">
               <Label htmlFor="logo">App Logo</Label>
               <Input id="logo" name="logo" type="file" accept="image/*" onChange={handleLogoChange} />
-              {previewLogo && (
-                <img src={previewLogo} alt="Preview" className="mt-2 h-32 w-32 rounded-lg object-cover" />
-              )}
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  {previewLogo ? 'New logo preview' : 'Currently used logo'}
+                </p>
+                <img
+                  src={previewLogo || settings.logoUrl || '/koperasi_icon.png'}
+                  alt={previewLogo ? 'New app logo preview' : 'Currently used app logo'}
+                  className="h-32 w-32 rounded-lg border border-border bg-muted object-contain p-2"
+                />
+              </div>
             </div>
             <div className="space-y-4 md:col-span-2">
               <div className="space-y-2">
