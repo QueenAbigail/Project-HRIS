@@ -109,6 +109,10 @@ export async function updateMobileAppVersion(formData: FormData) {
       appVersions,
     },
   })
+
+  // Refresh only the shared settings cache; mobile version changes do not
+  // require broad layout/page revalidation.
+  revalidateTag(SYSTEM_SETTINGS_TAG, 'max')
 }
 
 // Tambahkan ini di bagian paling bawah actions.ts
