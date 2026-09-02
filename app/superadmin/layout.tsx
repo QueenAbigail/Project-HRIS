@@ -18,7 +18,11 @@ export interface LayoutProps {
 }
 
 export default async function SuperadminLayout({ children }: LayoutProps) {
-  const user = await getCurrentUser()
+  // Run the user lookup and (cached) settings read together instead of stacking them.
+  const [user, systemSettings] = await Promise.all([
+    getCurrentUser(),
+    getSystemSettings(),
+  ])
 
   if (!user) {
     redirect('/')
@@ -27,8 +31,6 @@ export default async function SuperadminLayout({ children }: LayoutProps) {
   if (user.role !== 'SUPER_ADMIN') {
     redirect('/dashboard')
   }
-
-  const systemSettings = await getSystemSettings()
 
   return (
     <>

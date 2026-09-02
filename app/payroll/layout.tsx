@@ -12,7 +12,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/auth"
+import { getAuthEmail } from "@/lib/auth"
 import { getUserData, type User } from "@/lib/get-user-data"
 import { getSystemSettings } from "@/lib/system"
 
@@ -27,28 +27,33 @@ export interface LayoutProps {
 }
 
 export default async function PayrollLayout({ children }: LayoutProps) {
-  const supabase = await createClient()
-  const { data: { user: authUser } } = await supabase.auth.getUser()
+  // The (cached) settings read doesn't depend on the email, so start it early
+  // and resolve it together with the email-dependent user lookup.
+  const settingsPromise = getSystemSettings()
+  const email = await getAuthEmail()
 
-  if (!authUser?.email) {
+  if (!email) {
     redirect('/')
   }
 
   let user: User | null = null
   let systemSettings: SystemSettings | null = null
 
-  try {
-    user = await getUserData(authUser.email)
-  } catch (error) {
-    console.error('[v0] Error fetching user from database:', error)
-    user = null
+  const [userResult, settingsResult] = await Promise.allSettled([
+    getUserData(email),
+    settingsPromise,
+  ])
+
+  if (userResult.status === 'fulfilled') {
+    user = userResult.value
+  } else {
+    console.error('[v0] Error fetching user from database:', userResult.reason)
   }
 
-  try {
-    systemSettings = await getSystemSettings()
-  } catch (error) {
-    console.error('[v0] Error fetching system settings:', error)
-    systemSettings = null
+  if (settingsResult.status === 'fulfilled') {
+    systemSettings = settingsResult.value
+  } else {
+    console.error('[v0] Error fetching system settings:', settingsResult.reason)
   }
 
   return (

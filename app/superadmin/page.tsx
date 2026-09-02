@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
-import { LayoutDashboard, LogIn, UserPlus, AlertTriangle, Clock, AlertCircle, Eye } from 'lucide-react'
+import { LayoutDashboard, LogIn, UserPlus, AlertTriangle, Clock } from 'lucide-react'
 import { CronStatusCard } from '@/components/superadmin/cron-status-card'
-import { getLoginActivity } from '@/lib/auth-activity'
+import { getActivityErrorCounts, getAttendanceActivity, getLoginActivity } from '@/lib/auth-activity'
 
 
 interface UserChangeActivity {
@@ -109,15 +109,11 @@ const getActivityIcon = (type: string) => {
 }
 
 export default async function DashboardPage() {
-  const loginActivities = await getLoginActivity(20)
-
-  // Error counts
-  const errorCounts = {
-    login: 12,
-    attendance: 28,
-    patrol: 5,
-    data: 8,
-  }
+  const [loginActivities, attendanceActivities, errorCounts] = await Promise.all([
+    getLoginActivity(20),
+    getAttendanceActivity(20),
+    getActivityErrorCounts(),
+  ])
 
   return (
     <div className="space-y-6">
@@ -130,7 +126,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Error Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="border border-border bg-card">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -159,33 +155,6 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border border-border bg-card">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Patrol Errors</p>
-                <p className="text-2xl font-bold text-foreground mt-1">{errorCounts.patrol}</p>
-              </div>
-              <div className="rounded-lg bg-primary/10 p-3">
-                <Eye className="size-6 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-border bg-card">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Data Errors</p>
-                <p className="text-2xl font-bold text-foreground mt-1">{errorCounts.data}</p>
-              </div>
-              <div className="rounded-lg bg-success/10 p-3">
-                <AlertCircle className="size-6 text-success" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Cron Status Monitor */}
@@ -215,18 +184,19 @@ export default async function DashboardPage() {
           <CardContent className="flex-1 pt-6">
             <ScrollArea className="h-full pr-4">
               <div className="space-y-3">
-                {userChangeActivities.filter((activity) => activity.type === 'attendance_error').slice(0, 20).map((activity) => (
+                {attendanceActivities.slice(0, 20).map((activity) => (
                   <div key={activity.id} className="rounded-lg border border-border bg-background p-4">
                     <div className="flex items-start gap-3">
                       <AlertTriangle className="mt-1 size-4 shrink-0 text-destructive" />
                       <div className="min-w-0">
-                        <p className="font-medium text-sm text-foreground">{activity.subject}</p>
-                        <p className="text-xs text-muted-foreground">{activity.description}</p>
+                        <p className="font-medium text-sm text-foreground">{activity.employeeName}</p>
+                        <p className="text-xs text-muted-foreground">{activity.result.replace('FAILED_', '').replaceAll('_', ' ')} · {activity.action.replace('ATTENDANCE_', '')}</p>
                         <p className="mt-1 text-xs text-muted-foreground">{activity.timestamp}</p>
                       </div>
                     </div>
                   </div>
                 ))}
+                {attendanceActivities.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">No attendance errors recorded.</p>}
               </div>
             </ScrollArea>
           </CardContent>

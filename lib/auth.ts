@@ -55,6 +55,22 @@ export async function createClient() {
   )
 }
 
+// Resolve the signed-in user's email from the session JWT.
+// Uses getClaims() which verifies the token signature locally (asymmetric keys)
+// instead of making a network call to the Supabase Auth server on every request.
+// getClaims() still calls getSession() internally, so an expired token is refreshed.
+export async function getAuthEmail(): Promise<string | null> {
+  try {
+    const supabase = await createClient()
+    const { data } = await supabase.auth.getClaims()
+    const email = data?.claims?.email
+    return typeof email === 'string' ? email : null
+  } catch (error) {
+    console.error('[v0] Failed to resolve auth email:', error)
+    return null
+  }
+}
+
 export async function login(email: string, password: string, remember: boolean) {
   if (!email || !password) {
     return { error: 'Email and password are required' }

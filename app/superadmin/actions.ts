@@ -1,9 +1,10 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { getSwappedScheduleIfExists } from '@/lib/shift-swap-handler'
 import { createAdminClient } from '@/lib/auth'
+import { SYSTEM_SETTINGS_TAG } from '@/lib/system-settings'
 
 export async function updateSettings(formData: FormData) {
   // 1. Call Supabase Admin Client (for file upload with full permissions)
@@ -54,6 +55,11 @@ export async function updateSettings(formData: FormData) {
   // 3. Get text from form
   const appName = formData.get('appName') as string
   const appDescription = formData.get('appDescription') as string
+  const appVersions = formData.get('appVersions') as string
+
+  if (!appVersions || !/^\d+\.\d+\.\d+$/.test(appVersions.trim())) {
+    throw new Error('App version must use the format x.y.z, for example 1.1.0')
+  }
 
   // 4. Save to Database with Prisma
   await prisma.systemSettings.upsert({
@@ -61,17 +67,20 @@ export async function updateSettings(formData: FormData) {
     update: {
       appName,
       appDescription,
+      appVersions: appVersions.trim(),
       ...(logoUrl && { logoUrl }), // Only update logoUrl if a new one was uploaded
     },
     create: {
       id: 'default',
       appName,
       appDescription,
+      appVersions: appVersions.trim(),
       logoUrl,
     }
   })
 
-  // 5. Revalidate paths so changes appear immediately
+  // 5. Rebuild the cached system settings so the new logo/name/version appears immediately
+  revalidateTag(SYSTEM_SETTINGS_TAG)
   revalidatePath('/dashboard', 'layout')
   revalidatePath('/superadmin', 'layout')
   revalidatePath('/', 'layout')

@@ -1,6 +1,6 @@
 "use client"
 
-import Link from 'next/link'
+import Link, { useLinkStatus } from 'next/link'
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -27,6 +27,7 @@ import {
   Megaphone,
   Camera,
   Bell,
+  Loader2,
 } from 'lucide-react'
 
 import {
@@ -57,7 +58,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import Image from 'next/image'
 
-import { fetchSystemSettings, fetchUserRole } from '@/lib/client-system'
+import { fetchSystemSettings } from '@/lib/client-system'
 
 interface SystemSettings {
   appName: string
@@ -77,6 +78,17 @@ interface User {
 interface Props {
   user: User | null
   systemSettings?: SystemSettings
+}
+
+// Shows a spinner the instant a nav link is clicked, giving immediate feedback
+// while the destination route loads. Must render inside a <Link> to read status.
+function NavIcon({ icon: Icon }: { icon: React.ComponentType<{ className?: string }> }) {
+  const { pending } = useLinkStatus()
+  return pending ? (
+    <Loader2 className="size-4 flex-shrink-0 animate-spin" aria-hidden="true" />
+  ) : (
+    <Icon className="size-4 flex-shrink-0" />
+  )
 }
 
 function LogoIcon({ src, alt, className }: { src: string; alt: string; className: string }) {
@@ -302,24 +314,6 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
     }
   }, [propSystemSettings])
 
-  // Refetch settings every 5 seconds to catch updates from information page
-  useEffect(() => {
-    if (!propSystemSettings) {
-      const interval = setInterval(async () => {
-        const settings = await fetchSystemSettings()
-        if (settings) {
-          setLocalSystemSettings(prevSettings => 
-            // Only update if something changed
-            JSON.stringify(prevSettings) !== JSON.stringify(settings) 
-              ? settings 
-              : prevSettings
-          )
-        }
-      }, 5000)
-      return () => clearInterval(interval)
-    }
-  }, [propSystemSettings])
-
   // Fetch pending leave request count
   useEffect(() => {
     const fetchPendingLeaveCount = async () => {
@@ -453,7 +447,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={pathname === item.url}>
                     <Link href={item.url} className="flex items-center min-w-0 gap-2">
-                      <item.icon className="size-4 flex-shrink-0" />
+                      <NavIcon icon={item.icon} />
                       <span className="truncate">{item.title}</span>
                       {item.badge > 0 && (
                         <Badge variant="secondary" className="ml-auto text-xs flex-shrink-0">
@@ -476,7 +470,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={pathname === item.url}>
                     <Link href={item.url} className="flex items-center min-w-0 gap-2">
-                      <item.icon className="size-4 flex-shrink-0" />
+                      <NavIcon icon={item.icon} />
                       <span className="truncate">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>

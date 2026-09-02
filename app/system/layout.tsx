@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { UnauthorizedAccess } from "@/components/superadmin/unauthorized-access"
 import { SystemBreadcrumb } from "@/components/system/system-breadcrumb"
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/auth"
+import { getAuthEmail } from "@/lib/auth"
 import { getUserData, type User } from "@/lib/get-user-data"
 import { getSystemSettings } from "@/lib/system"
 import Link from "next/link"
@@ -24,16 +24,19 @@ export interface LayoutProps {
 }
 
 export default async function SystemLayout({ children, params }: LayoutProps) {
-  const supabase = await createClient()
-  const { data: { user: authUser } } = await supabase.auth.getUser()
+  // The (cached) settings read doesn't depend on the email, so start it early
+  // and resolve it together with the email-dependent user lookup.
+  const settingsPromise = getSystemSettings()
+  const email = await getAuthEmail()
 
-  if (!authUser?.email) {
+  if (!email) {
     redirect('/')
   }
 
-  const user = await getUserData(authUser.email)
-
-  const systemSettings = await getSystemSettings()
+  const [user, systemSettings] = await Promise.all([
+    getUserData(email),
+    settingsPromise,
+  ])
 
   return (
     <>

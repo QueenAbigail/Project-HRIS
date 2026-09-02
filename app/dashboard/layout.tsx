@@ -1,3 +1,5 @@
+// Keeps all dashboard pages dynamic. Several child pages (e.g. /dashboard/patrol)
+// query the database at the top level and must not be prerendered at build time.
 export const dynamic = 'force-dynamic'
 
 import { AppSidebar } from "@/components/app-sidebar"
@@ -21,13 +23,15 @@ export interface LayoutProps {
 }
 
 export default async function DashboardLayout({ children }: LayoutProps) {
-  const user = await getCurrentUser()
+  // Run the user lookup and (cached) settings read together instead of stacking them.
+  const [user, systemSettings] = await Promise.all([
+    getCurrentUser(),
+    getSystemSettings(),
+  ])
 
   if (!user) {
     redirect('/')
   }
-
-  const systemSettings = await getSystemSettings()
 
   return (
     <LoadingProvider>

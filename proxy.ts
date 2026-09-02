@@ -49,17 +49,19 @@ export async function proxy(req: NextRequest) {
     }
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // getClaims() verifies the JWT signature locally (asymmetric keys) instead of
+  // calling the Supabase Auth server on every request. It still calls getSession()
+  // internally, so an expired access token is refreshed and cookies are updated here.
+  const { data: claimsData } = await supabase.auth.getClaims()
+  const isAuthenticated = Boolean(claimsData?.claims?.sub)
 
   // Protect dashboard routes - redirect to login if no user
-  if (req.nextUrl.pathname.startsWith('/dashboard') && !user) {
+  if (req.nextUrl.pathname.startsWith('/dashboard') && !isAuthenticated) {
     return NextResponse.redirect(new URL('/', req.url))
   }
 
   // Protect login page - redirect to dashboard if user exists
-  if (req.nextUrl.pathname === '/' && user) {
+  if (req.nextUrl.pathname === '/' && isAuthenticated) {
     return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
