@@ -1,8 +1,26 @@
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/system'
 import { NextRequest, NextResponse } from 'next/server'
+
+async function requireSuperAdmin() {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  if (user.role !== 'SUPER_ADMIN') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  return null
+}
 
 // GET all companies with their sites
 export async function GET() {
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
+
   try {
     console.log('[v0] Fetching companies from database...')
     const companies = await prisma.company.findMany({
@@ -32,6 +50,9 @@ export async function GET() {
 
 // POST create new company
 export async function POST(req: NextRequest) {
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
+
   try {
     const { name } = await req.json()
 
@@ -81,6 +102,9 @@ export async function POST(req: NextRequest) {
 
 // PUT update company
 export async function PUT(req: NextRequest) {
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
+
   try {
     const { id, name } = await req.json()
 
@@ -119,6 +143,9 @@ export async function PUT(req: NextRequest) {
 
 // DELETE company
 export async function DELETE(req: NextRequest) {
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
+
   try {
     const { searchParams } = new URL(req.url)
     const id = searchParams.get('id')
