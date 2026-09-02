@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/error-boundaries -- this try/catch handles server data loading failures. */
 export const dynamic = 'force-dynamic'
 
+import { Suspense } from 'react'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
 import { StatsCards } from '@/components/dashboard/stats-cards'
@@ -11,8 +12,21 @@ import { UpcomingLeaves } from '@/components/dashboard/upcoming-leaves'
 import { tallyAttendance, computeAttendanceRate, resolveAttendanceStatus } from '@/lib/attendance-utils'
 import Link from 'next/link'
 import { getBusinessDateBounds } from '@/lib/timezone'
+import { DashboardContentSkeleton } from '@/components/skeletons/dashboard-content-skeleton'
 
-export default async function DashboardPage() {
+// Wrapping the heavy data-fetching content in its own Suspense boundary (instead
+// of relying solely on the route-level loading.tsx) guarantees a plain CSS
+// skeleton shows immediately on every navigation to this page, matching the
+// reliable behavior already used on the Employees page.
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardContentSkeleton />}>
+      <DashboardContent />
+    </Suspense>
+  )
+}
+
+async function DashboardContent() {
   try {
     // Get current user to determine data filtering
     const currentUser = await getCurrentUser()
