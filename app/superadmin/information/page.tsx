@@ -8,7 +8,8 @@ import { ShieldAlert } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 
 // 👉 Import fungsi penarik datanya juga
-import { updateSettings, updateMobileAppVersion, getSystemSettings } from '../actions'
+import { updateSettings, updateMobileAppVersion } from '../actions'
+import { getSystemSettings } from '@/lib/system-settings'
 
 export default function InformationPage() {
   const [previewLogo, setPreviewLogo] = useState<string | null>(null)

@@ -131,14 +131,6 @@ export async function updateMobileAppVersion(formData: FormData) {
   revalidateTag(SYSTEM_SETTINGS_TAG, 'max')
 }
 
-// Tambahkan ini di bagian paling bawah actions.ts
-export async function getSystemSettings() {
-  const settings = await prisma.systemSettings.findUnique({
-    where: { id: 'default' }
-  })
-  return settings
-}
-
 export async function getShifts() {
   try {
     const shifts = await prisma.shift.findMany({

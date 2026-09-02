@@ -24,7 +24,8 @@ import {
 import { QRCodeCanvas } from 'qrcode.react'
 import { MapPin, Printer, Download, Search, X, Loader2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
-import { getAttendanceLocations, getPatrolLocations, getAllSites, getSystemSettings } from '@/app/superadmin/actions'
+import { getAttendanceLocations, getPatrolLocations, getAllSites } from '@/app/superadmin/actions'
+import { getSystemSettings } from '@/lib/system-settings'
 import { toast } from 'sonner'
 
 interface Location {
