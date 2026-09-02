@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import Image from 'next/image'
 import { ShieldAlert } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 
@@ -116,9 +117,12 @@ export default function InformationPage() {
                 <p className="text-sm text-muted-foreground">
                   {previewLogo ? 'New logo preview' : 'Currently used logo'}
                 </p>
-                <img
+                <Image
                   src={previewLogo || settings.logoUrl || '/koperasi_icon.png'}
                   alt={previewLogo ? 'New app logo preview' : 'Currently used app logo'}
+                  width={128}
+                  height={128}
+                  unoptimized
                   className="h-32 w-32 rounded-lg border border-border bg-muted object-contain p-2"
                 />
               </div>
