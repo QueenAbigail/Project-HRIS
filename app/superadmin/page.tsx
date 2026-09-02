@@ -1,4 +1,5 @@
 
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { LiveLoginActivityCard } from '@/components/superadmin/live-login-activity-card'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { LayoutDashboard, LogIn, UserPlus, AlertTriangle, Clock } from 'lucide-react'
 import { CronStatusCard } from '@/components/superadmin/cron-status-card'
 import { getActivityErrorCounts, getAttendanceActivity, getLoginActivity } from '@/lib/auth-activity'
+import { SuperadminContentSkeleton } from '@/components/skeletons/superadmin-content-skeleton'
 
 
 interface UserChangeActivity {
@@ -108,7 +110,18 @@ const getActivityIcon = (type: string) => {
   }
 }
 
-export default async function DashboardPage() {
+// Wrapping the heavy data-fetching content in its own Suspense boundary
+// guarantees a plain CSS skeleton shows immediately on every navigation to
+// this page, matching the reliable behavior already used on the Employees page.
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<SuperadminContentSkeleton />}>
+      <DashboardContent />
+    </Suspense>
+  )
+}
+
+async function DashboardContent() {
   const [loginActivities, attendanceActivities, errorCounts] = await Promise.all([
     getLoginActivity(20),
     getAttendanceActivity(20),

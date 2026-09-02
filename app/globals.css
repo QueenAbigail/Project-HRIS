@@ -42,6 +42,9 @@
   --success-foreground: oklch(98% 0.001 265);
   --warning: oklch(65% 0.1 70);
   --warning-foreground: oklch(98% 0.001 265);
+  /* Deliberately darker than --muted/--accent so loading skeletons stay
+     visible against the near-white background in light mode. */
+  --skeleton: oklch(90% 0.006 265);
 }
 
 .dark {
@@ -81,6 +84,8 @@
   --success-foreground: oklch(0.13 0.005 260);
   --warning: oklch(0.75 0.15 65);
   --warning-foreground: oklch(0.13 0.005 260);
+  /* Lighter than --muted/--accent for a clearer gap against the dark background. */
+  --skeleton: oklch(0.32 0.014 260);
 }
 
 @theme inline {
@@ -126,6 +131,7 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-skeleton: var(--skeleton);
 }
 
 @layer base {
