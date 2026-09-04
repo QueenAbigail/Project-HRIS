@@ -16,6 +16,26 @@ async function requireSuperAdmin() {
   return null
 }
 
+function validateCoordinates(latitude: unknown, longitude: unknown) {
+  const values = [
+    { name: 'latitude', value: latitude, min: -90, max: 90 },
+    { name: 'longitude', value: longitude, min: -180, max: 180 },
+  ]
+
+  for (const coordinate of values) {
+    if (coordinate.value === null || coordinate.value === undefined || coordinate.value === '') {
+      continue
+    }
+
+    const numericValue = Number(coordinate.value)
+    if (!Number.isFinite(numericValue) || numericValue < coordinate.min || numericValue > coordinate.max) {
+      return `${coordinate.name} must be between ${coordinate.min} and ${coordinate.max}`
+    }
+  }
+
+  return null
+}
+
 // POST create new site for a company
 export async function POST(
   req: NextRequest,
@@ -33,6 +53,11 @@ export async function POST(
         { error: 'Site name and code are required' },
         { status: 400 }
       )
+    }
+
+    const coordinateError = validateCoordinates(latitude, longitude)
+    if (coordinateError) {
+      return NextResponse.json({ error: coordinateError }, { status: 400 })
     }
 
     const site = await prisma.site.create({
@@ -84,6 +109,11 @@ export async function PUT(
         { error: 'All fields are required' },
         { status: 400 }
       )
+    }
+
+    const coordinateError = validateCoordinates(latitude, longitude)
+    if (coordinateError) {
+      return NextResponse.json({ error: coordinateError }, { status: 400 })
     }
 
     const { id: companyId } = await params
