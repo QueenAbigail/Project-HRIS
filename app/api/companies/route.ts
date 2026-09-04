@@ -55,17 +55,25 @@ export async function POST(req: NextRequest) {
 
   try {
     const { name } = await req.json()
+    const companyName = typeof name === 'string' ? name.trim() : ''
 
-    if (!name || !name.trim()) {
+    if (!companyName) {
       return NextResponse.json(
         { error: 'Company name is required' },
         { status: 400 }
       )
     }
 
+    if (companyName.length > 100) {
+      return NextResponse.json(
+        { error: 'Company name must be 100 characters or fewer' },
+        { status: 400 }
+      )
+    }
+
     // Check if company already exists
     const existing = await prisma.company.findUnique({
-      where: { name: name.trim() },
+      where: { name: companyName },
     })
 
     if (existing) {
@@ -76,7 +84,7 @@ export async function POST(req: NextRequest) {
     }
 
     const company = await prisma.company.create({
-      data: { name: name.trim() },
+      data: { name: companyName },
       include: {
         sites: {
           select: {
@@ -107,17 +115,25 @@ export async function PUT(req: NextRequest) {
 
   try {
     const { id, name } = await req.json()
+    const companyName = typeof name === 'string' ? name.trim() : ''
 
-    if (!id || !name || !name.trim()) {
+    if (!id || !companyName) {
       return NextResponse.json(
         { error: 'Company ID and name are required' },
         { status: 400 }
       )
     }
 
+    if (companyName.length > 100) {
+      return NextResponse.json(
+        { error: 'Company name must be 100 characters or fewer' },
+        { status: 400 }
+      )
+    }
+
     const company = await prisma.company.update({
       where: { id },
-      data: { name: name.trim() },
+      data: { name: companyName },
       include: {
         sites: {
           select: {
