@@ -71,18 +71,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check if company already exists
-    const existing = await prisma.company.findUnique({
-      where: { name: companyName },
-    })
-
-    if (existing) {
-      return NextResponse.json(
-        { error: 'Company already exists' },
-        { status: 409 }
-      )
-    }
-
     const company = await prisma.company.create({
       data: { name: companyName },
       include: {
@@ -99,8 +87,19 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json(company, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating company:', error)
+
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        {
+          error: 'Company already exists',
+          code: 'COMPANY_NAME_EXISTS',
+        },
+        { status: 409 }
+      )
+    }
+
     return NextResponse.json(
       { error: 'Failed to create company' },
       { status: 500 }
