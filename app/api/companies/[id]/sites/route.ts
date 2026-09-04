@@ -86,8 +86,13 @@ export async function PUT(
       )
     }
 
+    const { id: companyId } = await params
+
     const site = await prisma.site.update({
-      where: { id: siteId },
+      where: {
+        id: siteId,
+        companyId,
+      },
       data: {
         name: name.trim(),
         code: code.trim().toUpperCase(),
@@ -112,6 +117,12 @@ export async function PUT(
         { status: 409 }
       )
     }
+    if (error.code === 'P2025') {
+      return NextResponse.json(
+        { error: 'Site not found for this company' },
+        { status: 404 }
+      )
+    }
     return NextResponse.json(
       { error: 'Failed to update site' },
       { status: 500 }
@@ -130,6 +141,7 @@ export async function DELETE(
   try {
     const { searchParams } = new URL(req.url)
     const siteId = searchParams.get('siteId')
+    const { id: companyId } = await params
 
     if (!siteId) {
       return NextResponse.json(
@@ -139,12 +151,21 @@ export async function DELETE(
     }
 
     await prisma.site.delete({
-      where: { id: siteId },
+      where: {
+        id: siteId,
+        companyId,
+      },
     })
 
     return NextResponse.json({ success: true })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting site:', error)
+    if (error.code === 'P2025') {
+      return NextResponse.json(
+        { error: 'Site not found for this company' },
+        { status: 404 }
+      )
+    }
     return NextResponse.json(
       { error: 'Failed to delete site' },
       { status: 500 }
