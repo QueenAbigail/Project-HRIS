@@ -1,8 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Smartphone, Trash2, AlertTriangle, CheckCircle2, Clock, Loader2 } from 'lucide-react'
+import { Smartphone, Trash2, AlertTriangle, CheckCircle2, Clock, Loader2, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -15,13 +16,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { getDeviceBindings, removeDeviceBinding } from '@/app/superadmin/actions'
 
 interface DeviceBinding {
@@ -66,7 +60,7 @@ function isSupportedDeviceType(value: string): value is DeviceBinding['deviceTyp
  */
 export default function DeviceManagementPage() {
   const [devices, setDevices] = useState<DeviceBinding[]>([])
-  const [filterType, setFilterType] = useState<'all' | 'active' | 'inactive'>('all')
+  const [searchQuery, setSearchQuery] = useState('')
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null)
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -102,10 +96,11 @@ export default function DeviceManagementPage() {
     return () => window.clearTimeout(load)
   }, [loadDevices])
 
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
   const filteredDevices = devices.filter((device) => {
-    if (filterType === 'active') return device.isActive
-    if (filterType === 'inactive') return !device.isActive
-    return true
+    if (!normalizedSearchQuery) return true
+    return [device.userName, device.userEmail, device.userId]
+      .some((value) => value.toLowerCase().includes(normalizedSearchQuery))
   })
 
   const handleRemoveDevice = (deviceId: string) => {
@@ -195,19 +190,19 @@ export default function DeviceManagementPage() {
         </Card>
       </div>
 
-      {/* Filter */}
-      <div className="flex items-center gap-4">
-        <Select value={filterType} onValueChange={(value: any) => setFilterType(value)}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Devices</SelectItem>
-            <SelectItem value="active">Active Only</SelectItem>
-            <SelectItem value="inactive">Inactive Only</SelectItem>
-          </SelectContent>
-        </Select>
-        <p className="text-sm text-muted-foreground ml-auto">
+      {/* Search */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative w-full sm:max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search by employee name or code"
+            aria-label="Search devices by employee name or code"
+            className="pl-9"
+          />
+        </div>
+        <p className="text-sm text-muted-foreground sm:ml-auto">
           Showing {filteredDevices.length} device{filteredDevices.length !== 1 ? 's' : ''}
         </p>
       </div>
@@ -234,7 +229,9 @@ export default function DeviceManagementPage() {
   <Card>
             <CardContent className="pt-6 text-center">
               <Smartphone className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-muted-foreground">No devices found</p>
+              <p className="text-muted-foreground">
+                {normalizedSearchQuery ? 'No devices match your search' : 'No devices found'}
+              </p>
             </CardContent>
           </Card>
         ) : (
