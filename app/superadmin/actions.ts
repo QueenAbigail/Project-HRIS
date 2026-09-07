@@ -325,6 +325,8 @@ export async function getAllEmployees() {
 // ==================== DEVICE MANAGEMENT ACTIONS ====================
 
 export async function getDeviceBindings() {
+  await requireSuperAdmin()
+
   try {
     console.log('[v0] Fetching all device bindings...')
     
@@ -371,6 +373,8 @@ export async function getDeviceBindings() {
 }
 
 export async function removeDeviceBinding(deviceId: string) {
+  await requireSuperAdmin()
+
   try {
     console.log('[v0] Removing device binding:', deviceId)
 
