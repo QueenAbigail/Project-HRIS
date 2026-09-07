@@ -1,16 +1,26 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Plus, MoreVertical, Pencil, Trash2, Search, X, Loader2 } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 
 // Types
 interface MasterDataItem {
@@ -26,7 +36,6 @@ interface Category {
 }
 
 export default function DataPage() {
-  const { toast } = useToast()
   const [items, setItems] = useState<Record<string, MasterDataItem[]>>({
     department: [],
     position: [],
@@ -50,6 +59,8 @@ export default function DataPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [pendingDeletion, setPendingDeletion] = useState<{ categoryKey: string; item: MasterDataItem } | null>(null)
 
   const categoryConfig: Category[] = [
     { title: 'Religion', key: 'religion' },
@@ -58,31 +69,37 @@ export default function DataPage() {
     { title: 'Blood Type', key: 'bloodType' },
   ]
 
-  // Fetch all categories on mount
-  useEffect(() => {
-    const fetchAllCategories = async () => {
-      try {
-        setIsLoading(true)
-        const categoryKeys = ['religion', 'maritalStatus', 'employmentStatus', 'bloodType']
-        const results: Record<string, MasterDataItem[]> = {}
+  const fetchAllCategories = useCallback(async (showLoading = true) => {
+    try {
+      if (showLoading) setIsLoading(true)
+      setLoadError(false)
+      const results: Record<string, MasterDataItem[]> = {}
 
-        for (const key of categoryKeys) {
-          const response = await fetch(`/api/master-data?category=${key}`)
-          if (!response.ok) throw new Error(`Failed to fetch ${key}`)
-          results[key] = await response.json()
-        }
+      const categoryKeys = ['religion', 'maritalStatus', 'employmentStatus', 'bloodType']
+      await Promise.all(categoryKeys.map(async (key) => {
+        const response = await fetch(`/api/master-data?category=${encodeURIComponent(key)}`)
+        const data = await response.json()
+        if (!response.ok || data.error) throw new Error(data.error || `Failed to fetch ${key}`)
+        results[key] = data
+      }))
 
-        setItems(results)
-      } catch (error) {
-        console.error('[v0] Error fetching master data:', error)
-        toast({ title: 'Error', description: 'Failed to load data', variant: 'destructive' })
-      } finally {
-        setIsLoading(false)
-      }
+      setItems((previous) => ({ ...previous, ...results }))
+    } catch (error) {
+      console.error('[v0] Error fetching master data:', error)
+      setLoadError(true)
+      toast.error('Failed to load data')
+    } finally {
+      if (showLoading) setIsLoading(false)
     }
+  }, [])
 
-    fetchAllCategories()
-  }, [toast])
+  useEffect(() => {
+    const loadCategories = window.setTimeout(() => {
+      void fetchAllCategories()
+    }, 0)
+
+    return () => window.clearTimeout(loadCategories)
+  }, [fetchAllCategories])
 
   const handleAddNewEntry = (categoryKey: string) => {
     setSelectedCategory(categoryKey)
@@ -98,6 +115,12 @@ export default function DataPage() {
     setIsDialogOpen(true)
   }
 
+  const confirmDeletion = async () => {
+    if (!pendingDeletion) return
+    await handleDeleteItem(pendingDeletion.categoryKey, pendingDeletion.item.id)
+    setPendingDeletion(null)
+  }
+
   const handleDeleteItem = async (categoryKey: string, itemId: string) => {
     try {
       const response = await fetch(`/api/master-data?id=${encodeURIComponent(itemId)}&category=${encodeURIComponent(categoryKey)}`, { method: 'DELETE' })
@@ -106,15 +129,16 @@ export default function DataPage() {
         ...prev,
         [categoryKey]: prev[categoryKey].filter(item => item.id !== itemId)
       }))
-      toast({ title: 'Success', description: 'Entry deleted successfully' })
+      toast.success('Entry deleted successfully')
+      void fetchAllCategories(false)
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to delete entry', variant: 'destructive' })
+      toast.error('Failed to delete entry')
     }
   }
 
   const handleSaveItem = async () => {
     if (!newItemValue.trim() || !selectedCategory) {
-      toast({ title: 'Error', description: 'Value is required', variant: 'destructive' })
+      toast.error('Value is required')
       return
     }
 
@@ -124,7 +148,7 @@ export default function DataPage() {
         const response = await fetch('/api/master-data', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingItem.id, value: newItemValue.trim() })
+          body: JSON.stringify({ id: editingItem.id, category: selectedCategory, value: newItemValue.trim() })
         })
         if (!response.ok) throw new Error('Failed to update')
         const updated = await response.json()
@@ -132,7 +156,8 @@ export default function DataPage() {
           ...prev,
           [selectedCategory]: prev[selectedCategory].map(item => item.id === updated.id ? updated : item)
         }))
-        toast({ title: 'Success', description: 'Entry updated successfully' })
+        toast.success('Entry updated successfully')
+        void fetchAllCategories(false)
       } else {
         const response = await fetch('/api/master-data', {
           method: 'POST',
@@ -148,7 +173,8 @@ export default function DataPage() {
           ...prev,
           [selectedCategory]: [...prev[selectedCategory], created].sort((a, b) => a.value.localeCompare(b.value))
         }))
-        toast({ title: 'Success', description: 'Entry added successfully' })
+        toast.success('Entry added successfully')
+        void fetchAllCategories(false)
       }
 
       setIsDialogOpen(false)
@@ -156,7 +182,7 @@ export default function DataPage() {
       setNewItemValue('')
       setSelectedCategory('')
     } catch (error) {
-      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to save', variant: 'destructive' })
+      toast.error(error instanceof Error ? error.message : 'Failed to save')
     } finally {
       setIsSaving(false)
     }
@@ -187,6 +213,15 @@ export default function DataPage() {
   }
 
   if (isLoading) return <div className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
+
+  if (loadError) {
+    return (
+      <Card className="p-6">
+        <p className="text-sm text-destructive">Unable to load management data.</p>
+        <Button variant="outline" className="mt-4" onClick={() => void fetchAllCategories()}>Try again</Button>
+      </Card>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -256,7 +291,7 @@ export default function DataPage() {
                               <Pencil className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteItem(category.key, item.id)} className="cursor-pointer text-destructive">
+                            <DropdownMenuItem onClick={() => setPendingDeletion({ categoryKey: category.key, item })} className="cursor-pointer text-destructive">
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete
                             </DropdownMenuItem>
@@ -278,6 +313,26 @@ export default function DataPage() {
         })}
       </div>
 
+      <AlertDialog
+        open={pendingDeletion !== null}
+        onOpenChange={(open) => !open && setPendingDeletion(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete management entry?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will deactivate “{pendingDeletion?.item.value}”. It will no longer appear in active lists.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={(event) => { event.preventDefault(); void confirmDeletion() }}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent>
           <DialogHeader>
@@ -291,7 +346,11 @@ export default function DataPage() {
                 value={newItemValue}
                 onChange={(e) => setNewItemValue(e.target.value)}
                 placeholder="Enter value"
-                onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+                    handleSaveItem()
+                  }
+                }}
               />
             </div>
             <Button onClick={handleSaveItem} className="w-full" disabled={isSaving}>
