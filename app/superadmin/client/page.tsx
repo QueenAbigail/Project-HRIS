@@ -412,7 +412,11 @@ export default function ClientPage() {
                 value={newItemName}
                 onChange={(e) => setNewItemName(e.target.value)}
                 placeholder={`Enter ${editingType === 'company' ? 'company' : 'site'} name`}
-                onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
+                onKeyDown={(e) => {
+  if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+    handleSaveItem()
+  }
+}}
               />
             </div>
             {editingType === 'site' && (
@@ -424,7 +428,11 @@ export default function ClientPage() {
                     onChange={(e) => setNewItemCode(e.target.value.toUpperCase())}
                     placeholder="e.g., HOJ"
                     maxLength={20}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
+                    onKeyDown={(e) => {
+  if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+    handleSaveItem()
+  }
+}}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -436,7 +444,11 @@ export default function ClientPage() {
                       value={newItemLatitude}
                       onChange={(e) => setNewItemLatitude(e.target.value)}
                       placeholder="e.g., -6.2088"
-                      onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
+                      onKeyDown={(e) => {
+  if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+    handleSaveItem()
+  }
+}}
                     />
                   </div>
                   <div className="space-y-2">
@@ -447,7 +459,11 @@ export default function ClientPage() {
                       value={newItemLongitude}
                       onChange={(e) => setNewItemLongitude(e.target.value)}
                       placeholder="e.g., 106.8456"
-                      onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
+                      onKeyDown={(e) => {
+  if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+    handleSaveItem()
+  }
+}}
                     />
                   </div>
                 </div>
