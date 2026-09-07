@@ -31,11 +31,17 @@ interface DeviceBinding {
   userEmail: string
   deviceId: string
   deviceName: string
-  deviceType: string
-  appVersion?: string
+  deviceType: 'android' | 'ios' | 'web'
+  appVersion: string | null
   bindDate: string
   lastUsed: string
   isActive: boolean
+}
+
+const SUPPORTED_DEVICE_TYPES = ['android', 'ios', 'web'] as const
+
+function isSupportedDeviceType(value: string): value is DeviceBinding['deviceType'] {
+  return SUPPORTED_DEVICE_TYPES.includes(value as DeviceBinding['deviceType'])
 }
 
 /**
@@ -70,7 +76,13 @@ export default function DeviceManagementPage() {
     try {
       setLoading(true)
       const data = await getDeviceBindings()
-      setDevices(data)
+      const normalizedDevices: DeviceBinding[] = data
+        .filter((device) => isSupportedDeviceType(device.deviceType))
+        .map((device) => ({
+          ...device,
+          deviceType: device.deviceType as DeviceBinding['deviceType'],
+        }))
+      setDevices(normalizedDevices)
     } catch (error) {
       console.error('[v0] Error loading devices:', error)
       toast.error('Failed to load devices')
@@ -249,12 +261,10 @@ export default function DeviceManagementPage() {
                         <span className="text-muted-foreground">Last Used:</span>
                         <span>{device.lastUsed}</span>
                       </div>
-                      {device.appVersion && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">App Version:</span>
-                          <span>{device.appVersion}</span>
-                        </div>
-                      )}
+  <div className="flex items-center justify-between">
+  <span className="text-muted-foreground">App Version:</span>
+  <span>{device.appVersion ?? 'Not provided'}</span>
+  </div>
                     </div>
 
                     <div className="flex items-center gap-2 mt-4">
