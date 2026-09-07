@@ -70,11 +70,13 @@ export default function DeviceManagementPage() {
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null)
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
   const loadDevices = useCallback(async () => {
     try {
       setLoading(true)
+      setLoadError(false)
       const data = await getDeviceBindings()
       const normalizedDevices: DeviceBinding[] = data
         .filter((device) => isSupportedDeviceType(device.deviceType))
@@ -85,8 +87,8 @@ export default function DeviceManagementPage() {
       setDevices(normalizedDevices)
     } catch (error) {
       console.error('[v0] Error loading devices:', error)
+      setLoadError(true)
       toast.error('Failed to load devices')
-      setDevices([])
     } finally {
       setLoading(false)
     }
@@ -219,8 +221,17 @@ export default function DeviceManagementPage() {
               <p className="text-muted-foreground">Loading devices...</p>
             </CardContent>
           </Card>
-        ) : filteredDevices.length === 0 ? (
-          <Card>
+      ) : loadError ? (
+  <Card>
+  <CardContent className="pt-6 text-center">
+  <Smartphone className="h-12 w-12 text-destructive/50 mx-auto mb-3" />
+  <p className="text-destructive">Unable to load devices</p>
+  <p className="text-sm text-muted-foreground mt-1">Try again to retrieve the registered device bindings.</p>
+  <Button variant="outline" className="mt-4" onClick={() => void loadDevices()}>Try again</Button>
+  </CardContent>
+  </Card>
+      ) : filteredDevices.length === 0 ? (
+  <Card>
             <CardContent className="pt-6 text-center">
               <Smartphone className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
               <p className="text-muted-foreground">No devices found</p>
