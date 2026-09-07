@@ -8,6 +8,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Plus, MoreVertical, Pencil, Trash2, ChevronDown, Search, X, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -38,6 +48,11 @@ export default function ClientPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [pendingDeletion, setPendingDeletion] = useState<
+    | { type: 'company'; companyId: string; name: string }
+    | { type: 'site'; companyId: string; siteId: string; name: string }
+    | null
+  >(null)
 
   useEffect(() => {
     const fetchCompanies = async () => {
@@ -107,6 +122,26 @@ export default function ClientPage() {
     setNewItemLongitude(site.longitude ? String(site.longitude) : '')
     setEditingCompanyId(companyId)
     setIsDialogOpen(true)
+  }
+
+  const requestDeleteCompany = (company: Company) => {
+    setPendingDeletion({ type: 'company', companyId: company.id, name: company.name })
+  }
+
+  const requestDeleteSite = (companyId: string, site: Site) => {
+    setPendingDeletion({ type: 'site', companyId, siteId: site.id, name: site.name })
+  }
+
+  const confirmDeletion = async () => {
+    if (!pendingDeletion) return
+
+    if (pendingDeletion.type === 'company') {
+      await handleDeleteCompany(pendingDeletion.companyId)
+    } else {
+      await handleDeleteSite(pendingDeletion.companyId, pendingDeletion.siteId)
+    }
+
+    setPendingDeletion(null)
   }
 
   const handleDeleteCompany = async (companyId: string) => {
@@ -267,7 +302,7 @@ export default function ClientPage() {
                         <Pencil className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDeleteCompany(company.id)} className="text-destructive">
+                      <DropdownMenuItem onClick={() => requestDeleteCompany(company)} className="text-destructive">
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
                       </DropdownMenuItem>
@@ -296,7 +331,7 @@ export default function ClientPage() {
                               <Pencil className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteSite(company.id, site.id)} className="text-destructive">
+                            <DropdownMenuItem onClick={() => requestDeleteSite(company.id, site)} className="text-destructive">
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete
                             </DropdownMenuItem>
@@ -327,6 +362,35 @@ export default function ClientPage() {
           </div>
         )}
       </div>
+
+      <AlertDialog
+        open={pendingDeletion !== null}
+        onOpenChange={(open) => !open && setPendingDeletion(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {pendingDeletion?.type === 'company' ? 'company' : 'site'}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {pendingDeletion?.name ? `“${pendingDeletion.name}”` : 'this item'}.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault()
+                void confirmDeletion()
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={isDialogOpen} onOpenChange={() => setIsDialogOpen(false)}>
         <DialogContent>
