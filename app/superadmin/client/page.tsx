@@ -56,9 +56,9 @@ export default function ClientPage() {
     | null
   >(null)
 
-  const fetchCompanies = useCallback(async () => {
+  const fetchCompanies = useCallback(async (showLoading = true) => {
     try {
-      setIsLoading(true)
+      if (showLoading) setIsLoading(true)
       setLoadError(false)
       const response = await fetch('/api/companies')
       const data = await response.json()
@@ -69,7 +69,7 @@ export default function ClientPage() {
       setLoadError(true)
       toast.error('Failed to load companies')
     } finally {
-      setIsLoading(false)
+      if (showLoading) setIsLoading(false)
     }
   }, [])
 
@@ -159,6 +159,7 @@ export default function ClientPage() {
       if (!response.ok) throw new Error('Failed to delete')
       setCompanies(prev => prev.filter(c => c.id !== companyId))
       toast.success('Company deleted successfully')
+      void fetchCompanies(false)
     } catch (error) {
       toast.error('Failed to delete company')
     }
@@ -170,6 +171,7 @@ export default function ClientPage() {
       if (!response.ok) throw new Error('Failed to delete')
       setCompanies(prev => prev.map(c => c.id === companyId ? { ...c, sites: c.sites.filter(s => s.id !== siteId) } : c))
       toast.success('Site deleted successfully')
+      void fetchCompanies(false)
     } catch (error) {
       toast.error('Failed to delete site')
     }
@@ -201,6 +203,7 @@ export default function ClientPage() {
           setCompanies(prev => [...prev, { id: result.id, name: result.name, sites: [] }])
         }
         toast.success(editingItem ? 'Company updated' : 'Company added')
+        void fetchCompanies(false)
       } else if (editingType === 'site') {
         const method = editingItem ? 'PUT' : 'POST'
         const latitude = newItemLatitude ? parseFloat(newItemLatitude) : null
@@ -229,6 +232,7 @@ export default function ClientPage() {
         setEditingType('')
         
         toast.success(editingItem ? 'Site updated successfully' : 'Site added successfully')
+        void fetchCompanies(false)
       }
     } catch (error: any) {
       const errorMessage = error?.message || 'Failed to save'
