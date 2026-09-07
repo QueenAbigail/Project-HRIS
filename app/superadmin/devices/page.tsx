@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Smartphone, Trash2, AlertTriangle, CheckCircle2, Clock, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -66,11 +66,7 @@ export default function DeviceManagementPage() {
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
 
-  useEffect(() => {
-    loadDevices()
-  }, [])
-
-  const loadDevices = async () => {
+  const loadDevices = useCallback(async () => {
     try {
       setLoading(true)
       const data = await getDeviceBindings()
@@ -82,7 +78,15 @@ export default function DeviceManagementPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    const load = window.setTimeout(() => {
+      void loadDevices()
+    }, 0)
+
+    return () => window.clearTimeout(load)
+  }, [loadDevices])
 
   const filteredDevices = devices.filter((device) => {
     if (filterType === 'active') return device.isActive
