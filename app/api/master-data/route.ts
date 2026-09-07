@@ -2,7 +2,15 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
 import { NextRequest, NextResponse } from 'next/server'
 
-const ALLOWED_CATEGORIES = new Set(['department', 'position', 'certificate'])
+const ALLOWED_CATEGORIES = new Set([
+  'department',
+  'position',
+  'certificate',
+  'religion',
+  'maritalStatus',
+  'employmentStatus',
+  'bloodType',
+])
 const MAX_VALUE_LENGTH = 100
 
 async function requireSuperAdmin() {
