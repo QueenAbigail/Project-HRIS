@@ -49,13 +49,13 @@ export default function ClientPage() {
         setCompanies(Array.isArray(data) ? data : [])
       } catch (error) {
         console.error('Error fetching companies:', error)
-        toast({ title: 'Error', description: 'Failed to load companies', variant: 'destructive' })
+        toast.error('Failed to load companies')
       } finally {
         setIsLoading(false)
       }
     }
     fetchCompanies()
-  }, [toast])
+  }, [])
 
   const filteredCompanies = companies
     .map((company) => ({
@@ -114,9 +114,9 @@ export default function ClientPage() {
       const response = await fetch(`/api/companies?id=${companyId}`, { method: 'DELETE' })
       if (!response.ok) throw new Error('Failed to delete')
       setCompanies(prev => prev.filter(c => c.id !== companyId))
-      toast({ title: 'Success', description: 'Company deleted successfully' })
+      toast.success('Company deleted successfully')
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to delete company', variant: 'destructive' })
+      toast.error('Failed to delete company')
     }
   }
 
@@ -125,7 +125,7 @@ export default function ClientPage() {
       const response = await fetch(`/api/companies/${companyId}/sites?siteId=${siteId}`, { method: 'DELETE' })
       if (!response.ok) throw new Error('Failed to delete')
       setCompanies(prev => prev.map(c => c.id === companyId ? { ...c, sites: c.sites.filter(s => s.id !== siteId) } : c))
-      toast({ title: 'Success', description: 'Site deleted successfully' })
+      toast.success('Site deleted successfully')
     } catch (error) {
       toast.error('Failed to delete site')
     }
@@ -307,7 +307,7 @@ export default function ClientPage() {
                   </div>
                 ) : (
                   <div className="py-4 text-center">
-                    <p className="text-sm text-muted-foreground">No sites yet. Click "Add Site" to get started.</p>
+                    <p className="text-sm text-muted-foreground">No sites yet. Click &quot;Add Site&quot; to get started.</p>
                   </div>
                 )}
               </CollapsibleContent>
