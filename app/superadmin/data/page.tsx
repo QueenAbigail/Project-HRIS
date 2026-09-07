@@ -100,7 +100,7 @@ export default function DataPage() {
 
   const handleDeleteItem = async (categoryKey: string, itemId: string) => {
     try {
-      const response = await fetch(`/api/master-data?id=${itemId}`, { method: 'DELETE' })
+      const response = await fetch(`/api/master-data?id=${encodeURIComponent(itemId)}&category=${encodeURIComponent(categoryKey)}`, { method: 'DELETE' })
       if (!response.ok) throw new Error('Failed to delete')
       setItems(prev => ({
         ...prev,
