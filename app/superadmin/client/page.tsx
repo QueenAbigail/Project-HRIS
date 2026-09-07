@@ -81,17 +81,27 @@ export default function ClientPage() {
     return () => window.clearTimeout(loadCompanies)
   }, [fetchCompanies])
 
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
   const filteredCompanies = companies
-    .map((company) => ({
-      ...company,
-      sites: (company.sites || []).filter((site) =>
-        site.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        site.code.toLowerCase().includes(searchQuery.toLowerCase())
-      ),
-    }))
+    .map((company) => {
+      const companyMatches = normalizedSearchQuery.length === 0 ||
+        company.name.toLowerCase().includes(normalizedSearchQuery)
+
+      return {
+        ...company,
+        sites: companyMatches
+          ? company.sites || []
+          : (company.sites || []).filter((site) =>
+              site.name.toLowerCase().includes(normalizedSearchQuery) ||
+              site.code.toLowerCase().includes(normalizedSearchQuery)
+            ),
+        companyMatches,
+      }
+    })
     .filter(
       (company) =>
-        company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        normalizedSearchQuery.length === 0 ||
+        company.companyMatches ||
         company.sites.length > 0
     )
 
