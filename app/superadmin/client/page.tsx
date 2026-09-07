@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -48,29 +49,37 @@ export default function ClientPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [pendingDeletion, setPendingDeletion] = useState<
     | { type: 'company'; companyId: string; name: string }
     | { type: 'site'; companyId: string; siteId: string; name: string }
     | null
   >(null)
 
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        setIsLoading(true)
-        const response = await fetch('/api/companies')
-        const data = await response.json()
-        if (data.error) throw new Error(data.error)
-        setCompanies(Array.isArray(data) ? data : [])
-      } catch (error) {
-        console.error('Error fetching companies:', error)
-        toast.error('Failed to load companies')
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchCompanies = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      setLoadError(false)
+      const response = await fetch('/api/companies')
+      const data = await response.json()
+      if (!response.ok || data.error) throw new Error(data.error || 'Failed to load companies')
+      setCompanies(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Error fetching companies:', error)
+      setLoadError(true)
+      toast.error('Failed to load companies')
+    } finally {
+      setIsLoading(false)
     }
-    fetchCompanies()
   }, [])
+
+  useEffect(() => {
+    const loadCompanies = window.setTimeout(() => {
+      void fetchCompanies()
+    }, 0)
+
+    return () => window.clearTimeout(loadCompanies)
+  }, [fetchCompanies])
 
   const filteredCompanies = companies
     .map((company) => ({
@@ -234,6 +243,20 @@ export default function ClientPage() {
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin" />
       </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Unable to load clients</CardTitle>
+          <CardDescription>We could not retrieve the company list. Try again.</CardDescription>
+        </CardHeader>
+        <CardFooter>
+          <Button onClick={() => void fetchCompanies()} variant="outline">Try again</Button>
+        </CardFooter>
+      </Card>
     )
   }
 
