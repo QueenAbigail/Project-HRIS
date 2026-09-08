@@ -438,18 +438,6 @@ export async function createDeviceBinding(data: {
   try {
     console.log('[v0] Creating device binding:', { deviceId: data.deviceId, userId: data.userId })
 
-    // Check if user already has a device of this type
-    const existing = await prisma.deviceBinding.findFirst({
-      where: {
-        userId: data.userId,
-        deviceType: data.deviceType
-      }
-    })
-
-    if (existing) {
-      throw new Error(`User already has a ${data.deviceType} device bound. Please remove the previous binding first.`)
-    }
-
     const device = await prisma.deviceBinding.create({
       data: {
         userId: data.userId,
@@ -479,11 +467,14 @@ export async function createDeviceBinding(data: {
       device,
       message: `Device "${data.deviceName}" successfully bound to ${device.user.name}`
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('[v0] Error creating device binding:', {
       message: error instanceof Error ? error.message : String(error),
       error
     })
+    if (error.code === 'P2002') {
+      throw new Error(`User already has a ${data.deviceType} device bound, or this device is already registered. Please remove the previous binding first.`)
+    }
     throw error
   }
 }
