@@ -248,7 +248,7 @@ export default function DeviceManagementPage() {
                       <div>
                         <h3 className="font-semibold text-foreground">{device.userName}</h3>
                         <p className="text-sm text-muted-foreground">
-                          Employee Code: {device.employeeCode ?? 'Not provided'}
+                          {device.employeeCode ?? 'Not provided'}
                         </p>
                       </div>
                     </div>
@@ -264,7 +264,7 @@ export default function DeviceManagementPage() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Device Type:</span>
-                        <span className="font-medium capitalize">{device.deviceType}</span>
+                        <span className="font-medium">{device.deviceName}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Bound Date:</span>
