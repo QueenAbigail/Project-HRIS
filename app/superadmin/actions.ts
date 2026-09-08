@@ -336,9 +336,10 @@ export async function getDeviceBindings() {
           select: {
             id: true,
             name: true,
-            email: true
-          }
-        }
+            email: true,
+            employeeCode: true,
+          },
+        },
       },
       orderBy: { bindDate: 'desc' }
     })
@@ -348,6 +349,7 @@ export async function getDeviceBindings() {
       userId: device.userId,
       userName: device.user.name,
       userEmail: device.user.email,
+      employeeCode: device.user.employeeCode,
       deviceId: device.deviceId,
       deviceName: device.deviceName,
       deviceType: device.deviceType,

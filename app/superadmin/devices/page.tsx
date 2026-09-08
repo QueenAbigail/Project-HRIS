@@ -23,6 +23,7 @@ interface DeviceBinding {
   userId: string
   userName: string
   userEmail: string
+  employeeCode: string | null
   deviceId: string
   deviceName: string
   deviceType: 'android' | 'ios' | 'web'
@@ -246,14 +247,16 @@ export default function DeviceManagementPage() {
                       </div>
                       <div>
                         <h3 className="font-semibold text-foreground">{device.userName}</h3>
-                        <p className="text-sm text-muted-foreground">{device.userId}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Employee Code: {device.employeeCode ?? 'Not provided'}
+                        </p>
                       </div>
                     </div>
 
                     <div className="grid gap-2 mt-4 text-sm">
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Employee Code:</span>
-                        <span className="font-mono text-xs">{device.userId}</span>
+                        <span className="text-muted-foreground">Type:</span>
+                        <span className="font-medium capitalize">{device.deviceType}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Device ID:</span>
