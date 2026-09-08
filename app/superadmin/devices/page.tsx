@@ -245,21 +245,23 @@ export default function DeviceManagementPage() {
                         <Smartphone className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-foreground">{device.deviceName}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {device.userName} ({device.userEmail})
-                        </p>
+                        <h3 className="font-semibold text-foreground">{device.userName}</h3>
+                        <p className="text-sm text-muted-foreground">{device.userId}</p>
                       </div>
                     </div>
 
                     <div className="grid gap-2 mt-4 text-sm">
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Type:</span>
-                        <span className="font-medium capitalize">{device.deviceType}</span>
+                        <span className="text-muted-foreground">Employee Code:</span>
+                        <span className="font-mono text-xs">{device.userId}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Device ID:</span>
                         <span className="font-mono text-xs">{device.deviceId}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Device Type:</span>
+                        <span className="font-medium capitalize">{device.deviceType}</span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Bound Date:</span>
