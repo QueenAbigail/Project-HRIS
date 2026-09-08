@@ -1,10 +1,21 @@
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/system'
 import { NextRequest, NextResponse } from 'next/server'
+
+async function requireSuperAdmin() {
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (user.role !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  return null
+}
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
+
   try {
     const { id: siteId } = await params
 
@@ -36,6 +47,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
+
   try {
     const { name, latitude, longitude, radius, timezone } = await req.json()
     const { id: siteId } = await params
@@ -81,6 +95,9 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
+
   try {
     const { locationId, name, latitude, longitude, radius, timezone, isActive } = await req.json()
 
@@ -126,6 +143,9 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
+
   try {
     const { searchParams } = new URL(req.url)
     const locationId = searchParams.get('locationId')
