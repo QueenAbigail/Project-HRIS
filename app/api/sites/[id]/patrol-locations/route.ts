@@ -99,6 +99,7 @@ export async function PUT(
   if (authorizationError) return authorizationError
 
   try {
+    const { id: siteId } = await params
     const { locationId, name, latitude, longitude, radius, timezone, isActive } = await req.json()
 
     if (!locationId || !name?.trim() || latitude === undefined || longitude === undefined || !radius || !timezone) {
@@ -109,7 +110,7 @@ export async function PUT(
     }
 
     const location = await prisma.patrolLocation.update({
-      where: { id: locationId },
+      where: { id: locationId, siteId },
       data: {
         name: name.trim(),
         latitude: parseFloat(latitude),
@@ -147,6 +148,7 @@ export async function DELETE(
   if (authorizationError) return authorizationError
 
   try {
+    const { id: siteId } = await params
     const { searchParams } = new URL(req.url)
     const locationId = searchParams.get('locationId')
 
@@ -158,7 +160,7 @@ export async function DELETE(
     }
 
     await prisma.patrolLocation.delete({
-      where: { id: locationId },
+      where: { id: locationId, siteId },
     })
 
     return NextResponse.json({ success: true })
