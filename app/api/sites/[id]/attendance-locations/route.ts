@@ -9,6 +9,29 @@ async function requireSuperAdmin() {
   return null
 }
 
+const TIMEZONES = new Set(['WIB', 'WITA', 'WIT'])
+
+function validateLocationInput(input: {
+  name?: unknown
+  latitude?: unknown
+  longitude?: unknown
+  radius?: unknown
+  timezone?: unknown
+}) {
+  const name = typeof input.name === 'string' ? input.name.trim() : ''
+  const latitude = typeof input.latitude === 'number' ? input.latitude : Number(input.latitude)
+  const longitude = typeof input.longitude === 'number' ? input.longitude : Number(input.longitude)
+  const radius = typeof input.radius === 'number' ? input.radius : Number(input.radius)
+
+  if (!name || name.length > 120) return 'A valid location name is required'
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) return 'Latitude must be between -90 and 90'
+  if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) return 'Longitude must be between -180 and 180'
+  if (!Number.isFinite(radius) || !Number.isInteger(radius) || radius < 1 || radius > 100000) return 'Radius must be a whole number between 1 and 100000'
+  if (typeof input.timezone !== 'string' || !TIMEZONES.has(input.timezone)) return 'Timezone must be WIB, WITA, or WIT'
+
+  return { name, latitude, longitude, radius, timezone: input.timezone }
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -51,24 +74,18 @@ export async function POST(
   if (authorizationError) return authorizationError
 
   try {
-    const { name, latitude, longitude, radius, timezone } = await req.json()
+    const input = await req.json()
     const { id: siteId } = await params
+    const validated = validateLocationInput(input)
 
-    if (!name?.trim() || !latitude || !longitude || !radius || !timezone) {
-      return NextResponse.json(
-        { error: 'All fields are required' },
-        { status: 400 }
-      )
+    if (typeof validated === 'string') {
+      return NextResponse.json({ error: validated }, { status: 400 })
     }
 
     const location = await prisma.attendanceLocation.create({
       data: {
         siteId,
-        name: name.trim(),
-        latitude: parseFloat(latitude),
-        longitude: parseFloat(longitude),
-        radius: parseInt(radius),
-        timezone,
+        ...validated,
       },
       select: {
         id: true,
@@ -100,11 +117,13 @@ export async function PUT(
 
   try {
     const { id: siteId } = await params
-    const { locationId, name, latitude, longitude, radius, timezone, isActive } = await req.json()
+    const input = await req.json()
+    const { locationId, isActive } = input
+    const validated = validateLocationInput(input)
 
-    if (!locationId || !name?.trim() || latitude === undefined || longitude === undefined || !radius || !timezone) {
+    if (!locationId || typeof validated === 'string') {
       return NextResponse.json(
-        { error: 'All fields are required' },
+        { error: typeof validated === 'string' ? validated : 'Location ID is required' },
         { status: 400 }
       )
     }
@@ -112,11 +131,7 @@ export async function PUT(
     const location = await prisma.attendanceLocation.update({
       where: { id: locationId, siteId },
       data: {
-        name: name.trim(),
-        latitude: parseFloat(latitude),
-        longitude: parseFloat(longitude),
-        radius: parseInt(radius),
-        timezone,
+        ...validated,
         isActive: isActive ?? true,
       },
       select: {
