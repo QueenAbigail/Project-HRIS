@@ -14,6 +14,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { MapPin, Plus, Edit, Trash2, Building2, Search, X, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
+const DEFAULT_LOCATION = {
+  name: '',
+  latitude: '',
+  longitude: '',
+  radius: '50',
+  timezone: 'WIB',
+}
+
 interface Location {
   id: string
   name: string
@@ -43,13 +51,7 @@ export default function GPSLocationsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [selectedSiteId, setSelectedSiteId] = useState('')
   
-  const [newLocation, setNewLocation] = useState({
-    name: '',
-    latitude: '',
-    longitude: '',
-    radius: '50',
-    timezone: 'WIB',
-  })
+  const [newLocation, setNewLocation] = useState(DEFAULT_LOCATION)
   
   const [editingLocation, setEditingLocation] = useState<Location | null>(null)
 
@@ -147,7 +149,7 @@ export default function GPSLocationsPage() {
 
       toast({ title: 'Success', description: 'Location saved successfully' })
       setIsAddDialogOpen(false)
-      setNewLocation({ name: '', latitude: '', longitude: '', radius: '50', timezone: 'WIB' })
+      setNewLocation(DEFAULT_LOCATION)
       setEditingLocation(null)
       setSelectedSiteId('')
     } catch (error) {
@@ -186,7 +188,7 @@ export default function GPSLocationsPage() {
   const openAddDialog = (siteId: string) => {
     setSelectedSiteId(siteId)
     setEditingLocation(null)
-    setNewLocation({ name: '', latitude: '', longitude: '', radius: '50' })
+    setNewLocation(DEFAULT_LOCATION)
     setIsAddDialogOpen(true)
   }
 
@@ -198,6 +200,7 @@ export default function GPSLocationsPage() {
       latitude: location.latitude.toString(),
       longitude: location.longitude.toString(),
       radius: location.radius.toString(),
+      timezone: location.timezone,
     })
     setIsAddDialogOpen(true)
   }
@@ -205,7 +208,7 @@ export default function GPSLocationsPage() {
   const handleDialogClose = () => {
     setIsAddDialogOpen(false)
     setEditingLocation(null)
-    setNewLocation({ name: '', latitude: '', longitude: '', radius: '50' })
+    setNewLocation(DEFAULT_LOCATION)
     setSelectedSiteId('')
   }
 
