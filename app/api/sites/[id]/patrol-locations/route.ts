@@ -82,6 +82,15 @@ export async function POST(
       return NextResponse.json({ error: validated }, { status: 400 })
     }
 
+    const duplicate = await prisma.patrolLocation.findFirst({
+      where: { siteId, latitude: validated.latitude, longitude: validated.longitude },
+      select: { id: true },
+    })
+
+    if (duplicate) {
+      return NextResponse.json({ error: 'A location with these GPS coordinates already exists for this site' }, { status: 409 })
+    }
+
     const location = await prisma.patrolLocation.create({
       data: {
         siteId,
@@ -126,6 +135,20 @@ export async function PUT(
         { error: typeof validated === 'string' ? validated : 'Location ID is required' },
         { status: 400 }
       )
+    }
+
+    const duplicate = await prisma.patrolLocation.findFirst({
+      where: {
+        siteId,
+        latitude: validated.latitude,
+        longitude: validated.longitude,
+        NOT: { id: locationId },
+      },
+      select: { id: true },
+    })
+
+    if (duplicate) {
+      return NextResponse.json({ error: 'A location with these GPS coordinates already exists for this site' }, { status: 409 })
     }
 
     const location = await prisma.patrolLocation.update({
