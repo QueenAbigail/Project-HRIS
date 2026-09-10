@@ -65,10 +65,12 @@ export default function PrintQRCodePage() {
   const [sites, setSites] = useState<Site[]>([])
   const [appSettings, setAppSettings] = useState<AppSettings>({ appName: 'Your Company' })
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true)
+      setLoadError(null)
       const [attendance, patrol, allSites, settings] = await Promise.all([
         getAttendanceLocations(),
         getPatrolLocations(),
@@ -87,7 +89,9 @@ export default function PrintQRCodePage() {
       ])
     } catch (error) {
       console.error('[v0] Error loading locations:', error)
-      toast.error('Failed to load locations')
+      const message = error instanceof Error ? error.message : 'Failed to load locations'
+      setLoadError(message)
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -438,9 +442,16 @@ export default function PrintQRCodePage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8">
+            <div className="text-center py-8" role="status" aria-live="polite">
               <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-muted-foreground" />
               <p className="text-muted-foreground">Loading locations...</p>
+            </div>
+          ) : loadError ? (
+            <div className="flex flex-col items-center gap-3 py-8 text-center" role="alert">
+              <p className="text-destructive">Unable to load locations: {loadError}</p>
+              <Button variant="outline" onClick={() => void loadData()}>
+                Retry
+              </Button>
             </div>
           ) : filteredLocations.length === 0 ? (
             <div className="text-center py-8">
