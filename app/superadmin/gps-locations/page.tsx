@@ -313,7 +313,16 @@ export default function GPSLocationsPage() {
     setSelectedSiteId('')
   }
 
-  if (isLoading) return <div className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[240px] items-center justify-center" role="status" aria-live="polite">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Loader2 className="size-6 animate-spin text-primary" aria-hidden="true" />
+          <p className="text-sm text-muted-foreground">Loading sites and GPS locations…</p>
+        </div>
+      </div>
+    )
+  }
 
   if (loadError && sites.length === 0) {
     return (
