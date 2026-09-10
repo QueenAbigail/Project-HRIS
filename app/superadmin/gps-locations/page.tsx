@@ -78,6 +78,7 @@ export default function GPSLocationsPage() {
     name: string
   } | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   // Fetch sites on mount
   useEffect(() => {
@@ -280,6 +281,7 @@ export default function GPSLocationsPage() {
   }
 
   const requestDeleteLocation = (siteId: string, locationId: string, type: 'attendance' | 'patrol', name: string) => {
+    setDeleteError('')
     setDeleteRequest({ siteId, locationId, type, name })
   }
 
@@ -312,7 +314,9 @@ export default function GPSLocationsPage() {
       toast.success('Location deleted successfully')
       setDeleteRequest(null)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete location')
+      const message = error instanceof Error ? error.message : 'Failed to delete location'
+      setDeleteError(message)
+      toast.error(message)
     } finally {
       setIsDeleting(false)
     }
@@ -849,6 +853,11 @@ export default function GPSLocationsPage() {
             <AlertDialogDescription id="delete-location-description">
               This will permanently delete <span className="font-medium text-foreground">{deleteRequest?.name}</span> from the {deleteRequest?.type} locations.
             </AlertDialogDescription>
+            {deleteError && (
+              <p className="mt-3 text-sm text-destructive" role="alert">
+                {deleteError}
+              </p>
+            )}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
