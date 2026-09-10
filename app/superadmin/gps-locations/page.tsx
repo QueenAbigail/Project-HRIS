@@ -48,6 +48,8 @@ export default function GPSLocationsPage() {
   const [activeTab, setActiveTab] = useState('attendance')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
   const [selectedSiteId, setSelectedSiteId] = useState('')
   
@@ -60,6 +62,7 @@ export default function GPSLocationsPage() {
     const fetchData = async () => {
       try {
         setIsLoading(true)
+        setLoadError(false)
         const response = await fetch('/api/companies')
         if (!response.ok) throw new Error('Failed to fetch companies')
         const companies = await response.json()
@@ -73,28 +76,50 @@ export default function GPSLocationsPage() {
         }
         setSites(allSites)
         
-        // Fetch locations for each site
-        const attendanceData: Record<string, Location[]> = {}
-        const patrolData: Record<string, Location[]> = {}
-        
-        for (const site of allSites) {
+        // Fetch all site locations in parallel while preserving partial results.
+        const results = await Promise.allSettled(allSites.map(async (site) => {
           const [attResp, patrolResp] = await Promise.all([
             fetch(`/api/sites/${site.id}/attendance-locations`),
             fetch(`/api/sites/${site.id}/patrol-locations`),
           ])
-          
-          if (attResp.ok) {
-            attendanceData[site.id] = await attResp.json()
+
+          if (!attResp.ok || !patrolResp.ok) {
+            throw new Error(`Failed to fetch locations for site ${site.id}`)
           }
-          if (patrolResp.ok) {
-            patrolData[site.id] = await patrolResp.json()
+
+          return {
+            siteId: site.id,
+            attendance: await attResp.json() as Location[],
+            patrol: await patrolResp.json() as Location[],
+          }
+        }))
+
+        const attendanceData: Record<string, Location[]> = {}
+        const patrolData: Record<string, Location[]> = {}
+        let failedSites = 0
+
+        for (const result of results) {
+          if (result.status === 'fulfilled') {
+            attendanceData[result.value.siteId] = result.value.attendance
+            patrolData[result.value.siteId] = result.value.patrol
+          } else {
+            failedSites += 1
           }
         }
-        
+
         setAttendanceLocations(attendanceData)
         setPatrolLocations(patrolData)
+        setLoadError(failedSites > 0)
+        if (failedSites > 0) {
+          toast({
+            title: 'Some locations could not be loaded',
+            description: `${failedSites} site${failedSites === 1 ? '' : 's'} failed to load.`,
+            variant: 'destructive',
+          })
+        }
       } catch (error) {
         console.error('[v0] Error fetching GPS data:', error)
+        setLoadError(true)
         toast({ title: 'Error', description: 'Failed to load GPS locations', variant: 'destructive' })
       } finally {
         setIsLoading(false)
@@ -102,7 +127,7 @@ export default function GPSLocationsPage() {
     }
 
     fetchData()
-  }, [toast])
+  }, [reloadKey, toast])
 
   const filteredSites = sites.filter(site =>
     site.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -213,6 +238,15 @@ export default function GPSLocationsPage() {
   }
 
   if (isLoading) return <div className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
+
+  if (loadError && sites.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-12 text-center">
+        <p className="text-destructive">Unable to load GPS locations.</p>
+        <Button variant="outline" onClick={() => setReloadKey((key) => key + 1)}>Try again</Button>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
