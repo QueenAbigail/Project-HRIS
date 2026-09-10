@@ -328,7 +328,7 @@ export default function PrintQRCodePage() {
           {/* Location Type Selection */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-semibold">Location Type</label>
+              <label htmlFor="qr-location-type" className="text-sm font-semibold">Location Type</label>
               <Select
                 value={locationType}
                 onValueChange={(value) => {
@@ -336,7 +336,7 @@ export default function PrintQRCodePage() {
                   setSelectedLocations([])
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger id="qr-location-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -348,7 +348,7 @@ export default function PrintQRCodePage() {
 
             {/* Site Selection */}
             <div className="space-y-2">
-              <label className="text-sm font-semibold">Site</label>
+              <label htmlFor="qr-site" className="text-sm font-semibold">Site</label>
               <Select
                 value={selectedSite}
                 onValueChange={(value) => {
@@ -357,7 +357,7 @@ export default function PrintQRCodePage() {
                 }}
                 disabled={loading}
               >
-                <SelectTrigger>
+                <SelectTrigger id="qr-site">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
