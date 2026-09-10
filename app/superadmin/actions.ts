@@ -557,6 +557,8 @@ export async function validateBulkImport(
 // ==================== QR CODE / LOCATION ACTIONS ====================
 
 export async function getAttendanceLocations(siteId?: string) {
+  await requireSuperAdmin()
+
   try {
     console.log('[v0] Fetching attendance locations', { siteId: siteId || 'all' })
 
@@ -599,6 +601,8 @@ export async function getAttendanceLocations(siteId?: string) {
 }
 
 export async function getPatrolLocations(siteId?: string) {
+  await requireSuperAdmin()
+
   try {
     console.log('[v0] Fetching patrol locations', { siteId: siteId || 'all' })
 
@@ -641,6 +645,8 @@ export async function getPatrolLocations(siteId?: string) {
 }
 
 export async function getAllSites() {
+  await requireSuperAdmin()
+
   try {
     console.log('[v0] Fetching all sites for location grouping')
 
@@ -658,6 +664,8 @@ export async function getAllSites() {
 }
 
 export async function getCompanyInfo() {
+  await requireSuperAdmin()
+
   try {
     console.log('[v0] Fetching company info')
 
@@ -682,6 +690,8 @@ export async function getCompanyInfo() {
  * Get import audit trail
  */
 export async function getImportAuditTrail(limit: number = 50) {
+  await requireSuperAdmin()
+
   try {
     const logs = await prisma.bulkImportLog.findMany({
       orderBy: { createdAt: 'desc' },
