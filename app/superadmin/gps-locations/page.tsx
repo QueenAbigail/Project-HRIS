@@ -60,6 +60,7 @@ export default function GPSLocationsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [failedSiteIds, setFailedSiteIds] = useState<string[]>([])
+  const [failedSiteMessages, setFailedSiteMessages] = useState<Record<string, string>>({})
   const [retryingSiteIds, setRetryingSiteIds] = useState<string[]>([])
   const [reloadKey, setReloadKey] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
@@ -83,6 +84,7 @@ export default function GPSLocationsPage() {
         setIsLoading(true)
         setLoadError(false)
         setFailedSiteIds([])
+        setFailedSiteMessages({})
         const response = await fetch('/api/companies')
         if (!response.ok) throw new Error('Failed to fetch companies')
         const companies = await response.json()
@@ -120,6 +122,7 @@ export default function GPSLocationsPage() {
         const attendanceData: Record<string, Location[]> = {}
         const patrolData: Record<string, Location[]> = {}
         const failedSiteIds: string[] = []
+        const failedSiteMessages: Record<string, string> = {}
 
         for (const [index, result] of results.entries()) {
           if (result.status === 'fulfilled') {
@@ -128,20 +131,15 @@ export default function GPSLocationsPage() {
           } else {
             const failedSite = allSites[index]
             failedSiteIds.push(failedSite.id)
-            const message = result.reason instanceof Error ? result.reason.message : 'Some site locations could not be loaded'
-            toast.error(message)
+            failedSiteMessages[failedSite.id] = result.reason instanceof Error ? result.reason.message : 'Some site locations could not be loaded'
           }
         }
 
         setAttendanceLocations(attendanceData)
         setPatrolLocations(patrolData)
         setFailedSiteIds(failedSiteIds)
+        setFailedSiteMessages(failedSiteMessages)
         setLoadError(failedSiteIds.length > 0)
-        if (failedSiteIds.length > 0) {
-          toast.error('Some locations could not be loaded', {
-            description: `${failedSiteIds.length} site${failedSiteIds.length === 1 ? '' : 's'} failed to load.`,
-          })
-        }
       } catch (error) {
         console.error('[v0] Error fetching GPS data:', error)
         setLoadError(true)
@@ -174,6 +172,11 @@ export default function GPSLocationsPage() {
       setAttendanceLocations((current) => ({ ...current, [site.id]: attendance }))
       setPatrolLocations((current) => ({ ...current, [site.id]: patrol }))
       setFailedSiteIds((current) => current.filter((id) => id !== site.id))
+      setFailedSiteMessages((current) => {
+        const next = { ...current }
+        delete next[site.id]
+        return next
+      })
       toast.success(`${site.name} locations loaded successfully`)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : `Failed to load locations for ${site.name}`)
@@ -392,6 +395,11 @@ export default function GPSLocationsPage() {
                                 {locations.length} location{locations.length !== 1 ? 's' : ''}
                               </p>
                               {failedSiteIds.includes(site.id) && (
+                                <p className="text-xs text-destructive" role="alert">
+                                  {failedSiteMessages[site.id] ?? 'Locations could not be loaded.'}
+                                </p>
+                              )}
+                              {failedSiteIds.includes(site.id) && (
                                 <Button
                                   variant="link"
                                   size="sm"
@@ -569,6 +577,11 @@ export default function GPSLocationsPage() {
                               <p className="text-xs text-muted-foreground">
                                 {locations.length} checkpoint{locations.length !== 1 ? 's' : ''}
                               </p>
+                              {failedSiteIds.includes(site.id) && (
+                                <p className="text-xs text-destructive" role="alert">
+                                  {failedSiteMessages[site.id] ?? 'Locations could not be loaded.'}
+                                </p>
+                              )}
                               {failedSiteIds.includes(site.id) && (
                                 <Button
                                   variant="link"
