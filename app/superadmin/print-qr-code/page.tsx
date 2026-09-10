@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -66,11 +66,7 @@ export default function PrintQRCodePage() {
   const [appSettings, setAppSettings] = useState<AppSettings>({ appName: 'Your Company' })
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true)
       const [attendance, patrol, allSites, settings] = await Promise.all([
@@ -95,7 +91,11 @@ export default function PrintQRCodePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    queueMicrotask(() => void loadData())
+  }, [loadData])
 
   // Get all filtered locations
   const getAllLocations = (): Location[] => {
