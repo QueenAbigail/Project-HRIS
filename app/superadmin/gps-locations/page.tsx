@@ -308,6 +308,7 @@ export default function GPSLocationsPage() {
   }
 
   const handleDialogClose = () => {
+    if (isSaving) return
     setIsAddDialogOpen(false)
     setEditingLocation(null)
     setNewLocation(DEFAULT_LOCATION)
