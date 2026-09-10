@@ -21,6 +21,7 @@ const DEFAULT_LOCATION = {
   longitude: '',
   radius: '50',
   timezone: 'WIB',
+  isActive: true,
 }
 
 interface Location {
@@ -242,6 +243,7 @@ export default function GPSLocationsPage() {
       longitude: location.longitude.toString(),
       radius: location.radius.toString(),
       timezone: location.timezone,
+      isActive: location.isActive,
     })
     setIsAddDialogOpen(true)
   }
