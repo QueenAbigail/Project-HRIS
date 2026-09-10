@@ -577,10 +577,12 @@ export async function getAttendanceLocations(siteId?: string) {
       orderBy: { name: 'asc' }
     })
 
-    const mapped = locations.map((loc, idx) => ({
+    const mapped = locations.map((loc) => ({
       id: loc.id,
       name: loc.name,
-      code: `${loc.site.code}-ATT-${String(idx + 1).padStart(2, '0')}`,
+      // Derived from the location's immutable id so it stays stable across
+      // additions/removals/re-sorts, unlike a query-position-based index.
+      code: `${loc.site.code}-ATT-${loc.id.slice(-6).toUpperCase()}`,
       latitude: String(loc.latitude),
       longitude: String(loc.longitude),
       radius: loc.radius,
@@ -621,10 +623,12 @@ export async function getPatrolLocations(siteId?: string) {
       orderBy: { name: 'asc' }
     })
 
-    const mapped = locations.map((loc, idx) => ({
+    const mapped = locations.map((loc) => ({
       id: loc.id,
       name: loc.name,
-      code: `${loc.site.code}-PAT-${String(idx + 1).padStart(2, '0')}`,
+      // Derived from the location's immutable id so it stays stable across
+      // additions/removals/re-sorts, unlike a query-position-based index.
+      code: `${loc.site.code}-PAT-${loc.id.slice(-6).toUpperCase()}`,
       latitude: String(loc.latitude),
       longitude: String(loc.longitude),
       radius: loc.radius,
