@@ -372,10 +372,18 @@ export default function GPSLocationsPage() {
         <TabsContent value="attendance" className="space-y-4 mt-6">
           <h2 className="text-xl font-semibold">Attendance GPS Locations</h2>
 
-          {filteredSites.length === 0 ? (
+          {sites.length === 0 ? (
             <Card className="border-border">
               <CardContent className="text-center py-8">
-                <p className="text-muted-foreground">No sites available</p>
+                <p className="font-medium">No sites found</p>
+                <p className="mt-1 text-sm text-muted-foreground">Create a site before adding GPS locations.</p>
+              </CardContent>
+            </Card>
+          ) : filteredSites.length === 0 ? (
+            <Card className="border-border">
+              <CardContent className="text-center py-8">
+                <p className="font-medium">No matching sites</p>
+                <p className="mt-1 text-sm text-muted-foreground">Try a different site name or code.</p>
               </CardContent>
             </Card>
           ) : (
@@ -498,8 +506,10 @@ export default function GPSLocationsPage() {
                             </DialogContent>
                           </Dialog>
 
-                          {locations.length === 0 ? (
-                            <p className="text-sm text-muted-foreground py-4">No attendance locations for this site</p>
+{failedSiteIds.includes(site.id) ? (
+                                <p className="text-sm text-destructive py-4" role="status">Locations could not be loaded. Use the retry action above.</p>
+                              ) : locations.length === 0 ? (
+                                <p className="text-sm text-muted-foreground py-4">No attendance locations configured for this site</p>
                           ) : (
                             <div className="rounded-lg border border-border overflow-hidden">
                               <Table>
@@ -555,10 +565,18 @@ export default function GPSLocationsPage() {
         <TabsContent value="patrol" className="space-y-4 mt-6">
           <h2 className="text-xl font-semibold">Patrol Checkpoints</h2>
 
-          {filteredSites.length === 0 ? (
+          {sites.length === 0 ? (
             <Card className="border-border">
               <CardContent className="text-center py-8">
-                <p className="text-muted-foreground">No sites available</p>
+                <p className="font-medium">No sites found</p>
+                <p className="mt-1 text-sm text-muted-foreground">Create a site before adding GPS locations.</p>
+              </CardContent>
+            </Card>
+          ) : filteredSites.length === 0 ? (
+            <Card className="border-border">
+              <CardContent className="text-center py-8">
+                <p className="font-medium">No matching sites</p>
+                <p className="mt-1 text-sm text-muted-foreground">Try a different site name or code.</p>
               </CardContent>
             </Card>
           ) : (
@@ -681,8 +699,10 @@ export default function GPSLocationsPage() {
                             </DialogContent>
                           </Dialog>
 
-                          {locations.length === 0 ? (
-                            <p className="text-sm text-muted-foreground py-4">No patrol checkpoints for this site</p>
+{failedSiteIds.includes(site.id) ? (
+                                <p className="text-sm text-destructive py-4" role="status">Checkpoints could not be loaded. Use the retry action above.</p>
+                              ) : locations.length === 0 ? (
+                                <p className="text-sm text-muted-foreground py-4">No patrol checkpoints configured for this site</p>
                           ) : (
                             <div className="rounded-lg border border-border overflow-x-auto">
                               <Table>
