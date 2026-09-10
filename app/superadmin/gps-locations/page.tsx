@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { MapPin, Plus, Edit, Trash2, Building2, Search, X, Loader2 } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 
 const DEFAULT_LOCATION = {
   name: '',
@@ -39,7 +39,6 @@ interface Site {
 }
 
 export default function GPSLocationsPage() {
-  const { toast } = useToast()
   const [sites, setSites] = useState<Site[]>([])
   const [attendanceLocations, setAttendanceLocations] = useState<Record<string, Location[]>>({})
   const [patrolLocations, setPatrolLocations] = useState<Record<string, Location[]>>({})
@@ -111,23 +110,21 @@ export default function GPSLocationsPage() {
         setPatrolLocations(patrolData)
         setLoadError(failedSites > 0)
         if (failedSites > 0) {
-          toast({
-            title: 'Some locations could not be loaded',
+          toast.error('Some locations could not be loaded', {
             description: `${failedSites} site${failedSites === 1 ? '' : 's'} failed to load.`,
-            variant: 'destructive',
           })
         }
       } catch (error) {
         console.error('[v0] Error fetching GPS data:', error)
         setLoadError(true)
-        toast({ title: 'Error', description: 'Failed to load GPS locations', variant: 'destructive' })
+        toast.error('Failed to load GPS locations')
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchData()
-  }, [reloadKey, toast])
+  }, [reloadKey])
 
   const filteredSites = sites.filter(site =>
     site.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -136,7 +133,7 @@ export default function GPSLocationsPage() {
 
   const handleAddLocation = async (type: 'attendance' | 'patrol') => {
     if (!newLocation.name || !newLocation.latitude || !newLocation.longitude || !newLocation.timezone || !selectedSiteId) {
-      toast({ title: 'Error', description: 'All fields are required', variant: 'destructive' })
+      toast.error('All fields are required')
       return
     }
 
@@ -172,13 +169,13 @@ export default function GPSLocationsPage() {
         }))
       }
 
-      toast({ title: 'Success', description: 'Location saved successfully' })
+      toast.success('Location saved successfully')
       setIsAddDialogOpen(false)
       setNewLocation(DEFAULT_LOCATION)
       setEditingLocation(null)
       setSelectedSiteId('')
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to save location', variant: 'destructive' })
+      toast.error('Failed to save location')
     } finally {
       setIsSaving(false)
     }
@@ -204,9 +201,9 @@ export default function GPSLocationsPage() {
         }))
       }
 
-      toast({ title: 'Success', description: 'Location deleted successfully' })
+      toast.success('Location deleted successfully')
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to delete location', variant: 'destructive' })
+      toast.error('Failed to delete location')
     }
   }
 
