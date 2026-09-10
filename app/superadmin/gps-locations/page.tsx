@@ -59,6 +59,8 @@ export default function GPSLocationsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
+  const [failedSiteIds, setFailedSiteIds] = useState<string[]>([])
+  const [retryingSiteIds, setRetryingSiteIds] = useState<string[]>([])
   const [reloadKey, setReloadKey] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
   const [selectedSiteId, setSelectedSiteId] = useState('')
@@ -80,6 +82,7 @@ export default function GPSLocationsPage() {
       try {
         setIsLoading(true)
         setLoadError(false)
+        setFailedSiteIds([])
         const response = await fetch('/api/companies')
         if (!response.ok) throw new Error('Failed to fetch companies')
         const companies = await response.json()
@@ -116,14 +119,15 @@ export default function GPSLocationsPage() {
 
         const attendanceData: Record<string, Location[]> = {}
         const patrolData: Record<string, Location[]> = {}
-        let failedSites = 0
+        const failedSiteIds: string[] = []
 
-        for (const result of results) {
+        for (const [index, result] of results.entries()) {
           if (result.status === 'fulfilled') {
             attendanceData[result.value.siteId] = result.value.attendance
             patrolData[result.value.siteId] = result.value.patrol
           } else {
-            failedSites += 1
+            const failedSite = allSites[index]
+            failedSiteIds.push(failedSite.id)
             const message = result.reason instanceof Error ? result.reason.message : 'Some site locations could not be loaded'
             toast.error(message)
           }
@@ -131,10 +135,11 @@ export default function GPSLocationsPage() {
 
         setAttendanceLocations(attendanceData)
         setPatrolLocations(patrolData)
-        setLoadError(failedSites > 0)
-        if (failedSites > 0) {
+        setFailedSiteIds(failedSiteIds)
+        setLoadError(failedSiteIds.length > 0)
+        if (failedSiteIds.length > 0) {
           toast.error('Some locations could not be loaded', {
-            description: `${failedSites} site${failedSites === 1 ? '' : 's'} failed to load.`,
+            description: `${failedSiteIds.length} site${failedSiteIds.length === 1 ? '' : 's'} failed to load.`,
           })
         }
       } catch (error) {
@@ -148,6 +153,34 @@ export default function GPSLocationsPage() {
 
     fetchData()
   }, [reloadKey])
+
+  const retrySiteLocations = async (site: Site) => {
+    setRetryingSiteIds((current) => [...current, site.id])
+
+    try {
+      const [attResp, patrolResp] = await Promise.all([
+        fetch(`/api/sites/${site.id}/attendance-locations`),
+        fetch(`/api/sites/${site.id}/patrol-locations`),
+      ])
+
+      if (!attResp.ok) throw new Error(await getApiErrorMessage(attResp, `Failed to load attendance locations for ${site.name}`))
+      if (!patrolResp.ok) throw new Error(await getApiErrorMessage(patrolResp, `Failed to load patrol locations for ${site.name}`))
+
+      const [attendance, patrol] = await Promise.all([
+        attResp.json() as Promise<Location[]>,
+        patrolResp.json() as Promise<Location[]>,
+      ])
+
+      setAttendanceLocations((current) => ({ ...current, [site.id]: attendance }))
+      setPatrolLocations((current) => ({ ...current, [site.id]: patrol }))
+      setFailedSiteIds((current) => current.filter((id) => id !== site.id))
+      toast.success(`${site.name} locations loaded successfully`)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : `Failed to load locations for ${site.name}`)
+    } finally {
+      setRetryingSiteIds((current) => current.filter((id) => id !== site.id))
+    }
+  }
 
   const filteredSites = sites.filter(site =>
     site.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -358,6 +391,20 @@ export default function GPSLocationsPage() {
                               <p className="text-xs text-muted-foreground">
                                 {locations.length} location{locations.length !== 1 ? 's' : ''}
                               </p>
+                              {failedSiteIds.includes(site.id) && (
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  className="h-auto p-0 text-xs"
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    retrySiteLocations(site)
+                                  }}
+                                  disabled={retryingSiteIds.includes(site.id)}
+                                >
+                                  {retryingSiteIds.includes(site.id) ? 'Retrying…' : 'Retry failed load'}
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </AccordionTrigger>
@@ -522,6 +569,20 @@ export default function GPSLocationsPage() {
                               <p className="text-xs text-muted-foreground">
                                 {locations.length} checkpoint{locations.length !== 1 ? 's' : ''}
                               </p>
+                              {failedSiteIds.includes(site.id) && (
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  className="h-auto p-0 text-xs"
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    retrySiteLocations(site)
+                                  }}
+                                  disabled={retryingSiteIds.includes(site.id)}
+                                >
+                                  {retryingSiteIds.includes(site.id) ? 'Retrying…' : 'Retry failed load'}
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </AccordionTrigger>
