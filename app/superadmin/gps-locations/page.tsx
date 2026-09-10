@@ -62,6 +62,7 @@ export default function GPSLocationsPage() {
   const [failedSiteIds, setFailedSiteIds] = useState<string[]>([])
   const [failedSiteMessages, setFailedSiteMessages] = useState<Record<string, string>>({})
   const [retryingSiteIds, setRetryingSiteIds] = useState<string[]>([])
+  const [loadingSiteIds, setLoadingSiteIds] = useState<string[]>([])
   const [reloadKey, setReloadKey] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
   const [selectedSiteId, setSelectedSiteId] = useState('')
@@ -85,6 +86,7 @@ export default function GPSLocationsPage() {
         setLoadError(false)
         setFailedSiteIds([])
         setFailedSiteMessages({})
+        setLoadingSiteIds([])
         const response = await fetch('/api/companies')
         if (!response.ok) throw new Error('Failed to fetch companies')
         const companies = await response.json()
@@ -97,6 +99,7 @@ export default function GPSLocationsPage() {
           }
         }
         setSites(allSites)
+        setLoadingSiteIds(allSites.map((site) => site.id))
         
         // Fetch all site locations in parallel while preserving partial results.
         const results = await Promise.allSettled(allSites.map(async (site) => {
@@ -139,6 +142,7 @@ export default function GPSLocationsPage() {
         setPatrolLocations(patrolData)
         setFailedSiteIds(failedSiteIds)
         setFailedSiteMessages(failedSiteMessages)
+        setLoadingSiteIds([])
         setLoadError(failedSiteIds.length > 0)
       } catch (error) {
         console.error('[v0] Error fetching GPS data:', error)
@@ -390,6 +394,7 @@ export default function GPSLocationsPage() {
             <Accordion type="single" collapsible className="space-y-3">
               {filteredSites.map((site) => {
                 const locations = attendanceLocations[site.id] || []
+                const isSiteLoading = loadingSiteIds.includes(site.id) || retryingSiteIds.includes(site.id)
                 return (
                   <Card key={site.id} className="border-border">
                     <AccordionItem value={site.id} className="border-0">
@@ -399,9 +404,16 @@ export default function GPSLocationsPage() {
                             <MapPin className="h-4 w-4 text-primary shrink-0" />
                             <div>
                               <p className="font-semibold">{site.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {locations.length} location{locations.length !== 1 ? 's' : ''}
-                              </p>
+                              {isSiteLoading ? (
+                                <p className="flex items-center gap-1 text-xs text-muted-foreground" role="status">
+                                  <Loader2 className="size-3 animate-spin" />
+                                  Loading locations…
+                                </p>
+                              ) : (
+                                <p className="text-xs text-muted-foreground">
+                                  {locations.length} location{locations.length !== 1 ? 's' : ''}
+                                </p>
+                              )}
                               {failedSiteIds.includes(site.id) && (
                                 <p className="text-xs text-destructive" role="alert">
                                   {failedSiteMessages[site.id] ?? 'Locations could not be loaded.'}
@@ -506,7 +518,12 @@ export default function GPSLocationsPage() {
                             </DialogContent>
                           </Dialog>
 
-{failedSiteIds.includes(site.id) ? (
+{isSiteLoading ? (
+                                <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground" role="status">
+                                  <Loader2 className="size-4 animate-spin" />
+                                  Loading attendance locations…
+                                </div>
+                              ) : failedSiteIds.includes(site.id) ? (
                                 <p className="text-sm text-destructive py-4" role="status">Locations could not be loaded. Use the retry action above.</p>
                               ) : locations.length === 0 ? (
                                 <p className="text-sm text-muted-foreground py-4">No attendance locations configured for this site</p>
@@ -699,7 +716,12 @@ export default function GPSLocationsPage() {
                             </DialogContent>
                           </Dialog>
 
-{failedSiteIds.includes(site.id) ? (
+{isSiteLoading ? (
+                                <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground" role="status">
+                                  <Loader2 className="size-4 animate-spin" />
+                                  Loading patrol checkpoints…
+                                </div>
+                              ) : failedSiteIds.includes(site.id) ? (
                                 <p className="text-sm text-destructive py-4" role="status">Checkpoints could not be loaded. Use the retry action above.</p>
                               ) : locations.length === 0 ? (
                                 <p className="text-sm text-muted-foreground py-4">No patrol checkpoints configured for this site</p>
