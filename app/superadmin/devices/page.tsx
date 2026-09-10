@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Smartphone, Trash2, AlertTriangle, CheckCircle2, Clock, Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { Smartphone, Trash2, AlertTriangle, CheckCircle2, Clock, Loader2, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -15,13 +16,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { getDeviceBindings, removeDeviceBinding } from '@/app/superadmin/actions'
 
 interface DeviceBinding {
@@ -29,13 +23,20 @@ interface DeviceBinding {
   userId: string
   userName: string
   userEmail: string
+  employeeCode: string | null
   deviceId: string
   deviceName: string
-  deviceType: string
-  appVersion?: string
+  deviceType: 'android' | 'ios' | 'web'
+  appVersion: string | null
   bindDate: string
   lastUsed: string
   isActive: boolean
+}
+
+const SUPPORTED_DEVICE_TYPES = ['android', 'ios', 'web'] as const
+
+function isSupportedDeviceType(value: string): value is DeviceBinding['deviceType'] {
+  return SUPPORTED_DEVICE_TYPES.includes(value as DeviceBinding['deviceType'])
 }
 
 /**
@@ -60,34 +61,47 @@ interface DeviceBinding {
  */
 export default function DeviceManagementPage() {
   const [devices, setDevices] = useState<DeviceBinding[]>([])
-  const [filterType, setFilterType] = useState<'all' | 'active' | 'inactive'>('all')
+  const [searchQuery, setSearchQuery] = useState('')
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null)
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  useEffect(() => {
-    loadDevices()
-  }, [])
-
-  const loadDevices = async () => {
+  const loadDevices = useCallback(async () => {
     try {
       setLoading(true)
+      setLoadError(false)
       const data = await getDeviceBindings()
-      setDevices(data)
+      const normalizedDevices: DeviceBinding[] = data
+        .filter((device) => isSupportedDeviceType(device.deviceType))
+        .map((device) => ({
+          ...device,
+          deviceType: device.deviceType as DeviceBinding['deviceType'],
+        }))
+      setDevices(normalizedDevices)
     } catch (error) {
       console.error('[v0] Error loading devices:', error)
+      setLoadError(true)
       toast.error('Failed to load devices')
-      setDevices([])
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
+  useEffect(() => {
+    const load = window.setTimeout(() => {
+      void loadDevices()
+    }, 0)
+
+    return () => window.clearTimeout(load)
+  }, [loadDevices])
+
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
   const filteredDevices = devices.filter((device) => {
-    if (filterType === 'active') return device.isActive
-    if (filterType === 'inactive') return !device.isActive
-    return true
+    if (!normalizedSearchQuery) return true
+    return [device.userName, device.userEmail, device.userId]
+      .some((value) => value.toLowerCase().includes(normalizedSearchQuery))
   })
 
   const handleRemoveDevice = (deviceId: string) => {
@@ -177,19 +191,19 @@ export default function DeviceManagementPage() {
         </Card>
       </div>
 
-      {/* Filter */}
-      <div className="flex items-center gap-4">
-        <Select value={filterType} onValueChange={(value: any) => setFilterType(value)}>
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Devices</SelectItem>
-            <SelectItem value="active">Active Only</SelectItem>
-            <SelectItem value="inactive">Inactive Only</SelectItem>
-          </SelectContent>
-        </Select>
-        <p className="text-sm text-muted-foreground ml-auto">
+      {/* Search */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative w-full sm:max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search by employee name or code"
+            aria-label="Search devices by employee name or code"
+            className="pl-9"
+          />
+        </div>
+        <p className="text-sm text-muted-foreground sm:ml-auto">
           Showing {filteredDevices.length} device{filteredDevices.length !== 1 ? 's' : ''}
         </p>
       </div>
@@ -203,11 +217,22 @@ export default function DeviceManagementPage() {
               <p className="text-muted-foreground">Loading devices...</p>
             </CardContent>
           </Card>
-        ) : filteredDevices.length === 0 ? (
-          <Card>
+      ) : loadError ? (
+  <Card>
+  <CardContent className="pt-6 text-center">
+  <Smartphone className="h-12 w-12 text-destructive/50 mx-auto mb-3" />
+  <p className="text-destructive">Unable to load devices</p>
+  <p className="text-sm text-muted-foreground mt-1">Try again to retrieve the registered device bindings.</p>
+  <Button variant="outline" className="mt-4" onClick={() => void loadDevices()}>Try again</Button>
+  </CardContent>
+  </Card>
+      ) : filteredDevices.length === 0 ? (
+  <Card>
             <CardContent className="pt-6 text-center">
               <Smartphone className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-muted-foreground">No devices found</p>
+              <p className="text-muted-foreground">
+                {normalizedSearchQuery ? 'No devices match your search' : 'No devices found'}
+              </p>
             </CardContent>
           </Card>
         ) : (
@@ -221,9 +246,9 @@ export default function DeviceManagementPage() {
                         <Smartphone className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-foreground">{device.deviceName}</h3>
+                        <h3 className="font-semibold text-foreground">{device.userName}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {device.userName} ({device.userEmail})
+                          {device.employeeCode ?? 'Not provided'}
                         </p>
                       </div>
                     </div>
@@ -238,6 +263,10 @@ export default function DeviceManagementPage() {
                         <span className="font-mono text-xs">{device.deviceId}</span>
                       </div>
                       <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Device Type:</span>
+                        <span className="font-medium">{device.deviceName}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Bound Date:</span>
                         <span>{device.bindDate}</span>
                       </div>
@@ -245,12 +274,10 @@ export default function DeviceManagementPage() {
                         <span className="text-muted-foreground">Last Used:</span>
                         <span>{device.lastUsed}</span>
                       </div>
-                      {device.appVersion && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">App Version:</span>
-                          <span>{device.appVersion}</span>
-                        </div>
-                      )}
+  <div className="flex items-center justify-between">
+  <span className="text-muted-foreground">App Version:</span>
+  <span>{device.appVersion ?? 'Not provided'}</span>
+  </div>
                     </div>
 
                     <div className="flex items-center gap-2 mt-4">

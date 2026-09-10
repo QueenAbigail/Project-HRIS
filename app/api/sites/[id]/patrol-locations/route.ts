@@ -1,10 +1,44 @@
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/system'
 import { NextRequest, NextResponse } from 'next/server'
+
+async function requireSuperAdmin() {
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (user.role !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  return null
+}
+
+const TIMEZONES = new Set(['WIB', 'WITA', 'WIT'])
+
+function validateLocationInput(input: {
+  name?: unknown
+  latitude?: unknown
+  longitude?: unknown
+  radius?: unknown
+  timezone?: unknown
+}) {
+  const name = typeof input.name === 'string' ? input.name.trim() : ''
+  const latitude = typeof input.latitude === 'number' ? input.latitude : Number(input.latitude)
+  const longitude = typeof input.longitude === 'number' ? input.longitude : Number(input.longitude)
+  const radius = typeof input.radius === 'number' ? input.radius : Number(input.radius)
+
+  if (!name || name.length > 120) return 'A valid location name is required'
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) return 'Latitude must be between -90 and 90'
+  if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) return 'Longitude must be between -180 and 180'
+  if (!Number.isFinite(radius) || !Number.isInteger(radius) || radius < 1 || radius > 100000) return 'Radius must be a whole number between 1 and 100000'
+  if (typeof input.timezone !== 'string' || !TIMEZONES.has(input.timezone)) return 'Timezone must be WIB, WITA, or WIT'
+
+  return { name, latitude, longitude, radius, timezone: input.timezone }
+}
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
+
   try {
     const { id: siteId } = await params
 
@@ -36,25 +70,31 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { name, latitude, longitude, radius, timezone } = await req.json()
-    const { id: siteId } = await params
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
 
-    if (!name?.trim() || !latitude || !longitude || !radius || !timezone) {
-      return NextResponse.json(
-        { error: 'All fields are required' },
-        { status: 400 }
-      )
+  try {
+    const input = await req.json()
+    const { id: siteId } = await params
+    const validated = validateLocationInput(input)
+
+    if (typeof validated === 'string') {
+      return NextResponse.json({ error: validated }, { status: 400 })
+    }
+
+    const duplicate = await prisma.patrolLocation.findFirst({
+      where: { siteId, latitude: validated.latitude, longitude: validated.longitude },
+      select: { id: true },
+    })
+
+    if (duplicate) {
+      return NextResponse.json({ error: 'A location with these GPS coordinates already exists for this site' }, { status: 409 })
     }
 
     const location = await prisma.patrolLocation.create({
       data: {
         siteId,
-        name: name.trim(),
-        latitude: parseFloat(latitude),
-        longitude: parseFloat(longitude),
-        radius: parseInt(radius),
-        timezone,
+        ...validated,
       },
       select: {
         id: true,
@@ -81,24 +121,40 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { locationId, name, latitude, longitude, radius, timezone, isActive } = await req.json()
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
 
-    if (!locationId || !name?.trim() || latitude === undefined || longitude === undefined || !radius || !timezone) {
+  try {
+    const { id: siteId } = await params
+    const input = await req.json()
+    const { locationId, isActive } = input
+    const validated = validateLocationInput(input)
+
+    if (!locationId || typeof validated === 'string') {
       return NextResponse.json(
-        { error: 'All fields are required' },
+        { error: typeof validated === 'string' ? validated : 'Location ID is required' },
         { status: 400 }
       )
     }
 
+    const duplicate = await prisma.patrolLocation.findFirst({
+      where: {
+        siteId,
+        latitude: validated.latitude,
+        longitude: validated.longitude,
+        NOT: { id: locationId },
+      },
+      select: { id: true },
+    })
+
+    if (duplicate) {
+      return NextResponse.json({ error: 'A location with these GPS coordinates already exists for this site' }, { status: 409 })
+    }
+
     const location = await prisma.patrolLocation.update({
-      where: { id: locationId },
+      where: { id: locationId, siteId },
       data: {
-        name: name.trim(),
-        latitude: parseFloat(latitude),
-        longitude: parseFloat(longitude),
-        radius: parseInt(radius),
-        timezone,
+        ...validated,
         isActive: isActive ?? true,
       },
       select: {
@@ -126,7 +182,11 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
+
   try {
+    const { id: siteId } = await params
     const { searchParams } = new URL(req.url)
     const locationId = searchParams.get('locationId')
 
@@ -138,7 +198,7 @@ export async function DELETE(
     }
 
     await prisma.patrolLocation.delete({
-      where: { id: locationId },
+      where: { id: locationId, siteId },
     })
 
     return NextResponse.json({ success: true })

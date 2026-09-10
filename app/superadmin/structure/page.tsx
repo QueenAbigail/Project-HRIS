@@ -3,17 +3,32 @@
 import { useState } from 'react'
 import useSWR from 'swr'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Plus, MoreVertical, Pencil, Trash2, Search, X, Loader2 } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 
-const fetcher = (url: string) => fetch(url).then(res => res.json())
+const fetcher = async (url: string) => {
+  const response = await fetch(url)
+  const data = await response.json()
+  if (!response.ok || data.error) throw new Error(data.error || 'Failed to load data')
+  return data
+}
 
 // Types
 interface CategoryItem {
@@ -35,19 +50,19 @@ const categoryConfig: Category[] = [
 
 // Hook to fetch all categories with caching
 function useCategoriesData() {
-  const { data: departments, isLoading: deptLoading, mutate: mutateDept } = useSWR(
+  const { data: departments, error: deptError, isLoading: deptLoading, mutate: mutateDept } = useSWR(
     '/api/master-data?category=department',
     fetcher,
     { revalidateOnFocus: false, dedupingInterval: 60000 }
   )
   
-  const { data: positions, isLoading: posLoading, mutate: mutatePos } = useSWR(
+  const { data: positions, error: posError, isLoading: posLoading, mutate: mutatePos } = useSWR(
     '/api/master-data?category=position',
     fetcher,
     { revalidateOnFocus: false, dedupingInterval: 60000 }
   )
   
-  const { data: certificates, isLoading: certLoading, mutate: mutateCert } = useSWR(
+  const { data: certificates, error: certError, isLoading: certLoading, mutate: mutateCert } = useSWR(
     '/api/master-data?category=certificate',
     fetcher,
     { revalidateOnFocus: false, dedupingInterval: 60000 }
@@ -58,7 +73,9 @@ function useCategoriesData() {
       id: item.id,
       value: item.value,
       abbreviation: item.value
-        .split(' ')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
         .map((word: string) => word[0])
         .join('')
         .toUpperCase()
@@ -70,6 +87,7 @@ function useCategoriesData() {
     position: formatItems(positions),
     certificate: formatItems(certificates),
     loading: { department: deptLoading, position: posLoading, certificate: certLoading },
+    errors: { department: deptError, position: posError, certificate: certError },
     refreshAll: async () => {
       await Promise.all([mutateDept(), mutatePos(), mutateCert()])
     },
@@ -77,8 +95,7 @@ function useCategoriesData() {
 }
 
 export default function StructurePage() {
-  const { toast } = useToast()
-  const { department, position, certificate, loading, refreshAll } = useCategoriesData()
+  const { department, position, certificate, loading, errors, refreshAll } = useCategoriesData()
 
   const [searchQueries, setSearchQueries] = useState<Record<string, string>>({
     department: '',
@@ -91,6 +108,7 @@ export default function StructurePage() {
   const [newItemName, setNewItemName] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [pendingDeletion, setPendingDeletion] = useState<{ categoryKey: string; item: CategoryItem } | null>(null)
 
   const categories = { department, position, certificate }
 
@@ -110,7 +128,7 @@ export default function StructurePage() {
 
   const handleDeleteItem = async (categoryKey: string, itemId: string) => {
     try {
-      const response = await fetch(`/api/master-data?id=${itemId}`, {
+      const response = await fetch(`/api/master-data?id=${itemId}&category=${categoryKey}`, {
         method: 'DELETE',
       })
 
@@ -118,18 +136,17 @@ export default function StructurePage() {
 
       await refreshAll()
 
-      toast({
-        title: 'Success',
-        description: 'Entry deleted successfully',
-      })
+      toast.success('Entry deleted successfully')
     } catch (error) {
       console.error('Error deleting item:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to delete entry',
-        variant: 'destructive',
-      })
+      toast.error('Failed to delete entry')
     }
+  }
+
+  const confirmDeletion = async () => {
+    if (!pendingDeletion) return
+    await handleDeleteItem(pendingDeletion.categoryKey, pendingDeletion.item.id)
+    setPendingDeletion(null)
   }
 
   const handleSaveItem = async () => {
@@ -142,23 +159,20 @@ export default function StructurePage() {
         const response = await fetch('/api/master-data', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingItem.id, value: newItemName }),
+          body: JSON.stringify({ id: editingItem.id, category: selectedCategory, value: newItemName.trim() }),
         })
 
         if (!response.ok) throw new Error('Failed to update')
 
         await refreshAll()
 
-        toast({
-          title: 'Success',
-          description: 'Entry updated successfully',
-        })
+        toast.success('Entry updated successfully')
       } else {
         // Create new item
         const response = await fetch('/api/master-data', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ category: selectedCategory, value: newItemName }),
+          body: JSON.stringify({ category: selectedCategory, value: newItemName.trim() }),
         })
 
         if (!response.ok) {
@@ -170,10 +184,7 @@ export default function StructurePage() {
 
         await refreshAll()
 
-        toast({
-          title: 'Success',
-          description: 'Entry added successfully',
-        })
+        toast.success('Entry added successfully')
       }
 
       setIsDialogOpen(false)
@@ -182,11 +193,7 @@ export default function StructurePage() {
       setSelectedCategory('')
     } catch (error) {
       console.error('Error saving item:', error)
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to save entry',
-        variant: 'destructive',
-      })
+      toast.error(error instanceof Error ? error.message : 'Failed to save entry')
     } finally {
       setIsSaving(false)
     }
@@ -270,6 +277,11 @@ export default function StructurePage() {
                     <div className="py-8 flex items-center justify-center">
                       <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                     </div>
+                  ) : errors[category.key as keyof typeof errors] ? (
+                    <div className="py-8 text-center">
+                      <p className="text-xs text-destructive">Unable to load entries.</p>
+                      <Button variant="link" size="sm" onClick={() => void refreshAll()}>Try again</Button>
+                    </div>
                   ) : filteredItems?.length > 0 ? (
                     filteredItems.map((item) => (
                       <div
@@ -293,7 +305,7 @@ export default function StructurePage() {
                               <Pencil className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteItem(category.key, item.id)} className="cursor-pointer text-destructive">
+                            <DropdownMenuItem onClick={() => setPendingDeletion({ categoryKey: category.key, item })} className="cursor-pointer text-destructive">
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete
                             </DropdownMenuItem>
@@ -315,6 +327,26 @@ export default function StructurePage() {
         })}
       </div>
 
+      <AlertDialog
+        open={pendingDeletion !== null}
+        onOpenChange={(open) => !open && setPendingDeletion(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete structure entry?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will deactivate “{pendingDeletion?.item.value}”. It will no longer appear in active structure lists.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={(event) => { event.preventDefault(); void confirmDeletion() }}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent>
           <DialogHeader>
@@ -328,7 +360,11 @@ export default function StructurePage() {
                 value={newItemName}
                 onChange={(e) => setNewItemName(e.target.value)}
                 placeholder="Enter name"
-                onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+                    handleSaveItem()
+                  }
+                }}
               />
             </div>
             <Button onClick={handleSaveItem} className="w-full" disabled={isSaving}>

@@ -1,11 +1,49 @@
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/system'
 import { NextRequest, NextResponse } from 'next/server'
+
+async function requireSuperAdmin() {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  if (user.role !== 'SUPER_ADMIN') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  return null
+}
+
+function validateCoordinates(latitude: unknown, longitude: unknown) {
+  const values = [
+    { name: 'latitude', value: latitude, min: -90, max: 90 },
+    { name: 'longitude', value: longitude, min: -180, max: 180 },
+  ]
+
+  for (const coordinate of values) {
+    if (coordinate.value === null || coordinate.value === undefined || coordinate.value === '') {
+      continue
+    }
+
+    const numericValue = Number(coordinate.value)
+    if (!Number.isFinite(numericValue) || numericValue < coordinate.min || numericValue > coordinate.max) {
+      return `${coordinate.name} must be between ${coordinate.min} and ${coordinate.max}`
+    }
+  }
+
+  return null
+}
 
 // POST create new site for a company
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
+
   try {
     const { name, code, latitude, longitude } = await req.json()
     const { id: companyId } = await params
@@ -15,6 +53,11 @@ export async function POST(
         { error: 'Site name and code are required' },
         { status: 400 }
       )
+    }
+
+    const coordinateError = validateCoordinates(latitude, longitude)
+    if (coordinateError) {
+      return NextResponse.json({ error: coordinateError }, { status: 400 })
     }
 
     const site = await prisma.site.create({
@@ -55,6 +98,9 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
+
   try {
     const { siteId, name, code, latitude, longitude } = await req.json()
 
@@ -65,8 +111,18 @@ export async function PUT(
       )
     }
 
+    const coordinateError = validateCoordinates(latitude, longitude)
+    if (coordinateError) {
+      return NextResponse.json({ error: coordinateError }, { status: 400 })
+    }
+
+    const { id: companyId } = await params
+
     const site = await prisma.site.update({
-      where: { id: siteId },
+      where: {
+        id: siteId,
+        companyId,
+      },
       data: {
         name: name.trim(),
         code: code.trim().toUpperCase(),
@@ -91,6 +147,12 @@ export async function PUT(
         { status: 409 }
       )
     }
+    if (error.code === 'P2025') {
+      return NextResponse.json(
+        { error: 'Site not found for this company' },
+        { status: 404 }
+      )
+    }
     return NextResponse.json(
       { error: 'Failed to update site' },
       { status: 500 }
@@ -103,9 +165,13 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authorizationError = await requireSuperAdmin()
+  if (authorizationError) return authorizationError
+
   try {
     const { searchParams } = new URL(req.url)
     const siteId = searchParams.get('siteId')
+    const { id: companyId } = await params
 
     if (!siteId) {
       return NextResponse.json(
@@ -115,12 +181,21 @@ export async function DELETE(
     }
 
     await prisma.site.delete({
-      where: { id: siteId },
+      where: {
+        id: siteId,
+        companyId,
+      },
     })
 
     return NextResponse.json({ success: true })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting site:', error)
+    if (error.code === 'P2025') {
+      return NextResponse.json(
+        { error: 'Site not found for this company' },
+        { status: 404 }
+      )
+    }
     return NextResponse.json(
       { error: 'Failed to delete site' },
       { status: 500 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,7 +24,8 @@ import {
 import { QRCodeCanvas } from 'qrcode.react'
 import { MapPin, Printer, Download, Search, X, Loader2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
-import { getAttendanceLocations, getPatrolLocations, getAllSites, getSystemSettings } from '@/app/superadmin/actions'
+import { getAttendanceLocations, getPatrolLocations, getAllSites } from '@/app/superadmin/actions'
+import { getSystemSettings } from '@/lib/system-settings'
 import { toast } from 'sonner'
 
 interface Location {
@@ -64,14 +65,13 @@ export default function PrintQRCodePage() {
   const [sites, setSites] = useState<Site[]>([])
   const [appSettings, setAppSettings] = useState<AppSettings>({ appName: 'Your Company' })
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [isPrinting, setIsPrinting] = useState(false)
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true)
+      setLoadError(null)
       const [attendance, patrol, allSites, settings] = await Promise.all([
         getAttendanceLocations(),
         getPatrolLocations(),
@@ -90,11 +90,17 @@ export default function PrintQRCodePage() {
       ])
     } catch (error) {
       console.error('[v0] Error loading locations:', error)
-      toast.error('Failed to load locations')
+      const message = error instanceof Error ? error.message : 'Failed to load locations'
+      setLoadError(message)
+      toast.error(message)
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    queueMicrotask(() => void loadData())
+  }, [loadData])
 
   // Get all filtered locations
   const getAllLocations = (): Location[] => {
@@ -126,7 +132,7 @@ export default function PrintQRCodePage() {
   }
 
   const selectAll = () => {
-    if (selectedLocations.length === filteredLocations.length) {
+  if (selectedLocationData.length === filteredLocations.length) {
       setSelectedLocations([])
     } else {
       setSelectedLocations(filteredLocations.map((loc) => loc.id))
@@ -134,15 +140,20 @@ export default function PrintQRCodePage() {
   }
 
   const handlePrint = () => {
+    if (isPrinting) return
+    setIsPrinting(true)
+
     const printZone = document.getElementById('qr-print-zone')
     if (!printZone) {
       console.error('[v0] Print zone element not found')
+      setIsPrinting(false)
       return
     }
 
     const printWindow = window.open('', '_blank')
     if (!printWindow) {
       alert('Please allow pop-ups to print QR codes')
+      setIsPrinting(false)
       return
     }
 
@@ -261,9 +272,8 @@ export default function PrintQRCodePage() {
     printWindow.document.close()
     
     setTimeout(() => {
-      printWindow.focus()
       printWindow.print()
-      printWindow.close()
+      setIsPrinting(false)
     }, 500)
   }
 
@@ -318,9 +328,15 @@ export default function PrintQRCodePage() {
           {/* Location Type Selection */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-semibold">Location Type</label>
-              <Select value={locationType} onValueChange={setLocationType}>
-                <SelectTrigger>
+              <label htmlFor="qr-location-type" className="text-sm font-semibold">Location Type</label>
+              <Select
+                value={locationType}
+                onValueChange={(value) => {
+                  setLocationType(value)
+                  setSelectedLocations([])
+                }}
+              >
+                <SelectTrigger id="qr-location-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -332,9 +348,16 @@ export default function PrintQRCodePage() {
 
             {/* Site Selection */}
             <div className="space-y-2">
-              <label className="text-sm font-semibold">Site</label>
-              <Select value={selectedSite} onValueChange={setSelectedSite} disabled={loading}>
-                <SelectTrigger>
+              <label htmlFor="qr-site" className="text-sm font-semibold">Site</label>
+              <Select
+                value={selectedSite}
+                onValueChange={(value) => {
+                  setSelectedSite(value)
+                  setSelectedLocations([])
+                }}
+                disabled={loading}
+              >
+                <SelectTrigger id="qr-site">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -409,7 +432,7 @@ export default function PrintQRCodePage() {
               Available Locations ({filteredLocations.length})
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Selected: {selectedLocations.length}
+              Selected: {selectedLocationData.length}
             </p>
           </div>
           <Button
@@ -417,16 +440,23 @@ export default function PrintQRCodePage() {
             size="sm"
             onClick={selectAll}
           >
-            {selectedLocations.length === filteredLocations.length
+            {selectedLocationData.length === filteredLocations.length && filteredLocations.length > 0
               ? 'Deselect All'
               : 'Select All'}
           </Button>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8">
+            <div className="text-center py-8" role="status" aria-live="polite">
               <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-muted-foreground" />
               <p className="text-muted-foreground">Loading locations...</p>
+            </div>
+          ) : loadError ? (
+            <div className="flex flex-col items-center gap-3 py-8 text-center" role="alert">
+              <p className="text-destructive">Unable to load locations: {loadError}</p>
+              <Button variant="outline" onClick={() => void loadData()}>
+                Retry
+              </Button>
             </div>
           ) : filteredLocations.length === 0 ? (
             <div className="text-center py-8">
@@ -470,9 +500,9 @@ export default function PrintQRCodePage() {
               </p>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handlePrint} className="gap-2">
-                <Printer className="h-4 w-4" />
-                Print QR Codes
+<Button onClick={handlePrint} className="gap-2" disabled={isPrinting || selectedLocationData.length === 0}>
+              {isPrinting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+              {isPrinting ? 'Printing…' : 'Print QR Codes'}
               </Button>
             </div>
           </CardHeader>

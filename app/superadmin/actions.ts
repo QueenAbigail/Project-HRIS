@@ -5,19 +5,48 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 import { getSwappedScheduleIfExists } from '@/lib/shift-swap-handler'
 import { createAdminClient } from '@/lib/auth'
 import { SYSTEM_SETTINGS_TAG } from '@/lib/system-settings'
+import { getCurrentUser } from '@/lib/system'
+
+const MAX_LOGO_SIZE_BYTES = 5 * 1024 * 1024
+const ALLOWED_LOGO_TYPES = new Map([
+  ['image/png', 'png'],
+  ['image/jpeg', 'jpg'],
+  ['image/webp', 'webp'],
+])
+
+async function requireSuperAdmin() {
+  const user = await getCurrentUser()
+
+  if (!user || user.role !== 'SUPER_ADMIN') {
+    throw new Error('Unauthorized')
+  }
+
+  return user
+}
 
 export async function updateSettings(formData: FormData) {
+  await requireSuperAdmin()
+
   // 1. Call Supabase Admin Client (for file upload with full permissions)
   const supabase = await createAdminClient()
 
   const file = formData.get('logo') as File | null
   let logoUrl = null
 
-  // 2. If file exists, upload to Supabase Storage
+  // 2. If file exists, validate it before uploading to Supabase Storage
   if (file && file.size > 0) {
+    const fileExt = ALLOWED_LOGO_TYPES.get(file.type)
+
+    if (!fileExt) {
+      throw new Error('Logo must be a PNG, JPEG, or WebP image')
+    }
+
+    if (file.size > MAX_LOGO_SIZE_BYTES) {
+      throw new Error('Logo must be smaller than 5 MB')
+    }
+
     console.log('[v0] Uploading logo file:', { fileName: file.name, size: file.size })
-    
-    const fileExt = file.name.split('.').pop()
+
     const fileName = `${Date.now()}.${fileExt}`
     const filePath = `logos/${fileName}`
 
@@ -55,43 +84,51 @@ export async function updateSettings(formData: FormData) {
   // 3. Get text from form
   const appName = formData.get('appName') as string
   const appDescription = formData.get('appDescription') as string
-  const appVersions = formData.get('appVersions') as string
 
-  if (!appVersions || !/^\d+\.\d+\.\d+$/.test(appVersions.trim())) {
-    throw new Error('App version must use the format x.y.z, for example 1.1.0')
-  }
-
-  // 4. Save to Database with Prisma
+  // 4. Save global branding only. Mobile version has its own lightweight action.
   await prisma.systemSettings.upsert({
     where: { id: 'default' },
     update: {
       appName,
       appDescription,
-      appVersions: appVersions.trim(),
       ...(logoUrl && { logoUrl }), // Only update logoUrl if a new one was uploaded
     },
     create: {
       id: 'default',
       appName,
       appDescription,
-      appVersions: appVersions.trim(),
       logoUrl,
     }
   })
 
   // 5. Rebuild the cached system settings so the new logo/name/version appears immediately
-  revalidateTag(SYSTEM_SETTINGS_TAG)
+  revalidateTag(SYSTEM_SETTINGS_TAG, 'max')
   revalidatePath('/dashboard', 'layout')
   revalidatePath('/superadmin', 'layout')
   revalidatePath('/', 'layout')
 }
 
-// Tambahkan ini di bagian paling bawah actions.ts
-export async function getSystemSettings() {
-  const settings = await prisma.systemSettings.findUnique({
-    where: { id: 'default' }
+export async function updateMobileAppVersion(formData: FormData) {
+  await requireSuperAdmin()
+
+  const appVersions = String(formData.get('appVersions') ?? '').trim()
+
+  if (!/^\d+\.\d+\.\d+$/.test(appVersions)) {
+    throw new Error('App version must use the format x.y.z, for example 1.1.0')
+  }
+
+  await prisma.systemSettings.upsert({
+    where: { id: 'default' },
+    update: { appVersions },
+    create: {
+      id: 'default',
+      appVersions,
+    },
   })
-  return settings
+
+  // Refresh only the shared settings cache; mobile version changes do not
+  // require broad layout/page revalidation.
+  revalidateTag(SYSTEM_SETTINGS_TAG, 'max')
 }
 
 export async function getShifts() {
@@ -288,6 +325,8 @@ export async function getAllEmployees() {
 // ==================== DEVICE MANAGEMENT ACTIONS ====================
 
 export async function getDeviceBindings() {
+  await requireSuperAdmin()
+
   try {
     console.log('[v0] Fetching all device bindings...')
     
@@ -297,9 +336,10 @@ export async function getDeviceBindings() {
           select: {
             id: true,
             name: true,
-            email: true
-          }
-        }
+            email: true,
+            employeeCode: true,
+          },
+        },
       },
       orderBy: { bindDate: 'desc' }
     })
@@ -309,6 +349,7 @@ export async function getDeviceBindings() {
       userId: device.userId,
       userName: device.user.name,
       userEmail: device.user.email,
+      employeeCode: device.user.employeeCode,
       deviceId: device.deviceId,
       deviceName: device.deviceName,
       deviceType: device.deviceType,
@@ -334,6 +375,8 @@ export async function getDeviceBindings() {
 }
 
 export async function removeDeviceBinding(deviceId: string) {
+  await requireSuperAdmin()
+
   try {
     console.log('[v0] Removing device binding:', deviceId)
 
@@ -395,18 +438,6 @@ export async function createDeviceBinding(data: {
   try {
     console.log('[v0] Creating device binding:', { deviceId: data.deviceId, userId: data.userId })
 
-    // Check if user already has a device of this type
-    const existing = await prisma.deviceBinding.findFirst({
-      where: {
-        userId: data.userId,
-        deviceType: data.deviceType
-      }
-    })
-
-    if (existing) {
-      throw new Error(`User already has a ${data.deviceType} device bound. Please remove the previous binding first.`)
-    }
-
     const device = await prisma.deviceBinding.create({
       data: {
         userId: data.userId,
@@ -436,11 +467,14 @@ export async function createDeviceBinding(data: {
       device,
       message: `Device "${data.deviceName}" successfully bound to ${device.user.name}`
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('[v0] Error creating device binding:', {
       message: error instanceof Error ? error.message : String(error),
       error
     })
+    if (error.code === 'P2002') {
+      throw new Error(`User already has a ${data.deviceType} device bound, or this device is already registered. Please remove the previous binding first.`)
+    }
     throw error
   }
 }
@@ -523,6 +557,8 @@ export async function validateBulkImport(
 // ==================== QR CODE / LOCATION ACTIONS ====================
 
 export async function getAttendanceLocations(siteId?: string) {
+  await requireSuperAdmin()
+
   try {
     console.log('[v0] Fetching attendance locations', { siteId: siteId || 'all' })
 
@@ -541,10 +577,12 @@ export async function getAttendanceLocations(siteId?: string) {
       orderBy: { name: 'asc' }
     })
 
-    const mapped = locations.map((loc, idx) => ({
+    const mapped = locations.map((loc) => ({
       id: loc.id,
       name: loc.name,
-      code: `${loc.site.code}-ATT-${String(idx + 1).padStart(2, '0')}`,
+      // Derived from the location's immutable id so it stays stable across
+      // additions/removals/re-sorts, unlike a query-position-based index.
+      code: `${loc.site.code}-ATT-${loc.id.slice(-6).toUpperCase()}`,
       latitude: String(loc.latitude),
       longitude: String(loc.longitude),
       radius: loc.radius,
@@ -565,6 +603,8 @@ export async function getAttendanceLocations(siteId?: string) {
 }
 
 export async function getPatrolLocations(siteId?: string) {
+  await requireSuperAdmin()
+
   try {
     console.log('[v0] Fetching patrol locations', { siteId: siteId || 'all' })
 
@@ -583,10 +623,12 @@ export async function getPatrolLocations(siteId?: string) {
       orderBy: { name: 'asc' }
     })
 
-    const mapped = locations.map((loc, idx) => ({
+    const mapped = locations.map((loc) => ({
       id: loc.id,
       name: loc.name,
-      code: `${loc.site.code}-PAT-${String(idx + 1).padStart(2, '0')}`,
+      // Derived from the location's immutable id so it stays stable across
+      // additions/removals/re-sorts, unlike a query-position-based index.
+      code: `${loc.site.code}-PAT-${loc.id.slice(-6).toUpperCase()}`,
       latitude: String(loc.latitude),
       longitude: String(loc.longitude),
       radius: loc.radius,
@@ -607,6 +649,8 @@ export async function getPatrolLocations(siteId?: string) {
 }
 
 export async function getAllSites() {
+  await requireSuperAdmin()
+
   try {
     console.log('[v0] Fetching all sites for location grouping')
 
@@ -624,6 +668,8 @@ export async function getAllSites() {
 }
 
 export async function getCompanyInfo() {
+  await requireSuperAdmin()
+
   try {
     console.log('[v0] Fetching company info')
 
@@ -648,6 +694,8 @@ export async function getCompanyInfo() {
  * Get import audit trail
  */
 export async function getImportAuditTrail(limit: number = 50) {
+  await requireSuperAdmin()
+
   try {
     const logs = await prisma.bulkImportLog.findMany({
       orderBy: { createdAt: 'desc' },

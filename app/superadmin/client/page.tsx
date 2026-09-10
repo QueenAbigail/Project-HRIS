@@ -1,13 +1,24 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Plus, MoreVertical, Pencil, Trash2, ChevronDown, Search, X, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -38,36 +49,59 @@ export default function ClientPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [pendingDeletion, setPendingDeletion] = useState<
+    | { type: 'company'; companyId: string; name: string }
+    | { type: 'site'; companyId: string; siteId: string; name: string }
+    | null
+  >(null)
+
+  const fetchCompanies = useCallback(async (showLoading = true) => {
+    try {
+      if (showLoading) setIsLoading(true)
+      setLoadError(false)
+      const response = await fetch('/api/companies')
+      const data = await response.json()
+      if (!response.ok || data.error) throw new Error(data.error || 'Failed to load companies')
+      setCompanies(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Error fetching companies:', error)
+      setLoadError(true)
+      toast.error('Failed to load companies')
+    } finally {
+      if (showLoading) setIsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        setIsLoading(true)
-        const response = await fetch('/api/companies')
-        const data = await response.json()
-        if (data.error) throw new Error(data.error)
-        setCompanies(Array.isArray(data) ? data : [])
-      } catch (error) {
-        console.error('Error fetching companies:', error)
-        toast({ title: 'Error', description: 'Failed to load companies', variant: 'destructive' })
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    fetchCompanies()
-  }, [toast])
+    const loadCompanies = window.setTimeout(() => {
+      void fetchCompanies()
+    }, 0)
 
+    return () => window.clearTimeout(loadCompanies)
+  }, [fetchCompanies])
+
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
   const filteredCompanies = companies
-    .map((company) => ({
-      ...company,
-      sites: (company.sites || []).filter((site) =>
-        site.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        site.code.toLowerCase().includes(searchQuery.toLowerCase())
-      ),
-    }))
+    .map((company) => {
+      const companyMatches = normalizedSearchQuery.length === 0 ||
+        company.name.toLowerCase().includes(normalizedSearchQuery)
+
+      return {
+        ...company,
+        sites: companyMatches
+          ? company.sites || []
+          : (company.sites || []).filter((site) =>
+              site.name.toLowerCase().includes(normalizedSearchQuery) ||
+              site.code.toLowerCase().includes(normalizedSearchQuery)
+            ),
+        companyMatches,
+      }
+    })
     .filter(
       (company) =>
-        company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        normalizedSearchQuery.length === 0 ||
+        company.companyMatches ||
         company.sites.length > 0
     )
 
@@ -109,14 +143,35 @@ export default function ClientPage() {
     setIsDialogOpen(true)
   }
 
+  const requestDeleteCompany = (company: Company) => {
+    setPendingDeletion({ type: 'company', companyId: company.id, name: company.name })
+  }
+
+  const requestDeleteSite = (companyId: string, site: Site) => {
+    setPendingDeletion({ type: 'site', companyId, siteId: site.id, name: site.name })
+  }
+
+  const confirmDeletion = async () => {
+    if (!pendingDeletion) return
+
+    if (pendingDeletion.type === 'company') {
+      await handleDeleteCompany(pendingDeletion.companyId)
+    } else {
+      await handleDeleteSite(pendingDeletion.companyId, pendingDeletion.siteId)
+    }
+
+    setPendingDeletion(null)
+  }
+
   const handleDeleteCompany = async (companyId: string) => {
     try {
       const response = await fetch(`/api/companies?id=${companyId}`, { method: 'DELETE' })
       if (!response.ok) throw new Error('Failed to delete')
       setCompanies(prev => prev.filter(c => c.id !== companyId))
-      toast({ title: 'Success', description: 'Company deleted successfully' })
+      toast.success('Company deleted successfully')
+      void fetchCompanies(false)
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to delete company', variant: 'destructive' })
+      toast.error('Failed to delete company')
     }
   }
 
@@ -125,7 +180,8 @@ export default function ClientPage() {
       const response = await fetch(`/api/companies/${companyId}/sites?siteId=${siteId}`, { method: 'DELETE' })
       if (!response.ok) throw new Error('Failed to delete')
       setCompanies(prev => prev.map(c => c.id === companyId ? { ...c, sites: c.sites.filter(s => s.id !== siteId) } : c))
-      toast({ title: 'Success', description: 'Site deleted successfully' })
+      toast.success('Site deleted successfully')
+      void fetchCompanies(false)
     } catch (error) {
       toast.error('Failed to delete site')
     }
@@ -157,6 +213,7 @@ export default function ClientPage() {
           setCompanies(prev => [...prev, { id: result.id, name: result.name, sites: [] }])
         }
         toast.success(editingItem ? 'Company updated' : 'Company added')
+        void fetchCompanies(false)
       } else if (editingType === 'site') {
         const method = editingItem ? 'PUT' : 'POST'
         const latitude = newItemLatitude ? parseFloat(newItemLatitude) : null
@@ -185,6 +242,7 @@ export default function ClientPage() {
         setEditingType('')
         
         toast.success(editingItem ? 'Site updated successfully' : 'Site added successfully')
+        void fetchCompanies(false)
       }
     } catch (error: any) {
       const errorMessage = error?.message || 'Failed to save'
@@ -199,6 +257,20 @@ export default function ClientPage() {
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin" />
       </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Unable to load clients</CardTitle>
+          <CardDescription>We could not retrieve the company list. Try again.</CardDescription>
+        </CardHeader>
+        <CardFooter>
+          <Button onClick={() => void fetchCompanies()} variant="outline">Try again</Button>
+        </CardFooter>
+      </Card>
     )
   }
 
@@ -267,7 +339,7 @@ export default function ClientPage() {
                         <Pencil className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDeleteCompany(company.id)} className="text-destructive">
+                      <DropdownMenuItem onClick={() => requestDeleteCompany(company)} className="text-destructive">
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
                       </DropdownMenuItem>
@@ -296,7 +368,7 @@ export default function ClientPage() {
                               <Pencil className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteSite(company.id, site.id)} className="text-destructive">
+                            <DropdownMenuItem onClick={() => requestDeleteSite(company.id, site)} className="text-destructive">
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete
                             </DropdownMenuItem>
@@ -307,7 +379,7 @@ export default function ClientPage() {
                   </div>
                 ) : (
                   <div className="py-4 text-center">
-                    <p className="text-sm text-muted-foreground">No sites yet. Click "Add Site" to get started.</p>
+                    <p className="text-sm text-muted-foreground">No sites yet. Click &quot;Add Site&quot; to get started.</p>
                   </div>
                 )}
               </CollapsibleContent>
@@ -327,6 +399,35 @@ export default function ClientPage() {
           </div>
         )}
       </div>
+
+      <AlertDialog
+        open={pendingDeletion !== null}
+        onOpenChange={(open) => !open && setPendingDeletion(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {pendingDeletion?.type === 'company' ? 'company' : 'site'}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {pendingDeletion?.name ? `“${pendingDeletion.name}”` : 'this item'}.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault()
+                void confirmDeletion()
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={isDialogOpen} onOpenChange={() => setIsDialogOpen(false)}>
         <DialogContent>
@@ -348,7 +449,11 @@ export default function ClientPage() {
                 value={newItemName}
                 onChange={(e) => setNewItemName(e.target.value)}
                 placeholder={`Enter ${editingType === 'company' ? 'company' : 'site'} name`}
-                onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
+                onKeyDown={(e) => {
+  if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+    handleSaveItem()
+  }
+}}
               />
             </div>
             {editingType === 'site' && (
@@ -360,7 +465,11 @@ export default function ClientPage() {
                     onChange={(e) => setNewItemCode(e.target.value.toUpperCase())}
                     placeholder="e.g., HOJ"
                     maxLength={20}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
+                    onKeyDown={(e) => {
+  if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+    handleSaveItem()
+  }
+}}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -372,7 +481,11 @@ export default function ClientPage() {
                       value={newItemLatitude}
                       onChange={(e) => setNewItemLatitude(e.target.value)}
                       placeholder="e.g., -6.2088"
-                      onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
+                      onKeyDown={(e) => {
+  if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+    handleSaveItem()
+  }
+}}
                     />
                   </div>
                   <div className="space-y-2">
@@ -383,7 +496,11 @@ export default function ClientPage() {
                       value={newItemLongitude}
                       onChange={(e) => setNewItemLongitude(e.target.value)}
                       placeholder="e.g., 106.8456"
-                      onKeyDown={(e) => e.key === 'Enter' && handleSaveItem()}
+                      onKeyDown={(e) => {
+  if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+    handleSaveItem()
+  }
+}}
                     />
                   </div>
                 </div>
