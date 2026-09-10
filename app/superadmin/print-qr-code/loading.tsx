@@ -9,7 +9,7 @@ export default function PrintQRCodeLoading() {
       <div className="space-y-6">
         {/* Header Skeleton */}
         <div className="space-y-2">
-          <h1 className="h-10 w-1/3 text-3xl font-bold">QR Code Generator</h1>
+          <h1 className="h-10 w-1/3 text-3xl font-bold">Print QR Code</h1>
           <p className="h-4 w-2/3 text-muted-foreground">Generate and print QR codes</p>
         </div>
 
