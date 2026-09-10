@@ -68,6 +68,7 @@ export default function GPSLocationsPage() {
   const [selectedSiteId, setSelectedSiteId] = useState('')
   
   const [newLocation, setNewLocation] = useState(DEFAULT_LOCATION)
+  const [locationErrors, setLocationErrors] = useState<Partial<Record<'name' | 'latitude' | 'longitude' | 'radius', string>>>({})
   
   const [editingLocation, setEditingLocation] = useState<Location | null>(null)
   const [deleteRequest, setDeleteRequest] = useState<{
@@ -194,8 +195,29 @@ export default function GPSLocationsPage() {
     site.code.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
+  const validateLocation = () => {
+    const errors: Partial<Record<'name' | 'latitude' | 'longitude' | 'radius', string>> = {}
+    const latitude = Number(newLocation.latitude)
+    const longitude = Number(newLocation.longitude)
+    const radius = Number(newLocation.radius)
+
+    if (!newLocation.name.trim()) errors.name = 'Location name is required.'
+    if (!newLocation.latitude.trim() || !Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+      errors.latitude = 'Latitude must be between -90 and 90.'
+    }
+    if (!newLocation.longitude.trim() || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+      errors.longitude = 'Longitude must be between -180 and 180.'
+    }
+    if (!newLocation.radius.trim() || !Number.isFinite(radius) || radius <= 0) {
+      errors.radius = 'Radius must be greater than 0 meters.'
+    }
+
+    setLocationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   const handleAddLocation = async (type: 'attendance' | 'patrol') => {
-    if (isSaving) return
+    if (isSaving || !validateLocation()) return
     if (!newLocation.name || !newLocation.latitude || !newLocation.longitude || !newLocation.timezone || !selectedSiteId) {
       toast.error('All fields are required')
       return
@@ -309,6 +331,7 @@ export default function GPSLocationsPage() {
 
   const handleDialogClose = () => {
     if (isSaving) return
+    setLocationErrors({})
     setIsAddDialogOpen(false)
     setEditingLocation(null)
     setNewLocation(DEFAULT_LOCATION)
@@ -472,8 +495,9 @@ export default function GPSLocationsPage() {
                                 <div className="space-y-2">
                                   <Label htmlFor="attendance-location-name">Location Name</Label>
                                   <Input
-                                    id="attendance-location-name"
-                                    value={newLocation.name}
+                                      id="attendance-location-name"
+                                      aria-invalid={Boolean(locationErrors.name)}
+                                      value={newLocation.name}
                                     onChange={(e) => setNewLocation(prev => ({ ...prev, name: e.target.value }))}
                                     placeholder="e.g., Main Entrance"
                                   />
@@ -483,6 +507,7 @@ export default function GPSLocationsPage() {
                                     <Label htmlFor="attendance-latitude">Latitude</Label>
                                     <Input
                                       id="attendance-latitude"
+                                      aria-invalid={Boolean(locationErrors.latitude)}
                                       value={newLocation.latitude}
                                       onChange={(e) => setNewLocation(prev => ({ ...prev, latitude: e.target.value }))}
                                       placeholder="-6.2088"
@@ -492,6 +517,7 @@ export default function GPSLocationsPage() {
                                     <Label htmlFor="attendance-longitude">Longitude</Label>
                                     <Input
                                       id="attendance-longitude"
+                                      aria-invalid={Boolean(locationErrors.longitude)}
                                       value={newLocation.longitude}
                                       onChange={(e) => setNewLocation(prev => ({ ...prev, longitude: e.target.value }))}
                                       placeholder="106.8456"
@@ -502,6 +528,7 @@ export default function GPSLocationsPage() {
 <Label htmlFor="attendance-radius">Radius (meters)</Label>
                                     <Input
                                       id="attendance-radius"
+                                      aria-invalid={Boolean(locationErrors.radius)}
                                       type="number"
                                       value={newLocation.radius}
                                     onChange={(e) => setNewLocation(prev => ({ ...prev, radius: e.target.value }))}
@@ -521,6 +548,11 @@ export default function GPSLocationsPage() {
                                     </SelectContent>
                                   </Select>
                                 </div>
+                                {Object.values(locationErrors).length > 0 && (
+                                  <div className="space-y-1 text-sm text-destructive" role="alert">
+                                    {Object.values(locationErrors).map((error) => <p key={error}>{error}</p>)}
+                                  </div>
+                                )}
                                 <Button onClick={() => handleAddLocation('attendance')} className="w-full" disabled={isSaving}>
                                   {isSaving ? (
                                     <>
@@ -719,6 +751,11 @@ export default function GPSLocationsPage() {
                                     </SelectContent>
                                   </Select>
                                 </div>
+                                {Object.values(locationErrors).length > 0 && (
+                                  <div className="space-y-1 text-sm text-destructive" role="alert">
+                                    {Object.values(locationErrors).map((error) => <p key={error}>{error}</p>)}
+                                  </div>
+                                )}
                                 <Button onClick={() => handleAddLocation('patrol')} className="w-full" disabled={isSaving}>
                                   {isSaving ? (
                                     <>
