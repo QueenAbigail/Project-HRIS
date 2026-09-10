@@ -195,6 +195,7 @@ export default function GPSLocationsPage() {
   )
 
   const handleAddLocation = async (type: 'attendance' | 'patrol') => {
+    if (isSaving) return
     if (!newLocation.name || !newLocation.latitude || !newLocation.longitude || !newLocation.timezone || !selectedSiteId) {
       toast.error('All fields are required')
       return
@@ -523,8 +524,8 @@ export default function GPSLocationsPage() {
                                   {isSaving ? (
                                     <>
                                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                      Saving...
-                                    </>
+  Saving…
+  </>
                                   ) : (
                                     <>{editingLocation ? 'Update' : 'Add'} Location</>
                                   )}
@@ -721,8 +722,8 @@ export default function GPSLocationsPage() {
                                   {isSaving ? (
                                     <>
                                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                      Saving...
-                                    </>
+  Saving…
+  </>
                                   ) : (
                                     <>{editingLocation ? 'Update' : 'Add'} Checkpoint</>
                                   )}
