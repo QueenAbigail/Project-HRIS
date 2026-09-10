@@ -293,6 +293,7 @@ export default function GPSLocationsPage() {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
+                aria-label="Clear site search"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 <X className="h-4 w-4" />
@@ -359,9 +360,9 @@ export default function GPSLocationsPage() {
                               </DialogHeader>
                               <div className="space-y-4">
                                 <div className="space-y-2">
-                                  <Label htmlFor="name">Location Name</Label>
+                                  <Label htmlFor="attendance-location-name">Location Name</Label>
                                   <Input
-                                    id="name"
+                                    id="attendance-location-name"
                                     value={newLocation.name}
                                     onChange={(e) => setNewLocation(prev => ({ ...prev, name: e.target.value }))}
                                     placeholder="e.g., Main Entrance"
@@ -369,18 +370,18 @@ export default function GPSLocationsPage() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-2">
-                                    <Label htmlFor="latitude">Latitude</Label>
+                                    <Label htmlFor="patrol-latitude">Latitude</Label>
                                     <Input
-                                      id="latitude"
+                                      id="patrol-latitude"
                                       value={newLocation.latitude}
                                       onChange={(e) => setNewLocation(prev => ({ ...prev, latitude: e.target.value }))}
                                       placeholder="-6.2088"
                                     />
                                   </div>
                                   <div className="space-y-2">
-                                    <Label htmlFor="longitude">Longitude</Label>
+                                    <Label htmlFor="patrol-longitude">Longitude</Label>
                                     <Input
-                                      id="longitude"
+                                      id="patrol-longitude"
                                       value={newLocation.longitude}
                                       onChange={(e) => setNewLocation(prev => ({ ...prev, longitude: e.target.value }))}
                                       placeholder="106.8456"
@@ -388,17 +389,17 @@ export default function GPSLocationsPage() {
                                   </div>
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="radius">Radius (meters)</Label>
-                                  <Input
-                                    id="radius"
-                                    type="number"
-                                    value={newLocation.radius}
+<Label htmlFor="patrol-radius">Radius (meters)</Label>
+                                    <Input
+                                      id="patrol-radius"
+                                      type="number"
+                                      value={newLocation.radius}
                                     onChange={(e) => setNewLocation(prev => ({ ...prev, radius: e.target.value }))}
                                     placeholder="50"
                                   />
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="timezone">Timezone (Indonesia)</Label>
+                                  <Label htmlFor="attendance-timezone">Timezone (Indonesia)</Label>
                                   <Select value={newLocation.timezone} onValueChange={(value) => setNewLocation(prev => ({ ...prev, timezone: value }))}>
                                     <SelectTrigger>
                                       <SelectValue />
@@ -453,7 +454,7 @@ export default function GPSLocationsPage() {
                                       </TableCell>
                                       <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-1">
-                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEditDialog(site.id, location)}>
+                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEditDialog(site.id, location)} aria-label={`Edit ${location.name}`}>
                                             <Edit className="h-4 w-4" />
                                           </Button>
                                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => requestDeleteLocation(site.id, location.id, 'attendance', location.name)}>
@@ -523,9 +524,9 @@ export default function GPSLocationsPage() {
                               </DialogHeader>
                               <div className="space-y-4">
                                 <div className="space-y-2">
-                                  <Label htmlFor="name">Checkpoint Name</Label>
+                                  <Label htmlFor="patrol-location-name">Checkpoint Name</Label>
                                   <Input
-                                    id="name"
+                                    id="patrol-location-name"
                                     value={newLocation.name}
                                     onChange={(e) => setNewLocation(prev => ({ ...prev, name: e.target.value }))}
                                     placeholder="e.g., Gate A"
@@ -533,18 +534,18 @@ export default function GPSLocationsPage() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-2">
-                                    <Label htmlFor="latitude">Latitude</Label>
+                                    <Label htmlFor="patrol-latitude">Latitude</Label>
                                     <Input
-                                      id="latitude"
+                                      id="patrol-latitude"
                                       value={newLocation.latitude}
                                       onChange={(e) => setNewLocation(prev => ({ ...prev, latitude: e.target.value }))}
                                       placeholder="-6.2088"
                                     />
                                   </div>
                                   <div className="space-y-2">
-                                    <Label htmlFor="longitude">Longitude</Label>
+                                    <Label htmlFor="patrol-longitude">Longitude</Label>
                                     <Input
-                                      id="longitude"
+                                      id="patrol-longitude"
                                       value={newLocation.longitude}
                                       onChange={(e) => setNewLocation(prev => ({ ...prev, longitude: e.target.value }))}
                                       placeholder="106.8456"
@@ -552,17 +553,17 @@ export default function GPSLocationsPage() {
                                   </div>
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="radius">Radius (meters)</Label>
-                                  <Input
-                                    id="radius"
-                                    type="number"
-                                    value={newLocation.radius}
+<Label htmlFor="patrol-radius">Radius (meters)</Label>
+                                    <Input
+                                      id="patrol-radius"
+                                      type="number"
+                                      value={newLocation.radius}
                                     onChange={(e) => setNewLocation(prev => ({ ...prev, radius: e.target.value }))}
                                     placeholder="50"
                                   />
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="timezone">Timezone (Indonesia)</Label>
+                                  <Label htmlFor="attendance-timezone">Timezone (Indonesia)</Label>
                                   <Select value={newLocation.timezone} onValueChange={(value) => setNewLocation(prev => ({ ...prev, timezone: value }))}>
                                     <SelectTrigger>
                                       <SelectValue />
@@ -617,7 +618,7 @@ export default function GPSLocationsPage() {
                                       </TableCell>
                                       <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-1">
-                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEditDialog(site.id, location)}>
+                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEditDialog(site.id, location)} aria-label={`Edit ${location.name}`}>
                                             <Edit className="h-4 w-4" />
                                           </Button>
                                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => requestDeleteLocation(site.id, location.id, 'patrol', location.name)}>
