@@ -450,6 +450,7 @@ export default function GPSLocationsPage() {
             <Accordion type="single" collapsible className="space-y-3">
               {filteredSites.map((site) => {
                 const locations = attendanceLocations[site.id] || []
+                const isSiteLoading = loadingSiteIds.includes(site.id) || retryingSiteIds.includes(site.id)
                 return (
                   <Card key={site.id} className="border-border">
                     <AccordionItem value={site.id} className="border-0">
