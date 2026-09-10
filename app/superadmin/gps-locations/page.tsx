@@ -195,6 +195,16 @@ export default function GPSLocationsPage() {
     site.code.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
+  const updateLocationField = (field: keyof typeof newLocation, value: string) => {
+    setNewLocation((current) => ({ ...current, [field]: value }))
+    setLocationErrors((current) => {
+      if (!current[field as keyof typeof current]) return current
+      const next = { ...current }
+      delete next[field as keyof typeof next]
+      return next
+    })
+  }
+
   const validateLocation = () => {
     const errors: Partial<Record<'name' | 'latitude' | 'longitude' | 'radius', string>> = {}
     const latitude = Number(newLocation.latitude)
@@ -498,7 +508,7 @@ export default function GPSLocationsPage() {
                                       id="attendance-location-name"
                                       aria-invalid={Boolean(locationErrors.name)}
                                       value={newLocation.name}
-                                    onChange={(e) => setNewLocation(prev => ({ ...prev, name: e.target.value }))}
+                                    onChange={(e) => updateLocationField('name', e.target.value)}
                                     placeholder="e.g., Main Entrance"
                                   />
                                 </div>
@@ -509,7 +519,7 @@ export default function GPSLocationsPage() {
                                       id="attendance-latitude"
                                       aria-invalid={Boolean(locationErrors.latitude)}
                                       value={newLocation.latitude}
-                                      onChange={(e) => setNewLocation(prev => ({ ...prev, latitude: e.target.value }))}
+                                      onChange={(e) => updateLocationField('latitude', e.target.value)}
                                       placeholder="-6.2088"
                                     />
                                   </div>
@@ -519,7 +529,7 @@ export default function GPSLocationsPage() {
                                       id="attendance-longitude"
                                       aria-invalid={Boolean(locationErrors.longitude)}
                                       value={newLocation.longitude}
-                                      onChange={(e) => setNewLocation(prev => ({ ...prev, longitude: e.target.value }))}
+                                      onChange={(e) => updateLocationField('longitude', e.target.value)}
                                       placeholder="106.8456"
                                     />
                                   </div>
@@ -531,7 +541,7 @@ export default function GPSLocationsPage() {
                                       aria-invalid={Boolean(locationErrors.radius)}
                                       type="number"
                                       value={newLocation.radius}
-                                    onChange={(e) => setNewLocation(prev => ({ ...prev, radius: e.target.value }))}
+                                    onChange={(e) => updateLocationField('radius', e.target.value)}
                                     placeholder="50"
                                   />
                                 </div>
@@ -704,7 +714,7 @@ export default function GPSLocationsPage() {
                                   <Input
                                     id="patrol-location-name"
                                     value={newLocation.name}
-                                    onChange={(e) => setNewLocation(prev => ({ ...prev, name: e.target.value }))}
+                                    onChange={(e) => updateLocationField('name', e.target.value)}
                                     placeholder="e.g., Gate A"
                                   />
                                 </div>
@@ -714,7 +724,7 @@ export default function GPSLocationsPage() {
                                     <Input
                                       id="patrol-latitude"
                                       value={newLocation.latitude}
-                                      onChange={(e) => setNewLocation(prev => ({ ...prev, latitude: e.target.value }))}
+                                      onChange={(e) => updateLocationField('latitude', e.target.value)}
                                       placeholder="-6.2088"
                                     />
                                   </div>
@@ -723,7 +733,7 @@ export default function GPSLocationsPage() {
                                     <Input
                                       id="patrol-longitude"
                                       value={newLocation.longitude}
-                                      onChange={(e) => setNewLocation(prev => ({ ...prev, longitude: e.target.value }))}
+                                      onChange={(e) => updateLocationField('longitude', e.target.value)}
                                       placeholder="106.8456"
                                     />
                                   </div>
@@ -734,7 +744,7 @@ export default function GPSLocationsPage() {
                                       id="patrol-radius"
                                       type="number"
                                       value={newLocation.radius}
-                                    onChange={(e) => setNewLocation(prev => ({ ...prev, radius: e.target.value }))}
+                                    onChange={(e) => updateLocationField('radius', e.target.value)}
                                     placeholder="50"
                                   />
                                 </div>
