@@ -329,7 +329,7 @@ export default function GPSLocationsPage() {
         </p>
       </div>
 
-      <div className="flex items-end gap-3">
+      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end">
         <div className="flex-1 max-w-md">
           <label className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2 block">
             <Building2 className="h-4 w-4" />
@@ -359,11 +359,11 @@ export default function GPSLocationsPage() {
 
       <Tabs defaultValue="attendance" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="attendance" className="flex items-center gap-2">
+          <TabsTrigger value="attendance" className="flex items-center justify-center gap-2 text-xs sm:text-sm">
             <MapPin className="h-4 w-4" />
             Attendance Locations
           </TabsTrigger>
-          <TabsTrigger value="patrol" className="flex items-center gap-2">
+          <TabsTrigger value="patrol" className="flex items-center justify-center gap-2 text-xs sm:text-sm">
             <MapPin className="h-4 w-4" />
             Patrol Checkpoints
           </TabsTrigger>
@@ -432,7 +432,7 @@ export default function GPSLocationsPage() {
                             Add Location
                           </Button>
                           <Dialog open={isAddDialogOpen && selectedSiteId === site.id} onOpenChange={handleDialogClose}>
-                            <DialogContent>
+                            <DialogContent className="max-h-[90vh] w-[calc(100%-2rem)] overflow-y-auto sm:max-w-lg">
                               <DialogHeader>
                                 <DialogTitle>{editingLocation ? 'Edit' : 'Add'} Attendance Location</DialogTitle>
                                 <DialogDescription>
@@ -449,20 +449,20 @@ export default function GPSLocationsPage() {
                                     placeholder="e.g., Main Entrance"
                                   />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                   <div className="space-y-2">
-                                    <Label htmlFor="patrol-latitude">Latitude</Label>
+                                    <Label htmlFor="attendance-latitude">Latitude</Label>
                                     <Input
-                                      id="patrol-latitude"
+                                      id="attendance-latitude"
                                       value={newLocation.latitude}
                                       onChange={(e) => setNewLocation(prev => ({ ...prev, latitude: e.target.value }))}
                                       placeholder="-6.2088"
                                     />
                                   </div>
                                   <div className="space-y-2">
-                                    <Label htmlFor="patrol-longitude">Longitude</Label>
+                                    <Label htmlFor="attendance-longitude">Longitude</Label>
                                     <Input
-                                      id="patrol-longitude"
+                                      id="attendance-longitude"
                                       value={newLocation.longitude}
                                       onChange={(e) => setNewLocation(prev => ({ ...prev, longitude: e.target.value }))}
                                       placeholder="106.8456"
@@ -470,9 +470,9 @@ export default function GPSLocationsPage() {
                                   </div>
                                 </div>
                                 <div className="space-y-2">
-<Label htmlFor="patrol-radius">Radius (meters)</Label>
+<Label htmlFor="attendance-radius">Radius (meters)</Label>
                                     <Input
-                                      id="patrol-radius"
+                                      id="attendance-radius"
                                       type="number"
                                       value={newLocation.radius}
                                     onChange={(e) => setNewLocation(prev => ({ ...prev, radius: e.target.value }))}
@@ -625,7 +625,7 @@ export default function GPSLocationsPage() {
                             Add Checkpoint
                           </Button>
                           <Dialog open={isAddDialogOpen && selectedSiteId === site.id} onOpenChange={handleDialogClose}>
-                            <DialogContent>
+                            <DialogContent className="max-h-[90vh] w-[calc(100%-2rem)] overflow-y-auto sm:max-w-lg">
                               <DialogHeader>
                                 <DialogTitle>{editingLocation ? 'Edit' : 'Add'} Patrol Checkpoint</DialogTitle>
                                 <DialogDescription>
@@ -642,7 +642,7 @@ export default function GPSLocationsPage() {
                                     placeholder="e.g., Gate A"
                                   />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                   <div className="space-y-2">
                                     <Label htmlFor="patrol-latitude">Latitude</Label>
                                     <Input
