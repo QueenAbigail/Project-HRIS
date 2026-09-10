@@ -616,7 +616,7 @@ export default function GPSLocationsPage() {
                                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEditDialog(site.id, location)} aria-label={`Edit ${location.name}`}>
                                             <Edit className="h-4 w-4" />
                                           </Button>
-                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => requestDeleteLocation(site.id, location.id, 'attendance', location.name)}>
+                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" aria-label={`Delete ${location.name}`} onClick={() => requestDeleteLocation(site.id, location.id, 'attendance', location.name)}>
                                             <Trash2 className="h-4 w-4" />
   <span className="sr-only">Delete {location.name}</span>
                                           </Button>
@@ -819,7 +819,7 @@ export default function GPSLocationsPage() {
                                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEditDialog(site.id, location)} aria-label={`Edit ${location.name}`}>
                                             <Edit className="h-4 w-4" />
                                           </Button>
-                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => requestDeleteLocation(site.id, location.id, 'patrol', location.name)}>
+                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" aria-label={`Delete ${location.name}`} onClick={() => requestDeleteLocation(site.id, location.id, 'patrol', location.name)}>
                                             <Trash2 className="h-4 w-4" />
   <span className="sr-only">Delete {location.name}</span>
                                           </Button>
@@ -843,10 +843,10 @@ export default function GPSLocationsPage() {
       </Tabs>
 
       <AlertDialog open={deleteRequest !== null} onOpenChange={(open) => !open && !isDeleting && setDeleteRequest(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent aria-describedby="delete-location-description">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete GPS location?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription id="delete-location-description">
               This will permanently delete <span className="font-medium text-foreground">{deleteRequest?.name}</span> from the {deleteRequest?.type} locations.
             </AlertDialogDescription>
           </AlertDialogHeader>
