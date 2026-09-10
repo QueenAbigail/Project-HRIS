@@ -66,6 +66,7 @@ export default function PrintQRCodePage() {
   const [appSettings, setAppSettings] = useState<AppSettings>({ appName: 'Your Company' })
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [isPrinting, setIsPrinting] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
@@ -139,15 +140,20 @@ export default function PrintQRCodePage() {
   }
 
   const handlePrint = () => {
+    if (isPrinting) return
+    setIsPrinting(true)
+
     const printZone = document.getElementById('qr-print-zone')
     if (!printZone) {
       console.error('[v0] Print zone element not found')
+      setIsPrinting(false)
       return
     }
 
     const printWindow = window.open('', '_blank')
     if (!printWindow) {
       alert('Please allow pop-ups to print QR codes')
+      setIsPrinting(false)
       return
     }
 
@@ -266,9 +272,8 @@ export default function PrintQRCodePage() {
     printWindow.document.close()
     
     setTimeout(() => {
-      printWindow.focus()
       printWindow.print()
-      printWindow.close()
+      setIsPrinting(false)
     }, 500)
   }
 
@@ -495,9 +500,9 @@ export default function PrintQRCodePage() {
               </p>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handlePrint} className="gap-2">
-                <Printer className="h-4 w-4" />
-                Print QR Codes
+<Button onClick={handlePrint} className="gap-2" disabled={isPrinting || selectedLocationData.length === 0}>
+              {isPrinting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+              {isPrinting ? 'Printing…' : 'Print QR Codes'}
               </Button>
             </div>
           </CardHeader>
