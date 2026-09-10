@@ -323,6 +323,7 @@ export default function GPSLocationsPage() {
   }
 
   const openAddDialog = (siteId: string) => {
+    setLocationErrors({})
     setSelectedSiteId(siteId)
     setEditingLocation(null)
     setNewLocation(DEFAULT_LOCATION)
@@ -330,6 +331,7 @@ export default function GPSLocationsPage() {
   }
 
   const openEditDialog = (siteId: string, location: Location) => {
+    setLocationErrors({})
     setSelectedSiteId(siteId)
     setEditingLocation(location)
     setNewLocation({
@@ -552,7 +554,7 @@ export default function GPSLocationsPage() {
                                 <div className="space-y-2">
                                   <Label htmlFor="attendance-timezone">Timezone (Indonesia)</Label>
                                   <Select value={newLocation.timezone} onValueChange={(value) => setNewLocation(prev => ({ ...prev, timezone: value }))}>
-                                    <SelectTrigger>
+                                    <SelectTrigger id="attendance-timezone">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -622,7 +624,6 @@ export default function GPSLocationsPage() {
                                           </Button>
                                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" aria-label={`Delete ${location.name}`} onClick={() => requestDeleteLocation(site.id, location.id, 'attendance', location.name)}>
                                             <Trash2 className="h-4 w-4" />
-  <span className="sr-only">Delete {location.name}</span>
                                           </Button>
                                         </div>
                                       </TableCell>
@@ -717,6 +718,7 @@ export default function GPSLocationsPage() {
                                   <Label htmlFor="patrol-location-name">Checkpoint Name</Label>
                                   <Input
                                     id="patrol-location-name"
+                                    aria-invalid={Boolean(locationErrors.name)}
                                     value={newLocation.name}
                                     onChange={(e) => updateLocationField('name', e.target.value)}
                                     placeholder="e.g., Gate A"
@@ -727,6 +729,7 @@ export default function GPSLocationsPage() {
                                     <Label htmlFor="patrol-latitude">Latitude</Label>
                                     <Input
                                       id="patrol-latitude"
+                                      aria-invalid={Boolean(locationErrors.latitude)}
                                       value={newLocation.latitude}
                                       onChange={(e) => updateLocationField('latitude', e.target.value)}
                                       placeholder="-6.2088"
@@ -736,6 +739,7 @@ export default function GPSLocationsPage() {
                                     <Label htmlFor="patrol-longitude">Longitude</Label>
                                     <Input
                                       id="patrol-longitude"
+                                      aria-invalid={Boolean(locationErrors.longitude)}
                                       value={newLocation.longitude}
                                       onChange={(e) => updateLocationField('longitude', e.target.value)}
                                       placeholder="106.8456"
@@ -746,6 +750,7 @@ export default function GPSLocationsPage() {
 <Label htmlFor="patrol-radius">Radius (meters)</Label>
                                     <Input
                                       id="patrol-radius"
+                                      aria-invalid={Boolean(locationErrors.radius)}
                                       type="number"
                                       value={newLocation.radius}
                                     onChange={(e) => updateLocationField('radius', e.target.value)}
@@ -753,9 +758,9 @@ export default function GPSLocationsPage() {
                                   />
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="attendance-timezone">Timezone (Indonesia)</Label>
+                                  <Label htmlFor="patrol-timezone">Timezone (Indonesia)</Label>
                                   <Select value={newLocation.timezone} onValueChange={(value) => setNewLocation(prev => ({ ...prev, timezone: value }))}>
-                                    <SelectTrigger>
+                                    <SelectTrigger id="patrol-timezone">
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -825,7 +830,6 @@ export default function GPSLocationsPage() {
                                           </Button>
                                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" aria-label={`Delete ${location.name}`} onClick={() => requestDeleteLocation(site.id, location.id, 'patrol', location.name)}>
                                             <Trash2 className="h-4 w-4" />
-  <span className="sr-only">Delete {location.name}</span>
                                           </Button>
                                         </div>
                                       </TableCell>
