@@ -24,6 +24,15 @@ const DEFAULT_LOCATION = {
   isActive: true,
 }
 
+async function getApiErrorMessage(response: Response, fallback: string) {
+  try {
+    const body = await response.clone().json() as { error?: unknown }
+    return typeof body.error === 'string' && body.error.trim() ? body.error : fallback
+  } catch {
+    return fallback
+  }
+}
+
 interface Location {
   id: string
   name: string
@@ -91,8 +100,11 @@ export default function GPSLocationsPage() {
             fetch(`/api/sites/${site.id}/patrol-locations`),
           ])
 
-          if (!attResp.ok || !patrolResp.ok) {
-            throw new Error(`Failed to fetch locations for site ${site.id}`)
+          if (!attResp.ok) {
+            throw new Error(await getApiErrorMessage(attResp, `Failed to load attendance locations for ${site.name}`))
+          }
+          if (!patrolResp.ok) {
+            throw new Error(await getApiErrorMessage(patrolResp, `Failed to load patrol locations for ${site.name}`))
           }
 
           return {
@@ -112,6 +124,8 @@ export default function GPSLocationsPage() {
             patrolData[result.value.siteId] = result.value.patrol
           } else {
             failedSites += 1
+            const message = result.reason instanceof Error ? result.reason.message : 'Some site locations could not be loaded'
+            toast.error(message)
           }
         }
 
@@ -159,7 +173,9 @@ export default function GPSLocationsPage() {
         ),
       })
 
-      if (!response.ok) throw new Error('Failed to save location')
+      if (!response.ok) {
+        throw new Error(await getApiErrorMessage(response, 'Failed to save location'))
+      }
       const savedLocation = await response.json()
 
       if (type === 'attendance') {
@@ -184,7 +200,7 @@ export default function GPSLocationsPage() {
       setEditingLocation(null)
       setSelectedSiteId('')
     } catch (error) {
-      toast.error('Failed to save location')
+      toast.error(error instanceof Error ? error.message : 'Failed to save location')
     } finally {
       setIsSaving(false)
     }
@@ -204,7 +220,9 @@ export default function GPSLocationsPage() {
         method: 'DELETE',
       })
 
-      if (!response.ok) throw new Error('Failed to delete location')
+      if (!response.ok) {
+        throw new Error(await getApiErrorMessage(response, 'Failed to delete location'))
+      }
 
       if (type === 'attendance') {
         setAttendanceLocations(prev => ({
@@ -221,7 +239,7 @@ export default function GPSLocationsPage() {
       toast.success('Location deleted successfully')
       setDeleteRequest(null)
     } catch (error) {
-      toast.error('Failed to delete location')
+      toast.error(error instanceof Error ? error.message : 'Failed to delete location')
     } finally {
       setIsDeleting(false)
     }
