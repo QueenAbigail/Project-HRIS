@@ -147,7 +147,7 @@ export default function GPSLocationsPage() {
       } catch (error) {
         console.error('[v0] Error fetching GPS data:', error)
         setLoadError(true)
-        toast.error('Failed to load GPS locations')
+        toast.error(error instanceof Error ? error.message : 'Failed to load GPS locations')
       } finally {
         setIsLoading(false)
       }
@@ -328,7 +328,13 @@ export default function GPSLocationsPage() {
     return (
       <div className="flex flex-col items-center gap-4 py-12 text-center">
         <p className="text-destructive">Unable to load GPS locations.</p>
-        <Button variant="outline" onClick={() => setReloadKey((key) => key + 1)}>Try again</Button>
+        <Button
+          variant="outline"
+          onClick={() => setReloadKey((key) => key + 1)}
+          aria-label="Retry loading GPS locations"
+        >
+          Try again
+        </Button>
       </div>
     )
   }
