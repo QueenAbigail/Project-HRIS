@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -55,6 +56,13 @@ export default function GPSLocationsPage() {
   const [newLocation, setNewLocation] = useState(DEFAULT_LOCATION)
   
   const [editingLocation, setEditingLocation] = useState<Location | null>(null)
+  const [deleteRequest, setDeleteRequest] = useState<{
+    siteId: string
+    locationId: string
+    type: 'attendance' | 'patrol'
+    name: string
+  } | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Fetch sites on mount
   useEffect(() => {
@@ -181,7 +189,15 @@ export default function GPSLocationsPage() {
     }
   }
 
-  const handleDeleteLocation = async (siteId: string, locationId: string, type: 'attendance' | 'patrol') => {
+  const requestDeleteLocation = (siteId: string, locationId: string, type: 'attendance' | 'patrol', name: string) => {
+    setDeleteRequest({ siteId, locationId, type, name })
+  }
+
+  const handleDeleteLocation = async () => {
+    if (!deleteRequest) return
+
+    const { siteId, locationId, type } = deleteRequest
+    setIsDeleting(true)
     try {
       const response = await fetch(`/api/sites/${siteId}/${type}-locations?locationId=${locationId}`, {
         method: 'DELETE',
@@ -202,8 +218,11 @@ export default function GPSLocationsPage() {
       }
 
       toast.success('Location deleted successfully')
+      setDeleteRequest(null)
     } catch (error) {
       toast.error('Failed to delete location')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -435,8 +454,9 @@ export default function GPSLocationsPage() {
                                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEditDialog(site.id, location)}>
                                             <Edit className="h-4 w-4" />
                                           </Button>
-                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => handleDeleteLocation(site.id, location.id, 'attendance')}>
+                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => requestDeleteLocation(site.id, location.id, 'attendance', location.name)}>
                                             <Trash2 className="h-4 w-4" />
+  <span className="sr-only">Delete {location.name}</span>
                                           </Button>
                                         </div>
                                       </TableCell>
@@ -598,8 +618,9 @@ export default function GPSLocationsPage() {
                                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEditDialog(site.id, location)}>
                                             <Edit className="h-4 w-4" />
                                           </Button>
-                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => handleDeleteLocation(site.id, location.id, 'patrol')}>
+                                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => requestDeleteLocation(site.id, location.id, 'patrol', location.name)}>
                                             <Trash2 className="h-4 w-4" />
+  <span className="sr-only">Delete {location.name}</span>
                                           </Button>
                                         </div>
                                       </TableCell>
@@ -619,6 +640,23 @@ export default function GPSLocationsPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={deleteRequest !== null} onOpenChange={(open) => !open && !isDeleting && setDeleteRequest(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete GPS location?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <span className="font-medium text-foreground">{deleteRequest?.name}</span> from the {deleteRequest?.type} locations.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteLocation} disabled={isDeleting}>
+              {isDeleting ? 'Deleting…' : 'Delete location'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
