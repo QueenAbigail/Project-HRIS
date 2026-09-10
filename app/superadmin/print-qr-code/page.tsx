@@ -127,7 +127,7 @@ export default function PrintQRCodePage() {
   }
 
   const selectAll = () => {
-    if (selectedLocations.length === filteredLocations.length) {
+  if (selectedLocationData.length === filteredLocations.length) {
       setSelectedLocations([])
     } else {
       setSelectedLocations(filteredLocations.map((loc) => loc.id))
@@ -320,7 +320,13 @@ export default function PrintQRCodePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-semibold">Location Type</label>
-              <Select value={locationType} onValueChange={setLocationType}>
+              <Select
+                value={locationType}
+                onValueChange={(value) => {
+                  setLocationType(value)
+                  setSelectedLocations([])
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -334,7 +340,14 @@ export default function PrintQRCodePage() {
             {/* Site Selection */}
             <div className="space-y-2">
               <label className="text-sm font-semibold">Site</label>
-              <Select value={selectedSite} onValueChange={setSelectedSite} disabled={loading}>
+              <Select
+                value={selectedSite}
+                onValueChange={(value) => {
+                  setSelectedSite(value)
+                  setSelectedLocations([])
+                }}
+                disabled={loading}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -410,7 +423,7 @@ export default function PrintQRCodePage() {
               Available Locations ({filteredLocations.length})
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Selected: {selectedLocations.length}
+              Selected: {selectedLocationData.length}
             </p>
           </div>
           <Button
@@ -418,7 +431,7 @@ export default function PrintQRCodePage() {
             size="sm"
             onClick={selectAll}
           >
-            {selectedLocations.length === filteredLocations.length
+            {selectedLocationData.length === filteredLocations.length && filteredLocations.length > 0
               ? 'Deselect All'
               : 'Select All'}
           </Button>
