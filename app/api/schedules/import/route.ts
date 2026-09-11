@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateTodayAttendanceRecords } from '@/app/superadmin/actions'
+import { getCurrentUser } from '@/lib/system'
+
+async function requireSuperAdmin() {
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'SUPER_ADMIN') {
+    throw new Error('Unauthorized')
+  }
+}
 
 // Import schedules in bulk from Excel file
 // Uses the bulk-create endpoint which supports the new manual assignment modes
 export async function POST(req: NextRequest) {
   try {
+    await requireSuperAdmin()
     const { schedules: importedSchedules, replace = true } = await req.json()
 
     if (!Array.isArray(importedSchedules) || importedSchedules.length === 0) {

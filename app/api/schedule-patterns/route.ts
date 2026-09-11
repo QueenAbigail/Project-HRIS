@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/system'
+
+async function requireSuperAdmin() {
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'SUPER_ADMIN') {
+    throw new Error('Unauthorized')
+  }
+}
 
 // GET all schedule patterns
 export async function GET(request: NextRequest) {
   try {
+    await requireSuperAdmin()
     const patterns = await prisma.schedulePattern.findMany({
       include: {
         shift: true,
@@ -23,6 +32,7 @@ export async function GET(request: NextRequest) {
 // POST create new schedule pattern
 export async function POST(request: NextRequest) {
   try {
+    await requireSuperAdmin()
     const body = await request.json()
 
     // Convert type to uppercase for Prisma enum
@@ -60,6 +70,7 @@ export async function POST(request: NextRequest) {
 // PUT update schedule pattern
 export async function PUT(request: NextRequest) {
   try {
+    await requireSuperAdmin()
     const body = await request.json()
     const { id } = body
 
@@ -103,6 +114,7 @@ export async function PUT(request: NextRequest) {
 // DELETE schedule pattern
 export async function DELETE(request: NextRequest) {
   try {
+    await requireSuperAdmin()
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
