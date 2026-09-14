@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress'
 import { toast } from 'sonner'
 import { Download, Upload, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import { getShifts } from '@/app/superadmin/actions'
 
 interface ScheduleImportDialogProps {
   open: boolean
@@ -18,6 +19,7 @@ interface ScheduleImportDialogProps {
 
 interface ParsedSchedule {
   employeeName: string
+  employeeCode: string
   employeeId: string
   date: string
   shift: string
@@ -31,6 +33,14 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
   const [step, setStep] = useState<'upload' | 'preview' | 'importing'>('upload')
   const [progress, setProgress] = useState(0)
   const [dragActive, setDragActive] = useState(false)
+  const [shiftCodes, setShiftCodes] = useState<string[]>([])
+
+  useEffect(() => {
+    if (!open) return
+    void getShifts().then((shifts) => {
+      setShiftCodes(shifts.map((shift) => shift.code).filter((code): code is string => Boolean(code)))
+    })
+  }, [open])
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -57,10 +67,12 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
       return date.toISOString().slice(0, 10)
     })
 
+    const firstCode = shiftCodes[0] || 'SHIFT_CODE_1'
+    const secondCode = shiftCodes[1] || firstCode
     const templateData = [
       ['Employee Code', 'Employee Name', ...dates],
-      ['EMP-001', 'Budi Santoso', 'P', 'M', 'OFF', 'P', 'M'],
-      ['EMP-002', 'Siti Aminah', 'M', 'P', 'P', 'OFF', 'M'],
+      ['EMP-001', 'Budi Santoso', firstCode, secondCode, 'OFF', firstCode, secondCode],
+      ['EMP-002', 'Siti Aminah', secondCode, firstCode, firstCode, 'OFF', secondCode],
     ]
     const worksheet = XLSX.utils.aoa_to_sheet(templateData)
     worksheet['!cols'] = [
@@ -103,23 +115,29 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
       const dataRows = rows.slice(1)
 
       // Find column indices
-      const nameIdx = headers.findIndex((h: any) => h && String(h).toUpperCase().includes('NAMA'))
+      const codeIdx = headers.findIndex((h: any) => h && ['EMPLOYEE CODE', 'EMPLOYEE ID', 'KODE KARYAWAN'].includes(String(h).trim().toUpperCase()))
+      const nameIdx = headers.findIndex((h: any) => h && ['EMPLOYEE NAME', 'NAMA'].includes(String(h).trim().toUpperCase()))
+      if (codeIdx < 0 || nameIdx < 0) {
+        throw new Error('Excel must include Employee Code and Employee Name columns')
+      }
       const dateColumns = headers
         .map((h: any, idx: number) => ({ header: h, idx }))
-        .filter(({ header }) => header && !String(header).toUpperCase().includes('NAMA') && !String(header).toUpperCase().includes('JABATAN'))
+        .filter(({ header }) => header && !['EMPLOYEE CODE', 'EMPLOYEE ID', 'KODE KARYAWAN', 'EMPLOYEE NAME', 'NAMA', 'JABATAN'].includes(String(header).trim().toUpperCase()))
 
       const parsed: ParsedSchedule[] = []
 
       dataRows.forEach((row: any[]) => {
-        const employeeName = row[nameIdx] || ''
-        if (!employeeName) return
+        const employeeCode = String(row[codeIdx] || '').trim().toUpperCase()
+        const employeeName = String(row[nameIdx] || '').trim()
+        if (!employeeCode) return
 
         dateColumns.forEach(({ header, idx }) => {
           const shift = row[idx]
           if (shift && shift !== 'OFF' && shift !== '') {
             parsed.push({
               employeeName,
-              employeeId: employeeName, // Use name as ID if not available
+              employeeCode,
+              employeeId: employeeCode,
               date: String(header),
               shift: String(shift).toUpperCase(),
             })
@@ -240,7 +258,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
               <Alert>
                 <AlertTriangle className="size-4" />
                 <AlertDescription>
-                  <strong>Format:</strong> Employee Code, Employee Name, then one column per date. Use shift codes P (Morning), M (Evening), or OFF (Day off). Download the template for a sample.
+                  <strong>Format:</strong> Employee Code, Employee Name, then one column per date. Shift codes must match the configured records ({shiftCodes.length ? shiftCodes.join(', ') : 'no codes configured yet'}). Use OFF for a day off.
                 </AlertDescription>
               </Alert>
             </>

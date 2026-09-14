@@ -176,6 +176,7 @@ export async function getEmployeeSchedules(includePast: boolean = false) {
         shift: {
           select: {
             id: true,
+            code: true,
             name: true,
             startTime: true,
             endTime: true
@@ -225,6 +226,7 @@ export async function createShift(data: {
   try {
     const shift = await prisma.shift.create({
       data: {
+        code: data.code.trim().toUpperCase(),
         name: data.name,
         startTime: data.startTime,
         endTime: data.endTime,
@@ -242,6 +244,7 @@ export async function createShift(data: {
 export async function updateShiftInDb(
   shiftId: string,
   data: {
+    code?: string
     name?: string
     startTime?: string
     endTime?: string
@@ -253,7 +256,10 @@ export async function updateShiftInDb(
   try {
     const shift = await prisma.shift.update({
       where: { id: shiftId },
-      data
+      data: {
+        ...data,
+        ...(data.code ? { code: data.code.trim().toUpperCase() } : {}),
+      }
     })
     revalidatePath('/superadmin/schedules')
     return shift

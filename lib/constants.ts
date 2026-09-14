@@ -23,6 +23,7 @@ export type LocationId = typeof locations[number]['id']
 // Shift definitions with scheduled times
 export interface Shift {
   id: string
+  code?: string | null
   name: string
   startTime: string // HH:MM format (24h)
   endTime: string

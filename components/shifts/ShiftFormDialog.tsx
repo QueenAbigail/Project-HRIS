@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { createShift, updateShiftInDb, deleteShiftFromDb, getShifts } from '@/app/superadmin/actions'
 
 const formSchema = z.object({
+  code: z.string().trim().min(1, 'Shift code is required').max(20).regex(/^[A-Za-z0-9_-]+$/, 'Use letters, numbers, hyphens, or underscores'),
   name: z.string().min(1, 'Shift name is required').max(50),
   startTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time (HH:MM)'),
   endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time (HH:MM)'),
@@ -38,13 +39,14 @@ export function ShiftFormDialog({ shift, open, onOpenChange, onSuccess }: ShiftF
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: shift || { name: '', startTime: '', endTime: '', gracePeriodMinutes: 10 }
+    defaultValues: shift || { code: '', name: '', startTime: '', endTime: '', gracePeriodMinutes: 10 }
   })
 
   // Update form when shift data changes
   useEffect(() => {
     if (shift) {
       form.reset({
+        code: shift.code ?? '',
         name: shift.name,
         startTime: shift.startTime,
         endTime: shift.endTime,
@@ -52,6 +54,7 @@ export function ShiftFormDialog({ shift, open, onOpenChange, onSuccess }: ShiftF
       })
     } else {
       form.reset({
+        code: '',
         name: '',
         startTime: '',
         endTime: '',
@@ -103,6 +106,19 @@ export function ShiftFormDialog({ shift, open, onOpenChange, onSuccess }: ShiftF
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Human-readable Code</FormLabel>
+                  <FormControl>
+                    <Input placeholder="MORNING" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="name"

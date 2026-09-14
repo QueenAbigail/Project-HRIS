@@ -28,49 +28,36 @@ export async function POST(req: NextRequest) {
 
     let processed = 0
     const errors: string[] = []
-    const schedulesToCreate: Array<{ employeeId: string; shiftId: string; scheduleDate: string }> = []
+    const schedulesToCreate: Array<{ employeeId: string; shiftId: string; scheduleDate: string; shiftStart: string; shiftEnd: string }> = []
     const employeesProcessed = new Set<string>()
 
     // Parse and validate imported schedules
     for (const schedule of importedSchedules) {
       try {
-        const { employeeName, employeeId, date, shift } = schedule
+        const { employeeName, employeeCode, date, shift } = schedule
 
-        // Find employee by name or ID
-        let employee
-        if (employeeId) {
-          employee = await prisma.user.findUnique({
-            where: { id: employeeId }
-          })
-        } else {
-          employee = await prisma.user.findFirst({
-            where: { name: employeeName }
-          })
+        if (!employeeCode) {
+          errors.push(`Missing employee code for ${employeeName || 'unknown employee'}`)
+          continue
         }
+
+        const employee = await prisma.user.findUnique({
+          where: { employeeCode: String(employeeCode).trim() }
+        })
 
         if (!employee) {
           errors.push(`Employee ${employeeName || employeeId} not found`)
           continue
         }
 
-        // Map shift code to shift ID
-        let shiftId: string | null = null
-        const shiftCode = String(shift).toUpperCase()
+        // Map the configured human-readable shift code to its internal ID.
+        const shiftCode = String(shift || '').trim().toUpperCase()
+        if (shiftCode === 'OFF' || shiftCode === 'X') continue
 
-        if (shiftCode === 'P' || shiftCode === 'PAGI' || shiftCode === 'MORNING') {
-          const foundShift = await prisma.shift.findFirst({
-            where: { name: { contains: 'Morning', mode: 'insensitive' } }
-          })
-          if (foundShift) shiftId = foundShift.id
-        } else if (shiftCode === 'M' || shiftCode === 'MALAM' || shiftCode === 'EVENING') {
-          const foundShift = await prisma.shift.findFirst({
-            where: { name: { contains: 'Evening', mode: 'insensitive' } }
-          })
-          if (foundShift) shiftId = foundShift.id
-        } else if (shiftCode === 'X' || shiftCode === 'OFF' || shiftCode === 'DAY OFF') {
-          // Skip day off entries
-          continue
-        }
+        const foundShift = await prisma.shift.findFirst({
+          where: { code: shiftCode }
+        })
+        const shiftId = foundShift?.id
 
         if (!shiftId) {
           errors.push(`No matching shift for code ${shiftCode} on ${date}`)
@@ -103,6 +90,8 @@ export async function POST(req: NextRequest) {
           employeeId: employee.id,
           shiftId,
           scheduleDate,
+          shiftStart: foundShift.startTime,
+          shiftEnd: foundShift.endTime,
         })
 
         employeesProcessed.add(employee.id)

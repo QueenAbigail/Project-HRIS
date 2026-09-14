@@ -144,6 +144,7 @@ model Company {
 // Shift model (from shifts in constants.ts)
 model Shift {
   id                 String                    @id @default(cuid())
+  code               String?                   @unique
   name               String
   startTime          String // HH:MM
   endTime            String // HH:MM
