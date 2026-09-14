@@ -132,6 +132,8 @@ export async function updateMobileAppVersion(formData: FormData) {
 }
 
 export async function getShifts() {
+  await requireSuperAdmin()
+
   try {
     const shifts = await prisma.shift.findMany({
       orderBy: { id: 'asc' }
@@ -145,6 +147,8 @@ export async function getShifts() {
 }
 
 export async function getEmployeeSchedules(includePast: boolean = false) {
+  await requireSuperAdmin()
+
   try {
     console.log('[v0] Fetching employee schedules...', { includePast })
     
@@ -216,6 +220,8 @@ export async function createShift(data: {
   endTime: string
   gracePeriodMinutes: number
 }) {
+  await requireSuperAdmin()
+
   try {
     const shift = await prisma.shift.create({
       data: {
@@ -242,6 +248,8 @@ export async function updateShiftInDb(
     gracePeriodMinutes?: number
   }
 ) {
+  await requireSuperAdmin()
+
   try {
     const shift = await prisma.shift.update({
       where: { id: shiftId },
@@ -256,6 +264,8 @@ export async function updateShiftInDb(
 }
 
 export async function deleteShiftFromDb(shiftId: string) {
+  await requireSuperAdmin()
+
   if (!shiftId) {
     throw new Error('Shift ID is required')
   }
@@ -281,6 +291,8 @@ export async function deleteShiftFromDb(shiftId: string) {
 }
 
 export async function getAllEmployees() {
+  await requireSuperAdmin()
+
   try {
     console.log('[v0] Fetching all employees from users table...')
     const employees = await prisma.user.findMany({
