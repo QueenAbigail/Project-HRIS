@@ -215,29 +215,52 @@ export async function getEmployeeSchedules(includePast: boolean = false) {
   }
 }
 
+const shiftTimePattern = /^([01]\d|2[0-3]):[0-5]\d$/
+
+function getShiftErrorMessage(error: unknown, action: 'create' | 'update') {
+  const prismaCode = typeof error === 'object' && error !== null && 'code' in error
+    ? String(error.code)
+    : ''
+
+  if (prismaCode === 'P2002') return 'This Shift Code is already in use. Choose a different code.'
+  if (prismaCode === 'P2025') return 'This shift no longer exists. Refresh the page and try again.'
+  if (error instanceof Error && error.message !== 'Failed to create shift' && error.message !== 'Failed to update shift') {
+    return error.message
+  }
+  return action === 'create' ? 'The shift could not be created.' : 'The shift could not be updated.'
+}
+
+function validateShiftData(data: { code?: string; startTime?: string; endTime?: string; gracePeriodMinutes?: number }) {
+  const code = data.code?.trim().toUpperCase()
+  if (!code) throw new Error('Shift Code is required.')
+  if (!/^[A-Z0-9_-]+$/.test(code)) throw new Error('Shift Code may only contain letters, numbers, hyphens, and underscores.')
+  if (data.startTime && !shiftTimePattern.test(data.startTime)) throw new Error('Start Time must use HH:MM format, for example 07:00.')
+  if (data.endTime && !shiftTimePattern.test(data.endTime)) throw new Error('End Time must use HH:MM format, for example 15:00.')
+  if (data.gracePeriodMinutes !== undefined && (!Number.isInteger(data.gracePeriodMinutes) || data.gracePeriodMinutes < 0 || data.gracePeriodMinutes > 60)) {
+    throw new Error('Grace Period must be a whole number between 0 and 60 minutes.')
+  }
+  return code
+}
+
 export async function createShift(data: {
+  code: string
   name: string
   startTime: string
   endTime: string
   gracePeriodMinutes: number
 }) {
   await requireSuperAdmin()
+  const code = validateShiftData(data)
 
   try {
     const shift = await prisma.shift.create({
-      data: {
-        code: data.code.trim().toUpperCase(),
-        name: data.name,
-        startTime: data.startTime,
-        endTime: data.endTime,
-        gracePeriodMinutes: data.gracePeriodMinutes,
-      }
+      data: { code, name: data.name, startTime: data.startTime, endTime: data.endTime, gracePeriodMinutes: data.gracePeriodMinutes }
     })
     revalidatePath('/superadmin/schedules')
     return shift
   } catch (error) {
     console.error('[v0] Error creating shift:', error)
-    throw new Error('Failed to create shift')
+    throw new Error(getShiftErrorMessage(error, 'create'))
   }
 }
 
@@ -252,20 +275,22 @@ export async function updateShiftInDb(
   }
 ) {
   await requireSuperAdmin()
+  if (!shiftId) throw new Error('Shift ID is required.')
+  const code = validateShiftData(data)
 
   try {
     const shift = await prisma.shift.update({
       where: { id: shiftId },
       data: {
         ...data,
-        ...(data.code ? { code: data.code.trim().toUpperCase() } : {}),
+        code,
       }
     })
     revalidatePath('/superadmin/schedules')
     return shift
   } catch (error) {
     console.error('[v0] Error updating shift:', error)
-    throw new Error('Failed to update shift')
+    throw new Error(getShiftErrorMessage(error, 'update'))
   }
 }
 
