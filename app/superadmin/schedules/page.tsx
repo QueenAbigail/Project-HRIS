@@ -107,7 +107,14 @@ export default function SchedulesPage() {
                   {shifts.map(shift => (
                     <div key={shift.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition">
                       <div>
-                        <h4 className="font-medium">{shift.name}</h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{shift.name}</h4>
+                          {shift.code && (
+                            <span className="rounded-md bg-primary/10 px-2 py-0.5 font-mono text-xs font-semibold text-primary">
+                              {shift.code}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-muted-foreground">
                           {formatTime(shift.startTime)} - {formatTime(shift.endTime)} | {shift.gracePeriodMinutes}min grace
                         </p>
