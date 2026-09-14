@@ -111,7 +111,7 @@ export function ShiftFormDialog({ shift, open, onOpenChange, onSuccess }: ShiftF
               name="code"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Human-readable Code</FormLabel>
+                  <FormLabel>Shift Code</FormLabel>
                   <FormControl>
                     <Input placeholder="MORNING" {...field} />
                   </FormControl>
