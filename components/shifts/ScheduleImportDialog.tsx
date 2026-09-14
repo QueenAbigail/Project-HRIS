@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { toast } from 'sonner'
-import { Upload, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { Download, Upload, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
 interface ScheduleImportDialogProps {
@@ -48,6 +48,30 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
     setDragActive(false)
     const droppedFile = e.dataTransfer.files?.[0]
     if (droppedFile) handleFileSelect(droppedFile)
+  }
+
+  const handleDownloadTemplate = () => {
+    const today = new Date()
+    const dates = Array.from({ length: 5 }, (_, index) => {
+      const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + index + 1)
+      return date.toISOString().slice(0, 10)
+    })
+
+    const templateData = [
+      ['Employee Code', 'Employee Name', ...dates],
+      ['EMP-001', 'Budi Santoso', 'P', 'M', 'OFF', 'P', 'M'],
+      ['EMP-002', 'Siti Aminah', 'M', 'P', 'P', 'OFF', 'M'],
+    ]
+    const worksheet = XLSX.utils.aoa_to_sheet(templateData)
+    worksheet['!cols'] = [
+      { wch: 18 },
+      { wch: 24 },
+      ...dates.map(() => ({ wch: 14 })),
+    ]
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Schedules')
+    XLSX.writeFile(workbook, 'schedule_import_template.xlsx')
+    toast.success('Schedule template downloaded')
   }
 
   const handleFileSelect = async (selectedFile: File) => {
@@ -197,20 +221,26 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
                     className="hidden"
                     id="file-input"
                   />
-                  <Button
-                    variant="outline"
-                    onClick={() => document.getElementById('file-input')?.click()}
-                    disabled={parsing}
-                  >
-                    {parsing ? 'Parsing...' : 'Select File'}
-                  </Button>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => document.getElementById('file-input')?.click()}
+                      disabled={parsing}
+                    >
+                      {parsing ? 'Parsing...' : 'Select File'}
+                    </Button>
+                    <Button variant="outline" onClick={handleDownloadTemplate} disabled={parsing}>
+                      <Download className="mr-2 size-4" />
+                      Download Template
+                    </Button>
+                  </div>
                 </div>
               </div>
 
               <Alert>
                 <AlertTriangle className="size-4" />
                 <AlertDescription>
-                  <strong>Format:</strong> First column: Employee names, then columns for each date with shift codes (P for Pagi/Morning, M for Malam/Evening, X for Off, OFF for Day off)
+                  <strong>Format:</strong> Employee Code, Employee Name, then one column per date. Use shift codes P (Morning), M (Evening), or OFF (Day off). Download the template for a sample.
                 </AlertDescription>
               </Alert>
             </>
@@ -258,7 +288,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
             <div className="space-y-4">
               <Progress value={progress} />
               <p className="text-sm text-center text-muted-foreground">
-                Importing {preview.length} schedules and generating today's attendance...
+                {"Importing "}{preview.length}{" schedules and generating today's attendance..."}
               </p>
             </div>
           )}
