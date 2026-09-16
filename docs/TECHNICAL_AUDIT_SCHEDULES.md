@@ -15,7 +15,7 @@ This file is the authoritative checklist for the Schedule page technical audit a
 | # | Finding | Status | Notes |
 |---|---|---|---|
 | 1 | Schedule API authentication | Verified | All schedule and schedule-pattern API routes return 401 for unauthenticated requests and 403 for authenticated non-super-admin users. |
-| 2 | Schedule server-action authentication | Open | Review every schedule-related server action and enforce authorization consistently. |
+| 2 | Schedule server-action authentication | Verified | Schedule-related server actions use the shared SUPER_ADMIN guard before database operations. Unauthorized access fails through the Server Action error boundary rather than an HTTP response, which is expected for Server Actions. |
 | 3 | Excel import employee lookup | Fixed; runtime verification open | Import resolves employee codes to internal employee IDs, trims input, supports case-insensitive matching, and uses upsert for existing employee/date schedules. Still verify with the Excel test matrix. |
 | 4 | Sequential bulk-import performance | Open | Current import uses dynamic request batches: 1 row for up to 100 rows, 5 for 101–500, and 10 above 500. A shared/background import runner remains a future optimization. |
 | 5 | Pagination reset after filtering | Open | Confirm page index resets when schedule filters change. |
@@ -43,6 +43,7 @@ This file is the authoritative checklist for the Schedule page technical audit a
 ## Change history
 
 - Current auth fix — centralized API authorization responses and corrected 401/403 handling for schedule endpoints.
+- Issue 2 verification — confirmed schedule server actions use the shared SUPER_ADMIN authorization guard.
 
 - `16e9ec3` — handle duplicate schedules during batch import.
 - `ba36dcb` — report created and updated schedule imports.
