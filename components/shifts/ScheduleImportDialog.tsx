@@ -156,10 +156,14 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
   }
 
   const handleImport = async () => {
+    let progressTimer: number | undefined
     try {
       setImporting(true)
       setStep('importing')
-      setProgress(0)
+      setProgress(8)
+      progressTimer = window.setInterval(() => {
+        setProgress((current) => current >= 90 ? 90 : current + 4)
+      }, 700)
 
       const response = await fetch('/api/schedules/import', {
         method: 'POST',
@@ -196,6 +200,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
       toast.error(error instanceof Error ? error.message : 'Failed to import schedules')
       setStep('preview')
     } finally {
+      if (progressTimer !== undefined) window.clearInterval(progressTimer)
       setImporting(false)
     }
   }
