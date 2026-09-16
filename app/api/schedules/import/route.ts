@@ -154,14 +154,26 @@ export async function POST(req: NextRequest) {
     }
 
     let created = 0
+    let updated = 0
     const bulkErrors: string[] = []
     for (const schedule of schedulesToCreate) {
       try {
+        const scheduleDate = new Date(schedule.scheduleDate)
+        const existingSchedule = await prisma.schedule.findUnique({
+          where: {
+            employeeId_scheduleDate: {
+              employeeId: schedule.employeeId,
+              scheduleDate,
+            },
+          },
+          select: { id: true },
+        })
+
         await prisma.schedule.upsert({
           where: {
             employeeId_scheduleDate: {
               employeeId: schedule.employeeId,
-              scheduleDate: new Date(schedule.scheduleDate),
+              scheduleDate,
             },
           },
           create: {
@@ -178,14 +190,15 @@ export async function POST(req: NextRequest) {
             shiftEnd: schedule.shiftEnd,
           },
         })
-        created++
+        if (existingSchedule) updated++
+        else created++
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Database error'
         bulkErrors.push(`Could not import ${schedule.scheduleDate}: ${message.split('\\n')[0]}`)
       }
     }
 
-    const bulkResult = { created, errors: bulkErrors }
+    const bulkResult = { created, updated, errors: bulkErrors }
     console.log('[v0] Direct schedule create result:', bulkResult)
 
     // Generate today's attendance if any schedules were created for today
@@ -201,11 +214,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: bulkResult.created > 0,
       created: bulkResult.created,
+      updated: bulkResult.updated,
       errors: allErrors,
-      message: bulkResult.created > 0
-        ? `Successfully imported ${bulkResult.created} schedules${allErrors.length > 0 ? ` (${allErrors.length} errors)` : ''}`
+      message: bulkResult.created + bulkResult.updated > 0
+        ? `Successfully processed ${bulkResult.created} created and ${bulkResult.updated} updated schedules${allErrors.length > 0 ? ` (${allErrors.length} errors)` : ''}`
         : `No schedules were imported. ${allErrors.length} row errors were found.`,
-    }, { status: bulkResult.created > 0 ? 200 : 422 })
+    }, { status: bulkResult.created + bulkResult.updated > 0 ? 200 : 422 })
   } catch (error) {
     console.error('[v0] Schedule import error:', error)
     return NextResponse.json(

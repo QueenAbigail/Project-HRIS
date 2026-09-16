@@ -160,7 +160,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
     try {
       setImporting(true)
       setStep('importing')
-      const batchSize = 10
+      const batchSize = 1
       const batches = Array.from({ length: Math.ceil(preview.length / batchSize) }, (_, index) => preview.slice(index * batchSize, (index + 1) * batchSize))
       const employeeCodes = Array.from(new Set(preview.map((item) => item.employeeCode).filter(Boolean)))
       const dates = preview.map((item) => new Date(item.date)).filter((date) => !Number.isNaN(date.getTime()))
@@ -168,6 +168,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
       const endDate = new Date(Math.max(...dates.map((date) => date.getTime()))).toISOString()
       let completed = 0
       let created = 0
+      let updated = 0
       const errors: string[] = []
 
       for (const [index, batch] of batches.entries()) {
@@ -187,13 +188,14 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
         }
         completed += batch.length
         created += result.created || 0
+        updated += result.updated || 0
         errors.push(...(result.errors || []))
         setProgress(Math.round((completed / preview.length) * 100))
         setImportStatus(`Processed ${completed} of ${preview.length} schedule entries`)
       }
 
-      if (created === 0) throw new Error(`No schedules were imported. ${errors.slice(0, 3).join(' ')}`)
-      toast.success(`Successfully imported ${created} schedules${errors.length ? ` (${errors.length} errors)` : ''}`)
+      if (created + updated === 0) throw new Error(`No schedules were imported. ${errors.slice(0, 3).join(' ')}`)
+      toast.success(`Processed ${created} created and ${updated} updated schedules${errors.length ? ` (${errors.length} errors)` : ''}`)
       onSuccess?.()
       setTimeout(() => { onOpenChange(false); resetDialog() }, 1000)
     } catch (error) {
