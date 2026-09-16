@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getCurrentUser } from '@/lib/system'
-
-async function requireSuperAdmin() {
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'SUPER_ADMIN') {
-    throw new Error('Unauthorized')
-  }
-}
+import { requireSuperAdminResponse } from '@/lib/api-auth'
 
 // Update or delete individual schedule by ID
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    await requireSuperAdmin()
+    const authResponse = await requireSuperAdminResponse()
+    if (authResponse) return authResponse
     const body = await req.json()
     const { employeeId, shiftId, scheduleDate, shiftStart, shiftEnd, isException, notes } = body
 
@@ -54,7 +48,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    await requireSuperAdmin()
+    const authResponse = await requireSuperAdminResponse()
+    if (authResponse) return authResponse
     await prisma.schedule.delete({
       where: { id: id }
     })
