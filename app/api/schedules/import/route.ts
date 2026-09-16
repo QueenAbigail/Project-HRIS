@@ -157,18 +157,14 @@ export async function POST(req: NextRequest) {
     const bulkErrors: string[] = []
     for (const schedule of schedulesToCreate) {
       try {
-        if (!replace) {
-          const existing = await prisma.schedule.findFirst({
-            where: { employeeId: schedule.employeeId, scheduleDate: new Date(schedule.scheduleDate) },
-          })
-          if (existing) {
-            bulkErrors.push(`Schedule already exists for ${schedule.scheduleDate}`)
-            continue
-          }
-        }
-
-        await prisma.schedule.create({
-          data: {
+        await prisma.schedule.upsert({
+          where: {
+            employeeId_scheduleDate: {
+              employeeId: schedule.employeeId,
+              scheduleDate: new Date(schedule.scheduleDate),
+            },
+          },
+          create: {
             employeeId: schedule.employeeId,
             shiftId: schedule.shiftId,
             scheduleDate: new Date(schedule.scheduleDate),
@@ -176,10 +172,16 @@ export async function POST(req: NextRequest) {
             shiftEnd: schedule.shiftEnd,
             isException: false,
           },
+          update: {
+            shiftId: schedule.shiftId,
+            shiftStart: schedule.shiftStart,
+            shiftEnd: schedule.shiftEnd,
+          },
         })
         created++
       } catch (error) {
-        bulkErrors.push(`Error on ${schedule.scheduleDate}: ${error instanceof Error ? error.message : String(error)}`)
+        const message = error instanceof Error ? error.message : 'Database error'
+        bulkErrors.push(`Could not import ${schedule.scheduleDate}: ${message.split('\\n')[0]}`)
       }
     }
 
