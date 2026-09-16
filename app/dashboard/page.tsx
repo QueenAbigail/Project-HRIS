@@ -49,7 +49,7 @@ async function DashboardContent() {
     
     // Determine if user is a CLIENT (can see all sites in their company)
     const isClient = currentUser.role === 'CLIENT'
-    const companyFilter = isClient ? { companyId: currentUser.companyId } : {}
+    const companyFilter = isClient && currentUser.companyId ? { companyId: currentUser.companyId } : {}
     const [
       companies,
       sites,
@@ -60,7 +60,7 @@ async function DashboardContent() {
       assignments,
       approvedLeavesThisMonth
     ] = await prisma.$transaction([
-    isClient ? prisma.company.findMany({ where: { id: currentUser.companyId }, select: { id: true, name: true } }) : prisma.company.findMany({ select: { id: true, name: true } }),
+    isClient && currentUser.companyId ? prisma.company.findMany({ where: { id: currentUser.companyId }, select: { id: true, name: true } }) : prisma.company.findMany({ select: { id: true, name: true } }),
     isClient ? prisma.site.findMany({ where: { companyId: currentUser.companyId }, select: { id: true, name: true, code: true, companyId: true } }) : prisma.site.findMany({ select: { id: true, name: true, code: true, companyId: true } }),
     prisma.user.findMany({ where: companyFilter, select: { id: true, site: { select: { id: true } } } }),
     prisma.attendance.findMany({
@@ -148,7 +148,7 @@ async function DashboardContent() {
   ]);
 
   // Extract company name for CLIENT users from the fetched companies
-  const companyNameForDisplay = isClient && companies.length > 0 ? companies[0].name : currentUser.site?.company?.name || 'your company'
+  const companyNameForDisplay = isClient && companies.length > 0 ? companies[0].name : 'your company'
 
   // usersBySite
   const usersBySite: Record<string, number> = {};
@@ -267,7 +267,7 @@ async function DashboardContent() {
       companyOnLeave += unknownTally.onLeave
 
       siteStats.push({
-        siteId: null,
+        siteId: 'UNKNOWN',
         locationId: 'UNKNOWN',
         locationName: 'Unknown',
         totalStaff: 0,
