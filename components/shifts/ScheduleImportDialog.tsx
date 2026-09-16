@@ -160,8 +160,11 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
     try {
       setImporting(true)
       setStep('importing')
-      const batchSize = 1
-      const batches = Array.from({ length: Math.ceil(preview.length / batchSize) }, (_, index) => preview.slice(index * batchSize, (index + 1) * batchSize))
+      const batchSize = preview.length <= 100 ? 1 : preview.length <= 500 ? 5 : 10
+      const batches = Array.from(
+        { length: Math.ceil(preview.length / batchSize) },
+        (_, index) => preview.slice(index * batchSize, (index + 1) * batchSize),
+      )
       const employeeCodes = Array.from(new Set(preview.map((item) => item.employeeCode).filter(Boolean)))
       const dates = preview.map((item) => new Date(item.date)).filter((date) => !Number.isNaN(date.getTime()))
       const startDate = new Date(Math.min(...dates.map((date) => date.getTime()))).toISOString()
@@ -183,7 +186,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
           }),
         })
         const result = await response.json()
-        if (!response.ok && !result.created) {
+        if (!response.ok && !(result.created || result.updated)) {
           throw new Error(`${result.message || result.error || 'Import failed'} ${result.errors?.slice(0, 3)?.join(' ') || ''}`)
         }
         completed += batch.length
@@ -191,7 +194,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
         updated += result.updated || 0
         errors.push(...(result.errors || []))
         setProgress(Math.round((completed / preview.length) * 100))
-        setImportStatus(`Processed ${completed} of ${preview.length} schedule entries`)
+        setImportStatus(`Processed ${completed} of ${preview.length} schedule entries (updated every ${batchSize})`)
       }
 
       if (created + updated === 0) throw new Error(`No schedules were imported. ${errors.slice(0, 3).join(' ')}`)
