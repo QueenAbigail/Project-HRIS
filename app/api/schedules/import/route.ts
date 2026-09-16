@@ -119,23 +119,53 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Use bulk-create endpoint for consistency with manual UI
-    const bulkCreateResponse = await fetch(
-      new URL('/api/schedules/bulk-create', req.nextUrl.origin).toString(),
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          schedules: schedulesToCreate,
-          replace,
-          // If replacing, send first employee ID (imports usually per-employee)
-          employeeId: employeesProcessed.size === 1 ? Array.from(employeesProcessed)[0] : undefined,
-        }),
-      }
-    )
+    // Create directly instead of making a server-to-server request to the bulk endpoint.
+    // Internal fetches can resolve the preview origin to HTTPS, which is not available from the VM.
+    if (replace && employeesProcessed.size === 1) {
+      const dates = schedulesToCreate.map((schedule) => new Date(schedule.scheduleDate))
+      await prisma.schedule.deleteMany({
+        where: {
+          employeeId: Array.from(employeesProcessed)[0],
+          scheduleDate: {
+            gte: new Date(Math.min(...dates.map((date) => date.getTime()))),
+            lte: new Date(Math.max(...dates.map((date) => date.getTime()))),
+          },
+        },
+      })
+    }
 
-    const bulkResult = await bulkCreateResponse.json()
-    console.log('[v0] Bulk create result:', bulkResult)
+    let created = 0
+    const bulkErrors: string[] = []
+    for (const schedule of schedulesToCreate) {
+      try {
+        if (!replace) {
+          const existing = await prisma.schedule.findFirst({
+            where: { employeeId: schedule.employeeId, scheduleDate: new Date(schedule.scheduleDate) },
+          })
+          if (existing) {
+            bulkErrors.push(`Schedule already exists for ${schedule.scheduleDate}`)
+            continue
+          }
+        }
+
+        await prisma.schedule.create({
+          data: {
+            employeeId: schedule.employeeId,
+            shiftId: schedule.shiftId,
+            scheduleDate: new Date(schedule.scheduleDate),
+            shiftStart: schedule.shiftStart,
+            shiftEnd: schedule.shiftEnd,
+            isException: false,
+          },
+        })
+        created++
+      } catch (error) {
+        bulkErrors.push(`Error on ${schedule.scheduleDate}: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    }
+
+    const bulkResult = { created, errors: bulkErrors }
+    console.log('[v0] Direct schedule create result:', bulkResult)
 
     // Generate today's attendance if any schedules were created for today
     if (bulkResult.created > 0) {
