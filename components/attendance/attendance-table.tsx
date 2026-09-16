@@ -70,7 +70,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
   const [records, setRecords] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null)
+  const [selectedRecord, setSelectedRecord] = useState<any>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [retryKey, setRetryKey] = useState(0)

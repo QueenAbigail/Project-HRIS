@@ -42,6 +42,7 @@ interface UnifiedRequest {
     department: string
   }
   leaveType?: string
+  workingDaysCount?: number
   startDate: string
   endDate: string
   swapDate?: string

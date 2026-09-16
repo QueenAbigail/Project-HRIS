@@ -848,7 +848,7 @@ export async function generateTodayAttendanceRecords() {
             date: attendanceDate,
             scheduledStart: finalScheduledStart,
             scheduledEnd: finalScheduledEnd,
-            status: attendanceStatus,
+            status: attendanceStatus as any,
             lateMinutes: 0,
             notes: notes
           }

@@ -74,11 +74,11 @@ export function LeaveRequestDetailsModal({
 
   const dayBreakdown = parseDayBreakdown(leave.dayBreakdown)
 
-  const statusColor = {
+  const statusColor = ({
     Pending: 'bg-yellow-100 text-yellow-800',
     Approved: 'bg-green-100 text-green-800',
     Rejected: 'bg-red-100 text-red-800',
-  }[leave.status]
+  } as Record<string, string>)[leave.status] ?? 'bg-muted text-muted-foreground'
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

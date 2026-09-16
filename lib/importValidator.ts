@@ -186,7 +186,7 @@ export async function getValidationContext(
   
   // Build maps for O(1) lookup
   const employeeMap = new Map<string, { id: string; name: string; role: string }>()
-  employees.forEach(emp => {
+  employees.forEach((emp: typeof employees[number]) => {
     if (emp.employeeCode) {
       employeeMap.set(emp.employeeCode, {
         id: emp.id,
@@ -197,22 +197,22 @@ export async function getValidationContext(
   })
   
   const siteMap = new Map<string, { id: string; name: string }>()
-  sites.forEach(site => {
+  sites.forEach((site: typeof sites[number]) => {
     siteMap.set(site.name.toLowerCase(), { id: site.id, name: site.name })
   })
   
   const shiftMap = new Map<string, { id: string; name: string }>()
-  shifts.forEach(shift => {
+  shifts.forEach((shift: typeof shifts[number]) => {
     shiftMap.set(shift.name.toLowerCase(), { id: shift.id, name: shift.name })
   })
   
   const patternMap = new Map<string, { id: string; name: string; type: string }>()
-  patterns.forEach(pattern => {
+  patterns.forEach((pattern: typeof patterns[number]) => {
     patternMap.set(pattern.name.toLowerCase(), { id: pattern.id, name: pattern.name, type: pattern.type })
   })
   
   const assignmentMap = new Map<string, { patternId: string; patternName: string }>()
-  assignments.forEach(assignment => {
+  assignments.forEach((assignment: typeof assignments[number]) => {
     assignmentMap.set(assignment.user.employeeCode || assignment.user.id, {
       patternId: assignment.pattern.id,
       patternName: assignment.pattern.name

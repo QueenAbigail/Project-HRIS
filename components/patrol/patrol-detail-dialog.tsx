@@ -6,6 +6,15 @@ import { Badge } from '@/components/ui/badge'
 import useSWR from 'swr'
 import { MapPin, Clock, User, FileText } from 'lucide-react'
 
+interface PatrolRecord {
+  checkpoint: string
+  timestamp: string | Date
+  status?: string
+  description?: string | null
+  photos?: string[] | null
+  gpsStatus?: string | null
+}
+
 interface PatrolLocation {
   id: string
   name: string
