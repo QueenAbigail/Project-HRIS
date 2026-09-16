@@ -226,7 +226,7 @@ export function getLocationStats(): LocationStat[] {
     const notCheckedInCount = locationAttendances.filter(att => att.status === 'not-checked-in').length
     
     // Get total staff assigned to this location
-    const totalStaff = employeeSchedules.filter(emp => emp.siteId === location.id as LocationId).length
+    const totalStaff = employeeSchedules.filter(emp => emp.locationId === location.id as LocationId).length
 
     // Use coordinates from location object, fallback to (0, 0) if not defined
     const latitude = location.latitude || 0

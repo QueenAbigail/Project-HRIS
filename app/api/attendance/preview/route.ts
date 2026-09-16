@@ -70,7 +70,9 @@ export async function POST(request: NextRequest) {
 
       // Determine if scheduled based on pattern type
       if (pattern.type === 'FIXED') {
-        const workingDays = (pattern.workingDays as number[]) || []
+        const workingDays = pattern.workingDays
+          ? JSON.parse(pattern.workingDays) as number[]
+          : []
         isScheduled = workingDays.length === 0 || workingDays.includes(dayNum)
       } else if (pattern.type === 'ROTATING') {
         const rotatingData = pattern.rotatingPattern as any
