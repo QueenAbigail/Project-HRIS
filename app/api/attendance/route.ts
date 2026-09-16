@@ -316,7 +316,7 @@ export async function POST(request: NextRequest) {
         // Ensure status is set based on check-in time (if it wasn't already)
         if (!updateData.status && existingAttendance.actualCheckIn) {
           updateData.status = calculateAttendanceStatus(
-            existingAttendance.actualCheckIn, 
+            existingAttendance.actualCheckIn.toISOString().slice(11, 16),
             scheduledStart || existingAttendance.scheduledStart
           )
         }
@@ -325,7 +325,7 @@ export async function POST(request: NextRequest) {
       // If no status was set during check-in or check-out, calculate it now
       if (!updateData.status && existingAttendance.actualCheckIn) {
         updateData.status = calculateAttendanceStatus(
-          existingAttendance.actualCheckIn,
+          existingAttendance.actualCheckIn.toISOString().slice(11, 16),
           scheduledStart || existingAttendance.scheduledStart
         )
       }
