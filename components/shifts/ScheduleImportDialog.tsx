@@ -169,12 +169,23 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.message || 'Import failed')
+        const details = Array.isArray(error.errors) && error.errors.length > 0
+          ? ` ${error.errors.slice(0, 3).join(' ')}${error.errors.length > 3 ? ` (+${error.errors.length - 3} more)` : ''}`
+          : ''
+        throw new Error(`${error.message || error.error || 'Import failed'}${details}`)
       }
 
       const result = await response.json()
       setProgress(100)
-      toast.success(`Successfully imported ${result.created} schedules`)
+
+      if (!result.success || result.created === 0) {
+        const details = Array.isArray(result.errors) && result.errors.length > 0
+          ? ` ${result.errors.slice(0, 3).join(' ')}${result.errors.length > 3 ? ` (+${result.errors.length - 3} more)` : ''}`
+          : ''
+        throw new Error(result.message ? `${result.message}.${details}` : `No schedules were imported.${details}`)
+      }
+
+      toast.success(`Successfully imported ${result.created} schedules${result.errors?.length ? ` (${result.errors.length} errors)` : ''}`)
 
       onSuccess?.()
       setTimeout(() => {

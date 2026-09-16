@@ -41,12 +41,18 @@ export async function POST(req: NextRequest) {
           continue
         }
 
-        const employee = await prisma.user.findUnique({
-          where: { employeeCode: String(employeeCode).trim() }
+        const normalizedEmployeeCode = String(employeeCode).trim()
+        const employee = await prisma.user.findFirst({
+          where: {
+            employeeCode: {
+              equals: normalizedEmployeeCode,
+              mode: 'insensitive',
+            },
+          },
         })
 
         if (!employee) {
-          errors.push(`Employee ${employeeName || employeeId} not found`)
+          errors.push(`Employee Code "${normalizedEmployeeCode}" (${employeeName || 'unnamed employee'}) was not found. Check that it matches an existing employee.`)
           continue
         }
 
@@ -140,12 +146,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const allErrors = [...(bulkResult.errors || []), ...errors]
     return NextResponse.json({
       success: bulkResult.created > 0,
       created: bulkResult.created,
-      errors: [...(bulkResult.errors || []), ...errors],
-      message: `Successfully imported ${bulkResult.created} schedules${errors.length > 0 ? ` (${errors.length} errors)` : ''}`
-    })
+      errors: allErrors,
+      message: bulkResult.created > 0
+        ? `Successfully imported ${bulkResult.created} schedules${allErrors.length > 0 ? ` (${allErrors.length} errors)` : ''}`
+        : `No schedules were imported. ${allErrors.length} row errors were found.`,
+    }, { status: bulkResult.created > 0 ? 200 : 422 })
   } catch (error) {
     console.error('[v0] Schedule import error:', error)
     return NextResponse.json(
