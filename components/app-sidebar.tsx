@@ -587,7 +587,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
       <ChangePhotoModal
         isOpen={isChangePhotoOpen}
         onClose={() => setIsChangePhotoOpen(false)}
-        currentAvatar={user?.avatar}
+        currentAvatar={(user as { avatar?: string | null } | null)?.avatar}
         onUpload={handlePhotoUpload}
       />
     </Sidebar>
