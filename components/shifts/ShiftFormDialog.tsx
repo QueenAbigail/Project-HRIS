@@ -38,8 +38,14 @@ export function ShiftFormDialog({ shift, open, onOpenChange, onSuccess }: ShiftF
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: shift || { code: '', name: '', startTime: '', endTime: '', gracePeriodMinutes: 10 }
+    resolver: zodResolver(formSchema) as any,
+    defaultValues: {
+      code: shift?.code ?? '',
+      name: shift?.name ?? '',
+      startTime: shift?.startTime ?? '',
+      endTime: shift?.endTime ?? '',
+      gracePeriodMinutes: shift?.gracePeriodMinutes ?? 10,
+    },
   })
 
   // Update form when shift data changes

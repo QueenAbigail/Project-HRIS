@@ -10,8 +10,9 @@ async function requireSuperAdmin() {
 }
 
 // Update or delete individual schedule by ID
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     await requireSuperAdmin()
     const body = await req.json()
     const { employeeId, shiftId, scheduleDate, shiftStart, shiftEnd, isException, notes } = body
@@ -24,7 +25,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     const result = await prisma.schedule.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         employeeId,
         shiftId,
@@ -50,11 +51,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     await requireSuperAdmin()
     await prisma.schedule.delete({
-      where: { id: params.id }
+      where: { id: id }
     })
 
     return NextResponse.json({

@@ -15,11 +15,12 @@ async function getSupabaseClient() {
 // GET /api/broadcast/announcements/[id] - Get single announcement with analytics
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const announcement = await prisma.announcement.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         readStatuses: {
           include: {
@@ -87,9 +88,10 @@ export async function GET(
 // PUT /api/broadcast/announcements/[id] - Update announcement
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await getCurrentUser()
     if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -104,7 +106,7 @@ export async function PUT(
 
     // Check if announcement exists and user has permission to edit
     const existing = await prisma.announcement.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       select: { createdBy: true },
     })
 
@@ -117,7 +119,7 @@ export async function PUT(
     }
 
     const updated = await prisma.announcement.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         title,
         body: content,
@@ -140,9 +142,10 @@ export async function PUT(
 // DELETE /api/broadcast/announcements/[id] - Delete announcement
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await getCurrentUser()
     if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -150,7 +153,7 @@ export async function DELETE(
 
     // Check if announcement exists and user has permission to delete
     const announcement = await prisma.announcement.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       select: { createdBy: true, attachmentUrl: true },
     })
 
@@ -179,7 +182,7 @@ export async function DELETE(
 
     // Delete announcement (cascade deletes read statuses)
     await prisma.announcement.delete({
-      where: { id: params.id },
+      where: { id: id },
     })
 
     return NextResponse.json({ success: true })

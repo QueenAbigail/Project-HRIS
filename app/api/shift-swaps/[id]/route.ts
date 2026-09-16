@@ -3,8 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
 import { canManageLeaves } from '@/lib/leave-authorization'
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params
     const currentUser = await getCurrentUser()
     if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     if (!canManageLeaves(currentUser.role)) {
@@ -19,7 +20,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     }
 
     const swap = await prisma.shiftSwap.update({
-      where: { id: params.id },
+      where: { id: id },
       data: { status },
       include: {
         employeeFrom: { select: { id: true, name: true, employeeCode: true, department: true } },
@@ -28,7 +29,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       },
     })
 
-    console.log(`[v0] Shift swap ${params.id} ${status}`)
+    console.log(`[v0] Shift swap ${id} ${status}`)
 
     return NextResponse.json({ success: true, swap })
   } catch (error) {

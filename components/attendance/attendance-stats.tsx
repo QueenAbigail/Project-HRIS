@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { getBusinessDateRangeForPreset } from '@/lib/timezone'
 import { UserCheck, UserX, Clock, AlertTriangle, CalendarOff, Shield, RefreshCw } from 'lucide-react'
 
@@ -119,56 +120,69 @@ export function AttendanceStats({ siteId = 'all', dateRange = 'today', customDat
     )
   }
 
+  const currentStats = stats ?? {
+    presentToday: 0,
+    absentToday: 0,
+    lateCheckIns: 0,
+    averageLateMinutes: 0,
+    onLeave: 0,
+    dayOff: 0,
+    totalEmployees: 0,
+    expectedToWork: 0,
+    attendanceRate: 0,
+    bkoCount: 0,
+  }
+
   const statConfig = [
     {
       title: 'Present',
-      value: stats.presentToday,
-      percentage: `${stats.attendanceRate}%`,
+      value: currentStats.presentToday,
+      percentage: `${currentStats.attendanceRate}%`,
       icon: UserCheck,
       color: 'text-success',
       bgColor: 'bg-success/10',
     },
     {
       title: 'Absent',
-      value: stats.absentToday,
-      percentage: `${stats.totalEmployees > 0 ? Math.round((stats.absentToday / stats.totalEmployees) * 100) : 0}%`,
+      value: currentStats.absentToday,
+      percentage: `${currentStats.totalEmployees > 0 ? Math.round((currentStats.absentToday / currentStats.totalEmployees) * 100) : 0}%`,
       icon: UserX,
       color: 'text-destructive',
       bgColor: 'bg-destructive/10',
     },
     {
       title: 'Late Arrivals',
-      value: stats.lateCheckIns,
-      percentage: `${stats.totalEmployees > 0 ? Math.round((stats.lateCheckIns / stats.totalEmployees) * 100) : 0}%`,
-      subtext: stats.lateCheckIns > 0 ? `Avg: ${stats.averageLateMinutes}min late` : undefined,
+      value: currentStats.lateCheckIns,
+      percentage: `${currentStats.totalEmployees > 0 ? Math.round((currentStats.lateCheckIns / currentStats.totalEmployees) * 100) : 0}%`,
+      subtext: currentStats.lateCheckIns > 0 ? `Avg: ${currentStats.averageLateMinutes}min late` : undefined,
       icon: Clock,
       color: 'text-warning',
       bgColor: 'bg-warning/10',
-      highlight: stats.lateCheckIns > 0,
+      highlight: currentStats.lateCheckIns > 0,
     },
     {
       title: 'On Leave',
-      value: stats.onLeave,
-      percentage: `${stats.totalEmployees > 0 ? Math.round((stats.onLeave / stats.totalEmployees) * 100) : 0}%`,
+      value: currentStats.onLeave,
+      percentage: `${currentStats.totalEmployees > 0 ? Math.round((currentStats.onLeave / currentStats.totalEmployees) * 100) : 0}%`,
       icon: AlertTriangle,
       color: 'text-chart-2',
       bgColor: 'bg-chart-2/10',
     },
     {
       title: 'BKO (Coverage)',
-      value: stats.bkoCount,
-      percentage: `${stats.totalEmployees > 0 ? Math.round((stats.bkoCount / stats.totalEmployees) * 100) : 0}%`,
-      subtext: stats.bkoCount > 0 ? `Backup replacements active` : 'No replacements',
+      value: currentStats.bkoCount,
+      percentage: `${currentStats.totalEmployees > 0 ? Math.round((currentStats.bkoCount / currentStats.totalEmployees) * 100) : 0}%`,
+      subtext: currentStats.bkoCount > 0 ? `Backup replacements active` : 'No replacements',
       icon: Shield,
       color: 'text-blue-600 dark:text-blue-400',
       bgColor: 'bg-blue-500/10',
-      highlight: stats.bkoCount > 0,
+      highlight: currentStats.bkoCount > 0,
     },
     {
       title: 'Scheduled Off',
-      value: stats.dayOff,
-      percentage: `${stats.totalEmployees > 0 ? Math.round((stats.dayOff / stats.totalEmployees) * 100) : 0}%`,
-      subtext: `${stats.expectedToWork} expected today`,
+      value: currentStats.dayOff,
+      percentage: `${currentStats.totalEmployees > 0 ? Math.round((currentStats.dayOff / currentStats.totalEmployees) * 100) : 0}%`,
+      subtext: `${currentStats.expectedToWork} expected today`,
       icon: CalendarOff,
       color: 'text-primary/70',
       bgColor: 'bg-primary/10',

@@ -121,6 +121,7 @@ model Site {
   patrols     Patrol[]
   bulkImportRecords BulkImportRecord[] @relation("SiteBulkImports")
   shiftSwaps  ShiftSwap[]
+  employeeShiftAssignments EmployeeShiftAssignment[]
   announcements Announcement[] @relation("SiteAnnouncements")
   
   createdAt   DateTime                  @default(now())
@@ -152,6 +153,8 @@ model Shift {
   Attendance         Attendance[]
   patrols            Patrol[]
   schedules          Schedule[]                @relation("ScheduleShifts")
+  schedulePatterns   SchedulePattern[]
+  employeeShiftAssignments EmployeeShiftAssignment[]
 
   @@map("shifts")
 }
@@ -212,6 +215,8 @@ model User {
   swapsFrom             ShiftSwap[]               @relation("SwapFrom")
   swapsTo               ShiftSwap[]               @relation("SwapTo")
   schedules             Schedule[]                @relation("EmployeeSchedules")
+  patternAssignments       EmployeePatternAssignment[]
+  employeeShiftAssignments EmployeeShiftAssignment[]
   announcementsCreated  Announcement[]            @relation("AnnouncementCreatedBy")
   announcementReadStatuses AnnouncementReadStatus[] @relation("AnnouncementReadStatus")
 
@@ -446,11 +451,64 @@ model AuthActivityLog {
 }
 
 // Enums for schedule patterns
-// Schedule Pattern model - for managing shift schedules
-// Update Shift model to include schedule patterns
-// (Added relation in Shift model below)
+enum SchedulePatternType {
+  FIXED
+  ROTATING
+  MODULO
+}
 
-// Employee Pattern Assignment - assigns a schedule pattern to an employee
+model SchedulePattern {
+  id               String             @id @default(cuid())
+  name             String
+  description      String?
+  type             SchedulePatternType
+  workingDays      String?
+  shiftId          String?
+  shift            Shift?             @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  rotatingPattern  String?
+  moduloPattern    String?
+  isActive         Boolean            @default(true)
+  assignedEmployees Int               @default(0)
+  assignments      EmployeePatternAssignment[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([shiftId])
+}
+
+model EmployeePatternAssignment {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  patternId String
+  pattern   SchedulePattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
+  startDate DateTime
+  endDate   DateTime?
+  status    String          @default("ACTIVE")
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([patternId])
+}
+
+model EmployeeShiftAssignment {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   User     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  shiftId    String
+  shift      Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  locationId String
+  location   Site     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  workingDays Int[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([shiftId])
+  @@index([locationId])
+}
+
 // Bulk Import Log - tracks all bulk import operations
 model BulkImportLog {
   id                String   @id @default(cuid())
