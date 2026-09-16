@@ -1,14 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { toast } from 'sonner'
-import { Upload, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { Download, Upload, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import { getShifts } from '@/app/superadmin/actions'
 
 interface ScheduleImportDialogProps {
   open: boolean
@@ -18,6 +19,7 @@ interface ScheduleImportDialogProps {
 
 interface ParsedSchedule {
   employeeName: string
+  employeeCode: string
   employeeId: string
   date: string
   shift: string
@@ -31,6 +33,14 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
   const [step, setStep] = useState<'upload' | 'preview' | 'importing'>('upload')
   const [progress, setProgress] = useState(0)
   const [dragActive, setDragActive] = useState(false)
+  const [shiftCodes, setShiftCodes] = useState<string[]>([])
+
+  useEffect(() => {
+    if (!open) return
+    void getShifts().then((shifts) => {
+      setShiftCodes(shifts.map((shift) => shift.code).filter((code): code is string => Boolean(code)))
+    })
+  }, [open])
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -48,6 +58,32 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
     setDragActive(false)
     const droppedFile = e.dataTransfer.files?.[0]
     if (droppedFile) handleFileSelect(droppedFile)
+  }
+
+  const handleDownloadTemplate = () => {
+    const today = new Date()
+    const dates = Array.from({ length: 5 }, (_, index) => {
+      const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + index + 1)
+      return date.toISOString().slice(0, 10)
+    })
+
+    const firstCode = shiftCodes[0] || 'SHIFT_CODE_1'
+    const secondCode = shiftCodes[1] || firstCode
+    const templateData = [
+      ['Employee Code', 'Employee Name', ...dates],
+      ['EMP-001', 'Budi Santoso', firstCode, secondCode, 'OFF', firstCode, secondCode],
+      ['EMP-002', 'Siti Aminah', secondCode, firstCode, firstCode, 'OFF', secondCode],
+    ]
+    const worksheet = XLSX.utils.aoa_to_sheet(templateData)
+    worksheet['!cols'] = [
+      { wch: 18 },
+      { wch: 24 },
+      ...dates.map(() => ({ wch: 14 })),
+    ]
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Schedules')
+    XLSX.writeFile(workbook, 'schedule_import_template.xlsx')
+    toast.success('Schedule template downloaded')
   }
 
   const handleFileSelect = async (selectedFile: File) => {
@@ -79,23 +115,29 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
       const dataRows = rows.slice(1)
 
       // Find column indices
-      const nameIdx = headers.findIndex((h: any) => h && String(h).toUpperCase().includes('NAMA'))
+      const codeIdx = headers.findIndex((h: any) => h && ['EMPLOYEE CODE', 'EMPLOYEE ID', 'KODE KARYAWAN'].includes(String(h).trim().toUpperCase()))
+      const nameIdx = headers.findIndex((h: any) => h && ['EMPLOYEE NAME', 'NAMA'].includes(String(h).trim().toUpperCase()))
+      if (codeIdx < 0 || nameIdx < 0) {
+        throw new Error('Excel must include Employee Code and Employee Name columns')
+      }
       const dateColumns = headers
         .map((h: any, idx: number) => ({ header: h, idx }))
-        .filter(({ header }) => header && !String(header).toUpperCase().includes('NAMA') && !String(header).toUpperCase().includes('JABATAN'))
+        .filter(({ header }) => header && !['EMPLOYEE CODE', 'EMPLOYEE ID', 'KODE KARYAWAN', 'EMPLOYEE NAME', 'NAMA', 'JABATAN'].includes(String(header).trim().toUpperCase()))
 
       const parsed: ParsedSchedule[] = []
 
       dataRows.forEach((row: any[]) => {
-        const employeeName = row[nameIdx] || ''
-        if (!employeeName) return
+        const employeeCode = String(row[codeIdx] || '').trim().toUpperCase()
+        const employeeName = String(row[nameIdx] || '').trim()
+        if (!employeeCode) return
 
         dateColumns.forEach(({ header, idx }) => {
           const shift = row[idx]
           if (shift && shift !== 'OFF' && shift !== '') {
             parsed.push({
               employeeName,
-              employeeId: employeeName, // Use name as ID if not available
+              employeeCode,
+              employeeId: employeeCode,
               date: String(header),
               shift: String(shift).toUpperCase(),
             })
@@ -127,12 +169,23 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.message || 'Import failed')
+        const details = Array.isArray(error.errors) && error.errors.length > 0
+          ? ` ${error.errors.slice(0, 3).join(' ')}${error.errors.length > 3 ? ` (+${error.errors.length - 3} more)` : ''}`
+          : ''
+        throw new Error(`${error.message || error.error || 'Import failed'}${details}`)
       }
 
       const result = await response.json()
       setProgress(100)
-      toast.success(`Successfully imported ${result.created} schedules`)
+
+      if (!result.success || result.created === 0) {
+        const details = Array.isArray(result.errors) && result.errors.length > 0
+          ? ` ${result.errors.slice(0, 3).join(' ')}${result.errors.length > 3 ? ` (+${result.errors.length - 3} more)` : ''}`
+          : ''
+        throw new Error(result.message ? `${result.message}.${details}` : `No schedules were imported.${details}`)
+      }
+
+      toast.success(`Successfully imported ${result.created} schedules${result.errors?.length ? ` (${result.errors.length} errors)` : ''}`)
 
       onSuccess?.()
       setTimeout(() => {
@@ -197,20 +250,26 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
                     className="hidden"
                     id="file-input"
                   />
-                  <Button
-                    variant="outline"
-                    onClick={() => document.getElementById('file-input')?.click()}
-                    disabled={parsing}
-                  >
-                    {parsing ? 'Parsing...' : 'Select File'}
-                  </Button>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => document.getElementById('file-input')?.click()}
+                      disabled={parsing}
+                    >
+                      {parsing ? 'Parsing...' : 'Select File'}
+                    </Button>
+                    <Button variant="outline" onClick={handleDownloadTemplate} disabled={parsing}>
+                      <Download className="mr-2 size-4" />
+                      Download Template
+                    </Button>
+                  </div>
                 </div>
               </div>
 
               <Alert>
                 <AlertTriangle className="size-4" />
                 <AlertDescription>
-                  <strong>Format:</strong> First column: Employee names, then columns for each date with shift codes (P for Pagi/Morning, M for Malam/Evening, X for Off, OFF for Day off)
+                  <strong>Format:</strong> Employee Code, Employee Name, then one column per date. Shift codes must match the configured records ({shiftCodes.length ? shiftCodes.join(', ') : 'no codes configured yet'}). Use OFF for a day off.
                 </AlertDescription>
               </Alert>
             </>
@@ -258,7 +317,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
             <div className="space-y-4">
               <Progress value={progress} />
               <p className="text-sm text-center text-muted-foreground">
-                Importing {preview.length} schedules and generating today's attendance...
+                {"Importing "}{preview.length}{" schedules and generating today's attendance..."}
               </p>
             </div>
           )}

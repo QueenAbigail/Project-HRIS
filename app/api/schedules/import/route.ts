@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateTodayAttendanceRecords } from '@/app/superadmin/actions'
+import { getCurrentUser } from '@/lib/system'
+
+async function requireSuperAdmin() {
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'SUPER_ADMIN') {
+    throw new Error('Unauthorized')
+  }
+}
 
 // Import schedules in bulk from Excel file
 // Uses the bulk-create endpoint which supports the new manual assignment modes
 export async function POST(req: NextRequest) {
   try {
+    await requireSuperAdmin()
     const { schedules: importedSchedules, replace = true } = await req.json()
 
     if (!Array.isArray(importedSchedules) || importedSchedules.length === 0) {
@@ -19,49 +28,42 @@ export async function POST(req: NextRequest) {
 
     let processed = 0
     const errors: string[] = []
-    const schedulesToCreate: Array<{ employeeId: string; shiftId: string; scheduleDate: string }> = []
+    const schedulesToCreate: Array<{ employeeId: string; shiftId: string; scheduleDate: string; shiftStart: string; shiftEnd: string }> = []
     const employeesProcessed = new Set<string>()
 
     // Parse and validate imported schedules
     for (const schedule of importedSchedules) {
       try {
-        const { employeeName, employeeId, date, shift } = schedule
+        const { employeeName, employeeCode, date, shift } = schedule
 
-        // Find employee by name or ID
-        let employee
-        if (employeeId) {
-          employee = await prisma.user.findUnique({
-            where: { id: employeeId }
-          })
-        } else {
-          employee = await prisma.user.findFirst({
-            where: { name: employeeName }
-          })
+        if (!employeeCode) {
+          errors.push(`Missing employee code for ${employeeName || 'unknown employee'}`)
+          continue
         }
+
+        const normalizedEmployeeCode = String(employeeCode).trim()
+        const employee = await prisma.user.findFirst({
+          where: {
+            employeeCode: {
+              equals: normalizedEmployeeCode,
+              mode: 'insensitive',
+            },
+          },
+        })
 
         if (!employee) {
-          errors.push(`Employee ${employeeName || employeeId} not found`)
+          errors.push(`Employee Code "${normalizedEmployeeCode}" (${employeeName || 'unnamed employee'}) was not found. Check that it matches an existing employee.`)
           continue
         }
 
-        // Map shift code to shift ID
-        let shiftId: string | null = null
-        const shiftCode = String(shift).toUpperCase()
+        // Map the configured human-readable shift code to its internal ID.
+        const shiftCode = String(shift || '').trim().toUpperCase()
+        if (shiftCode === 'OFF' || shiftCode === 'X') continue
 
-        if (shiftCode === 'P' || shiftCode === 'PAGI' || shiftCode === 'MORNING') {
-          const foundShift = await prisma.shift.findFirst({
-            where: { name: { contains: 'Morning', mode: 'insensitive' } }
-          })
-          if (foundShift) shiftId = foundShift.id
-        } else if (shiftCode === 'M' || shiftCode === 'MALAM' || shiftCode === 'EVENING') {
-          const foundShift = await prisma.shift.findFirst({
-            where: { name: { contains: 'Evening', mode: 'insensitive' } }
-          })
-          if (foundShift) shiftId = foundShift.id
-        } else if (shiftCode === 'X' || shiftCode === 'OFF' || shiftCode === 'DAY OFF') {
-          // Skip day off entries
-          continue
-        }
+        const foundShift = await prisma.shift.findFirst({
+          where: { code: shiftCode }
+        })
+        const shiftId = foundShift?.id
 
         if (!shiftId) {
           errors.push(`No matching shift for code ${shiftCode} on ${date}`)
@@ -94,6 +96,8 @@ export async function POST(req: NextRequest) {
           employeeId: employee.id,
           shiftId,
           scheduleDate,
+          shiftStart: foundShift.startTime,
+          shiftEnd: foundShift.endTime,
         })
 
         employeesProcessed.add(employee.id)
@@ -115,23 +119,53 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Use bulk-create endpoint for consistency with manual UI
-    const bulkCreateResponse = await fetch(
-      new URL('/api/schedules/bulk-create', req.nextUrl.origin).toString(),
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          schedules: schedulesToCreate,
-          replace,
-          // If replacing, send first employee ID (imports usually per-employee)
-          employeeId: employeesProcessed.size === 1 ? Array.from(employeesProcessed)[0] : undefined,
-        }),
-      }
-    )
+    // Create directly instead of making a server-to-server request to the bulk endpoint.
+    // Internal fetches can resolve the preview origin to HTTPS, which is not available from the VM.
+    if (replace && employeesProcessed.size === 1) {
+      const dates = schedulesToCreate.map((schedule) => new Date(schedule.scheduleDate))
+      await prisma.schedule.deleteMany({
+        where: {
+          employeeId: Array.from(employeesProcessed)[0],
+          scheduleDate: {
+            gte: new Date(Math.min(...dates.map((date) => date.getTime()))),
+            lte: new Date(Math.max(...dates.map((date) => date.getTime()))),
+          },
+        },
+      })
+    }
 
-    const bulkResult = await bulkCreateResponse.json()
-    console.log('[v0] Bulk create result:', bulkResult)
+    let created = 0
+    const bulkErrors: string[] = []
+    for (const schedule of schedulesToCreate) {
+      try {
+        if (!replace) {
+          const existing = await prisma.schedule.findFirst({
+            where: { employeeId: schedule.employeeId, scheduleDate: new Date(schedule.scheduleDate) },
+          })
+          if (existing) {
+            bulkErrors.push(`Schedule already exists for ${schedule.scheduleDate}`)
+            continue
+          }
+        }
+
+        await prisma.schedule.create({
+          data: {
+            employeeId: schedule.employeeId,
+            shiftId: schedule.shiftId,
+            scheduleDate: new Date(schedule.scheduleDate),
+            shiftStart: schedule.shiftStart,
+            shiftEnd: schedule.shiftEnd,
+            isException: false,
+          },
+        })
+        created++
+      } catch (error) {
+        bulkErrors.push(`Error on ${schedule.scheduleDate}: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    }
+
+    const bulkResult = { created, errors: bulkErrors }
+    console.log('[v0] Direct schedule create result:', bulkResult)
 
     // Generate today's attendance if any schedules were created for today
     if (bulkResult.created > 0) {
@@ -142,12 +176,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const allErrors = [...(bulkResult.errors || []), ...errors]
     return NextResponse.json({
       success: bulkResult.created > 0,
       created: bulkResult.created,
-      errors: [...(bulkResult.errors || []), ...errors],
-      message: `Successfully imported ${bulkResult.created} schedules${errors.length > 0 ? ` (${errors.length} errors)` : ''}`
-    })
+      errors: allErrors,
+      message: bulkResult.created > 0
+        ? `Successfully imported ${bulkResult.created} schedules${allErrors.length > 0 ? ` (${allErrors.length} errors)` : ''}`
+        : `No schedules were imported. ${allErrors.length} row errors were found.`,
+    }, { status: bulkResult.created > 0 ? 200 : 422 })
   } catch (error) {
     console.error('[v0] Schedule import error:', error)
     return NextResponse.json(

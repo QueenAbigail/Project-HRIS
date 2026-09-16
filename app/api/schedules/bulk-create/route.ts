@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/system'
+
+async function requireSuperAdmin() {
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'SUPER_ADMIN') {
+    throw new Error('Unauthorized')
+  }
+}
 
 // Bulk create multiple schedules
 export async function POST(req: NextRequest) {
   try {
+    await requireSuperAdmin()
     const { schedules, replace = false, employeeId: filterEmployeeId } = await req.json()
 
     console.log('[v0] Bulk create received:', schedules.length, 'schedules, replace:', replace)

@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/system'
+
+async function requireSuperAdmin() {
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'SUPER_ADMIN') {
+    throw new Error('Unauthorized')
+  }
+}
 
 // Get all schedules or create new one
 export async function GET(req: NextRequest) {
   try {
+    await requireSuperAdmin()
     const allSchedules = await prisma.schedule.findMany({
       include: {
         employee: {
@@ -38,6 +47,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    await requireSuperAdmin()
     const body = await req.json()
     const { employeeId, shiftId, scheduleDate, shiftStart, shiftEnd, isException, notes } = body
 

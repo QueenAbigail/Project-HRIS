@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/system'
+
+async function requireSuperAdmin() {
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'SUPER_ADMIN') {
+    throw new Error('Unauthorized')
+  }
+}
 
 /**
  * DELETE /api/schedules/clear
@@ -13,6 +21,7 @@ import { prisma } from '@/lib/prisma'
  */
 export async function DELETE(req: NextRequest) {
   try {
+    await requireSuperAdmin()
     const searchParams = req.nextUrl.searchParams
     const clearAll = searchParams.get('all') === 'true'
     const startDate = searchParams.get('startDate')
