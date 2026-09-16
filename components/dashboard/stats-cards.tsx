@@ -82,21 +82,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
               {stat.value}
             </div>
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              {stat.changeType === 'increase' && (
-                <TrendingUp className="size-3 text-success" />
-              )}
-              {stat.changeType === 'decrease' && (
-                <TrendingDown className="size-3 text-success" />
-              )}
-              <span
-                className={
-                  stat.changeType === 'increase'
-                    ? 'text-success'
-                    : stat.changeType === 'decrease'
-                    ? 'text-success'
-                    : ''
-                }
-              >
+              <span>
                 {stat.change}
               </span>{' '}
               {stat.description}

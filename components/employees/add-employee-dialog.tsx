@@ -303,8 +303,8 @@ export function AddEmployeeDialog({
       personalEmail: formData.email, // Asumsi form email ini buat personal email
       
       // Ubah teks 'true'/'false' dari form jadi boolean beneran
-      mobileAccess: formData.allowMobileAttendance === 'true' || formData.allowMobileAttendance === true,
-      webAppAccess: formData.allowWebAppAccess === 'true' || formData.allowWebAppAccess === true,
+      mobileAccess: formData.allowMobileAttendance === 'true',
+      webAppAccess: formData.allowWebAppAccess === 'true',
       
       certifications: formData.certification ? [formData.certification] : [],
       status: 'ACTIVE'
