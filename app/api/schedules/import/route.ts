@@ -15,7 +15,12 @@ async function requireSuperAdmin() {
 export async function POST(req: NextRequest) {
   try {
     await requireSuperAdmin()
-    const { schedules: importedSchedules, replace = true } = await req.json()
+    const {
+      schedules: importedSchedules,
+      replace = true,
+      replaceScope,
+      finalize = true,
+    } = await req.json()
 
     if (!Array.isArray(importedSchedules) || importedSchedules.length === 0) {
       return NextResponse.json(
@@ -121,7 +126,21 @@ export async function POST(req: NextRequest) {
 
     // Create directly instead of making a server-to-server request to the bulk endpoint.
     // Internal fetches can resolve the preview origin to HTTPS, which is not available from the VM.
-    if (replace && employeesProcessed.size === 1) {
+    if (replace && replaceScope) {
+      const scopedEmployees = await prisma.user.findMany({
+        where: { employeeCode: { in: replaceScope.employeeCodes } },
+        select: { id: true },
+      })
+      await prisma.schedule.deleteMany({
+        where: {
+          employeeId: { in: scopedEmployees.map((employee) => employee.id) },
+          scheduleDate: {
+            gte: new Date(replaceScope.startDate),
+            lte: new Date(replaceScope.endDate),
+          },
+        },
+      })
+    } else if (replace && employeesProcessed.size === 1) {
       const dates = schedulesToCreate.map((schedule) => new Date(schedule.scheduleDate))
       await prisma.schedule.deleteMany({
         where: {
@@ -168,7 +187,7 @@ export async function POST(req: NextRequest) {
     console.log('[v0] Direct schedule create result:', bulkResult)
 
     // Generate today's attendance if any schedules were created for today
-    if (bulkResult.created > 0) {
+    if (finalize && bulkResult.created > 0) {
       try {
         await generateTodayAttendanceRecords()
       } catch (attendanceError) {

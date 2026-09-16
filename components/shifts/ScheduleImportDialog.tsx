@@ -32,6 +32,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
   const [preview, setPreview] = useState<ParsedSchedule[]>([])
   const [step, setStep] = useState<'upload' | 'preview' | 'importing'>('upload')
   const [progress, setProgress] = useState(0)
+  const [importStatus, setImportStatus] = useState('Preparing import...')
   const [dragActive, setDragActive] = useState(false)
   const [shiftCodes, setShiftCodes] = useState<string[]>([])
 
@@ -156,51 +157,49 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
   }
 
   const handleImport = async () => {
-    let progressTimer: number | undefined
     try {
       setImporting(true)
       setStep('importing')
-      setProgress(8)
-      progressTimer = window.setInterval(() => {
-        setProgress((current) => current >= 90 ? 90 : current + 4)
-      }, 700)
+      const batchSize = 10
+      const batches = Array.from({ length: Math.ceil(preview.length / batchSize) }, (_, index) => preview.slice(index * batchSize, (index + 1) * batchSize))
+      const employeeCodes = Array.from(new Set(preview.map((item) => item.employeeCode).filter(Boolean)))
+      const dates = preview.map((item) => new Date(item.date)).filter((date) => !Number.isNaN(date.getTime()))
+      const startDate = new Date(Math.min(...dates.map((date) => date.getTime()))).toISOString()
+      const endDate = new Date(Math.max(...dates.map((date) => date.getTime()))).toISOString()
+      let completed = 0
+      let created = 0
+      const errors: string[] = []
 
-      const response = await fetch('/api/schedules/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ schedules: preview }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        const details = Array.isArray(error.errors) && error.errors.length > 0
-          ? ` ${error.errors.slice(0, 3).join(' ')}${error.errors.length > 3 ? ` (+${error.errors.length - 3} more)` : ''}`
-          : ''
-        throw new Error(`${error.message || error.error || 'Import failed'}${details}`)
+      for (const [index, batch] of batches.entries()) {
+        const response = await fetch('/api/schedules/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            schedules: batch,
+            replace: index === 0,
+            finalize: index === batches.length - 1,
+            replaceScope: index === 0 ? { employeeCodes, startDate, endDate } : undefined,
+          }),
+        })
+        const result = await response.json()
+        if (!response.ok && !result.created) {
+          throw new Error(`${result.message || result.error || 'Import failed'} ${result.errors?.slice(0, 3)?.join(' ') || ''}`)
+        }
+        completed += batch.length
+        created += result.created || 0
+        errors.push(...(result.errors || []))
+        setProgress(Math.round((completed / preview.length) * 100))
+        setImportStatus(`Processed ${completed} of ${preview.length} schedule entries`)
       }
 
-      const result = await response.json()
-      setProgress(100)
-
-      if (!result.success || result.created === 0) {
-        const details = Array.isArray(result.errors) && result.errors.length > 0
-          ? ` ${result.errors.slice(0, 3).join(' ')}${result.errors.length > 3 ? ` (+${result.errors.length - 3} more)` : ''}`
-          : ''
-        throw new Error(result.message ? `${result.message}.${details}` : `No schedules were imported.${details}`)
-      }
-
-      toast.success(`Successfully imported ${result.created} schedules${result.errors?.length ? ` (${result.errors.length} errors)` : ''}`)
-
+      if (created === 0) throw new Error(`No schedules were imported. ${errors.slice(0, 3).join(' ')}`)
+      toast.success(`Successfully imported ${created} schedules${errors.length ? ` (${errors.length} errors)` : ''}`)
       onSuccess?.()
-      setTimeout(() => {
-        onOpenChange(false)
-        resetDialog()
-      }, 1000)
+      setTimeout(() => { onOpenChange(false); resetDialog() }, 1000)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to import schedules')
       setStep('preview')
     } finally {
-      if (progressTimer !== undefined) window.clearInterval(progressTimer)
       setImporting(false)
     }
   }
@@ -210,6 +209,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
     setPreview([])
     setStep('upload')
     setProgress(0)
+    setImportStatus('Preparing import...')
   }
 
   const handleClose = () => {
@@ -321,9 +321,9 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
           {step === 'importing' && (
             <div className="space-y-4">
               <Progress value={progress} />
-              <p className="text-sm text-center text-muted-foreground">
-                {"Importing "}{preview.length}{" schedules and generating today's attendance..."}
-              </p>
+<p className="text-sm text-center text-muted-foreground">
+              {importStatus}
+            </p>
             </div>
           )}
         </div>
