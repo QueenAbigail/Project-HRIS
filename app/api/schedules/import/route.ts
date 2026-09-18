@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
     let processed = 0
     const errors: string[] = []
     const schedulesToCreate: Array<{ employeeId: string; shiftId: string; scheduleDate: string; shiftStart: string; shiftEnd: string }> = []
+    const schedulesToClear: Array<{ employeeId: string; scheduleDate: string }> = []
 
     // Parse and validate imported schedules
     for (const schedule of importedSchedules) {
@@ -54,26 +55,11 @@ export async function POST(req: NextRequest) {
           continue
         }
 
-        // Map the configured human-readable shift code to its internal ID.
-        const shiftCode = String(shift || '').trim().toUpperCase()
-        if (shiftCode === 'OFF' || shiftCode === 'X') continue
-
-        const foundShift = await prisma.shift.findFirst({
-          where: { code: shiftCode }
-        })
-        const shiftId = foundShift?.id
-
-        if (!shiftId) {
-          errors.push(`${rowLabel}No matching shift for code ${shiftCode} on ${date}`)
-          continue
-        }
-
-        // Parse date
+        // Parse the date before applying either a shift assignment or an explicit Off instruction.
         let scheduleDate: string
         try {
           let parsedDate: Date
           if (typeof date === 'number') {
-            // Excel serial number
             parsedDate = new Date((date - 25569) * 86400 * 1000)
           } else {
             parsedDate = new Date(date)
@@ -90,6 +76,25 @@ export async function POST(req: NextRequest) {
           }
         } catch (e) {
           errors.push(`Error parsing date ${date}: ${String(e)}`)
+          continue
+        }
+
+        // Empty cells preserve existing data; explicit Off clears a future schedule.
+        const shiftCode = String(shift || '').trim().toUpperCase()
+        if (!shiftCode) continue
+        if (shiftCode === 'OFF' || shiftCode === 'X') {
+          schedulesToClear.push({ employeeId: employee.id, scheduleDate })
+          continue
+        }
+
+        // Map the configured human-readable shift code to its internal ID.
+        const foundShift = await prisma.shift.findFirst({
+          where: { code: shiftCode }
+        })
+        const shiftId = foundShift?.id
+
+        if (!shiftId) {
+          errors.push(`${rowLabel}No matching shift for code ${shiftCode} on ${date}`)
           continue
         }
 
@@ -111,16 +116,32 @@ export async function POST(req: NextRequest) {
 
     console.log('[v0] Import processed:', processed, 'schedules to create')
 
-    if (schedulesToCreate.length === 0) {
+    if (schedulesToCreate.length === 0 && schedulesToClear.length === 0) {
       return NextResponse.json({
         success: false,
         created: 0,
+        cleared: 0,
         errors,
-        message: `No valid schedules to import (${errors.length} errors)`
+        message: `No valid schedule changes to import (${errors.length} errors)`
       })
     }
 
-    // Imports are upsert-only: empty cells and omitted rows never delete existing schedules.
+    // Imports are upsert-only for shift assignments; explicit Off cells clear future schedules only.
+    let cleared = 0
+    for (const schedule of schedulesToClear) {
+      try {
+        const result = await prisma.schedule.deleteMany({
+          where: {
+            employeeId: schedule.employeeId,
+            scheduleDate: new Date(schedule.scheduleDate),
+          },
+        })
+        cleared += result.count
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Database error'
+        errors.push(`Could not clear ${schedule.scheduleDate}: ${message.split('\\n')[0]}`)
+      }
+    }
 
     let created = 0
     let updated = 0
@@ -181,9 +202,10 @@ export async function POST(req: NextRequest) {
 
     const allErrors = [...(bulkResult.errors || []), ...errors]
     return NextResponse.json({
-      success: bulkResult.created > 0,
+      success: bulkResult.created > 0 || bulkResult.updated > 0 || cleared > 0,
       created: bulkResult.created,
       updated: bulkResult.updated,
+      cleared,
       errors: allErrors,
       message: bulkResult.created + bulkResult.updated > 0
         ? `Successfully processed ${bulkResult.created} created and ${bulkResult.updated} updated schedules${allErrors.length > 0 ? ` (${allErrors.length} errors)` : ''}`
