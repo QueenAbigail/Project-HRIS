@@ -217,7 +217,14 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
       }
 
       if (created + updated === 0) throw new Error(`No schedules were imported. ${errors.slice(0, 3).join(' ')}`)
-      toast.success(`Processed ${created} created and ${updated} updated schedules${errors.length ? ` (${errors.length} errors)` : ''}`)
+      if (errors.length > 0) {
+        toast.warning(`Import completed with ${errors.length} error${errors.length === 1 ? '' : 's'}`, {
+          description: errors.slice(0, 3).join(' • '),
+          duration: 10000,
+        })
+      } else {
+        toast.success(`Processed ${created} created and ${updated} updated schedules`)
+      }
       onSuccess?.()
       setTimeout(() => { onOpenChange(false); resetDialog() }, 1000)
     } catch (error) {
