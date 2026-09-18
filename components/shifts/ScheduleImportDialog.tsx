@@ -23,6 +23,7 @@ interface ParsedSchedule {
   employeeId: string
   date: string
   shift: string
+  rowNumber: number
 }
 
 export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: ScheduleImportDialogProps) {
@@ -35,6 +36,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
   const [importStatus, setImportStatus] = useState('Preparing import...')
   const [dragActive, setDragActive] = useState(false)
   const [shiftCodes, setShiftCodes] = useState<string[]>([])
+  const [duplicateErrors, setDuplicateErrors] = useState<string[]>([])
 
   useEffect(() => {
     if (!open) return
@@ -141,11 +143,23 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
               employeeId: employeeCode,
               date: String(header),
               shift: String(shift).toUpperCase(),
+              rowNumber: dataRows.indexOf(row) + 2,
             })
           }
         })
       })
 
+      const duplicateGroups = new Map<string, ParsedSchedule[]>()
+      parsed.forEach((item) => {
+        const key = `${item.employeeCode}|${new Date(item.date).toISOString().slice(0, 10)}`
+        const group = duplicateGroups.get(key) ?? []
+        group.push(item)
+        duplicateGroups.set(key, group)
+      })
+      const duplicateMessages = Array.from(duplicateGroups.values())
+        .filter((group) => group.length > 1)
+        .map((group) => `Rows ${group.map((item) => item.rowNumber).join(' and ')} — ${group[0].employeeCode} on ${group[0].date} appears more than once.`)
+      setDuplicateErrors(duplicateMessages)
       setPreview(parsed.slice(0, 100))
       setStep('preview')
       toast.success(`Parsed ${parsed.length} schedule entries`)
@@ -157,6 +171,11 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
   }
 
   const handleImport = async () => {
+    if (duplicateErrors.length > 0) {
+      toast.error('Duplicate employee/date rows found. Review the highlighted errors before importing.')
+      return
+    }
+
     try {
       setImporting(true)
       setStep('importing')
@@ -212,6 +231,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
   const resetDialog = () => {
     setFile(null)
     setPreview([])
+    setDuplicateErrors([])
     setStep('upload')
     setProgress(0)
     setImportStatus('Preparing import...')
@@ -293,6 +313,18 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
                   Found {preview.length} schedule entries. Review and confirm to import.
                 </AlertDescription>
               </Alert>
+
+              {duplicateErrors.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="size-4" />
+                  <AlertDescription>
+                    <p className="font-medium">Duplicate rows must be corrected before import:</p>
+                    <ul className="mt-2 list-disc space-y-1 pl-4">
+                      {duplicateErrors.map((error) => <li key={error}>{error}</li>)}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <div className="max-h-64 overflow-y-auto border border-border rounded-lg">
                 <table className="w-full text-sm">

@@ -33,10 +33,11 @@ export async function POST(req: NextRequest) {
     // Parse and validate imported schedules
     for (const schedule of importedSchedules) {
       try {
-        const { employeeName, employeeCode, date, shift } = schedule
+        const { employeeName, employeeCode, date, shift, rowNumber } = schedule
+        const rowLabel = rowNumber ? `Row ${rowNumber}: ` : ''
 
         if (!employeeCode) {
-          errors.push(`Missing employee code for ${employeeName || 'unknown employee'}`)
+          errors.push(`${rowLabel}Missing employee code for ${employeeName || 'unknown employee'}`)
           continue
         }
 
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
         })
 
         if (!employee) {
-          errors.push(`Employee Code "${normalizedEmployeeCode}" (${employeeName || 'unnamed employee'}) was not found. Check that it matches an existing employee.`)
+          errors.push(`${rowLabel}Employee Code "${normalizedEmployeeCode}" (${employeeName || 'unnamed employee'}) was not found. Check that it matches an existing employee.`)
           continue
         }
 
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
         const shiftId = foundShift?.id
 
         if (!shiftId) {
-          errors.push(`No matching shift for code ${shiftCode} on ${date}`)
+          errors.push(`${rowLabel}No matching shift for code ${shiftCode} on ${date}`)
           continue
         }
 
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest) {
           }
 
           if (isNaN(parsedDate.getTime())) {
-            errors.push(`Invalid date format: ${date}`)
+            errors.push(`${rowLabel}Invalid date format: ${date}`)
             continue
           }
           scheduleDate = parsedDate.toISOString().split('T')[0]
