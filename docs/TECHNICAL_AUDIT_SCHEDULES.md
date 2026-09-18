@@ -49,7 +49,8 @@
 
 - ✅ Items 1–3 and 6–8 are complete.
 - 🔍 Items 4–5 are implemented; real-data/browser verification remains.
-- ⚠️ Items 9–10, 12, and 14 require future technical work.
+- ✅ Item 9 is complete.
+- ⚠️ Items 10, 12, and 14 require future technical work.
 - ℹ️ Items 11, 13, and 15 are follow-up improvements.
 
 ## Extended audit backlog
@@ -57,14 +58,14 @@
 The following items were identified in a second technical review outside the original eight-point audit:
 
 - **Item 9 — Import replacement safety:** complete. Imports are upsert-only, empty cells preserve existing schedules, explicit `Off` clears an existing future schedule, and protected rows are skipped and reported.
-s- **Item 10 — Import atomicity:** prevent partially applied replacement imports when a later batch fails.
+- **Item 10 — Import atomicity:** prevent partially applied imports when a later batch fails.
 - **Item 11 — Import database efficiency:** reduce avoidable per-row database queries without introducing unsafe parallel writes.
 - **Item 12 — Server-action error reporting:** distinguish database failures from legitimate empty results.
 - **Item 13 — Schedule type safety:** reduce `any` usage in schedule-related components and actions.
 - **Item 14 — Date and timezone consistency:** verify calendar-date behavior across import, filtering, storage, and display.
 - **Item 15 — Schedule refresh race conditions:** prevent stale `loadData()` responses from overwriting newer results.
 
-No extended-backlog item has been implemented yet.
+Item 9 is complete. Items 10–15 remain for future work.
 
 ## Change history
 
