@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { ShiftFormDialog } from '@/components/shifts/ShiftFormDialog'
 import { ScheduleImportDialog } from '@/components/shifts/ScheduleImportDialog'
 import { ScheduleTable } from '@/components/shifts/ScheduleTable'
+import { SchedulePageSkeleton } from '@/components/shifts/SchedulePageSkeleton'
 import { AddScheduleDialog } from '@/components/shifts/AddScheduleDialog'
 import { getShifts, getEmployeeSchedules } from '@/app/superadmin/actions'
 import { formatTime } from '@/lib/data'
@@ -96,7 +97,7 @@ export default function SchedulesPage() {
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="text-center py-8 text-muted-foreground">Loading shifts...</div>
+                <SchedulePageSkeleton />
               ) : shifts.length === 0 ? (
                 <div className="text-center py-8">
                   <Clock className="size-8 mx-auto mb-2 text-muted-foreground" />
@@ -206,7 +207,7 @@ export default function SchedulesPage() {
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="text-center py-8 text-muted-foreground">Loading schedules...</div>
+                <SchedulePageSkeleton />
               ) : (
                 <ScheduleTable
                   schedules={schedules}
