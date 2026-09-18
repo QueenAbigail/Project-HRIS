@@ -25,6 +25,13 @@
 | 6 | Loading skeleton behavior | ✅ **Complete** | Layout-matched skeletons for shift rows and schedule assignments are working correctly, with accessible loading status semantics. |
 | 7 | Native delete confirmation | ✅ **Complete** | Replaced native `confirm()` with an accessible Alert Dialog showing the employee, shift, date, Cancel, and Delete actions. Browser verification completed successfully. |
 | 8 | Pagination footer accuracy | ✅ **Complete** | Non-empty ranges remain accurate, and empty filtered results show `Showing 0 of 0 schedules` without pagination controls. Browser verification completed successfully. |
+| 9 | Import replacement safety | ⚠️ **Open** | Review whether replacement can delete existing schedules outside the uploaded rows, normalize replacement employee codes consistently, and prevent unsafe partial replacement. |
+| 10 | Import atomicity | ⚠️ **Open** | Evaluate transaction or rollback behavior when a later import batch fails after earlier batches have changed the database. |
+| 11 | Import database efficiency | ℹ️ **Follow-up** | Review the number of employee, shift, lookup, and upsert queries performed per row and consider a safer server-side bulk operation. |
+| 12 | Server-action error reporting | ⚠️ **Open** | Ensure database failures are not converted into empty schedule lists that look like a valid no-data state. |
+| 13 | Schedule type safety | ℹ️ **Follow-up** | Replace schedule-page `any` values with explicit shared types where practical. |
+| 14 | Date and timezone consistency | ⚠️ **Open** | Verify import, filtering, storage, and display use the same calendar-date semantics across timezones. |
+| 15 | Schedule refresh race conditions | ℹ️ **Follow-up** | Review overlapping `loadData()` calls and prevent stale responses from overwriting newer schedule data. |
 
 ## Item 3 — Completed import extensions
 
@@ -40,11 +47,28 @@
 
 ## Verification status
 
-- ✅ Items 1–3 are complete.
-- 🔍 Item 4 has been optimized in code; runtime timing verification remains.
-- ⚠️ Items 5–8 remain open.
+- ✅ Items 1–3 and 6–8 are complete.
+- 🔍 Items 4–5 are implemented; real-data/browser verification remains.
+- ⚠️ Items 9–10, 12, and 14 require future technical work.
+- ℹ️ Items 11, 13, and 15 are follow-up improvements.
+
+## Extended audit backlog
+
+The following items were identified in a second technical review outside the original eight-point audit:
+
+- **Item 9 — Import replacement safety:** confirm replacement deletes only intended records and normalize employee-code scope consistently.
+- **Item 10 — Import atomicity:** prevent partially applied replacement imports when a later batch fails.
+- **Item 11 — Import database efficiency:** reduce avoidable per-row database queries without introducing unsafe parallel writes.
+- **Item 12 — Server-action error reporting:** distinguish database failures from legitimate empty results.
+- **Item 13 — Schedule type safety:** reduce `any` usage in schedule-related components and actions.
+- **Item 14 — Date and timezone consistency:** verify calendar-date behavior across import, filtering, storage, and display.
+- **Item 15 — Schedule refresh race conditions:** prevent stale `loadData()` responses from overwriting newer results.
+
+No extended-backlog item has been implemented yet.
 
 ## Change history
+
+- Extended technical review — added Issues 9–15 for replacement safety, atomicity, query efficiency, error reporting, type safety, timezone consistency, and refresh race conditions.
 
 - Import safety decision — all dynamic batches remain sequential; no parallel requests are sent, preventing overlapping database writes and preserving ordered initialization/finalization.
 - Pagination fix — schedule search and past-date filter changes reset pagination to page 1, with safe clamping when result counts shrink.
@@ -66,6 +90,7 @@
 
 ## Documentation rules
 
-- Keep project documentation under `docs/`.ulate- Do not add feature or audit documentation to the project root.
+- Keep project documentation under `docs/`.
+- Do not add feature or audit documentation to the project root.
 - Update this checklist whenever an item is implemented or verified.
 - Use this document as the audit source of truth instead of relying on chat history.
