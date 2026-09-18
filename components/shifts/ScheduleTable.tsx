@@ -229,7 +229,9 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
 
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <div>
-          Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filtered.length)} of {filtered.length} schedules
+          {filtered.length === 0
+            ? 'Showing 0 of 0 schedules'
+            : `Showing ${startIndex + 1}-${Math.min(startIndex + itemsPerPage, filtered.length)} of ${filtered.length} schedules`}
         </div>
         
         {totalPages > 1 && (
