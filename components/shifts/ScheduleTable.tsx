@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -73,9 +73,14 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
     })
     .sort((a, b) => new Date(a.scheduleDate).getTime() - new Date(b.scheduleDate).getTime())
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, showPast])
+
   // Calculate pagination
-  const totalPages = Math.ceil(filtered.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage
   const paginatedSchedules = filtered.slice(startIndex, startIndex + itemsPerPage)
 
   const handleDelete = async (id: string) => {
@@ -199,8 +204,8 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
+              disabled={safeCurrentPage === 1}
             >
               Previous
             </Button>
@@ -210,19 +215,19 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
                 let pageNum
                 if (totalPages <= 5) {
                   pageNum = i + 1
-                } else if (currentPage <= 3) {
+                } else if (safeCurrentPage <= 3) {
                   pageNum = i + 1
-                } else if (currentPage >= totalPages - 2) {
+                } else if (safeCurrentPage >= totalPages - 2) {
                   pageNum = totalPages - 4 + i
                 } else {
-                  pageNum = currentPage - 2 + i
+                  pageNum = safeCurrentPage - 2 + i
                 }
                 
                 return (
                   <Button
                     key={pageNum}
                     size="sm"
-                    variant={currentPage === pageNum ? 'default' : 'outline'}
+                    variant={safeCurrentPage === pageNum ? 'default' : 'outline'}
                     onClick={() => setCurrentPage(pageNum)}
                   >
                     {pageNum}
@@ -234,8 +239,8 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))}
+              disabled={safeCurrentPage === totalPages}
             >
               Next
             </Button>
