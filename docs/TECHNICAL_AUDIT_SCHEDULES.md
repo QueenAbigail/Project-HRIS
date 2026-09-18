@@ -26,7 +26,7 @@
 | 7 | Native delete confirmation | ✅ **Complete** | Replaced native `confirm()` with an accessible Alert Dialog showing the employee, shift, date, Cancel, and Delete actions. Browser verification completed successfully. |
 | 8 | Pagination footer accuracy | ✅ **Complete** | Non-empty ranges remain accurate, and empty filtered results show `Showing 0 of 0 schedules` without pagination controls. Browser verification completed successfully. |
 | 9 | Import replacement safety | ✅ **Complete** | Removed replacement deletion behavior. Imports are upsert-only: empty cells preserve existing schedules, explicit `Off` cells intentionally clear an existing future schedule, and today/past rows are skipped and reported. |
-| 10 | Import atomicity | ⚠️ **Open** | Evaluate transaction or rollback behavior when a later import batch fails after earlier batches have changed the database. |
+| 10 | Import atomicity | ✅ **Complete** | Schedule import writes now run in one database transaction. Validation errors still skip and report individual rows; a database write failure rolls back all import changes. |
 | 11 | Import database efficiency | ℹ️ **Follow-up** | Review the number of employee, shift, lookup, and upsert queries performed per row and consider a safer server-side bulk operation. |
 | 12 | Server-action error reporting | ⚠️ **Open** | Ensure database failures are not converted into empty schedule lists that look like a valid no-data state. |
 | 13 | Schedule type safety | ℹ️ **Follow-up** | Replace schedule-page `any` values with explicit shared types where practical. |
@@ -50,7 +50,8 @@
 - ✅ Items 1–3 and 6–8 are complete.
 - 🔍 Items 4–5 are implemented; real-data/browser verification remains.
 - ✅ Item 9 is complete.
-- ⚠️ Items 10, 12, and 14 require future technical work.
+- ✅ Item 10 is complete.
+- ⚠️ Items 12 and 14 require future technical work.
 - ℹ️ Items 11, 13, and 15 are follow-up improvements.
 
 ## Extended audit backlog
@@ -58,7 +59,7 @@
 The following items were identified in a second technical review outside the original eight-point audit:
 
 - **Item 9 — Import replacement safety:** complete. Imports are upsert-only, empty cells preserve existing schedules, explicit `Off` clears an existing future schedule, and protected rows are skipped and reported.
-- **Item 10 — Import atomicity:** prevent partially applied imports when a later batch fails.
+- **Item 10 — Import atomicity:** complete. Import writes use one database transaction; database failures roll back the full import while row-level validation errors remain reportable and skippable.
 - **Item 11 — Import database efficiency:** reduce avoidable per-row database queries without introducing unsafe parallel writes.
 - **Item 12 — Server-action error reporting:** distinguish database failures from legitimate empty results.
 - **Item 13 — Schedule type safety:** reduce `any` usage in schedule-related components and actions.

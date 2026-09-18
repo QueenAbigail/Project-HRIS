@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateTodayAttendanceRecords } from '@/app/superadmin/actions'
 import { requireSuperAdminResponse } from '@/lib/api-auth'
-import { isTodayOrEarlier, protectedDateMessage } from '@/lib/schedule-date-policy'
+import { isTodayOrEarlier } from '@/lib/schedule-date-policy'
 
 // Import schedules in bulk from Excel file
 // Uses the bulk-create endpoint which supports the new manual assignment modes
@@ -126,70 +126,83 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Imports are upsert-only for shift assignments; explicit Off cells clear future schedules only.
-    let cleared = 0
-    for (const schedule of schedulesToClear) {
-      try {
-        const result = await prisma.schedule.deleteMany({
-          where: {
-            employeeId: schedule.employeeId,
-            scheduleDate: new Date(schedule.scheduleDate),
-          },
-        })
-        cleared += result.count
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Database error'
-        errors.push(`Could not clear ${schedule.scheduleDate}: ${message.split('\\n')[0]}`)
-      }
-    }
-
+    // All database writes run in one transaction. Row validation errors above are
+    // allowed to continue, but a database failure rolls back every write.
     let created = 0
     let updated = 0
-    const bulkErrors: string[] = []
-    for (const schedule of schedulesToCreate) {
-      try {
-        const scheduleDate = new Date(schedule.scheduleDate)
-        const existingSchedule = await prisma.schedule.findUnique({
-          where: {
-            employeeId_scheduleDate: {
-              employeeId: schedule.employeeId,
-              scheduleDate,
-            },
-          },
-          select: { id: true },
-        })
+    let cleared = 0
 
-        await prisma.schedule.upsert({
-          where: {
-            employeeId_scheduleDate: {
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        for (const schedule of schedulesToClear) {
+          const deleted = await tx.schedule.deleteMany({
+            where: {
               employeeId: schedule.employeeId,
-              scheduleDate,
+              scheduleDate: new Date(schedule.scheduleDate),
             },
-          },
-          create: {
-            employeeId: schedule.employeeId,
-            shiftId: schedule.shiftId,
-            scheduleDate: new Date(schedule.scheduleDate),
-            shiftStart: schedule.shiftStart,
-            shiftEnd: schedule.shiftEnd,
-            isException: false,
-          },
-          update: {
-            shiftId: schedule.shiftId,
-            shiftStart: schedule.shiftStart,
-            shiftEnd: schedule.shiftEnd,
-          },
-        })
-        if (existingSchedule) updated++
-        else created++
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Database error'
-        bulkErrors.push(`Could not import ${schedule.scheduleDate}: ${message.split('\\n')[0]}`)
-      }
+          })
+          cleared += deleted.count
+        }
+
+        for (const schedule of schedulesToCreate) {
+          const scheduleDate = new Date(schedule.scheduleDate)
+          const existingSchedule = await tx.schedule.findUnique({
+            where: {
+              employeeId_scheduleDate: {
+                employeeId: schedule.employeeId,
+                scheduleDate,
+              },
+            },
+            select: { id: true },
+          })
+
+          await tx.schedule.upsert({
+            where: {
+              employeeId_scheduleDate: {
+                employeeId: schedule.employeeId,
+                scheduleDate,
+              },
+            },
+            create: {
+              employeeId: schedule.employeeId,
+              shiftId: schedule.shiftId,
+              scheduleDate,
+              shiftStart: schedule.shiftStart,
+              shiftEnd: schedule.shiftEnd,
+              isException: false,
+            },
+            update: {
+              shiftId: schedule.shiftId,
+              shiftStart: schedule.shiftStart,
+              shiftEnd: schedule.shiftEnd,
+            },
+          })
+
+          if (existingSchedule) updated++
+          else created++
+        }
+
+        return { created, updated, cleared }
+      })
+
+      created = result.created
+      updated = result.updated
+      cleared = result.cleared
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Database error'
+      console.error('[v0] Atomic schedule import rolled back:', error)
+      return NextResponse.json({
+        success: false,
+        created: 0,
+        updated: 0,
+        cleared: 0,
+        errors: [...errors, `Import rolled back: ${message.split('\\n')[0]}`],
+        message: 'No schedule changes were saved because the database import failed.',
+      }, { status: 500 })
     }
 
-    const bulkResult = { created, updated, errors: bulkErrors }
-    console.log('[v0] Direct schedule create result:', bulkResult)
+    const bulkResult = { created, updated, errors: [] as string[] }
+    console.log('[v0] Atomic schedule import result:', { created, updated, cleared })
 
     // Generate today's attendance if any schedules were created for today
     if (finalize && bulkResult.created > 0) {
