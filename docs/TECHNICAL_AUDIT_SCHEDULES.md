@@ -62,7 +62,6 @@
 
 ## Documentation rules
 
-- Keep project documentation under `docs/`.
-- Do not add feature or audit documentation to the project root.
+- Keep project documentation under `docs/`.ulate- Do not add feature or audit documentation to the project root.
 - Update this checklist whenever an item is implemented or verified.
 - Use this document as the audit source of truth instead of relying on chat history.
