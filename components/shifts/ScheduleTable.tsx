@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Edit, Trash2, Search } from 'lucide-react'
+import { Edit, Trash2, Search, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatTime } from '@/lib/data'
 
@@ -51,6 +51,7 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
   const [showPast, setShowPast] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [scheduleToDelete, setScheduleToDelete] = useState<Schedule | null>(null)
+  const [protectedDateConfirmed, setProtectedDateConfirmed] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 50
 
@@ -193,7 +194,10 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
                         size="sm"
                         variant="ghost"
                         className="text-destructive"
-                        onClick={() => setScheduleToDelete(schedule)}
+                        onClick={() => {
+                          setScheduleToDelete(schedule)
+                          setProtectedDateConfirmed(false)
+                        }}
                         disabled={deleting === schedule.id}
                       >
                         <Trash2 className="size-4" />
@@ -217,15 +221,41 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
                 month: 'short', day: 'numeric', year: 'numeric',
               })}. This action cannot be undone.
             </AlertDialogDescription>
+            {scheduleToDelete && new Date(scheduleToDelete.scheduleDate) <= new Date() && (
+              <div className="mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
+                <div className="flex gap-3">
+                  <ShieldAlert className="mt-0.5 size-5 shrink-0 text-amber-500" aria-hidden="true" />
+                  <div className="space-y-3">
+                    <div>
+                      <p className="font-medium text-amber-700 dark:text-amber-400">Additional confirmation required</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        This schedule is from today or earlier and may be referenced by attendance records.
+                      </p>
+                    </div>
+                    <label className="flex items-start gap-2 text-sm">
+                      <Checkbox
+                        checked={protectedDateConfirmed}
+                        onCheckedChange={(checked) => setProtectedDateConfirmed(checked === true)}
+                        className="mt-0.5"
+                      />
+                      <span>I understand the impact and want to continue.</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={Boolean(deleting)}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={Boolean(deleting)}
+              disabled={Boolean(deleting) || Boolean(scheduleToDelete && new Date(scheduleToDelete.scheduleDate) <= new Date() && !protectedDateConfirmed)}
               onClick={() => {
-                if (scheduleToDelete && new Date(scheduleToDelete.scheduleDate) <= new Date() && !window.confirm('Confirm again: this schedule is from today or earlier and may affect attendance records.')) return
-                if (scheduleToDelete) handleDelete(scheduleToDelete.id, true)
+                if (scheduleToDelete) {
+                  const isProtectedDate = new Date(scheduleToDelete.scheduleDate) <= new Date()
+                  if (isProtectedDate && !protectedDateConfirmed) return
+                  handleDelete(scheduleToDelete.id, isProtectedDate)
+                }
               }}
             >
               {deleting ? 'Deleting...' : 'Delete schedule'}
