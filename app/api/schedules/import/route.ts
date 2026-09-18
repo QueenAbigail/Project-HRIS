@@ -12,14 +12,8 @@ export async function POST(req: NextRequest) {
     if (authResponse) return authResponse
     const {
       schedules: importedSchedules,
-      replace = true,
-      replaceScope,
       finalize = true,
     } = await req.json()
-
-    if (Array.isArray(importedSchedules) && importedSchedules.some((schedule: { date: string }) => isTodayOrEarlier(schedule.date))) {
-      return NextResponse.json({ error: protectedDateMessage() }, { status: 409 })
-    }
 
     if (!Array.isArray(importedSchedules) || importedSchedules.length === 0) {
       return NextResponse.json(
@@ -28,12 +22,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    console.log('[v0] Import received:', importedSchedules.length, 'schedules, replace:', replace)
+    console.log('[v0] Import received:', importedSchedules.length, 'schedules')
 
     let processed = 0
     const errors: string[] = []
     const schedulesToCreate: Array<{ employeeId: string; shiftId: string; scheduleDate: string; shiftStart: string; shiftEnd: string }> = []
-    const employeesProcessed = new Set<string>()
 
     // Parse and validate imported schedules
     for (const schedule of importedSchedules) {
@@ -91,6 +84,10 @@ export async function POST(req: NextRequest) {
             continue
           }
           scheduleDate = parsedDate.toISOString().split('T')[0]
+          if (isTodayOrEarlier(scheduleDate)) {
+            errors.push(`${rowLabel}Skipped protected date ${scheduleDate}; today and past schedules cannot be changed by import.`)
+            continue
+          }
         } catch (e) {
           errors.push(`Error parsing date ${date}: ${String(e)}`)
           continue
@@ -105,7 +102,6 @@ export async function POST(req: NextRequest) {
           shiftEnd: foundShift.endTime,
         })
 
-        employeesProcessed.add(employee.id)
         processed++
       } catch (error) {
         console.error('[v0] Error processing schedule:', error)
@@ -124,34 +120,7 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Create directly instead of making a server-to-server request to the bulk endpoint.
-    // Internal fetches can resolve the preview origin to HTTPS, which is not available from the VM.
-    if (replace && replaceScope) {
-      const scopedEmployees = await prisma.user.findMany({
-        where: { employeeCode: { in: replaceScope.employeeCodes } },
-        select: { id: true },
-      })
-      await prisma.schedule.deleteMany({
-        where: {
-          employeeId: { in: scopedEmployees.map((employee) => employee.id) },
-          scheduleDate: {
-            gte: new Date(replaceScope.startDate),
-            lte: new Date(replaceScope.endDate),
-          },
-        },
-      })
-    } else if (replace && employeesProcessed.size === 1) {
-      const dates = schedulesToCreate.map((schedule) => new Date(schedule.scheduleDate))
-      await prisma.schedule.deleteMany({
-        where: {
-          employeeId: Array.from(employeesProcessed)[0],
-          scheduleDate: {
-            gte: new Date(Math.min(...dates.map((date) => date.getTime()))),
-            lte: new Date(Math.max(...dates.map((date) => date.getTime()))),
-          },
-        },
-      })
-    }
+    // Imports are upsert-only: empty cells and omitted rows never delete existing schedules.
 
     let created = 0
     let updated = 0

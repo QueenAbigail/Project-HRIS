@@ -267,7 +267,6 @@ export function AddScheduleDialog({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             schedules: schedulesToCreate,
-            replace: !!schedule,
               employeeId: formData.employeeId,
               allowProtectedDateChange,
               }),
@@ -325,7 +324,6 @@ export function AddScheduleDialog({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             schedules: schedulesToCreate,
-            replace: !!schedule,
               employeeId: formData.employeeId,
               allowProtectedDateChange,
               }),

@@ -199,9 +199,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             schedules: batch,
-            replace: index === 0,
-            finalize,
-            replaceScope: index === 0 ? { employeeCodes, startDate, endDate } : undefined,
+  finalize,
           }),
         })
         const result = await response.json()
