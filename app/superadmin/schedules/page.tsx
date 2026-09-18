@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Clock, Download, Users, Plus } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import type { ScheduleDateRange } from '@/app/superadmin/actions'
 import { toast } from 'sonner'
 import { ShiftFormDialog } from '@/components/shifts/ShiftFormDialog'
 import { ScheduleImportDialog } from '@/components/shifts/ScheduleImportDialog'
@@ -25,18 +27,18 @@ export default function SchedulesPage() {
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [addScheduleOpen, setAddScheduleOpen] = useState(false)
   const [editingSchedule, setEditingSchedule] = useState<any>(null)
-  const [showPastSchedules, setShowPastSchedules] = useState(false)
+  const [scheduleDateRange, setScheduleDateRange] = useState<ScheduleDateRange>('upcoming')
 
   useEffect(() => {
-    loadData(showPastSchedules)
-  }, [showPastSchedules])
+    loadData(scheduleDateRange)
+  }, [scheduleDateRange])
 
-  const loadData = async (includePast = showPastSchedules) => {
+  const loadData = async (dateRange = scheduleDateRange) => {
     try {
       setLoading(true)
       const [shiftsData, schedulesData] = await Promise.all([
         getShifts(),
-        getEmployeeSchedules(includePast),
+        getEmployeeSchedules(dateRange),
       ])
       setShifts(shiftsData || [])
       setSchedules(schedulesData || [])
@@ -213,8 +215,8 @@ export default function SchedulesPage() {
                 <ScheduleTable
                   schedules={schedules}
                   onEdit={handleAddSchedule}
-                  showPast={showPastSchedules}
-                  onShowPastChange={setShowPastSchedules}
+                  dateRange={scheduleDateRange}
+                  onDateRangeChange={setScheduleDateRange}
                   onDelete={() => loadData()}
                   onRefresh={loadData}
                 />

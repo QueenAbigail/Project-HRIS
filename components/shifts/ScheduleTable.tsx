@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,9 +25,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Edit, Trash2, Search, ShieldAlert } from 'lucide-react'
+import { Edit, Trash2, Search, ShieldAlert, CalendarDays } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatTime } from '@/lib/data'
+import type { ScheduleDateRange } from '@/app/superadmin/actions'
 
 interface Schedule {
   id: string
@@ -44,11 +46,11 @@ interface ScheduleTableProps {
   onEdit?: (schedule: Schedule) => void
   onDelete?: (scheduleId: string) => void
   onRefresh?: () => void
-  showPast?: boolean
-  onShowPastChange?: (showPast: boolean) => void
+  dateRange?: ScheduleDateRange
+  onDateRangeChange?: (dateRange: ScheduleDateRange) => void
 }
 
-export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh, showPast = false, onShowPastChange }: ScheduleTableProps) {
+export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh, dateRange = 'upcoming', onDateRangeChange }: ScheduleTableProps) {
   const [search, setSearch] = useState('')
   const [deleting, setDeleting] = useState<string | null>(null)
   const [scheduleToDelete, setScheduleToDelete] = useState<Schedule | null>(null)
@@ -75,20 +77,29 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh, showPast
 
       if (!matchesSearch) return false
 
-      // Filter by past dates
-      if (!showPast) {
-        const scheduleDateCheck = new Date(s.scheduleDate)
-        scheduleDateCheck.setHours(0, 0, 0, 0)
-        return scheduleDateCheck >= today
-      }
+      const scheduleDateCheck = new Date(s.scheduleDate)
+      scheduleDateCheck.setHours(0, 0, 0, 0)
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const yesterday = new Date(today)
+      yesterday.setDate(yesterday.getDate() - 1)
+      const past7Start = new Date(today)
+      past7Start.setDate(past7Start.getDate() - 7)
+      const past30Start = new Date(today)
+      past30Start.setDate(past30Start.getDate() - 30)
 
+      if (dateRange === 'upcoming') return scheduleDateCheck >= today
+      if (dateRange === 'today') return scheduleDateCheck >= today && scheduleDateCheck < tomorrow
+      if (dateRange === 'yesterday') return scheduleDateCheck >= yesterday && scheduleDateCheck < today
+      if (dateRange === 'past7') return scheduleDateCheck >= past7Start && scheduleDateCheck < today
+      if (dateRange === 'past30') return scheduleDateCheck >= past30Start && scheduleDateCheck < today
       return true
     })
     .sort((a, b) => new Date(a.scheduleDate).getTime() - new Date(b.scheduleDate).getTime())
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [search, showPast])
+  }, [search, dateRange])
 
   // Calculate pagination
   const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage))
@@ -134,15 +145,22 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh, showPast
           </Button>
         </div>
         
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="showPast"
-            checked={showPast}
-            onCheckedChange={(checked) => onShowPastChange?.(checked === true)}
-          />
-          <Label htmlFor="showPast" className="font-normal cursor-pointer text-sm">
-            Show past schedules
-          </Label>
+        <div className="flex items-center gap-2">
+          <CalendarDays className="size-4 text-muted-foreground" aria-hidden="true" />
+          <Label htmlFor="schedule-date-range" className="text-sm text-muted-foreground">Date range</Label>
+          <Select value={dateRange} onValueChange={(value) => onDateRangeChange?.(value as ScheduleDateRange)}>
+            <SelectTrigger id="schedule-date-range" className="w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="upcoming">Upcoming</SelectItem>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="yesterday">Yesterday</SelectItem>
+              <SelectItem value="past7">Past 7 days</SelectItem>
+              <SelectItem value="past30">Past 30 days</SelectItem>
+              <SelectItem value="all">All dates</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
