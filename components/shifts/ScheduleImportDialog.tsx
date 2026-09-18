@@ -193,14 +193,14 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
       let updated = 0
       const errors: string[] = []
 
-      for (const [index, batch] of batches.entries()) {
+      const processBatch = async (batch: ParsedSchedule[], index: number, finalize: boolean) => {
         const response = await fetch('/api/schedules/import', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             schedules: batch,
             replace: index === 0,
-            finalize: index === batches.length - 1,
+            finalize,
             replaceScope: index === 0 ? { employeeCodes, startDate, endDate } : undefined,
           }),
         })
@@ -208,12 +208,32 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
         if (!response.ok && !(result.created || result.updated)) {
           throw new Error(`${result.message || result.error || 'Import failed'} ${result.errors?.slice(0, 3)?.join(' ') || ''}`)
         }
-        completed += batch.length
-        created += result.created || 0
-        updated += result.updated || 0
-        errors.push(...(result.errors || []))
+        return { count: batch.length, created: result.created || 0, updated: result.updated || 0, errors: result.errors || [] }
+      }
+
+      const recordResult = (result: Awaited<ReturnType<typeof processBatch>>) => {
+        completed += result.count
+        created += result.created
+        updated += result.updated
+        errors.push(...result.errors)
         setProgress(Math.round((completed / preview.length) * 100))
         setImportStatus(`Processed ${completed} of ${preview.length} schedule entries (updated every ${batchSize})`)
+      }
+
+      if (batches.length <= 1 || preview.length <= 500) {
+        for (const [index, batch] of batches.entries()) {
+          recordResult(await processBatch(batch, index, index === batches.length - 1))
+        }
+      } else {
+        recordResult(await processBatch(batches[0], 0, false))
+        const middleBatches = batches.slice(1, -1)
+        for (let index = 0; index < middleBatches.length; index += 3) {
+          const results = await Promise.all(
+            middleBatches.slice(index, index + 3).map((batch, offset) => processBatch(batch, index + offset + 1, false)),
+          )
+          results.forEach(recordResult)
+        }
+        recordResult(await processBatch(batches.at(-1)!, batches.length - 1, true))
       }
 
       if (created + updated === 0) throw new Error(`No schedules were imported. ${errors.slice(0, 3).join(' ')}`)
