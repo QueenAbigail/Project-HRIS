@@ -220,20 +220,8 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
         setImportStatus(`Processed ${completed} of ${preview.length} schedule entries (updated every ${batchSize})`)
       }
 
-      if (batches.length <= 1 || preview.length <= 500) {
-        for (const [index, batch] of batches.entries()) {
-          recordResult(await processBatch(batch, index, index === batches.length - 1))
-        }
-      } else {
-        recordResult(await processBatch(batches[0], 0, false))
-        const middleBatches = batches.slice(1, -1)
-        for (let index = 0; index < middleBatches.length; index += 3) {
-          const results = await Promise.all(
-            middleBatches.slice(index, index + 3).map((batch, offset) => processBatch(batch, index + offset + 1, false)),
-          )
-          results.forEach(recordResult)
-        }
-        recordResult(await processBatch(batches.at(-1)!, batches.length - 1, true))
+      for (const [index, batch] of batches.entries()) {
+        recordResult(await processBatch(batch, index, index === batches.length - 1))
       }
 
       if (created + updated === 0) throw new Error(`No schedules were imported. ${errors.slice(0, 3).join(' ')}`)

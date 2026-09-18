@@ -20,7 +20,7 @@
 | 1 | Schedule API authentication | ✅ **Complete** | Schedule and schedule-pattern APIs return `401` for unauthenticated requests and `403` for authenticated non-super-admin users. |
 | 2 | Schedule server-action authentication | ✅ **Complete** | Schedule server actions use the shared `SUPER_ADMIN` guard before database operations. Unauthorized actions fail through the Server Action error boundary. |
 | 3 | Excel import employee lookup | ✅ **Complete** | Create, update, case-insensitive matching, partial success, row-specific errors, and duplicate-row blocking were tested successfully. |
-| 4 | Sequential bulk-import performance | 🔍 **Improved; verify** | Small and medium files remain sequential for reliability. Files above 500 rows now process up to 3 non-final batches concurrently, while initialization and finalization remain ordered. Runtime timing verification is still recommended. |
+| 4 | Sequential bulk-import performance | 🔍 **Improved; verify** | Dynamic batches are selected directly from total rows: 1 row for up to 100, 5 for 101–500, and 10 above 500. Every batch is processed sequentially to avoid overlapping database writes. Runtime timing verification is still recommended. |
 | 5 | Pagination reset after filtering | ⚠️ **Open** | Reset the page index whenever schedule filters change. |
 | 6 | Loading skeleton behavior | ⚠️ **Open** | Confirm that the loading state uses the correct Schedule page skeleton layout. |
 | 7 | Native delete confirmation | ⚠️ **Open** | Replace native `confirm()` with an accessible application dialog. |
@@ -46,7 +46,7 @@
 
 ## Change history
 
-- Current performance update — large imports process up to three middle batches concurrently while preserving ordered initialization and finalization.
+- Import safety decision — all dynamic batches remain sequential; no parallel requests are sent, preventing overlapping database writes and preserving ordered initialization/finalization.
 
 - `4fa8ac3` — marked Schedule audit Issue 3 complete.
 - `3f3ff7a` — showed employee details in the import error notification.
