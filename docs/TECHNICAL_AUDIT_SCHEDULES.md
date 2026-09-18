@@ -57,7 +57,7 @@
 The following items were identified in a second technical review outside the original eight-point audit:
 
 - **Item 9 — Import replacement safety:** import and bulk operations now block today/past dates; manual protected-date changes require two confirmations. Future work should decide whether replacement becomes upsert-only.
-- **Item 10 — Import atomicity:** prevent partially applied replacement imports when a later batch fails.
+s- **Item 10 — Import atomicity:** prevent partially applied replacement imports when a later batch fails.
 - **Item 11 — Import database efficiency:** reduce avoidable per-row database queries without introducing unsafe parallel writes.
 - **Item 12 — Server-action error reporting:** distinguish database failures from legitimate empty results.
 - **Item 13 — Schedule type safety:** reduce `any` usage in schedule-related components and actions.
