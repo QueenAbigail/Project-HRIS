@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateTodayAttendanceRecords } from '@/app/superadmin/actions'
 import { requireSuperAdminResponse } from '@/lib/api-auth'
+import { isTodayOrEarlier, protectedDateMessage } from '@/lib/schedule-date-policy'
 
 // Import schedules in bulk from Excel file
 // Uses the bulk-create endpoint which supports the new manual assignment modes
@@ -15,6 +16,10 @@ export async function POST(req: NextRequest) {
       replaceScope,
       finalize = true,
     } = await req.json()
+
+    if (Array.isArray(importedSchedules) && importedSchedules.some((schedule: { date: string }) => isTodayOrEarlier(schedule.date))) {
+      return NextResponse.json({ error: protectedDateMessage() }, { status: 409 })
+    }
 
     if (!Array.isArray(importedSchedules) || importedSchedules.length === 0) {
       return NextResponse.json(

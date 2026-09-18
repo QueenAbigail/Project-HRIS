@@ -94,10 +94,14 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
   const startIndex = (safeCurrentPage - 1) * itemsPerPage
   const paginatedSchedules = filtered.slice(startIndex, startIndex + itemsPerPage)
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, allowProtectedDateChange = false) => {
     try {
       setDeleting(id)
-      const response = await fetch(`/api/schedules/${id}`, { method: 'DELETE' })
+      const response = await fetch(`/api/schedules/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ allowProtectedDateChange }),
+      })
 
       if (!response.ok) throw new Error('Delete failed')
 
@@ -219,7 +223,10 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={Boolean(deleting)}
-              onClick={() => scheduleToDelete && handleDelete(scheduleToDelete.id)}
+              onClick={() => {
+                if (scheduleToDelete && new Date(scheduleToDelete.scheduleDate) <= new Date() && !window.confirm('Confirm again: this schedule is from today or earlier and may affect attendance records.')) return
+                if (scheduleToDelete) handleDelete(scheduleToDelete.id, true)
+              }}
             >
               {deleting ? 'Deleting...' : 'Delete schedule'}
             </AlertDialogAction>

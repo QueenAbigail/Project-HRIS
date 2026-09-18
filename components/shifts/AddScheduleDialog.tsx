@@ -220,6 +220,18 @@ export function AddScheduleDialog({
       return
     }
 
+    const protectedDates = (useRotationPattern
+      ? generateRotationSchedules().map((item) => item.date)
+      : useDateRange
+        ? generateDateRange().map((date) => date.toISOString().split('T')[0])
+        : [formData.scheduleDate]
+    ).filter((date) => date <= new Date().toISOString().split('T')[0])
+    const allowProtectedDateChange = protectedDates.length > 0 &&
+      window.confirm('This manual change includes today or an earlier date. Continue?') &&
+      window.confirm('This may affect attendance and related records. Confirm the change again?')
+
+    if (protectedDates.length > 0 && !allowProtectedDateChange) return
+
     // Validate past schedule edit reason
     if (schedule && isEditingPast && !editReason.trim()) {
       toast.error('Please provide a reason for editing this past schedule')
@@ -256,8 +268,9 @@ export function AddScheduleDialog({
           body: JSON.stringify({ 
             schedules: schedulesToCreate,
             replace: !!schedule,
-            employeeId: formData.employeeId,
-          }),
+              employeeId: formData.employeeId,
+              allowProtectedDateChange,
+              }),
         })
 
         if (!response.ok) {
@@ -313,8 +326,9 @@ export function AddScheduleDialog({
           body: JSON.stringify({ 
             schedules: schedulesToCreate,
             replace: !!schedule,
-            employeeId: formData.employeeId,
-          }),
+              employeeId: formData.employeeId,
+              allowProtectedDateChange,
+              }),
         })
 
         if (!response.ok) throw new Error('Failed to create schedules')
@@ -347,6 +361,7 @@ export function AddScheduleDialog({
               employeeId: formData.employeeId,
               shiftId: formData.shiftId,
               scheduleDate: formData.scheduleDate,
+              allowProtectedDateChange,
             }),
           })
 
@@ -361,6 +376,7 @@ export function AddScheduleDialog({
               employeeId: formData.employeeId,
               shiftId: formData.shiftId,
               scheduleDate: formData.scheduleDate,
+              allowProtectedDateChange,
             }),
           })
 

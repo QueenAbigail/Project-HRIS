@@ -25,7 +25,7 @@
 | 6 | Loading skeleton behavior | ✅ **Complete** | Layout-matched skeletons for shift rows and schedule assignments are working correctly, with accessible loading status semantics. |
 | 7 | Native delete confirmation | ✅ **Complete** | Replaced native `confirm()` with an accessible Alert Dialog showing the employee, shift, date, Cancel, and Delete actions. Browser verification completed successfully. |
 | 8 | Pagination footer accuracy | ✅ **Complete** | Non-empty ranges remain accurate, and empty filtered results show `Showing 0 of 0 schedules` without pagination controls. Browser verification completed successfully. |
-| 9 | Import replacement safety | ⚠️ **Open** | Review whether replacement can delete existing schedules outside the uploaded rows, normalize replacement employee codes consistently, and prevent unsafe partial replacement. |
+| 9 | Import replacement safety | 🔍 **Protected; follow-up** | Import and bulk operations now block today/past dates. Manual changes require two confirmations for protected dates. Replacement remains scoped for future review because upsert-only versus explicit range replacement still needs a final product decision. |
 | 10 | Import atomicity | ⚠️ **Open** | Evaluate transaction or rollback behavior when a later import batch fails after earlier batches have changed the database. |
 | 11 | Import database efficiency | ℹ️ **Follow-up** | Review the number of employee, shift, lookup, and upsert queries performed per row and consider a safer server-side bulk operation. |
 | 12 | Server-action error reporting | ⚠️ **Open** | Ensure database failures are not converted into empty schedule lists that look like a valid no-data state. |
@@ -56,7 +56,7 @@
 
 The following items were identified in a second technical review outside the original eight-point audit:
 
-- **Item 9 — Import replacement safety:** confirm replacement deletes only intended records and normalize employee-code scope consistently.
+- **Item 9 — Import replacement safety:** import and bulk operations now block today/past dates; manual protected-date changes require two confirmations. Future work should decide whether replacement becomes upsert-only.
 - **Item 10 — Import atomicity:** prevent partially applied replacement imports when a later batch fails.
 - **Item 11 — Import database efficiency:** reduce avoidable per-row database queries without introducing unsafe parallel writes.
 - **Item 12 — Server-action error reporting:** distinguish database failures from legitimate empty results.

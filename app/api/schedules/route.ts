@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireSuperAdminResponse } from '@/lib/api-auth'
+import { isTodayOrEarlier, protectedDateMessage } from '@/lib/schedule-date-policy'
 
 // Get all schedules or create new one
 export async function GET(req: NextRequest) {
@@ -44,7 +45,11 @@ export async function POST(req: NextRequest) {
     const authResponse = await requireSuperAdminResponse()
     if (authResponse) return authResponse
     const body = await req.json()
-    const { employeeId, shiftId, scheduleDate, shiftStart, shiftEnd, isException, notes } = body
+    const { employeeId, shiftId, scheduleDate, shiftStart, shiftEnd, isException, notes, allowProtectedDateChange } = body
+
+    if (isTodayOrEarlier(scheduleDate) && !allowProtectedDateChange) {
+      return NextResponse.json({ error: protectedDateMessage(scheduleDate) }, { status: 409 })
+    }
 
     if (!employeeId || !shiftId || !scheduleDate) {
       return NextResponse.json(
