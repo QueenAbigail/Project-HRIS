@@ -23,8 +23,8 @@
 | 4 | Sequential bulk-import performance | 🔍 **Improved; verify** | Dynamic batches are selected directly from total rows: 1 row for up to 100, 5 for 101–500, and 10 above 500. Every batch is processed sequentially to avoid overlapping database writes. Runtime timing verification is still recommended. |
 | 5 | Pagination reset after filtering | 🔍 **Implemented; verify** | Search and past-schedule filters reset to page 1, and the displayed page is clamped when filtered results shrink. Browser verification remains pending because the preview requires authenticated access. |
 | 6 | Loading skeleton behavior | ✅ **Complete** | Layout-matched skeletons for shift rows and schedule assignments are working correctly, with accessible loading status semantics. |
-| 7 | Native delete confirmation | 🔍 **Implemented; verify** | Replaced native `confirm()` with an accessible Alert Dialog showing the employee, shift, date, Cancel, and Delete actions. Browser verification remains pending. |
-| 8 | Pagination footer accuracy | 🔍 **Implemented; verify** | Non-empty ranges remain accurate, and empty filtered results now show `Showing 0 of 0 schedules` without pagination controls. Browser verification remains pending. |
+| 7 | Native delete confirmation | ✅ **Complete** | Replaced native `confirm()` with an accessible Alert Dialog showing the employee, shift, date, Cancel, and Delete actions. Browser verification completed successfully. |
+| 8 | Pagination footer accuracy | ✅ **Complete** | Non-empty ranges remain accurate, and empty filtered results show `Showing 0 of 0 schedules` without pagination controls. Browser verification completed successfully. |
 
 ## Item 3 — Completed import extensions
 
@@ -50,7 +50,8 @@
 - Pagination fix — schedule search and past-date filter changes reset pagination to page 1, with safe clamping when result counts shrink.
 - Loading skeleton fix — replaced plain loading text with layout-matched shift and assignment skeletons, including an accessible loading status; verified working in the Schedule page.
 - Delete confirmation fix — replaced the native browser confirmation with an accessible Alert Dialog that identifies the schedule before deletion.
-- Pagination footer fix — empty filtered results now show `Showing 0 of 0 schedules`, while pagination controls remain hidden.
+- Pagination footer fix — empty filtered results now show `Showing 0 of 0 schedules`, while pagination controls remain hidden; verified by the user.
+- Delete dialog and footer verification — user confirmed both Issue 7 and Issue 8 behavior in the browser.
 
 - `4fa8ac3` — marked Schedule audit Issue 3 complete.
 - `3f3ff7a` — showed employee details in the import error notification.
