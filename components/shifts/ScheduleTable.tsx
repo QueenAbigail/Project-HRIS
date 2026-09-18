@@ -44,11 +44,12 @@ interface ScheduleTableProps {
   onEdit?: (schedule: Schedule) => void
   onDelete?: (scheduleId: string) => void
   onRefresh?: () => void
+  showPast?: boolean
+  onShowPastChange?: (showPast: boolean) => void
 }
 
-export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: ScheduleTableProps) {
+export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh, showPast = false, onShowPastChange }: ScheduleTableProps) {
   const [search, setSearch] = useState('')
-  const [showPast, setShowPast] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [scheduleToDelete, setScheduleToDelete] = useState<Schedule | null>(null)
   const [protectedDateConfirmed, setProtectedDateConfirmed] = useState(false)
@@ -137,7 +138,7 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
           <Checkbox
             id="showPast"
             checked={showPast}
-            onCheckedChange={(checked) => setShowPast(checked as boolean)}
+            onCheckedChange={(checked) => onShowPastChange?.(checked === true)}
           />
           <Label htmlFor="showPast" className="font-normal cursor-pointer text-sm">
             Show past schedules

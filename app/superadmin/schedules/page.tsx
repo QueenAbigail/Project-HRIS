@@ -25,17 +25,18 @@ export default function SchedulesPage() {
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [addScheduleOpen, setAddScheduleOpen] = useState(false)
   const [editingSchedule, setEditingSchedule] = useState<any>(null)
+  const [showPastSchedules, setShowPastSchedules] = useState(false)
 
   useEffect(() => {
-    loadData()
-  }, [])
+    loadData(showPastSchedules)
+  }, [showPastSchedules])
 
-  const loadData = async () => {
+  const loadData = async (includePast = showPastSchedules) => {
     try {
       setLoading(true)
       const [shiftsData, schedulesData] = await Promise.all([
         getShifts(),
-        getEmployeeSchedules(),
+        getEmployeeSchedules(includePast),
       ])
       setShifts(shiftsData || [])
       setSchedules(schedulesData || [])
@@ -212,6 +213,8 @@ export default function SchedulesPage() {
                 <ScheduleTable
                   schedules={schedules}
                   onEdit={handleAddSchedule}
+                  showPast={showPastSchedules}
+                  onShowPastChange={setShowPastSchedules}
                   onDelete={() => loadData()}
                   onRefresh={loadData}
                 />
