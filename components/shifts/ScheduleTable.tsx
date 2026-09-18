@@ -14,6 +14,16 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Edit, Trash2, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatTime } from '@/lib/data'
@@ -40,6 +50,7 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
   const [search, setSearch] = useState('')
   const [showPast, setShowPast] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [scheduleToDelete, setScheduleToDelete] = useState<Schedule | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 50
 
@@ -84,8 +95,6 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
   const paginatedSchedules = filtered.slice(startIndex, startIndex + itemsPerPage)
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this schedule?')) return
-
     try {
       setDeleting(id)
       const response = await fetch(`/api/schedules/${id}`, { method: 'DELETE' })
@@ -180,7 +189,7 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
                         size="sm"
                         variant="ghost"
                         className="text-destructive"
-                        onClick={() => handleDelete(schedule.id)}
+                        onClick={() => setScheduleToDelete(schedule)}
                         disabled={deleting === schedule.id}
                       >
                         <Trash2 className="size-4" />
@@ -193,6 +202,30 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
           </Table>
         </div>
       )}
+
+      <AlertDialog open={Boolean(scheduleToDelete)} onOpenChange={(open) => !open && setScheduleToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete schedule?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will delete the {scheduleToDelete?.shiftName} schedule for {scheduleToDelete?.employeeName} on{' '}
+              {scheduleToDelete && new Date(scheduleToDelete.scheduleDate).toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric',
+              })}. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={Boolean(deleting)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={Boolean(deleting)}
+              onClick={() => scheduleToDelete && handleDelete(scheduleToDelete.id)}
+            >
+              {deleting ? 'Deleting...' : 'Delete schedule'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <div>
