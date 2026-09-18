@@ -16,7 +16,7 @@ This file is the authoritative checklist for the Schedule page technical audit a
 |---|---|---|---|
 | 1 | Schedule API authentication | Verified | All schedule and schedule-pattern API routes return 401 for unauthenticated requests and 403 for authenticated non-super-admin users. |
 | 2 | Schedule server-action authentication | Verified | Schedule-related server actions use the shared SUPER_ADMIN guard before database operations. Unauthorized access fails through the Server Action error boundary rather than an HTTP response, which is expected for Server Actions. |
-| 3 | Excel import employee lookup | Verified with follow-up | Runtime testing confirmed create, update, case-insensitive matching, partial success, and re-upload behavior. Unknown employees are blocked, but row-specific error details should be improved. Duplicate same-employee/date rows currently use last-row-wins behavior and need a product decision. |
+| 3 | Excel import employee lookup | Verified | Runtime testing confirmed create, update, case-insensitive matching, partial success, and re-upload behavior. Unknown employees now show row-specific errors, and duplicate employee/date rows are detected and blocked before import. |
 | 4 | Sequential bulk-import performance | Open | Current import uses dynamic request batches: 1 row for up to 100 rows, 5 for 101–500, and 10 above 500. A shared/background import runner remains a future optimization. |
 | 5 | Pagination reset after filtering | Open | Confirm page index resets when schedule filters change. |
 | 6 | Loading skeleton behavior | Open | Review whether the schedule loading state uses the correct skeleton layout. |
@@ -27,7 +27,7 @@ This file is the authoritative checklist for the Schedule page technical audit a
 
 - Actual server-confirmed import progress.
 - Runtime verification: new rows create successfully; re-imports update successfully; employee-code casing works; unknown employee codes are blocked; partial imports work; re-uploading after an error updates existing records.
-- Follow-up: identify invalid employee-code rows explicitly and decide whether duplicate employee/date rows should reject the file, keep the first row, or intentionally use last-row-wins.
+- Follow-up completed: invalid employee-code errors include row details, and duplicate employee/date rows are rejected before database writes.
 - Dynamic import batching based on total rows.
 - Separate created and updated counts.
 - Existing schedules update through Prisma upsert instead of failing on the unique employee/date constraint.
@@ -35,12 +35,7 @@ This file is the authoritative checklist for the Schedule page technical audit a
 
 ## Verification still needed
 
-- Import a new schedule and confirm it is counted as created.
-- Re-import the same employee/date and confirm it is counted as updated.
-- Test employee-code whitespace and casing.
-- Test an unknown employee code.
-- Test duplicate rows within one uploaded file.
-- Test partial failures and retry behavior.
+No remaining verification items for Issue 3. Future audit work continues with Issue 4.
 
 ## Change history
 
