@@ -22,7 +22,7 @@
 | 3 | Excel import employee lookup | ✅ **Complete** | Create, update, case-insensitive matching, partial success, row-specific errors, and duplicate-row blocking were tested successfully. |
 | 4 | Sequential bulk-import performance | 🔍 **Improved; verify** | Dynamic batches are selected directly from total rows: 1 row for up to 100, 5 for 101–500, and 10 above 500. Every batch is processed sequentially to avoid overlapping database writes. Runtime timing verification is still recommended. |
 | 5 | Pagination reset after filtering | 🔍 **Implemented; verify** | Search and past-schedule filters reset to page 1, and the displayed page is clamped when filtered results shrink. Browser verification remains pending because the preview requires authenticated access. |
-| 6 | Loading skeleton behavior | 🔍 **Implemented; verify** | Added layout-matched skeletons for shift rows and schedule assignments, with accessible loading status semantics. Browser verification remains pending because the preview requires authenticated access. |
+| 6 | Loading skeleton behavior | ✅ **Complete** | Layout-matched skeletons for shift rows and schedule assignments are working correctly, with accessible loading status semantics. |
 | 7 | Native delete confirmation | ⚠️ **Open** | Replace native `confirm()` with an accessible application dialog. |
 | 8 | Pagination footer accuracy | ⚠️ **Open** | Ensure totals and page ranges reflect the currently filtered results. |
 
@@ -48,7 +48,7 @@
 
 - Import safety decision — all dynamic batches remain sequential; no parallel requests are sent, preventing overlapping database writes and preserving ordered initialization/finalization.
 - Pagination fix — schedule search and past-date filter changes reset pagination to page 1, with safe clamping when result counts shrink.
-- Loading skeleton fix — replaced plain loading text with layout-matched shift and assignment skeletons, including an accessible loading status.
+- Loading skeleton fix — replaced plain loading text with layout-matched shift and assignment skeletons, including an accessible loading status; verified working in the Schedule page.
 
 - `4fa8ac3` — marked Schedule audit Issue 3 complete.
 - `3f3ff7a` — showed employee details in the import error notification.
