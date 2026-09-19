@@ -30,7 +30,7 @@
 | 11 | Import database efficiency | ✅ **Complete** | Employee-code and shift-code lookups are cached during each import, avoiding repeated lookup queries for repeated spreadsheet values while keeping writes safely transactional. |
 | 12 | Server-action error reporting | ✅ **Complete** | Schedule-loading database failures now throw a clear error, show an error state with retry, and cannot appear as a valid empty schedule list. |
 | 13 | Schedule type safety | ✅ **Complete** | Added explicit shared types for schedule rows, shifts, employees, page state, and schedule dialog props; removed relevant schedule-related `any` usage. |
-| 14 | Date and timezone consistency | ⚠️ **In progress** | Site now owns the WIB/WITA/WIT source of truth, existing location values are migrated, and location APIs inherit the site timezone. Attendance comparison and schedule date calculations still need to consume the site timezone end-to-end. |
+| 14 | Date and timezone consistency | ⚠️ **In progress** | Site now owns the WIB/WITA/WIT source of truth, existing location values are migrated, location APIs inherit the site timezone, and the site management UI exposes the editable timezone selector. Attendance comparison and schedule date calculations still need to consume the site timezone end-to-end. |
 | 15 | Schedule refresh race conditions | ℹ️ **Follow-up** | Review overlapping `loadData()` calls and prevent stale responses from overwriting newer schedule data. |
 
 ## Item 3 — Completed import extensions
