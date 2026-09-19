@@ -111,7 +111,8 @@ model Site {
   code        String                    @unique
   totalStaff  Int? // Optional, from stats
   latitude    Decimal?                  @db.Decimal(10, 8) // Geographic latitude coordinate
-  longitude   Decimal?                  @db.Decimal(11, 8) // Geographic longitude coordinate
+  longitude    Decimal?                  @db.Decimal(11, 8) // Geographic longitude coordinate
+  timezone    String                    @default("WIB") // Site timezone: WIB, WITA, or WIT
   companyId   String?
   company     Company?                  @relation(fields: [companyId], references: [id], onDelete: SetNull)
   users       User[]

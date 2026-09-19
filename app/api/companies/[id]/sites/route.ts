@@ -45,8 +45,12 @@ export async function POST(
   if (authorizationError) return authorizationError
 
   try {
-    const { name, code, latitude, longitude } = await req.json()
+    const { name, code, latitude, longitude, timezone = 'WIB' } = await req.json()
     const { id: companyId } = await params
+
+    if (!['WIB', 'WITA', 'WIT'].includes(timezone)) {
+      return NextResponse.json({ error: 'Timezone must be WIB, WITA, or WIT' }, { status: 400 })
+    }
 
     if (!name || !name.trim() || !code || !code.trim()) {
       return NextResponse.json(
@@ -64,6 +68,7 @@ export async function POST(
       data: {
         name: name.trim(),
         code: code.trim().toUpperCase(),
+        timezone,
         companyId,
         ...(latitude !== null && latitude !== undefined && { latitude: String(latitude) }),
         ...(longitude !== null && longitude !== undefined && { longitude: String(longitude) }),
@@ -72,6 +77,7 @@ export async function POST(
         id: true,
         name: true,
         code: true,
+        timezone: true,
         latitude: true,
         longitude: true,
       },
@@ -102,7 +108,11 @@ export async function PUT(
   if (authorizationError) return authorizationError
 
   try {
-    const { siteId, name, code, latitude, longitude } = await req.json()
+    const { siteId, name, code, latitude, longitude, timezone = 'WIB' } = await req.json()
+
+    if (!['WIB', 'WITA', 'WIT'].includes(timezone)) {
+      return NextResponse.json({ error: 'Timezone must be WIB, WITA, or WIT' }, { status: 400 })
+    }
 
     if (!siteId || !name || !name.trim() || !code || !code.trim()) {
       return NextResponse.json(
@@ -126,6 +136,7 @@ export async function PUT(
       data: {
         name: name.trim(),
         code: code.trim().toUpperCase(),
+        timezone,
         ...(latitude !== null && latitude !== undefined && { latitude: String(latitude) }),
         ...(longitude !== null && longitude !== undefined && { longitude: String(longitude) }),
       },
@@ -133,6 +144,7 @@ export async function PUT(
         id: true,
         name: true,
         code: true,
+        timezone: true,
         latitude: true,
         longitude: true,
       },
