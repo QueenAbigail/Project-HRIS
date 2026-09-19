@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
 import { resolveAttendanceStatus } from '@/lib/attendance-utils'
-import { getBusinessDate, getBusinessDateRange, getBusinessDateRangeForPreset } from '@/lib/timezone'
+import { getBusinessDate, getBusinessDateRange, getBusinessDateRangeForPreset, type SiteTimezone } from '@/lib/timezone'
 
 // Helper function to calculate attendance status based on check-in time and scheduled time
-function calculateAttendanceStatus(actualCheckIn: string | null, scheduledStart: string | null): string {
+function calculateAttendanceStatus(actualCheckIn: string | null, scheduledStart: string | null, timezone: SiteTimezone | string = 'WIB'): string {
   if (!actualCheckIn) {
     return 'NOT_CHECKED_IN'
   }
@@ -19,7 +19,10 @@ function calculateAttendanceStatus(actualCheckIn: string | null, scheduledStart:
     // Parse check-in time (format: "HH:MM" or ISO timestamp)
     const checkInTime = actualCheckIn.includes(':') && !actualCheckIn.includes('T')
       ? actualCheckIn
-      : new Date(actualCheckIn).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
+      : new Date(actualCheckIn).toLocaleTimeString('en-GB', {
+          timeZone: timezone === 'WITA' ? 'Asia/Makassar' : timezone === 'WIT' ? 'Asia/Jayapura' : 'Asia/Jakarta',
+          hour: '2-digit', minute: '2-digit', hour12: false,
+        })
 
     const [checkInHour, checkInMinute] = checkInTime.split(':').map(Number)
     const checkInTotalMinutes = checkInHour * 60 + checkInMinute
@@ -95,7 +98,7 @@ export async function GET(request: NextRequest) {
     if (siteId && siteId !== 'all') {
       const requestedSite = await prisma.site.findUnique({
         where: { id: siteId },
-        select: { id: true, companyId: true },
+select: { id: true, companyId: true, timezone: true },
       })
       if (!requestedSite) {
         return NextResponse.json({ error: 'Site not found' }, { status: 404 })
@@ -245,7 +248,7 @@ export async function POST(request: NextRequest) {
 
     const targetLocation = await prisma.site.findUnique({
       where: { id: targetEmployee.siteId },
-      select: { id: true, companyId: true },
+      select: { id: true, companyId: true, timezone: true },
     })
 
     if (!targetLocation) {
@@ -271,7 +274,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'You do not have access to this employee or location' }, { status: 403 })
     }
 
-    const dateOnly = getBusinessDateRange(getBusinessDate(), getBusinessDate()).from
+    const siteTimezone = targetLocation.timezone
+    const siteDate = getBusinessDate(new Date(), siteTimezone)
+    const dateOnly = getBusinessDateRange(siteDate, siteDate).from
 
     // Check if attendance record already exists for today
     const existingAttendance = await prisma.attendance.findUnique({
@@ -285,7 +290,7 @@ export async function POST(request: NextRequest) {
 
     // Calculate proper status based on check-in time and scheduled time
     const calculatedStatus = actualCheckIn 
-      ? calculateAttendanceStatus(actualCheckIn, scheduledStart)
+      ? calculateAttendanceStatus(actualCheckIn, scheduledStart, siteTimezone)
       : (status || 'NOT_CHECKED_IN')
 
     if (existingAttendance) {
@@ -304,7 +309,7 @@ export async function POST(request: NextRequest) {
       // If actualCheckIn is provided, update check-in and recalculate status
       if (actualCheckIn && !existingAttendance.actualCheckIn) {
         updateData.actualCheckIn = actualCheckIn
-        updateData.status = calculateAttendanceStatus(actualCheckIn, scheduledStart || existingAttendance.scheduledStart)
+        updateData.status = calculateAttendanceStatus(actualCheckIn, scheduledStart || existingAttendance.scheduledStart, siteTimezone)
         updateData.selfieCheckIn = selfieCheckIn
       }
 
@@ -316,8 +321,9 @@ export async function POST(request: NextRequest) {
         // Ensure status is set based on check-in time (if it wasn't already)
         if (!updateData.status && existingAttendance.actualCheckIn) {
           updateData.status = calculateAttendanceStatus(
-            existingAttendance.actualCheckIn.toISOString().slice(11, 16),
-            scheduledStart || existingAttendance.scheduledStart
+            existingAttendance.actualCheckIn.toISOString(),
+            scheduledStart || existingAttendance.scheduledStart,
+            siteTimezone
           )
         }
       }
