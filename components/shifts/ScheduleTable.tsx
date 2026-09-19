@@ -29,8 +29,9 @@ import { Edit, Trash2, Search, ShieldAlert, CalendarDays } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatTime } from '@/lib/data'
 import type { ScheduleDateRange } from '@/app/superadmin/actions'
+import type { Shift } from '@/lib/constants'
 
-interface Schedule {
+export interface Schedule {
   id: string
   employeeId: string
   employeeName: string
@@ -38,7 +39,19 @@ interface Schedule {
   shiftName: string
   shiftStart: string
   shiftEnd: string
-  scheduleDate: string
+  scheduleDate: Date | string
+  employeeEmail?: string
+  isException?: boolean
+  notes?: string | null
+}
+
+export type { Shift }
+
+export interface Employee {
+  id: string
+  employeeCode?: string | null
+  name: string
+  email?: string | null
 }
 
 interface ScheduleTableProps {
@@ -73,7 +86,7 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh, dateRang
         s.employeeId.toLowerCase().includes(searchLower) ||
         s.shiftName.toLowerCase().includes(searchLower) ||
         formattedDate.includes(searchLower) ||
-        s.scheduleDate.includes(searchLower) // yyyy-mm-dd format
+        String(s.scheduleDate).includes(searchLower) // yyyy-mm-dd format
 
       if (!matchesSearch) return false
 

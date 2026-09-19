@@ -29,7 +29,7 @@
 | 10 | Import atomicity | ✅ **Complete** | Schedule import writes now run in one database transaction. Validation errors still skip and report individual rows; a database write failure rolls back all import changes. |
 | 11 | Import database efficiency | ✅ **Complete** | Employee-code and shift-code lookups are cached during each import, avoiding repeated lookup queries for repeated spreadsheet values while keeping writes safely transactional. |
 | 12 | Server-action error reporting | ✅ **Complete** | Schedule-loading database failures now throw a clear error, show an error state with retry, and cannot appear as a valid empty schedule list. |
-| 13 | Schedule type safety | ℹ️ **Follow-up** | Replace schedule-page `any` values with explicit shared types where practical. |
+| 13 | Schedule type safety | ✅ **Complete** | Added explicit shared types for schedule rows, shifts, employees, page state, and schedule dialog props; removed relevant schedule-related `any` usage. |
 | 14 | Date and timezone consistency | ⚠️ **Open** | Verify import, filtering, storage, and display use the same calendar-date semantics across timezones. |
 | 15 | Schedule refresh race conditions | ℹ️ **Follow-up** | Review overlapping `loadData()` calls and prevent stale responses from overwriting newer schedule data. |
 
@@ -53,7 +53,7 @@
 - ✅ Item 10 is complete.
 - ✅ Item 12 is complete.
 - ⚠️ Item 14 requires future technical work.
-- ℹ️ Items 13 and 15 are follow-up improvements.
+- ℹ️ Item 15 is a follow-up improvement.
 
 ## Extended audit backlog
 
@@ -63,11 +63,11 @@ The following items were identified in a second technical review outside the ori
 - **Item 10 — Import atomicity:** complete. Import writes use one database transaction; database failures roll back the full import while row-level validation errors remain reportable and skippable.
 - **Item 11 — Import database efficiency:** complete. Employee and shift lookups are cached per import, reducing repeated reads without introducing unsafe parallel writes.
 - **Item 12 — Server-action error reporting:** complete. Schedule-load failures are surfaced clearly with a retry action instead of appearing as an empty result.
-- **Item 13 — Schedule type safety:** reduce `any` usage in schedule-related components and actions.
+- **Item 13 — Schedule type safety:** complete. Shared schedule, shift, employee, and dialog types now replace the relevant `any` values.
 - **Item 14 — Date and timezone consistency:** verify calendar-date behavior across import, filtering, storage, and display.
 - **Item 15 — Schedule refresh race conditions:** prevent stale `loadData()` responses from overwriting newer results.
 
-Items 9–11 are complete. Items 12–15 remain for future work.
+Items 9–13 are complete. Items 14–15 remain for future work.
 
 ## Change history
 

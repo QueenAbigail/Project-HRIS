@@ -10,7 +10,7 @@ import type { ScheduleDateRange } from '@/app/superadmin/actions'
 import { toast } from 'sonner'
 import { ShiftFormDialog } from '@/components/shifts/ShiftFormDialog'
 import { ScheduleImportDialog } from '@/components/shifts/ScheduleImportDialog'
-import { ScheduleTable } from '@/components/shifts/ScheduleTable'
+import { ScheduleTable, type Employee, type Schedule, type Shift } from '@/components/shifts/ScheduleTable'
 import { SchedulePageSkeleton } from '@/components/shifts/SchedulePageSkeleton'
 import { AddScheduleDialog } from '@/components/shifts/AddScheduleDialog'
 import { getShifts, getEmployeeSchedules } from '@/app/superadmin/actions'
@@ -18,16 +18,16 @@ import { formatTime } from '@/lib/data'
 import { Edit } from 'lucide-react'
 
 export default function SchedulesPage() {
-  const [shifts, setShifts] = useState<any[]>([])
-  const [schedules, setSchedules] = useState<any[]>([])
+  const [shifts, setShifts] = useState<Shift[]>([])
+  const [schedules, setSchedules] = useState<Schedule[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [createShiftOpen, setCreateShiftOpen] = useState(false)
   const [editShiftOpen, setEditShiftOpen] = useState(false)
-  const [editingShift, setEditingShift] = useState<any>(null)
+  const [editingShift, setEditingShift] = useState<Shift | null>(null)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [addScheduleOpen, setAddScheduleOpen] = useState(false)
-  const [editingSchedule, setEditingSchedule] = useState<any>(null)
+  const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null)
   const [scheduleDateRange, setScheduleDateRange] = useState<ScheduleDateRange>('upcoming')
 
   useEffect(() => {
@@ -58,7 +58,7 @@ export default function SchedulesPage() {
     loadData()
   }
 
-  const handleAddSchedule = (schedule: any) => {
+  const handleAddSchedule = (schedule: Schedule) => {
     setEditingSchedule(schedule)
     setAddScheduleOpen(true)
   }
