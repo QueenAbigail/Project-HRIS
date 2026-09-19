@@ -28,6 +28,8 @@ export async function POST(req: NextRequest) {
     const errors: string[] = []
     const schedulesToCreate: Array<{ employeeId: string; shiftId: string; scheduleDate: string; shiftStart: string; shiftEnd: string }> = []
     const schedulesToClear: Array<{ employeeId: string; scheduleDate: string }> = []
+    const employeeCache = new Map<string, Awaited<ReturnType<typeof prisma.user.findFirst>>>()
+    const shiftCache = new Map<string, Awaited<ReturnType<typeof prisma.shift.findFirst>>>()
 
     // Parse and validate imported schedules
     for (const schedule of importedSchedules) {
@@ -41,14 +43,19 @@ export async function POST(req: NextRequest) {
         }
 
         const normalizedEmployeeCode = String(employeeCode).trim()
-        const employee = await prisma.user.findFirst({
-          where: {
-            employeeCode: {
-              equals: normalizedEmployeeCode,
-              mode: 'insensitive',
+        const employeeCacheKey = normalizedEmployeeCode.toLowerCase()
+        let employee = employeeCache.get(employeeCacheKey)
+        if (employee === undefined) {
+          employee = await prisma.user.findFirst({
+            where: {
+              employeeCode: {
+                equals: normalizedEmployeeCode,
+                mode: 'insensitive',
+              },
             },
-          },
-        })
+          })
+          employeeCache.set(employeeCacheKey, employee)
+        }
 
         if (!employee) {
           errors.push(`${rowLabel}Employee Code "${normalizedEmployeeCode}" (${employeeName || 'unnamed employee'}) was not found. Check that it matches an existing employee.`)
@@ -88,15 +95,19 @@ export async function POST(req: NextRequest) {
         }
 
         // Map the configured human-readable shift code to its internal ID.
-        const foundShift = await prisma.shift.findFirst({
-          where: { code: shiftCode }
-        })
-        const shiftId = foundShift?.id
-
-        if (!shiftId) {
+        let foundShift = shiftCache.get(shiftCode)
+        if (foundShift === undefined) {
+          foundShift = await prisma.shift.findFirst({
+            where: { code: shiftCode }
+          })
+          shiftCache.set(shiftCode, foundShift)
+        }
+        if (!foundShift) {
           errors.push(`${rowLabel}No matching shift for code ${shiftCode} on ${date}`)
           continue
         }
+
+        const shiftId = foundShift.id
 
         // Add to bulk create list
         schedulesToCreate.push({

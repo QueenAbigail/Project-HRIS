@@ -27,7 +27,7 @@
 | 8 | Pagination footer accuracy | ✅ **Complete** | Non-empty ranges remain accurate, and empty filtered results show `Showing 0 of 0 schedules` without pagination controls. Browser verification completed successfully. |
 | 9 | Import replacement safety | ✅ **Complete** | Removed replacement deletion behavior. Imports are upsert-only: empty cells preserve existing schedules, explicit `Off` cells intentionally clear an existing future schedule, and today/past rows are skipped and reported. |
 | 10 | Import atomicity | ✅ **Complete** | Schedule import writes now run in one database transaction. Validation errors still skip and report individual rows; a database write failure rolls back all import changes. |
-| 11 | Import database efficiency | ℹ️ **Follow-up** | Review the number of employee, shift, lookup, and upsert queries performed per row and consider a safer server-side bulk operation. |
+| 11 | Import database efficiency | ✅ **Complete** | Employee-code and shift-code lookups are cached during each import, avoiding repeated lookup queries for repeated spreadsheet values while keeping writes safely transactional. |
 | 12 | Server-action error reporting | ⚠️ **Open** | Ensure database failures are not converted into empty schedule lists that look like a valid no-data state. |
 | 13 | Schedule type safety | ℹ️ **Follow-up** | Replace schedule-page `any` values with explicit shared types where practical. |
 | 14 | Date and timezone consistency | ⚠️ **Open** | Verify import, filtering, storage, and display use the same calendar-date semantics across timezones. |
@@ -52,7 +52,7 @@
 - ✅ Item 9 is complete.
 - ✅ Item 10 is complete.
 - ⚠️ Items 12 and 14 require future technical work.
-- ℹ️ Items 11, 13, and 15 are follow-up improvements.
+- ℹ️ Items 13 and 15 are follow-up improvements.
 
 ## Extended audit backlog
 
@@ -60,13 +60,13 @@ The following items were identified in a second technical review outside the ori
 
 - **Item 9 — Import replacement safety:** complete. Imports are upsert-only, empty cells preserve existing schedules, explicit `Off` clears an existing future schedule, and protected rows are skipped and reported.
 - **Item 10 — Import atomicity:** complete. Import writes use one database transaction; database failures roll back the full import while row-level validation errors remain reportable and skippable.
-- **Item 11 — Import database efficiency:** reduce avoidable per-row database queries without introducing unsafe parallel writes.
+- **Item 11 — Import database efficiency:** complete. Employee and shift lookups are cached per import, reducing repeated reads without introducing unsafe parallel writes.
 - **Item 12 — Server-action error reporting:** distinguish database failures from legitimate empty results.
 - **Item 13 — Schedule type safety:** reduce `any` usage in schedule-related components and actions.
 - **Item 14 — Date and timezone consistency:** verify calendar-date behavior across import, filtering, storage, and display.
 - **Item 15 — Schedule refresh race conditions:** prevent stale `loadData()` responses from overwriting newer results.
 
-Item 9 is complete. Items 10–15 remain for future work.
+Items 9–11 are complete. Items 12–15 remain for future work.
 
 ## Change history
 
