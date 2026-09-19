@@ -224,7 +224,7 @@ export async function getEmployeeSchedules(dateRange: ScheduleDateRange = 'upcom
       message: error instanceof Error ? error.message : String(error),
       error
     })
-    return []
+    throw new Error('Unable to load schedules right now. Please try again.')
   }
 }
 

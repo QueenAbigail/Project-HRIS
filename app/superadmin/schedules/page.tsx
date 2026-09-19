@@ -21,6 +21,7 @@ export default function SchedulesPage() {
   const [shifts, setShifts] = useState<any[]>([])
   const [schedules, setSchedules] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [createShiftOpen, setCreateShiftOpen] = useState(false)
   const [editShiftOpen, setEditShiftOpen] = useState(false)
   const [editingShift, setEditingShift] = useState<any>(null)
@@ -36,6 +37,7 @@ export default function SchedulesPage() {
   const loadData = async (dateRange = scheduleDateRange) => {
     try {
       setLoading(true)
+      setLoadError(null)
       const [shiftsData, schedulesData] = await Promise.all([
         getShifts(),
         getEmployeeSchedules(dateRange),
@@ -43,8 +45,10 @@ export default function SchedulesPage() {
       setShifts(shiftsData || [])
       setSchedules(schedulesData || [])
     } catch (error) {
-      console.error('Error loading data:', error)
-      toast.error('Failed to load data')
+      console.error('[v0] Error loading schedule data:', error)
+      const message = error instanceof Error ? error.message : 'Unable to load schedule data right now. Please try again.'
+      setLoadError(message)
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -209,10 +213,18 @@ export default function SchedulesPage() {
               <CardDescription>View, edit, and manage all employee schedules (imported and manual)</CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <SchedulePageSkeleton />
-              ) : (
-                <ScheduleTable
+  {loading ? (
+  <SchedulePageSkeleton />
+  ) : loadError ? (
+  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-center">
+  <p className="font-medium text-destructive">Could not load schedules</p>
+  <p className="mt-1 text-sm text-muted-foreground">{loadError}</p>
+  <Button className="mt-4" variant="outline" onClick={() => loadData()}>
+  Try again
+  </Button>
+  </div>
+  ) : (
+  <ScheduleTable
                   schedules={schedules}
                   onEdit={handleAddSchedule}
                   dateRange={scheduleDateRange}
