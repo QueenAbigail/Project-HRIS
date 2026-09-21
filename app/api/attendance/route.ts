@@ -147,10 +147,11 @@ select: { id: true, companyId: true, timezone: true },
         },
         location: {
           select: {
-            id: true,
-            name: true,
-            code: true,
-            company: {
+      id: true,
+      name: true,
+      code: true,
+      timezone: true,
+      company: {
               select: {
                 name: true
               }
