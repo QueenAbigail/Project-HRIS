@@ -45,10 +45,10 @@ export function AttendanceCalendar({ siteId = 'all' }: { siteId?: string }) {
 
         const year = currentMonth.getFullYear()
         const month = currentMonth.getMonth()
-        const startDate = new Date(year, month, 1)
-        const endDate = new Date(year, month + 1, 0)
-        params.append('startDate', startDate.toISOString().split('T')[0])
-        params.append('endDate', endDate.toISOString().split('T')[0])
+        const startDate = new Date(Date.UTC(year, month, 1))
+        const endDate = new Date(Date.UTC(year, month + 1, 0))
+        params.append('startDate', startDate.toISOString().slice(0, 10))
+        params.append('endDate', endDate.toISOString().slice(0, 10))
 
         const response = await fetch(`/api/attendance/calendar-stats?${params.toString()}`)
         if (response.ok) {
@@ -82,9 +82,9 @@ export function AttendanceCalendar({ siteId = 'all' }: { siteId?: string }) {
 
   const getDayStatus = (day: number): DayStats | null => {
     if (!stats) return null
-    const dateStr = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
+    const dateStr = new Date(Date.UTC(currentMonth.getFullYear(), currentMonth.getMonth(), day))
       .toISOString()
-      .split('T')[0]
+      .slice(0, 10)
     return stats.dailyDetails[dateStr] || null
   }
 
@@ -108,7 +108,7 @@ export function AttendanceCalendar({ siteId = 'all' }: { siteId?: string }) {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
   const emptyDays = Array.from({ length: firstDay }, () => null)
 
-  const monthName = currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })
+  const monthName = currentMonth.toLocaleString('default', { month: 'long', year: 'numeric', timeZone: 'UTC' })
 
   const prevMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))
@@ -160,9 +160,9 @@ export function AttendanceCalendar({ siteId = 'all' }: { siteId?: string }) {
               ))}
               {days.map((day) => {
                 const dayStats = getDayStatus(day)
-                const dateStr = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
+                const dateStr = new Date(Date.UTC(currentMonth.getFullYear(), currentMonth.getMonth(), day))
                   .toISOString()
-                  .split('T')[0]
+                  .slice(0, 10)
                 const isSelected = selectedDate === dateStr
 
                 return (

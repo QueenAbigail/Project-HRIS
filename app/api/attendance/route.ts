@@ -72,28 +72,33 @@ export async function GET(request: NextRequest) {
     const page = Math.max(Number.parseInt(searchParams.get('page') || '1', 10) || 1, 1)
     const pageSize = Math.min(Math.max(Number.parseInt(searchParams.get('pageSize') || '25', 10) || 25, 10), 50)
 
-    // Build every range from calendar dates in Asia/Jakarta, then map them to UTC.
-    let dateStart: Date
-    let dateEnd: Date
-
+    // Attendance.date stores the site's local calendar date as a date-only UTC value.
+    // For presets, build one calendar range per timezone so Today/Yesterday remain
+    // correct when a report includes WIB, WITA, and WIT sites together.
+    let dateFilter: any
     if (dateRange === 'custom') {
       const customRange = getBusinessDateRange(dateFrom || date, dateTo || dateFrom || date)
-      dateStart = customRange.from
-      dateEnd = customRange.to
+      dateFilter = { gte: customRange.from, lte: customRange.to }
     } else {
-      const presetRange = getBusinessDateRangeForPreset(dateRange, getBusinessDate())
-      const presetDates = getBusinessDateRange(presetRange.dateFrom, presetRange.dateTo)
-      dateStart = presetDates.from
-      dateEnd = presetDates.to
+      const requestedSite = siteId && siteId !== 'all'
+        ? await prisma.site.findUnique({ where: { id: siteId }, select: { id: true, companyId: true, timezone: true } })
+        : null
+      const sites = requestedSite
+        ? [requestedSite]
+        : await prisma.site.findMany({
+            where: isClient ? { companyId: currentUser?.companyId || undefined } : undefined,
+            select: { id: true, timezone: true },
+          })
+      const ranges = sites.map((site) => {
+        const presetRange = getBusinessDateRangeForPreset(dateRange, getBusinessDate(new Date(), site.timezone))
+        return { locationId: site.id, ...getBusinessDateRange(presetRange.dateFrom, presetRange.dateTo) }
+      })
+      dateFilter = ranges.length === 1
+        ? { gte: ranges[0].from, lte: ranges[0].to }
+        : { OR: ranges.map(({ locationId, from, to }) => ({ locationId, date: { gte: from, lte: to } })) }
     }
 
-    // Build where clause - use gte for start and lte for end to match date-only comparison
-    const where: any = {
-      date: {
-        gte: dateStart,
-        lte: dateEnd
-      }
-    }
+    const where: any = dateFilter.OR ? dateFilter : { date: dateFilter }
     
     if (siteId && siteId !== 'all') {
       const requestedSite = await prisma.site.findUnique({
