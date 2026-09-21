@@ -100,7 +100,7 @@ export default function SchedulesPage() {
           <Card>
             <CardHeader>
               <CardTitle>Shift Types</CardTitle>
-              <CardDescription>Define shift times and grace periods for your locations</CardDescription>
+              <CardDescription>Define local shift times and grace periods. Times are not converted to the admin&apos;s browser timezone.</CardDescription>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -210,7 +210,7 @@ export default function SchedulesPage() {
           <Card>
             <CardHeader>
               <CardTitle>Schedule Assignments</CardTitle>
-              <CardDescription>View, edit, and manage all employee schedules (imported and manual)</CardDescription>
+              <CardDescription>View, edit, and manage all employee schedules (imported and manual). Shift times stay as entered and are interpreted in each employee&apos;s Site timezone.</CardDescription>
             </CardHeader>
             <CardContent>
   {loading ? (

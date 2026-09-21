@@ -29,6 +29,17 @@ import { Edit, Trash2, Search, ShieldAlert, CalendarDays } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatTime } from '@/lib/data'
 import type { ScheduleDateRange } from '@/app/superadmin/actions'
+
+function formatScheduleDate(value: Date | string) {
+  const datePart = typeof value === 'string' ? value.slice(0, 10) : value.toISOString().slice(0, 10)
+  const [year, month, day] = datePart.split('-').map(Number)
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(year, month - 1, day)))
+}
 import type { Shift } from '@/lib/constants'
 
 export interface Schedule {
@@ -79,7 +90,7 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh, dateRang
       // Filter by search (name, ID, shift, and date)
       const searchLower = search.toLowerCase()
       const scheduleDate = new Date(s.scheduleDate)
-      const formattedDate = scheduleDate.toLocaleDateString('en-GB') // dd/mm/yyyy
+      const formattedDate = formatScheduleDate(s.scheduleDate) // date-only value; independent of browser timezone
       
       const matchesSearch =
         s.employeeName.toLowerCase().includes(searchLower) ||
@@ -189,7 +200,7 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh, dateRang
                 <TableHead>Employee</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Shift</TableHead>
-                <TableHead>Time</TableHead>
+                <TableHead>Time (site local)</TableHead>
                 <TableHead className="w-24">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -201,11 +212,7 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh, dateRang
                     <div className="text-sm text-muted-foreground">{schedule.employeeId}</div>
                   </TableCell>
                   <TableCell>
-                    {new Date(schedule.scheduleDate).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
+                    {formatScheduleDate(schedule.scheduleDate)}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">{schedule.shiftName}</Badge>
