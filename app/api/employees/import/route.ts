@@ -48,10 +48,10 @@ export async function POST(request: NextRequest) {
       }
 
       const text = String(value).trim()
-      const isoMatch = text.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})$/)
+      const isoMatch = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
       if (isoMatch) return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`
 
-      const dmyMatch = text.match(/^(\\d{1,2})[\\/-](\\d{1,2})[\\/-](\\d{4})$/)
+      const dmyMatch = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/)
       if (dmyMatch) return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`
 
       throw new Error(`Unsupported date format: ${text}. Use an Excel date or YYYY-MM-DD.`)
