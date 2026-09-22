@@ -171,7 +171,6 @@ export function AddEmployeeDialog({
   // Download template function
   const handleDownloadTemplate = async () => {
     try {
-  const XLSX = await import('xlsx')
   const ExcelJS = await import('exceljs')
   const templateData = [
         [
@@ -208,74 +207,10 @@ export function AddEmployeeDialog({
         ],
       ]
 
-      // Create the employee worksheet and a database sheet that feeds its dropdowns.
-      const ws = XLSX.utils.aoa_to_sheet(templateData)
-      const databaseData = [
-        ['Sites', 'Departments', 'Positions', 'Employment Statuses', 'Marital Statuses', 'Religions', 'Blood Types', 'Genders', 'Roles', 'Statuses'],
-        ...Array.from({ length: Math.max(sites.length, departments.length, positions.length, employmentStatuses.length, maritalStatuses.length, religions.length, bloodTypes.length, 2, 4, 3) }, (_, index) => [
-          sites[index]?.name || '', departments[index]?.value || '', positions[index]?.value || '',
-          employmentStatuses[index]?.value || '', maritalStatuses[index]?.value || '', religions[index]?.value || '',
-          bloodTypes[index]?.value || '', ['Male', 'Female'][index] || '', ['STAFF', 'MANAGER', 'SITE_ADMIN', 'HR_ADMIN'][index] || '',
-          ['ACTIVE', 'INACTIVE', 'SUSPENDED'][index] || '',
-        ]),
-      ]
-      const databaseSheet = XLSX.utils.aoa_to_sheet(databaseData)
-      databaseSheet['!cols'] = [{ wch: 24 }, { wch: 28 }]
-
-      // SheetJS preserves these validation definitions in supported spreadsheet apps.
-      ws['!dataValidation'] = {
-        sqref: 'D2:F1000,N2:Q1000,R2:R1000,V2:X1000',
-        rules: [
-          { type: 'list', allowBlank: true, sqref: 'D2:D1000', formula1: "'Database'!$B$2:$B$1000" },
-          { type: 'list', allowBlank: true, sqref: 'E2:E1000', formula1: "'Database'!$C$2:$C$1000" },
-          { type: 'list', allowBlank: false, sqref: 'F2:F1000', formula1: "'Database'!$A$2:$A$1000" },
-          { type: 'list', allowBlank: true, sqref: 'N2:N1000', formula1: "'Database'!$I$2:$I$3" },
-          { type: 'list', allowBlank: true, sqref: 'O2:O1000', formula1: "'Database'!$G$2:$G$1000" },
-          { type: 'list', allowBlank: true, sqref: 'P2:P1000', formula1: "'Database'!$E$2:$E$1000" },
-          { type: 'list', allowBlank: true, sqref: 'Q2:Q1000', formula1: "'Database'!$D$2:$D$1000" },
-          { type: 'list', allowBlank: true, sqref: 'R2:R1000', formula1: "'Database'!$H$2:$H$1000" },
-          { type: 'list', allowBlank: true, sqref: 'V2:V1000', formula1: "'Database'!$J$2:$J$5" },
-          { type: 'list', allowBlank: true, sqref: 'W2:W1000', formula1: "'Database'!$K$2:$K$4" },
-        ],
-      }
-      
-      // Set column widths
-      ws['!cols'] = [
-        { wch: 15 }, // Full Name
-        { wch: 15 }, // Employee Code
-        { wch: 25 }, // Personal Email
-        { wch: 15 }, // Department
-        { wch: 15 }, // Position
-        { wch: 12 }, // Location
-        { wch: 12 }, // Join Date
-        { wch: 15 }, // Phone
-        { wch: 18 }, // KTP
-        { wch: 25 }, // Address
-        { wch: 15 }, // Birth City
-        { wch: 12 }, // Birth Date
-        { wch: 18 }, // BPJS
-        { wch: 10 }, // Gender
-        { wch: 12 }, // Religion
-        { wch: 15 }, // Marital
-        { wch: 15 }, // Employment
-        { wch: 10 }, // Blood Type
-        { wch: 18 }, // NPWP
-        { wch: 15 }, // KTA
-        { wch: 30 }, // Certifications
-        { wch: 12 }, // KTA Expiry
-        { wch: 20 }, // Role
-        { wch: 20 }, // Status
-        { wch: 15 }, // Bank
-        { wch: 15 }, // Account Holder
-        { wch: 15 }, // Account Number
-        { wch: 15 }, // Supervisor
-      ]
-      
+      // Create the employee worksheet. Dropdowns use inline lists so no database sheet is needed.
       const workbook = new ExcelJS.Workbook()
       const employeesSheet = workbook.addWorksheet('Employees')
-      const database = workbook.addWorksheet('Database')
       templateData.forEach((row) => employeesSheet.addRow(row))
-      databaseData.forEach((row) => database.addRow(row))
 
       employeesSheet.columns = [
         { width: 15 }, { width: 15 }, { width: 25 }, { width: 15 }, { width: 15 }, { width: 20 },
@@ -284,21 +219,29 @@ export function AddEmployeeDialog({
         { width: 18 }, { width: 15 }, { width: 30 }, { width: 12 }, { width: 20 }, { width: 20 },
         { width: 15 }, { width: 15 }, { width: 15 }, { width: 15 },
       ]
-      database.columns.forEach((column) => { column.width = 24 })
-      database.state = 'veryHidden'
       employeesSheet.getRow(1).font = { bold: true }
-      database.getRow(1).font = { bold: true }
 
+      const optionValues = (items: MasterDataItem[]) => items
+        .map((item) => item.value || (item as MasterDataItem & { name?: string }).name || '')
+        .filter(Boolean)
       const dropdowns = [
-        ['D', 'B'], ['E', 'C'], ['F', 'A'], ['N', 'H'], ['O', 'F'],
-        ['P', 'E'], ['Q', 'D'], ['R', 'G'], ['V', 'I'], ['W', 'J'],
+        ['D', optionValues(departments)],
+        ['E', optionValues(positions)],
+        ['F', sites.map((site) => site.name).filter(Boolean)],
+        ['N', ['Male', 'Female']],
+        ['O', optionValues(religions)],
+        ['P', optionValues(maritalStatuses)],
+        ['Q', optionValues(employmentStatuses)],
+        ['R', optionValues(bloodTypes)],
+        ['U', optionValues(certifications)],
+        ['W', ['STAFF', 'MANAGER', 'SITE_ADMIN', 'HR_ADMIN']],
+        ['X', ['ACTIVE', 'INACTIVE', 'SUSPENDED']],
       ] as const
-      dropdowns.forEach(([target, source]) => {
+      dropdowns.forEach(([target, options]) => {
+        const formula = `"${options.join(',').replace(/"/g, '""')}"`
         for (let row = 2; row <= 1000; row++) {
           employeesSheet.getCell(`${target}${row}`).dataValidation = {
-            type: 'list',
-            allowBlank: true,
-            formulae: [`Database!$${source}$2:$${source}$1000`],
+            type: 'list', allowBlank: true, formulae: [formula],
           }
         }
       })
