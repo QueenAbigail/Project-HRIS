@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
-import { resolveAttendanceStatus } from '@/lib/attendance-utils'
+import { calculateAttendanceStatus, calculateLateMinutes, resolveAttendanceStatus } from '@/lib/attendance-utils'
 import { getBusinessDate, getBusinessDateRange, getBusinessDateRangeForPreset, type SiteTimezone } from '@/lib/timezone'
 import { parseUtcTimestamp } from '@/lib/attendance-timestamps'
 
-// Helper function to calculate attendance status based on check-in time and scheduled time
-function calculateAttendanceStatus(actualCheckIn: string | null, scheduledStart: string | null, timezone: SiteTimezone | string = 'WIB'): string {
+/* legacy helper removed; shared calculator is authoritative */
+/* function calculateAttendanceStatus(actualCheckIn: string | null, scheduledStart: string | null, timezone: SiteTimezone | string = 'WIB'): string {
   if (!actualCheckIn) {
     return 'NOT_CHECKED_IN'
   }
@@ -47,7 +47,7 @@ function calculateAttendanceStatus(actualCheckIn: string | null, scheduledStart:
     console.error('[v0] Error calculating attendance status:', error)
     return 'PRESENT' // Default to PRESENT on error
   }
-}
+} */
 
 interface AttendanceQuery {
   siteId?: string
@@ -302,15 +302,23 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Calculate proper status based on check-in time and scheduled time
-    const calculatedStatus = actualCheckIn 
-      ? calculateAttendanceStatus(actualCheckIn, scheduledStart, siteTimezone)
+    const resolvedShiftId = shiftId || existingAttendance?.shiftId || null
+    const shift = resolvedShiftId
+      ? await prisma.shift.findUnique({ where: { id: resolvedShiftId }, select: { gracePeriodMinutes: true } })
+      : null
+    const resolvedScheduledStart = scheduledStart || existingAttendance?.scheduledStart || null
+    const gracePeriodMinutes = shift?.gracePeriodMinutes ?? 0
+    const calculatedStatus = actualCheckIn
+      ? calculateAttendanceStatus(actualCheckIn, resolvedScheduledStart, siteTimezone, gracePeriodMinutes)
       : (status || 'NOT_CHECKED_IN')
+    const calculatedLateMinutes = actualCheckIn
+      ? calculateLateMinutes(actualCheckIn, resolvedScheduledStart, siteTimezone, gracePeriodMinutes)
+      : 0
 
     if (existingAttendance) {
       // Update existing record with proper status calculation
       const updateData: any = {
-        lateMinutes,
+        lateMinutes: actualCheckIn ? calculatedLateMinutes : existingAttendance.lateMinutes,
         gpsLng,
         gpsLat,
         notes,
@@ -323,7 +331,7 @@ export async function POST(request: NextRequest) {
       // If actualCheckIn is provided, update check-in and recalculate status
       if (actualCheckIn && !existingAttendance.actualCheckIn) {
         updateData.actualCheckIn = parsedCheckIn
-        updateData.status = calculateAttendanceStatus(actualCheckIn, scheduledStart || existingAttendance.scheduledStart, siteTimezone)
+        updateData.status = calculateAttendanceStatus(actualCheckIn, resolvedScheduledStart, siteTimezone, gracePeriodMinutes)
         updateData.selfieCheckIn = selfieCheckIn
       }
 
@@ -336,8 +344,9 @@ export async function POST(request: NextRequest) {
         if (!updateData.status && existingAttendance.actualCheckIn) {
           updateData.status = calculateAttendanceStatus(
             existingAttendance.actualCheckIn.toISOString(),
-            scheduledStart || existingAttendance.scheduledStart,
-            siteTimezone
+            resolvedScheduledStart,
+            siteTimezone,
+            gracePeriodMinutes
           )
         }
       }
@@ -345,10 +354,11 @@ export async function POST(request: NextRequest) {
       // If no status was set during check-in or check-out, calculate it now
       if (!updateData.status && existingAttendance.actualCheckIn) {
         updateData.status = calculateAttendanceStatus(
-      existingAttendance.actualCheckIn.toISOString(),
-      scheduledStart || existingAttendance.scheduledStart,
-      siteTimezone
-    )
+          existingAttendance.actualCheckIn.toISOString(),
+          resolvedScheduledStart,
+          siteTimezone,
+          gracePeriodMinutes
+        )
       }
 
       const updated = await prisma.attendance.update({
@@ -383,7 +393,7 @@ export async function POST(request: NextRequest) {
         actualCheckIn: parsedCheckIn,
         actualCheckOut: parsedCheckOut,
         status: calculatedStatus,
-        lateMinutes: lateMinutes || 0,
+        lateMinutes: calculatedLateMinutes,
         gpsLat: gpsLat || null,
         gpsLng: gpsLng || null,
         selfieCheckIn,

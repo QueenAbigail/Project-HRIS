@@ -90,10 +90,54 @@ export function isLateCheckIn(checkInTime: string | Date | null | undefined, sch
 export function calculateAttendanceStatus(
   actualCheckIn: string | Date | null | undefined,
   scheduledStart: string | Date | null | undefined,
+  siteTimezone?: string | null,
+  gracePeriodMinutes = 0,
 ): string {
   if (!actualCheckIn) return 'NOT_CHECKED_IN'
   if (!scheduledStart) return 'PRESENT'
-  return isLateCheckIn(actualCheckIn, scheduledStart) ? 'LATE' : 'PRESENT'
+
+  const actualMinutes = getLocalMinutes(actualCheckIn, siteTimezone)
+  const scheduledMinutes = getScheduledMinutes(scheduledStart)
+  if (actualMinutes === null || scheduledMinutes === null) return 'PRESENT'
+
+  return actualMinutes > scheduledMinutes + Math.max(0, gracePeriodMinutes) ? 'LATE' : 'PRESENT'
+}
+
+export function calculateLateMinutes(
+  actualCheckIn: string | Date | null | undefined,
+  scheduledStart: string | Date | null | undefined,
+  siteTimezone?: string | null,
+  gracePeriodMinutes = 0,
+): number {
+  if (!actualCheckIn || !scheduledStart) return 0
+  const actualMinutes = getLocalMinutes(actualCheckIn, siteTimezone)
+  const scheduledMinutes = getScheduledMinutes(scheduledStart)
+  if (actualMinutes === null || scheduledMinutes === null) return 0
+  return Math.max(0, actualMinutes - scheduledMinutes - Math.max(0, gracePeriodMinutes))
+}
+
+function getScheduledMinutes(value: string | Date): number | null {
+  const match = (value instanceof Date ? value.toISOString() : value).match(/(\\d{1,2}):(\\d{2})/)
+  if (!match) return null
+  return Number(match[1]) * 60 + Number(match[2])
+}
+
+function getLocalMinutes(value: string | Date, timezone?: string | null): number | null {
+  try {
+    const date = value instanceof Date ? value : new Date(value)
+    if (Number.isNaN(date.getTime())) return null
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: timezone || 'Asia/Jakarta',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(date)
+    const hour = parts.find((part) => part.type === 'hour')?.value
+    const minute = parts.find((part) => part.type === 'minute')?.value
+    return hour && minute ? Number(hour) * 60 + Number(minute) : null
+  } catch {
+    return null
+  }
 }
 
 export type ResolvedAttendanceStatus = 'PRESENT' | 'LATE' | 'ABSENT' | 'LEAVE' | 'NOT_CHECKED_IN'
