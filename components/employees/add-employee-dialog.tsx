@@ -208,9 +208,37 @@ export function AddEmployeeDialog({
       ]
 
       // Create the employee worksheet. Dropdowns use inline lists so no database sheet is needed.
+      const optionValues = (items: MasterDataItem[]) => items
+        .map((item) => item.value || (item as MasterDataItem & { name?: string }).name || '')
+        .filter(Boolean)
       const workbook = new ExcelJS.Workbook()
       const employeesSheet = workbook.addWorksheet('Employees')
+      const listsSheet = workbook.addWorksheet('Lists')
       templateData.forEach((row) => employeesSheet.addRow(row))
+      listsSheet.state = 'veryHidden'
+
+      const dropdownSources = [
+        ['Departments', optionValues(departments)],
+        ['Positions', optionValues(positions)],
+        ['Sites', sites.map((site) => site.name).filter(Boolean)],
+        ['Genders', ['Male', 'Female']],
+        ['Religions', optionValues(religions)],
+        ['MaritalStatuses', optionValues(maritalStatuses)],
+        ['EmploymentStatuses', optionValues(employmentStatuses)],
+        ['BloodTypes', optionValues(bloodTypes)],
+        ['Certifications', optionValues(certifications)],
+        ['Roles', ['STAFF', 'MANAGER', 'SITE_ADMIN', 'HR_ADMIN']],
+        ['Statuses', ['ACTIVE', 'INACTIVE', 'SUSPENDED']],
+      ] as const
+      const sourceColumns: Record<string, string> = {}
+      dropdownSources.forEach(([name, options], index) => {
+        const column = String.fromCharCode(65 + index)
+        sourceColumns[name] = column
+        listsSheet.getCell(`${column}1`).value = name
+        options.forEach((option, optionIndex) => {
+          listsSheet.getCell(`${column}${optionIndex + 2}`).value = option
+        })
+      })
 
       employeesSheet.columns = [
         { width: 15 }, { width: 15 }, { width: 25 }, { width: 15 }, { width: 15 }, { width: 20 },
@@ -221,24 +249,15 @@ export function AddEmployeeDialog({
       ]
       employeesSheet.getRow(1).font = { bold: true }
 
-      const optionValues = (items: MasterDataItem[]) => items
-        .map((item) => item.value || (item as MasterDataItem & { name?: string }).name || '')
-        .filter(Boolean)
       const dropdowns = [
-        ['D', optionValues(departments)],
-        ['E', optionValues(positions)],
-        ['F', sites.map((site) => site.name).filter(Boolean)],
-        ['N', ['Male', 'Female']],
-        ['O', optionValues(religions)],
-        ['P', optionValues(maritalStatuses)],
-        ['Q', optionValues(employmentStatuses)],
-        ['R', optionValues(bloodTypes)],
-        ['U', optionValues(certifications)],
-        ['W', ['STAFF', 'MANAGER', 'SITE_ADMIN', 'HR_ADMIN']],
-        ['X', ['ACTIVE', 'INACTIVE', 'SUSPENDED']],
+        ['D', 'Departments'], ['E', 'Positions'], ['F', 'Sites'], ['N', 'Genders'],
+        ['O', 'Religions'], ['P', 'MaritalStatuses'], ['Q', 'EmploymentStatuses'],
+        ['R', 'BloodTypes'], ['U', 'Certifications'], ['W', 'Roles'], ['X', 'Statuses'],
       ] as const
-      dropdowns.forEach(([target, options]) => {
-        const formula = `"${options.join(',').replace(/"/g, '""')}"`
+      dropdowns.forEach(([target, sourceName]) => {
+        const sourceColumn = sourceColumns[sourceName]
+        const sourceOptions = dropdownSources.find(([name]) => name === sourceName)?.[1] || []
+        const formula = `Lists!$${sourceColumn}$2:$${sourceColumn}$${sourceOptions.length + 1}`
         for (let row = 2; row <= 1000; row++) {
           employeesSheet.getCell(`${target}${row}`).dataValidation = {
             type: 'list', allowBlank: true, formulae: [formula],
