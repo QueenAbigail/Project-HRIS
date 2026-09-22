@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -29,12 +29,15 @@ export default function SchedulesPage() {
   const [addScheduleOpen, setAddScheduleOpen] = useState(false)
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null)
   const [scheduleDateRange, setScheduleDateRange] = useState<ScheduleDateRange>('upcoming')
+  const latestLoadId = useRef(0)
 
   useEffect(() => {
     loadData(scheduleDateRange)
   }, [scheduleDateRange])
 
   const loadData = async (dateRange = scheduleDateRange) => {
+    const loadId = ++latestLoadId.current
+
     try {
       setLoading(true)
       setLoadError(null)
@@ -42,15 +45,20 @@ export default function SchedulesPage() {
         getShifts(),
         getEmployeeSchedules(dateRange),
       ])
+
+      if (loadId !== latestLoadId.current) return
+
       setShifts(shiftsData || [])
       setSchedules(schedulesData || [])
     } catch (error) {
+      if (loadId !== latestLoadId.current) return
+
       console.error('[v0] Error loading schedule data:', error)
       const message = error instanceof Error ? error.message : 'Unable to load schedule data right now. Please try again.'
       setLoadError(message)
       toast.error(message)
     } finally {
-      setLoading(false)
+      if (loadId === latestLoadId.current) setLoading(false)
     }
   }
 

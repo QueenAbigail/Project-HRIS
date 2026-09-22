@@ -31,7 +31,7 @@
 | 12 | Server-action error reporting | ✅ **Complete** | Schedule-loading database failures now throw a clear error, show an error state with retry, and cannot appear as a valid empty schedule list. |
 | 13 | Schedule type safety | ✅ **Complete** | Added explicit shared types for schedule rows, shifts, employees, page state, and schedule dialog props; removed relevant schedule-related `any` usage. |
 | 14 | Date and timezone consistency | ⚠️ **In progress** | Point 14 is implemented. Site owns the WIB/WITA/WIT source of truth, existing location values are migrated, and location APIs inherit the site timezone. Attendance creation, lateness comparison, attendance display, detail views, calendar dates, and cross-site preset filtering now use the relevant Site timezone. Schedule times remain local wall-clock values and are independent of the admin browser timezone. TypeScript and diff checks pass; browser verification requires an authenticated preview session. |
-| 15 | Schedule refresh race conditions | ℹ️ **Follow-up** | Review overlapping `loadData()` calls and prevent stale responses from overwriting newer schedule data. |
+| 15 | Schedule refresh race conditions | ✅ **Complete** | Schedule loads now use a monotonic request ID so stale responses and errors cannot overwrite the latest filter, refresh, or pagination result. |
 
 ## Item 3 — Completed import extensions
 
@@ -53,7 +53,7 @@
 - ✅ Item 10 is complete.
 - ✅ Item 12 is complete.
 - ⚠️ Item 14 requires future technical work.
-- ℹ️ Item 15 is a follow-up improvement.
+- ✅ Item 15 is complete.
 
 ## Extended audit backlog
 
@@ -65,7 +65,7 @@ The following items were identified in a second technical review outside the ori
 - **Item 12 — Server-action error reporting:** complete. Schedule-load failures are surfaced clearly with a retry action instead of appearing as an empty result.
 - **Item 13 — Schedule type safety:** complete. Shared schedule, shift, employee, and dialog types now replace the relevant `any` values.
 - **Item 14 — Date and timezone consistency:** verify calendar-date behavior across import, filtering, storage, and display.
-- **Item 15 — Schedule refresh race conditions:** prevent stale `loadData()` responses from overwriting newer results.
+- **Item 15 — Schedule refresh race conditions:** complete. A request ID guard prevents stale `loadData()` responses and errors from overwriting newer results.
 
 Items 9–13 are complete. Items 14–15 remain for future work.
 
