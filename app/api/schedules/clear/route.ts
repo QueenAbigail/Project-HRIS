@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getCurrentUser } from '@/lib/system'
-
-async function requireSuperAdmin() {
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'SUPER_ADMIN') {
-    throw new Error('Unauthorized')
-  }
-}
+import { requireSuperAdminResponse } from '@/lib/api-auth'
 
 /**
  * DELETE /api/schedules/clear
@@ -21,7 +14,8 @@ async function requireSuperAdmin() {
  */
 export async function DELETE(req: NextRequest) {
   try {
-    await requireSuperAdmin()
+    const authResponse = await requireSuperAdminResponse()
+    if (authResponse) return authResponse
     const searchParams = req.nextUrl.searchParams
     const clearAll = searchParams.get('all') === 'true'
     const startDate = searchParams.get('startDate')

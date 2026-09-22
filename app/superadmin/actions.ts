@@ -146,23 +146,36 @@ export async function getShifts() {
   }
 }
 
-export async function getEmployeeSchedules(includePast: boolean = false) {
+export type ScheduleDateRange = 'upcoming' | 'today' | 'yesterday' | 'past7' | 'past30' | 'all'
+
+export async function getEmployeeSchedules(dateRange: ScheduleDateRange = 'upcoming') {
   await requireSuperAdmin()
 
   try {
-    console.log('[v0] Fetching employee schedules...', { includePast })
-    
+    console.log('[v0] Fetching employee schedules...', { dateRange })
+
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    
-    // Fetch from Schedule table (new manual assignment system)
-    // By default only fetch future schedules for better performance
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    const past7Start = new Date(today)
+    past7Start.setDate(past7Start.getDate() - 7)
+    const past30Start = new Date(today)
+    past30Start.setDate(past30Start.getDate() - 30)
+
+    const dateFilters = {
+      upcoming: { gte: today },
+      today: { gte: today, lt: tomorrow },
+      yesterday: { gte: yesterday, lt: today },
+      past7: { gte: past7Start, lt: today },
+      past30: { gte: past30Start, lt: today },
+      all: undefined,
+    } satisfies Record<ScheduleDateRange, { gte?: Date; lt?: Date } | undefined>
+
     const schedules = await prisma.schedule.findMany({
-      where: includePast ? {} : {
-        scheduleDate: {
-          gte: today
-        }
-      },
+      where: dateFilters[dateRange] ? { scheduleDate: dateFilters[dateRange] } : {},
       include: {
         employee: {
           select: {
@@ -200,8 +213,8 @@ export async function getEmployeeSchedules(includePast: boolean = false) {
       shiftId: schedule.shift.id,
       shiftName: schedule.shift.name,
       scheduleDate: schedule.scheduleDate,
-      shiftStart: schedule.shiftStart,
-      shiftEnd: schedule.shiftEnd,
+  shiftStart: schedule.shiftStart || schedule.shift.startTime,
+  shiftEnd: schedule.shiftEnd || schedule.shift.endTime,
       isException: schedule.isException,
       notes: schedule.notes,
       initials: schedule.employee.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
@@ -211,7 +224,7 @@ export async function getEmployeeSchedules(includePast: boolean = false) {
       message: error instanceof Error ? error.message : String(error),
       error
     })
-    return []
+    throw new Error('Unable to load schedules right now. Please try again.')
   }
 }
 
@@ -848,7 +861,7 @@ export async function generateTodayAttendanceRecords() {
             date: attendanceDate,
             scheduledStart: finalScheduledStart,
             scheduledEnd: finalScheduledEnd,
-            status: attendanceStatus,
+            status: attendanceStatus as any,
             lateMinutes: 0,
             notes: notes
           }

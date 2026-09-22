@@ -82,6 +82,9 @@ export async function POST(
       return NextResponse.json({ error: validated }, { status: 400 })
     }
 
+    const site = await prisma.site.findUnique({ where: { id: siteId }, select: { timezone: true } })
+    if (!site) return NextResponse.json({ error: 'Site not found' }, { status: 404 })
+
     const duplicate = await prisma.attendanceLocation.findFirst({
       where: { siteId, latitude: validated.latitude, longitude: validated.longitude },
       select: { id: true },
@@ -95,6 +98,7 @@ export async function POST(
       data: {
         siteId,
         ...validated,
+        timezone: site.timezone,
       },
       select: {
         id: true,
@@ -137,6 +141,9 @@ export async function PUT(
       )
     }
 
+    const site = await prisma.site.findUnique({ where: { id: siteId }, select: { timezone: true } })
+    if (!site) return NextResponse.json({ error: 'Site not found' }, { status: 404 })
+
     const duplicate = await prisma.attendanceLocation.findFirst({
       where: {
         siteId,
@@ -155,6 +162,7 @@ export async function PUT(
       where: { id: locationId, siteId },
       data: {
         ...validated,
+        timezone: site.timezone,
         isActive: isActive ?? true,
       },
       select: {

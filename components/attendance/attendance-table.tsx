@@ -13,6 +13,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Clock, AlertTriangle, MapPin, Loader2, Eye, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { GpsCoordinates } from '@/lib/constants'
@@ -38,6 +39,7 @@ interface AttendanceRecord {
     id: string
     name: string
     code: string
+    timezone?: 'WIB' | 'WITA' | 'WIT'
     company: {
       name: string
     } | null
@@ -66,11 +68,45 @@ interface AttendanceRecord {
 
 // Status formatting is now handled by attendance-utils.ts for consistent display across the app
 
+const SITE_TIMEZONE_LABELS = {
+  WIB: { label: 'WIB', utc: 'UTC+7', iana: 'Asia/Jakarta' },
+  WITA: { label: 'WITA', utc: 'UTC+8', iana: 'Asia/Makassar' },
+  WIT: { label: 'WIT', utc: 'UTC+9', iana: 'Asia/Jayapura' },
+} as const
+
+function getRecordTimezone(record: AttendanceRecord) {
+  return SITE_TIMEZONE_LABELS[record.location?.timezone || 'WIB']
+}
+
+function formatRecordTime(value: string | null, record: AttendanceRecord) {
+  if (!value) return '--:--'
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: getRecordTimezone(record).iana,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(value))
+}
+
+function TimezoneTime({ value, record }: { value: string | null; record: AttendanceRecord }) {
+  const timezone = getRecordTimezone(record)
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="cursor-help border-b border-dotted border-muted-foreground/50">
+          {formatRecordTime(value, record)}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{timezone.label} ({timezone.utc})</TooltipContent>
+    </Tooltip>
+  )
+}
+
 export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDateFrom = '', customDateTo = '', department = 'all', refreshKey = 0 }: { siteId?: string; dateRange?: string; customDateFrom?: string; customDateTo?: string; department?: string; refreshKey?: number }) {
   const [records, setRecords] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null)
+  const [selectedRecord, setSelectedRecord] = useState<any>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [retryKey, setRetryKey] = useState(0)
@@ -196,7 +232,8 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
   }
 
   const renderTableRows = (data: AttendanceRecord[]) => (
-    <>
+    <TooltipProvider>
+      <>
       {data.map((record) => (
         <TableRow key={record.id}>
           <TableCell>
@@ -223,10 +260,10 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
             {record.date ? formatBusinessDate(record.date.slice(0, 10)) : '--'}
           </TableCell>
           <TableCell className="text-xs text-muted-foreground">
-            {record.actualCheckIn ? record.actualCheckIn.split('T')[1]?.substring(0, 5) || '--:--' : '--:--'}
+            <TimezoneTime value={record.actualCheckIn} record={record} />
           </TableCell>
           <TableCell className="text-xs text-muted-foreground">
-            {record.actualCheckOut ? record.actualCheckOut.split('T')[1]?.substring(0, 5) || '--:--' : '--:--'}
+            <TimezoneTime value={record.actualCheckOut} record={record} />
           </TableCell>
           <TableCell>
             <Badge variant="outline" className={getStatusStyles(resolveAttendanceStatus(record))}>
@@ -255,7 +292,8 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
           </TableCell>
         </TableRow>
       )}
-    </>
+      </>
+    </TooltipProvider>
   )
 
   if (loading && records.length === 0) {

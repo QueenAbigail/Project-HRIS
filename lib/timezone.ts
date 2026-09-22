@@ -5,16 +5,30 @@
 
 export const BUSINESS_TIMEZONE = 'Asia/Jakarta'
 
-const jakartaParts = new Intl.DateTimeFormat('en-CA', {
-  timeZone: BUSINESS_TIMEZONE,
+export type SiteTimezone = 'WIB' | 'WITA' | 'WIT'
+
+export const SITE_TIMEZONES: Record<SiteTimezone, string> = {
+  WIB: 'Asia/Jakarta',
+  WITA: 'Asia/Makassar',
+  WIT: 'Asia/Jayapura',
+}
+
+export function getIanaTimezone(timezone: SiteTimezone | string | null | undefined): string {
+  return SITE_TIMEZONES[timezone as SiteTimezone] || BUSINESS_TIMEZONE
+}
+
+function getDateTimeFormatter(timezone: SiteTimezone | string = 'WIB') {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: getIanaTimezone(timezone),
   year: 'numeric', month: '2-digit', day: '2-digit',
   hour: '2-digit', minute: '2-digit', second: '2-digit',
   hourCycle: 'h23',
-})
+  })
+}
 
-/** Return the current calendar date in the business timezone as YYYY-MM-DD. */
-export function getBusinessDate(date = new Date()): string {
-  const parts = Object.fromEntries(jakartaParts.formatToParts(date).map(({ type, value }) => [type, value]))
+/** Return the current calendar date in the selected site timezone as YYYY-MM-DD. */
+export function getBusinessDate(date = new Date(), timezone: SiteTimezone | string = 'WIB'): string {
+  const parts = Object.fromEntries(getDateTimeFormatter(timezone).formatToParts(date).map(({ type, value }) => [type, value]))
   return `${parts.year}-${parts.month}-${parts.day}`
 }
 
@@ -56,8 +70,8 @@ export function getBusinessDateRangeForPreset(preset: string, today = getBusines
   return { dateFrom: toDate(start), dateTo: toDate(end) }
 }
 
-export function getBusinessDateTime(date = new Date()): string {
-  const parts = Object.fromEntries(jakartaParts.formatToParts(date).map(({ type, value }) => [type, value]))
+export function getBusinessDateTime(date = new Date(), timezone: SiteTimezone | string = 'WIB'): string {
+  const parts = Object.fromEntries(getDateTimeFormatter(timezone).formatToParts(date).map(({ type, value }) => [type, value]))
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`
 }
 

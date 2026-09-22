@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -14,11 +14,35 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { Edit, Trash2, Search } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Edit, Trash2, Search, ShieldAlert, CalendarDays } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatTime } from '@/lib/data'
+import type { ScheduleDateRange } from '@/app/superadmin/actions'
 
-interface Schedule {
+function formatScheduleDate(value: Date | string) {
+  const datePart = typeof value === 'string' ? value.slice(0, 10) : value.toISOString().slice(0, 10)
+  const [year, month, day] = datePart.split('-').map(Number)
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(year, month - 1, day)))
+}
+import type { Shift } from '@/lib/constants'
+
+export interface Schedule {
   id: string
   employeeId: string
   employeeName: string
@@ -26,7 +50,19 @@ interface Schedule {
   shiftName: string
   shiftStart: string
   shiftEnd: string
-  scheduleDate: string
+  scheduleDate: Date | string
+  employeeEmail?: string
+  isException?: boolean
+  notes?: string | null
+}
+
+export type { Shift }
+
+export interface Employee {
+  id: string
+  employeeCode?: string | null
+  name: string
+  email?: string | null
 }
 
 interface ScheduleTableProps {
@@ -34,12 +70,15 @@ interface ScheduleTableProps {
   onEdit?: (schedule: Schedule) => void
   onDelete?: (scheduleId: string) => void
   onRefresh?: () => void
+  dateRange?: ScheduleDateRange
+  onDateRangeChange?: (dateRange: ScheduleDateRange) => void
 }
 
-export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: ScheduleTableProps) {
+export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh, dateRange = 'upcoming', onDateRangeChange }: ScheduleTableProps) {
   const [search, setSearch] = useState('')
-  const [showPast, setShowPast] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [scheduleToDelete, setScheduleToDelete] = useState<Schedule | null>(null)
+  const [protectedDateConfirmed, setProtectedDateConfirmed] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 50
 
@@ -51,39 +90,55 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
       // Filter by search (name, ID, shift, and date)
       const searchLower = search.toLowerCase()
       const scheduleDate = new Date(s.scheduleDate)
-      const formattedDate = scheduleDate.toLocaleDateString('en-GB') // dd/mm/yyyy
+      const formattedDate = formatScheduleDate(s.scheduleDate) // date-only value; independent of browser timezone
       
       const matchesSearch =
         s.employeeName.toLowerCase().includes(searchLower) ||
         s.employeeId.toLowerCase().includes(searchLower) ||
         s.shiftName.toLowerCase().includes(searchLower) ||
         formattedDate.includes(searchLower) ||
-        s.scheduleDate.includes(searchLower) // yyyy-mm-dd format
+        String(s.scheduleDate).includes(searchLower) // yyyy-mm-dd format
 
       if (!matchesSearch) return false
 
-      // Filter by past dates
-      if (!showPast) {
-        const scheduleDateCheck = new Date(s.scheduleDate)
-        scheduleDateCheck.setHours(0, 0, 0, 0)
-        return scheduleDateCheck >= today
-      }
+      const scheduleDateCheck = new Date(s.scheduleDate)
+      scheduleDateCheck.setHours(0, 0, 0, 0)
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const yesterday = new Date(today)
+      yesterday.setDate(yesterday.getDate() - 1)
+      const past7Start = new Date(today)
+      past7Start.setDate(past7Start.getDate() - 7)
+      const past30Start = new Date(today)
+      past30Start.setDate(past30Start.getDate() - 30)
 
+      if (dateRange === 'upcoming') return scheduleDateCheck >= today
+      if (dateRange === 'today') return scheduleDateCheck >= today && scheduleDateCheck < tomorrow
+      if (dateRange === 'yesterday') return scheduleDateCheck >= yesterday && scheduleDateCheck < today
+      if (dateRange === 'past7') return scheduleDateCheck >= past7Start && scheduleDateCheck < today
+      if (dateRange === 'past30') return scheduleDateCheck >= past30Start && scheduleDateCheck < today
       return true
     })
     .sort((a, b) => new Date(a.scheduleDate).getTime() - new Date(b.scheduleDate).getTime())
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, dateRange])
+
   // Calculate pagination
-  const totalPages = Math.ceil(filtered.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage
   const paginatedSchedules = filtered.slice(startIndex, startIndex + itemsPerPage)
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this schedule?')) return
-
+  const handleDelete = async (id: string, allowProtectedDateChange = false) => {
     try {
       setDeleting(id)
-      const response = await fetch(`/api/schedules/${id}`, { method: 'DELETE' })
+      const response = await fetch(`/api/schedules/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ allowProtectedDateChange }),
+      })
 
       if (!response.ok) throw new Error('Delete failed')
 
@@ -114,15 +169,22 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
           </Button>
         </div>
         
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="showPast"
-            checked={showPast}
-            onCheckedChange={(checked) => setShowPast(checked as boolean)}
-          />
-          <Label htmlFor="showPast" className="font-normal cursor-pointer text-sm">
-            Show past schedules
-          </Label>
+        <div className="flex items-center gap-2">
+          <CalendarDays className="size-4 text-muted-foreground" aria-hidden="true" />
+          <Label htmlFor="schedule-date-range" className="text-sm text-muted-foreground">Date range</Label>
+          <Select value={dateRange} onValueChange={(value) => onDateRangeChange?.(value as ScheduleDateRange)}>
+            <SelectTrigger id="schedule-date-range" className="w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="upcoming">Upcoming</SelectItem>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="yesterday">Yesterday</SelectItem>
+              <SelectItem value="past7">Past 7 days</SelectItem>
+              <SelectItem value="past30">Past 30 days</SelectItem>
+              <SelectItem value="all">All dates</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -138,7 +200,7 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
                 <TableHead>Employee</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Shift</TableHead>
-                <TableHead>Time</TableHead>
+                <TableHead>Time (site local)</TableHead>
                 <TableHead className="w-24">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -150,11 +212,7 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
                     <div className="text-sm text-muted-foreground">{schedule.employeeId}</div>
                   </TableCell>
                   <TableCell>
-                    {new Date(schedule.scheduleDate).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
+                    {formatScheduleDate(schedule.scheduleDate)}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">{schedule.shiftName}</Badge>
@@ -175,7 +233,10 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
                         size="sm"
                         variant="ghost"
                         className="text-destructive"
-                        onClick={() => handleDelete(schedule.id)}
+                        onClick={() => {
+                          setScheduleToDelete(schedule)
+                          setProtectedDateConfirmed(false)
+                        }}
                         disabled={deleting === schedule.id}
                       >
                         <Trash2 className="size-4" />
@@ -189,9 +250,64 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
         </div>
       )}
 
+      <AlertDialog open={Boolean(scheduleToDelete)} onOpenChange={(open) => !open && setScheduleToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete schedule?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will delete the {scheduleToDelete?.shiftName} schedule for {scheduleToDelete?.employeeName} on{' '}
+              {scheduleToDelete && new Date(scheduleToDelete.scheduleDate).toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric',
+              })}. This action cannot be undone.
+            </AlertDialogDescription>
+            {scheduleToDelete && new Date(scheduleToDelete.scheduleDate) <= new Date() && (
+              <div className="mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
+                <div className="flex gap-3">
+                  <ShieldAlert className="mt-0.5 size-5 shrink-0 text-amber-500" aria-hidden="true" />
+                  <div className="space-y-3">
+                    <div>
+                      <p className="font-medium text-amber-700 dark:text-amber-400">Additional confirmation required</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        This schedule is from today or earlier and may be referenced by attendance records.
+                      </p>
+                    </div>
+                    <label className="flex items-start gap-2 text-sm">
+                      <Checkbox
+                        checked={protectedDateConfirmed}
+                        onCheckedChange={(checked) => setProtectedDateConfirmed(checked === true)}
+                        className="mt-0.5"
+                      />
+                      <span>I understand the impact and want to continue.</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={Boolean(deleting)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={Boolean(deleting) || Boolean(scheduleToDelete && new Date(scheduleToDelete.scheduleDate) <= new Date() && !protectedDateConfirmed)}
+              onClick={() => {
+                if (scheduleToDelete) {
+                  const isProtectedDate = new Date(scheduleToDelete.scheduleDate) <= new Date()
+                  if (isProtectedDate && !protectedDateConfirmed) return
+                  handleDelete(scheduleToDelete.id, isProtectedDate)
+                }
+              }}
+            >
+              {deleting ? 'Deleting...' : 'Delete schedule'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <div>
-          Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filtered.length)} of {filtered.length} schedules
+          {filtered.length === 0
+            ? 'Showing 0 of 0 schedules'
+            : `Showing ${startIndex + 1}-${Math.min(startIndex + itemsPerPage, filtered.length)} of ${filtered.length} schedules`}
         </div>
         
         {totalPages > 1 && (
@@ -199,8 +315,8 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
+              disabled={safeCurrentPage === 1}
             >
               Previous
             </Button>
@@ -210,19 +326,19 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
                 let pageNum
                 if (totalPages <= 5) {
                   pageNum = i + 1
-                } else if (currentPage <= 3) {
+                } else if (safeCurrentPage <= 3) {
                   pageNum = i + 1
-                } else if (currentPage >= totalPages - 2) {
+                } else if (safeCurrentPage >= totalPages - 2) {
                   pageNum = totalPages - 4 + i
                 } else {
-                  pageNum = currentPage - 2 + i
+                  pageNum = safeCurrentPage - 2 + i
                 }
                 
                 return (
                   <Button
                     key={pageNum}
                     size="sm"
-                    variant={currentPage === pageNum ? 'default' : 'outline'}
+                    variant={safeCurrentPage === pageNum ? 'default' : 'outline'}
                     onClick={() => setCurrentPage(pageNum)}
                   >
                     {pageNum}
@@ -234,8 +350,8 @@ export function ScheduleTable({ schedules, onEdit, onDelete, onRefresh }: Schedu
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))}
+              disabled={safeCurrentPage === totalPages}
             >
               Next
             </Button>

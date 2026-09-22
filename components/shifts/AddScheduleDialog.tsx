@@ -12,12 +12,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { toast } from 'sonner'
 import { Loader2, ChevronsUpDown, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import type { Employee, Schedule } from '@/components/shifts/ScheduleTable'
+import type { Shift } from '@/lib/constants'
 
 interface AddScheduleDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  schedule?: any | null
-  shifts: any[]
+  schedule?: Schedule | null
+  shifts: Shift[]
   onSuccess?: () => void
 }
 
@@ -29,7 +31,7 @@ export function AddScheduleDialog({
   onSuccess,
 }: AddScheduleDialogProps) {
   const [loading, setLoading] = useState(false)
-  const [employees, setEmployees] = useState<any[]>([])
+  const [employees, setEmployees] = useState<Employee[]>([])
   const [employeeSearch, setEmployeeSearch] = useState('')
   const [comboboxOpen, setComboboxOpen] = useState(false)
   const [useDateRange, setUseDateRange] = useState(false)
@@ -66,8 +68,11 @@ export function AddScheduleDialog({
 
   useEffect(() => {
     if (open && schedule) {
-      // In edit mode, load the single schedule data
-      const scheduleDate = schedule.scheduleDate?.split('T')[0] || ''
+      // Date-only schedule values must be formatted without browser timezone conversion.
+      const rawScheduleDate = schedule.scheduleDate instanceof Date
+        ? schedule.scheduleDate.toISOString()
+        : String(schedule.scheduleDate ?? '')
+      const scheduleDate = rawScheduleDate.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? ''
       const today = new Date().toISOString().split('T')[0]
       const isPast = scheduleDate < today
       
@@ -220,6 +225,18 @@ export function AddScheduleDialog({
       return
     }
 
+    const protectedDates = (useRotationPattern
+      ? generateRotationSchedules().map((item) => item.date)
+      : useDateRange
+        ? generateDateRange().map((date) => date.toISOString().split('T')[0])
+        : [formData.scheduleDate]
+    ).filter((date) => date <= new Date().toISOString().split('T')[0])
+    const allowProtectedDateChange = protectedDates.length > 0 &&
+      window.confirm('This manual change includes today or an earlier date. Continue?') &&
+      window.confirm('This may affect attendance and related records. Confirm the change again?')
+
+    if (protectedDates.length > 0 && !allowProtectedDateChange) return
+
     // Validate past schedule edit reason
     if (schedule && isEditingPast && !editReason.trim()) {
       toast.error('Please provide a reason for editing this past schedule')
@@ -255,9 +272,9 @@ export function AddScheduleDialog({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             schedules: schedulesToCreate,
-            replace: !!schedule,
-            employeeId: formData.employeeId,
-          }),
+              employeeId: formData.employeeId,
+              allowProtectedDateChange,
+              }),
         })
 
         if (!response.ok) {
@@ -312,9 +329,9 @@ export function AddScheduleDialog({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             schedules: schedulesToCreate,
-            replace: !!schedule,
-            employeeId: formData.employeeId,
-          }),
+              employeeId: formData.employeeId,
+              allowProtectedDateChange,
+              }),
         })
 
         if (!response.ok) throw new Error('Failed to create schedules')
@@ -347,6 +364,7 @@ export function AddScheduleDialog({
               employeeId: formData.employeeId,
               shiftId: formData.shiftId,
               scheduleDate: formData.scheduleDate,
+              allowProtectedDateChange,
             }),
           })
 
@@ -361,6 +379,7 @@ export function AddScheduleDialog({
               employeeId: formData.employeeId,
               shiftId: formData.shiftId,
               scheduleDate: formData.scheduleDate,
+              allowProtectedDateChange,
             }),
           })
 
@@ -384,12 +403,14 @@ export function AddScheduleDialog({
       employeeName: '',
       shiftId: '',
       scheduleDate: new Date().toISOString().split('T')[0],
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     })
     setEmployeeSearch('')
     setComboboxOpen(false)
   }
 
-  const handleEmployeeSelect = (employee: any) => {
+  const handleEmployeeSelect = (employee: Employee) => {
     setFormData({
       ...formData,
       employeeId: employee.id,
@@ -742,7 +763,7 @@ export function AddScheduleDialog({
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={loading || (schedule && isEditingPast && !editReason.trim())}
+            disabled={loading || Boolean(schedule && isEditingPast && !editReason.trim())}
           >
             {loading && <Loader2 className="mr-2 size-4 animate-spin" />}
             {schedule ? 'Update' : 'Create'}

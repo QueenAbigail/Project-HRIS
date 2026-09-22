@@ -119,6 +119,7 @@ export function CronStatusCard() {
         ) : (summary || logs.length > 0) ? (
           <>
             {/* Summary Stats */}
+            {summary && (
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-gradient-to-br from-green-50 to-green-100/50 rounded-lg p-4 border border-green-200">
                 <div className="text-sm font-medium text-green-700">Success Rate</div>
@@ -143,6 +144,7 @@ export function CronStatusCard() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Recent Runs */}
             <Collapsible open={recentRunsOpen} onOpenChange={setRecentRunsOpen}>

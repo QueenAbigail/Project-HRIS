@@ -23,6 +23,7 @@ interface ParsedSchedule {
   employeeId: string
   date: string
   shift: string
+  rowNumber: number
 }
 
 export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: ScheduleImportDialogProps) {
@@ -32,8 +33,10 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
   const [preview, setPreview] = useState<ParsedSchedule[]>([])
   const [step, setStep] = useState<'upload' | 'preview' | 'importing'>('upload')
   const [progress, setProgress] = useState(0)
+  const [importStatus, setImportStatus] = useState('Preparing import...')
   const [dragActive, setDragActive] = useState(false)
   const [shiftCodes, setShiftCodes] = useState<string[]>([])
+  const [duplicateErrors, setDuplicateErrors] = useState<string[]>([])
 
   useEffect(() => {
     if (!open) return
@@ -140,11 +143,23 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
               employeeId: employeeCode,
               date: String(header),
               shift: String(shift).toUpperCase(),
+              rowNumber: dataRows.indexOf(row) + 2,
             })
           }
         })
       })
 
+      const duplicateGroups = new Map<string, ParsedSchedule[]>()
+      parsed.forEach((item) => {
+        const key = `${item.employeeCode}|${new Date(item.date).toISOString().slice(0, 10)}`
+        const group = duplicateGroups.get(key) ?? []
+        group.push(item)
+        duplicateGroups.set(key, group)
+      })
+      const duplicateMessages = Array.from(duplicateGroups.values())
+        .filter((group) => group.length > 1)
+        .map((group) => `Rows ${group.map((item) => item.rowNumber).join(' and ')} — ${group[0].employeeCode} on ${group[0].date} appears more than once.`)
+      setDuplicateErrors(duplicateMessages)
       setPreview(parsed.slice(0, 100))
       setStep('preview')
       toast.success(`Parsed ${parsed.length} schedule entries`)
@@ -156,42 +171,68 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
   }
 
   const handleImport = async () => {
+    if (duplicateErrors.length > 0) {
+      toast.error('Duplicate employee/date rows found. Review the highlighted errors before importing.')
+      return
+    }
+
     try {
       setImporting(true)
       setStep('importing')
-      setProgress(0)
+      const batchSize = preview.length <= 100 ? 1 : preview.length <= 500 ? 5 : 10
+      const batches = Array.from(
+        { length: Math.ceil(preview.length / batchSize) },
+        (_, index) => preview.slice(index * batchSize, (index + 1) * batchSize),
+      )
+      const employeeCodes = Array.from(new Set(preview.map((item) => item.employeeCode).filter(Boolean)))
+      const dates = preview.map((item) => new Date(item.date)).filter((date) => !Number.isNaN(date.getTime()))
+      const startDate = new Date(Math.min(...dates.map((date) => date.getTime()))).toISOString()
+      const endDate = new Date(Math.max(...dates.map((date) => date.getTime()))).toISOString()
+      let completed = 0
+      let created = 0
+      let updated = 0
+      const errors: string[] = []
 
-      const response = await fetch('/api/schedules/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ schedules: preview }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        const details = Array.isArray(error.errors) && error.errors.length > 0
-          ? ` ${error.errors.slice(0, 3).join(' ')}${error.errors.length > 3 ? ` (+${error.errors.length - 3} more)` : ''}`
-          : ''
-        throw new Error(`${error.message || error.error || 'Import failed'}${details}`)
+      const processBatch = async (batch: ParsedSchedule[], index: number, finalize: boolean) => {
+        const response = await fetch('/api/schedules/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            schedules: batch,
+  finalize,
+          }),
+        })
+        const result = await response.json()
+        if (!response.ok && !(result.created || result.updated)) {
+          throw new Error(`${result.message || result.error || 'Import failed'} ${result.errors?.slice(0, 3)?.join(' ') || ''}`)
+        }
+        return { count: batch.length, created: result.created || 0, updated: result.updated || 0, errors: result.errors || [] }
       }
 
-      const result = await response.json()
-      setProgress(100)
-
-      if (!result.success || result.created === 0) {
-        const details = Array.isArray(result.errors) && result.errors.length > 0
-          ? ` ${result.errors.slice(0, 3).join(' ')}${result.errors.length > 3 ? ` (+${result.errors.length - 3} more)` : ''}`
-          : ''
-        throw new Error(result.message ? `${result.message}.${details}` : `No schedules were imported.${details}`)
+      const recordResult = (result: Awaited<ReturnType<typeof processBatch>>) => {
+        completed += result.count
+        created += result.created
+        updated += result.updated
+        errors.push(...result.errors)
+        setProgress(Math.round((completed / preview.length) * 100))
+        setImportStatus(`Processed ${completed} of ${preview.length} schedule entries (updated every ${batchSize})`)
       }
 
-      toast.success(`Successfully imported ${result.created} schedules${result.errors?.length ? ` (${result.errors.length} errors)` : ''}`)
+      for (const [index, batch] of batches.entries()) {
+        recordResult(await processBatch(batch, index, index === batches.length - 1))
+      }
 
+      if (created + updated === 0) throw new Error(`No schedules were imported. ${errors.slice(0, 3).join(' ')}`)
+      if (errors.length > 0) {
+        toast.warning(`Import completed with ${errors.length} error${errors.length === 1 ? '' : 's'}`, {
+          description: errors.slice(0, 3).join(' • '),
+          duration: 10000,
+        })
+      } else {
+        toast.success(`Processed ${created} created and ${updated} updated schedules`)
+      }
       onSuccess?.()
-      setTimeout(() => {
-        onOpenChange(false)
-        resetDialog()
-      }, 1000)
+      setTimeout(() => { onOpenChange(false); resetDialog() }, 1000)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to import schedules')
       setStep('preview')
@@ -203,8 +244,10 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
   const resetDialog = () => {
     setFile(null)
     setPreview([])
+    setDuplicateErrors([])
     setStep('upload')
     setProgress(0)
+    setImportStatus('Preparing import...')
   }
 
   const handleClose = () => {
@@ -284,6 +327,18 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
                 </AlertDescription>
               </Alert>
 
+              {duplicateErrors.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="size-4" />
+                  <AlertDescription>
+                    <p className="font-medium">Duplicate rows must be corrected before import:</p>
+                    <ul className="mt-2 list-disc space-y-1 pl-4">
+                      {duplicateErrors.map((error) => <li key={error}>{error}</li>)}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <div className="max-h-64 overflow-y-auto border border-border rounded-lg">
                 <table className="w-full text-sm">
                   <thead className="bg-muted sticky top-0">
@@ -316,9 +371,9 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
           {step === 'importing' && (
             <div className="space-y-4">
               <Progress value={progress} />
-              <p className="text-sm text-center text-muted-foreground">
-                {"Importing "}{preview.length}{" schedules and generating today's attendance..."}
-              </p>
+<p className="text-sm text-center text-muted-foreground">
+              {importStatus}
+            </p>
             </div>
           )}
         </div>

@@ -100,6 +100,7 @@ function parseEmployeeDate(value: unknown, label: string): Date | null {
 // ==========================================
 export async function updateEmployeeAction(userId: string, formData: any) {
   try {
+    const supabaseAdmin = await createAdminClient()
     console.log('[v0] Update employee called with data keys:', Object.keys(formData))
 
     // 1. Update password if provided

@@ -552,8 +552,8 @@ export default function GPSLocationsPage() {
                                   />
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="attendance-timezone">Timezone (Indonesia)</Label>
-                                  <Select value={newLocation.timezone} onValueChange={(value) => setNewLocation(prev => ({ ...prev, timezone: value }))}>
+<Label htmlFor="attendance-timezone">Timezone (inherited from site)</Label>
+          <Select value={newLocation.timezone} disabled>
                                     <SelectTrigger id="attendance-timezone">
                                       <SelectValue />
                                     </SelectTrigger>
@@ -759,8 +759,8 @@ export default function GPSLocationsPage() {
                                   />
                                 </div>
                                 <div className="space-y-2">
-                                  <Label htmlFor="patrol-timezone">Timezone (Indonesia)</Label>
-                                  <Select value={newLocation.timezone} onValueChange={(value) => setNewLocation(prev => ({ ...prev, timezone: value }))}>
+<Label htmlFor="patrol-timezone">Timezone (inherited from site)</Label>
+          <Select value={newLocation.timezone} disabled>
                                     <SelectTrigger id="patrol-timezone">
                                       <SelectValue />
                                     </SelectTrigger>

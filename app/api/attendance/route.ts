@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
-import { resolveAttendanceStatus } from '@/lib/attendance-utils'
-import { getBusinessDate, getBusinessDateRange, getBusinessDateRangeForPreset } from '@/lib/timezone'
+import { calculateAttendanceStatus, calculateLateMinutes, resolveAttendanceStatus } from '@/lib/attendance-utils'
+import { getBusinessDate, getBusinessDateRange, getBusinessDateRangeForPreset, type SiteTimezone } from '@/lib/timezone'
+import { parseUtcTimestamp } from '@/lib/attendance-timestamps'
 
-// Helper function to calculate attendance status based on check-in time and scheduled time
-function calculateAttendanceStatus(actualCheckIn: string | null, scheduledStart: string | null): string {
+/* legacy helper removed; shared calculator is authoritative */
+/* function calculateAttendanceStatus(actualCheckIn: string | null, scheduledStart: string | null, timezone: SiteTimezone | string = 'WIB'): string {
   if (!actualCheckIn) {
     return 'NOT_CHECKED_IN'
   }
@@ -19,7 +20,10 @@ function calculateAttendanceStatus(actualCheckIn: string | null, scheduledStart:
     // Parse check-in time (format: "HH:MM" or ISO timestamp)
     const checkInTime = actualCheckIn.includes(':') && !actualCheckIn.includes('T')
       ? actualCheckIn
-      : new Date(actualCheckIn).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
+      : new Date(actualCheckIn).toLocaleTimeString('en-GB', {
+          timeZone: timezone === 'WITA' ? 'Asia/Makassar' : timezone === 'WIT' ? 'Asia/Jayapura' : 'Asia/Jakarta',
+          hour: '2-digit', minute: '2-digit', hour12: false,
+        })
 
     const [checkInHour, checkInMinute] = checkInTime.split(':').map(Number)
     const checkInTotalMinutes = checkInHour * 60 + checkInMinute
@@ -43,7 +47,7 @@ function calculateAttendanceStatus(actualCheckIn: string | null, scheduledStart:
     console.error('[v0] Error calculating attendance status:', error)
     return 'PRESENT' // Default to PRESENT on error
   }
-}
+} */
 
 interface AttendanceQuery {
   siteId?: string
@@ -69,33 +73,38 @@ export async function GET(request: NextRequest) {
     const page = Math.max(Number.parseInt(searchParams.get('page') || '1', 10) || 1, 1)
     const pageSize = Math.min(Math.max(Number.parseInt(searchParams.get('pageSize') || '25', 10) || 25, 10), 50)
 
-    // Build every range from calendar dates in Asia/Jakarta, then map them to UTC.
-    let dateStart: Date
-    let dateEnd: Date
-
+    // Attendance.date stores the site's local calendar date as a date-only UTC value.
+    // For presets, build one calendar range per timezone so Today/Yesterday remain
+    // correct when a report includes WIB, WITA, and WIT sites together.
+    let dateFilter: any
     if (dateRange === 'custom') {
       const customRange = getBusinessDateRange(dateFrom || date, dateTo || dateFrom || date)
-      dateStart = customRange.from
-      dateEnd = customRange.to
+      dateFilter = { gte: customRange.from, lte: customRange.to }
     } else {
-      const presetRange = getBusinessDateRangeForPreset(dateRange, getBusinessDate())
-      const presetDates = getBusinessDateRange(presetRange.dateFrom, presetRange.dateTo)
-      dateStart = presetDates.from
-      dateEnd = presetDates.to
+      const requestedSite = siteId && siteId !== 'all'
+        ? await prisma.site.findUnique({ where: { id: siteId }, select: { id: true, companyId: true, timezone: true } })
+        : null
+      const sites = requestedSite
+        ? [requestedSite]
+        : await prisma.site.findMany({
+            where: isClient ? { companyId: currentUser?.companyId || undefined } : undefined,
+            select: { id: true, timezone: true },
+          })
+      const ranges = sites.map((site) => {
+        const presetRange = getBusinessDateRangeForPreset(dateRange, getBusinessDate(new Date(), site.timezone))
+        return { locationId: site.id, ...getBusinessDateRange(presetRange.dateFrom, presetRange.dateTo) }
+      })
+      dateFilter = ranges.length === 1
+        ? { gte: ranges[0].from, lte: ranges[0].to }
+        : { OR: ranges.map(({ locationId, from, to }) => ({ locationId, date: { gte: from, lte: to } })) }
     }
 
-    // Build where clause - use gte for start and lte for end to match date-only comparison
-    const where: any = {
-      date: {
-        gte: dateStart,
-        lte: dateEnd
-      }
-    }
+    const where: any = dateFilter.OR ? dateFilter : { date: dateFilter }
     
     if (siteId && siteId !== 'all') {
       const requestedSite = await prisma.site.findUnique({
         where: { id: siteId },
-        select: { id: true, companyId: true },
+select: { id: true, companyId: true, timezone: true },
       })
       if (!requestedSite) {
         return NextResponse.json({ error: 'Site not found' }, { status: 404 })
@@ -144,10 +153,11 @@ export async function GET(request: NextRequest) {
         },
         location: {
           select: {
-            id: true,
-            name: true,
-            code: true,
-            company: {
+      id: true,
+      name: true,
+      code: true,
+      timezone: true,
+      company: {
               select: {
                 name: true
               }
@@ -165,9 +175,7 @@ export async function GET(request: NextRequest) {
     }),
     ])
 
-    // Resolve display status via the shared single-source-of-truth helper:
-    // derive PRESENT/LATE from the check-in, but trust the persisted ABSENT/LEAVE
-    // status that the auto-absent cron maintains (never downgrade ABSENT to Pending).
+    // The persisted status is calculated by the server on write and is authoritative.
     const enrichedRecords = filtered.map((record: any) => ({
       ...record,
       status: resolveAttendanceStatus(record)
@@ -224,6 +232,15 @@ export async function POST(request: NextRequest) {
       notes
     } = body
 
+    const parsedCheckIn = parseUtcTimestamp(actualCheckIn)
+    const parsedCheckOut = parseUtcTimestamp(actualCheckOut)
+    if ((actualCheckIn && !parsedCheckIn) || (actualCheckOut && !parsedCheckOut)) {
+      return NextResponse.json(
+        { error: 'Check-in and check-out timestamps must be valid ISO timestamps with an explicit timezone, such as 2026-09-21T06:20:00.000Z' },
+        { status: 400 }
+      )
+    }
+
     // The employee's assigned site is authoritative. Mobile may send locationId,
     // but a missing value must never create an attendance row without a location.
     if (!userId) {
@@ -245,7 +262,7 @@ export async function POST(request: NextRequest) {
 
     const targetLocation = await prisma.site.findUnique({
       where: { id: targetEmployee.siteId },
-      select: { id: true, companyId: true },
+      select: { id: true, companyId: true, timezone: true },
     })
 
     if (!targetLocation) {
@@ -271,7 +288,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'You do not have access to this employee or location' }, { status: 403 })
     }
 
-    const dateOnly = getBusinessDateRange(getBusinessDate(), getBusinessDate()).from
+    const siteTimezone = targetLocation.timezone
+    const siteDate = getBusinessDate(new Date(), siteTimezone)
+    const dateOnly = getBusinessDateRange(siteDate, siteDate).from
 
     // Check if attendance record already exists for today
     const existingAttendance = await prisma.attendance.findUnique({
@@ -283,15 +302,23 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Calculate proper status based on check-in time and scheduled time
-    const calculatedStatus = actualCheckIn 
-      ? calculateAttendanceStatus(actualCheckIn, scheduledStart)
+    const resolvedShiftId = shiftId || existingAttendance?.shiftId || null
+    const shift = resolvedShiftId
+      ? await prisma.shift.findUnique({ where: { id: resolvedShiftId }, select: { gracePeriodMinutes: true } })
+      : null
+    const resolvedScheduledStart = scheduledStart || existingAttendance?.scheduledStart || null
+    const gracePeriodMinutes = shift?.gracePeriodMinutes ?? 0
+    const calculatedStatus = actualCheckIn
+      ? calculateAttendanceStatus(actualCheckIn, resolvedScheduledStart, siteTimezone, gracePeriodMinutes)
       : (status || 'NOT_CHECKED_IN')
+    const calculatedLateMinutes = actualCheckIn
+      ? calculateLateMinutes(actualCheckIn, resolvedScheduledStart, siteTimezone, gracePeriodMinutes)
+      : 0
 
     if (existingAttendance) {
       // Update existing record with proper status calculation
       const updateData: any = {
-        lateMinutes,
+        lateMinutes: actualCheckIn ? calculatedLateMinutes : existingAttendance.lateMinutes,
         gpsLng,
         gpsLat,
         notes,
@@ -303,21 +330,23 @@ export async function POST(request: NextRequest) {
 
       // If actualCheckIn is provided, update check-in and recalculate status
       if (actualCheckIn && !existingAttendance.actualCheckIn) {
-        updateData.actualCheckIn = actualCheckIn
-        updateData.status = calculateAttendanceStatus(actualCheckIn, scheduledStart || existingAttendance.scheduledStart)
+        updateData.actualCheckIn = parsedCheckIn
+        updateData.status = calculateAttendanceStatus(actualCheckIn, resolvedScheduledStart, siteTimezone, gracePeriodMinutes)
         updateData.selfieCheckIn = selfieCheckIn
       }
 
       // If actualCheckOut is provided, update check-out and ensure status is properly set
       if (actualCheckOut) {
-        updateData.actualCheckOut = actualCheckOut
+        updateData.actualCheckOut = parsedCheckOut
         updateData.selfieCheckOut = selfieCheckOut
         
         // Ensure status is set based on check-in time (if it wasn't already)
         if (!updateData.status && existingAttendance.actualCheckIn) {
           updateData.status = calculateAttendanceStatus(
-            existingAttendance.actualCheckIn, 
-            scheduledStart || existingAttendance.scheduledStart
+            existingAttendance.actualCheckIn.toISOString(),
+            resolvedScheduledStart,
+            siteTimezone,
+            gracePeriodMinutes
           )
         }
       }
@@ -325,8 +354,10 @@ export async function POST(request: NextRequest) {
       // If no status was set during check-in or check-out, calculate it now
       if (!updateData.status && existingAttendance.actualCheckIn) {
         updateData.status = calculateAttendanceStatus(
-          existingAttendance.actualCheckIn,
-          scheduledStart || existingAttendance.scheduledStart
+          existingAttendance.actualCheckIn.toISOString(),
+          resolvedScheduledStart,
+          siteTimezone,
+          gracePeriodMinutes
         )
       }
 
@@ -359,10 +390,10 @@ export async function POST(request: NextRequest) {
         date: dateOnly,
         scheduledStart,
         scheduledEnd,
-        actualCheckIn,
-        actualCheckOut: actualCheckOut || null,
+        actualCheckIn: parsedCheckIn,
+        actualCheckOut: parsedCheckOut,
         status: calculatedStatus,
-        lateMinutes: lateMinutes || 0,
+        lateMinutes: calculatedLateMinutes,
         gpsLat: gpsLat || null,
         gpsLng: gpsLng || null,
         selfieCheckIn,

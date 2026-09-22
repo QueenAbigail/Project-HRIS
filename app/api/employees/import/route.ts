@@ -30,8 +30,32 @@ export async function POST(request: NextRequest) {
     // Parse Excel file using XLSX
     const buffer = await file.arrayBuffer()
     const { read, utils } = await import('xlsx')
-    const workbook = read(buffer, { type: 'array' })
+    const workbook = read(buffer, { type: 'array', cellDates: true })
     const worksheet = workbook.Sheets[workbook.SheetNames[0]]
+
+    const formatDateCell = (value: unknown): string => {
+      if (value === null || value === undefined || value === '') return ''
+
+      const date = value instanceof Date
+        ? value
+        : typeof value === 'number'
+          ? new Date(Date.UTC(1899, 11, 30) + value * 86400000)
+          : null
+
+      if (date) {
+        if (Number.isNaN(date.getTime())) throw new Error(`Invalid Excel date value: ${String(value)}`)
+        return date.toISOString().slice(0, 10)
+      }
+
+      const text = String(value).trim()
+      const isoMatch = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
+      if (isoMatch) return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`
+
+      const dmyMatch = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/)
+      if (dmyMatch) return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, '0')}-${dmyMatch[1].padStart(2, '0')}`
+
+      throw new Error(`Unsupported date format: ${text}. Use an Excel date or YYYY-MM-DD.`)
+    }
     
     // Read all data as array of arrays to parse manually
     const aoa = utils.sheet_to_json(worksheet, { header: 1 }) as any[][]
@@ -66,7 +90,10 @@ export async function POST(request: NextRequest) {
       headers.forEach((header, idx) => {
         // Get value, handling both array and object formats
         const value = Array.isArray(row) ? row[idx] : row[header]
-        normalized[header] = value?.toString().trim() || ''
+        const dateHeaders = new Set(['Join Date', 'Birth Date', 'KTA Expiry'])
+        normalized[header] = dateHeaders.has(header)
+          ? formatDateCell(value)
+          : value?.toString().trim() || ''
       })
       return normalized
     }).filter((row: any) => Object.values(row).some((v: any) => v)) // Filter empty rows

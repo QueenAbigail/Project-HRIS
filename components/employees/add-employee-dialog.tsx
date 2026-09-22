@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Upload, UserPlus, FileSpreadsheet, Download, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react'
+import { Upload, UserPlus, FileSpreadsheet, Download, AlertCircle, CheckCircle2, Eye, EyeOff, RefreshCw } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { createEmployeeAction } from '@/app/actions/employee' // Taruh di baris paling atas bareng import lain
 
@@ -101,6 +101,32 @@ export function AddEmployeeDialog({
     role: 'STAFF', allowMobileAttendance: 'false', allowWebAppAccess: 'false'
   })
 
+  const refreshMasterData = useCallback(async () => {
+      try {
+        setLoadingSites(true)
+        setLoadingMasterData(true)
+        const sitesResponse = await fetch('/api/sites')
+        if (sitesResponse.ok) setSites(await sitesResponse.json())
+        const categories = ['department', 'position', 'employmentStatus', 'maritalStatus', 'religion', 'bloodType', 'certificate']
+        const responses = await Promise.all(categories.map((cat) => fetch(`/api/master-data?category=${cat}`)))
+        const data = await Promise.all(responses.map((response) => response.json()))
+        setDepartments(Array.isArray(data[0]) ? data[0] : [])
+        setPositions(Array.isArray(data[1]) ? data[1] : [])
+        setEmploymentStatuses(Array.isArray(data[2]) ? data[2] : [])
+        setMaritalStatuses(Array.isArray(data[3]) ? data[3] : [])
+        setReligions(Array.isArray(data[4]) ? data[4] : [])
+        setBloodTypes(Array.isArray(data[5]) ? data[5] : [])
+        setCertifications(Array.isArray(data[6]) ? data[6] : [])
+        dataFetchedRef.current = true
+        toast.success('Master data refreshed')
+      } catch {
+        toast.error('Unable to refresh master data')
+      } finally {
+        setLoadingSites(false)
+        setLoadingMasterData(false)
+      }
+  }, [])
+
   // Fetch sites and master data from database (only once due to caching)
   useEffect(() => {
     const fetchData = async () => {
@@ -171,8 +197,8 @@ export function AddEmployeeDialog({
   // Download template function
   const handleDownloadTemplate = async () => {
     try {
-      const XLSX = await import('xlsx')
-      const templateData = [
+  const ExcelJS = await import('exceljs')
+  const templateData = [
         [
           'Full Name*', 'Employee Code (NIP)*', 'Personal Email', 'Department', 'Position', 
           'Location (Site)*', 'Join Date', 'Phone Number', 'KTP Number', 'Address', 'Birth City', 'Birth Date',
@@ -207,46 +233,72 @@ export function AddEmployeeDialog({
         ],
       ]
 
-      // Create worksheet
-      const ws = XLSX.utils.aoa_to_sheet(templateData)
-      
-      // Set column widths
-      ws['!cols'] = [
-        { wch: 15 }, // Full Name
-        { wch: 15 }, // Employee Code
-        { wch: 25 }, // Personal Email
-        { wch: 15 }, // Department
-        { wch: 15 }, // Position
-        { wch: 12 }, // Location
-        { wch: 12 }, // Join Date
-        { wch: 15 }, // Phone
-        { wch: 18 }, // KTP
-        { wch: 25 }, // Address
-        { wch: 15 }, // Birth City
-        { wch: 12 }, // Birth Date
-        { wch: 18 }, // BPJS
-        { wch: 10 }, // Gender
-        { wch: 12 }, // Religion
-        { wch: 15 }, // Marital
-        { wch: 15 }, // Employment
-        { wch: 10 }, // Blood Type
-        { wch: 18 }, // NPWP
-        { wch: 15 }, // KTA
-        { wch: 30 }, // Certifications
-        { wch: 12 }, // KTA Expiry
-        { wch: 20 }, // Role
-        { wch: 20 }, // Status
-        { wch: 15 }, // Bank
-        { wch: 15 }, // Account Holder
-        { wch: 15 }, // Account Number
-        { wch: 15 }, // Supervisor
+      // Create the employee worksheet. Dropdowns use inline lists so no database sheet is needed.
+      const optionValues = (items: MasterDataItem[]) => items
+        .map((item) => item.value || (item as MasterDataItem & { name?: string }).name || '')
+        .filter(Boolean)
+      const workbook = new ExcelJS.Workbook()
+      const employeesSheet = workbook.addWorksheet('Employees')
+      const listsSheet = workbook.addWorksheet('Lists')
+      templateData.forEach((row) => employeesSheet.addRow(row))
+      listsSheet.state = 'veryHidden'
+
+      const dropdownSources = [
+        ['Departments', optionValues(departments)],
+        ['Positions', optionValues(positions)],
+        ['Sites', sites.map((site) => site.name).filter(Boolean)],
+        ['Genders', ['Male', 'Female']],
+        ['Religions', optionValues(religions)],
+        ['MaritalStatuses', optionValues(maritalStatuses)],
+        ['EmploymentStatuses', optionValues(employmentStatuses)],
+        ['BloodTypes', optionValues(bloodTypes)],
+        ['Certifications', optionValues(certifications)],
+        ['Roles', ['STAFF', 'MANAGER', 'SITE_ADMIN', 'HR_ADMIN']],
+        ['Statuses', ['ACTIVE', 'INACTIVE', 'SUSPENDED']],
+      ] as const
+      const sourceColumns: Record<string, string> = {}
+      dropdownSources.forEach(([name, options], index) => {
+        const column = String.fromCharCode(65 + index)
+        sourceColumns[name] = column
+        listsSheet.getCell(`${column}1`).value = name
+        options.forEach((option, optionIndex) => {
+          listsSheet.getCell(`${column}${optionIndex + 2}`).value = option
+        })
+      })
+
+      employeesSheet.columns = [
+        { width: 15 }, { width: 15 }, { width: 25 }, { width: 15 }, { width: 15 }, { width: 20 },
+        { width: 12 }, { width: 15 }, { width: 18 }, { width: 25 }, { width: 15 }, { width: 12 },
+        { width: 18 }, { width: 10 }, { width: 12 }, { width: 15 }, { width: 15 }, { width: 10 },
+        { width: 18 }, { width: 15 }, { width: 30 }, { width: 12 }, { width: 20 }, { width: 20 },
+        { width: 15 }, { width: 15 }, { width: 15 }, { width: 15 },
       ]
-      
-      const wb = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(wb, ws, 'Employees')
-      
-      // Download file
-      XLSX.writeFile(wb, 'employee_template.xlsx')
+      employeesSheet.getRow(1).font = { bold: true }
+
+      const dropdowns = [
+        ['D', 'Departments'], ['E', 'Positions'], ['F', 'Sites'], ['N', 'Genders'],
+        ['O', 'Religions'], ['P', 'MaritalStatuses'], ['Q', 'EmploymentStatuses'],
+        ['R', 'BloodTypes'], ['U', 'Certifications'], ['W', 'Roles'], ['X', 'Statuses'],
+      ] as const
+      dropdowns.forEach(([target, sourceName]) => {
+        const sourceColumn = sourceColumns[sourceName]
+        const sourceOptions = dropdownSources.find(([name]) => name === sourceName)?.[1] || []
+        const formula = `Lists!$${sourceColumn}$2:$${sourceColumn}$${sourceOptions.length + 1}`
+        for (let row = 2; row <= 1000; row++) {
+          employeesSheet.getCell(`${target}${row}`).dataValidation = {
+            type: 'list', allowBlank: true, formulae: [formula],
+          }
+        }
+      })
+
+      const output = await workbook.xlsx.writeBuffer()
+      const blob = new Blob([output], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = 'employee_template.xlsx'
+      anchor.click()
+      URL.revokeObjectURL(url)
     } catch (error) {
     }
   }
@@ -303,8 +355,8 @@ export function AddEmployeeDialog({
       personalEmail: formData.email, // Asumsi form email ini buat personal email
       
       // Ubah teks 'true'/'false' dari form jadi boolean beneran
-      mobileAccess: formData.allowMobileAttendance === 'true' || formData.allowMobileAttendance === true,
-      webAppAccess: formData.allowWebAppAccess === 'true' || formData.allowWebAppAccess === true,
+      mobileAccess: formData.allowMobileAttendance === 'true',
+      webAppAccess: formData.allowWebAppAccess === 'true',
       
       certifications: formData.certification ? [formData.certification] : [],
       status: 'ACTIVE'
@@ -612,10 +664,16 @@ export function AddEmployeeDialog({
                   <p className="text-sm text-muted-foreground mb-3">
                     Not sure what format to use? Download our employee template to see the required columns and data structure for bulk imports.
                   </p>
-                  <Button variant="outline" className="mt-4 gap-2" onClick={handleDownloadTemplate}>
-                    <Download className="size-4" />
-                    Download Template
-                  </Button>
+  <div className="mt-4 flex flex-wrap gap-2">
+  <Button variant="outline" className="gap-2" onClick={refreshMasterData} disabled={loadingMasterData || loadingSites}>
+  <RefreshCw className={`size-4 ${loadingMasterData || loadingSites ? 'animate-spin' : ''}`} />
+  Refresh Master Data
+  </Button>
+  <Button variant="outline" className="gap-2" onClick={handleDownloadTemplate} disabled={loadingMasterData || loadingSites}>
+  <Download className="size-4" />
+  Download Template
+  </Button>
+  </div>
                 </div>
               </>
             )}

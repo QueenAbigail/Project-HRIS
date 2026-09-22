@@ -1,0 +1,99 @@
+the f# Schedule Page — Technical Audit
+
+> **Source of truth:** This document tracks the Schedule page audit, implementation status, verification results, and follow-up work.
+>
+> **Last reviewed:** 16 September 2026
+
+## Status legend
+
+| Symbol | Status | Meaning |
+|:---:|---|---|
+| ✅ | **Complete** | Implemented and verified. |
+| 🔍 | **Verified** | Reviewed or tested; no remaining fix is required. |
+| ⚠️ | **Open** | Still requires implementation or verification. |
+| ℹ️ | **Follow-up** | Optional improvement or future optimization. |
+
+## Audit checklist
+
+| # | Finding | Status | Current result / next action |
+|---:|---|:---:|---|
+| 1 | Schedule API authentication | ✅ **Complete** | Schedule and schedule-pattern APIs return `401` for unauthenticated requests and `403` for authenticated non-super-admin users. |
+| 2 | Schedule server-action authentication | ✅ **Complete** | Schedule server actions use the shared `SUPER_ADMIN` guard before database operations. Unauthorized actions fail through the Server Action error boundary. |
+| 3 | Excel import employee lookup | ✅ **Complete** | Create, update, case-insensitive matching, partial success, row-specific errors, and duplicate-row blocking were tested successfully. |
+| 4 | Sequential bulk-import performance | 🔍 **Improved; verify** | Dynamic batches are selected directly from total rows: 1 row for up to 100, 5 for 101–500, and 10 above 500. Every batch is processed sequentially to avoid overlapping database writes. Runtime timing verification is still recommended. |
+| 5 | Pagination reset after filtering | 🔍 **Implemented; verify** | Search and past-schedule filters reset to page 1, and the displayed page is clamped when filtered results shrink. Browser verification remains pending because the preview requires authenticated access. |
+| 6 | Loading skeleton behavior | ✅ **Complete** | Layout-matched skeletons for shift rows and schedule assignments are working correctly, with accessible loading status semantics. |
+| 7 | Native delete confirmation | ✅ **Complete** | Replaced native `confirm()` with an accessible Alert Dialog showing the employee, shift, date, Cancel, and Delete actions. Browser verification completed successfully. |
+| 8 | Pagination footer accuracy | ✅ **Complete** | Non-empty ranges remain accurate, and empty filtered results show `Showing 0 of 0 schedules` without pagination controls. Browser verification completed successfully. |
+| 9 | Import replacement safety | ✅ **Complete** | Removed replacement deletion behavior. Imports are upsert-only: empty cells preserve existing schedules, explicit `Off` cells intentionally clear an existing future schedule, and today/past rows are skipped and reported. |
+| 10 | Import atomicity | ✅ **Complete** | Schedule import writes now run in one database transaction. Validation errors still skip and report individual rows; a database write failure rolls back all import changes. |
+| 11 | Import database efficiency | ✅ **Complete** | Employee-code and shift-code lookups are cached during each import, avoiding repeated lookup queries for repeated spreadsheet values while keeping writes safely transactional. |
+| 12 | Server-action error reporting | ✅ **Complete** | Schedule-loading database failures now throw a clear error, show an error state with retry, and cannot appear as a valid empty schedule list. |
+| 13 | Schedule type safety | ✅ **Complete** | Added explicit shared types for schedule rows, shifts, employees, page state, and schedule dialog props; removed relevant schedule-related `any` usage. |
+| 14 | Date and timezone consistency | ⚠️ **In progress** | Point 14 is implemented. Site owns the WIB/WITA/WIT source of truth, existing location values are migrated, and location APIs inherit the site timezone. Attendance creation, lateness comparison, attendance display, detail views, calendar dates, and cross-site preset filtering now use the relevant Site timezone. Schedule times remain local wall-clock values and are independent of the admin browser timezone. TypeScript and diff checks pass; browser verification requires an authenticated preview session. |
+| 15 | Schedule refresh race conditions | ✅ **Complete** | Schedule loads now use a monotonic request ID so stale responses and errors cannot overwrite the latest filter, refresh, or pagination result. |
+
+## Item 3 — Completed import extensions
+
+- ✅ Actual server-confirmed progress.
+- ✅ Dynamic batching based on total row count.
+- ✅ Separate created and updated totals.
+- ✅ Existing schedules update through Prisma `upsert` instead of failing on the unique `employee/date` constraint.
+- ✅ Employee-code matching trims input and supports case-insensitive values.
+- ✅ Unknown employee codes are blocked with row-specific details.
+- ✅ Duplicate employee/date rows in one file are rejected before database writes.
+- ✅ Partial imports and re-uploads behave correctly.
+- ✅ Import errors are concise and do not expose Prisma stack traces.
+
+## Verification status
+
+- ✅ Items 1–3 and 6–8 are complete.
+- 🔍 Items 4–5 are implemented; real-data/browser verification remains.
+- ✅ Item 9 is complete.
+- ✅ Item 10 is complete.
+- ✅ Item 12 is complete.
+- ⚠️ Item 14 requires future technical work.
+- ✅ Item 15 is complete.
+
+## Extended audit backlog
+
+The following items were identified in a second technical review outside the original eight-point audit:
+
+- **Item 9 — Import replacement safety:** complete. Imports are upsert-only, empty cells preserve existing schedules, explicit `Off` clears an existing future schedule, and protected rows are skipped and reported.
+- **Item 10 — Import atomicity:** complete. Import writes use one database transaction; database failures roll back the full import while row-level validation errors remain reportable and skippable.
+- **Item 11 — Import database efficiency:** complete. Employee and shift lookups are cached per import, reducing repeated reads without introducing unsafe parallel writes.
+- **Item 12 — Server-action error reporting:** complete. Schedule-load failures are surfaced clearly with a retry action instead of appearing as an empty result.
+- **Item 13 — Schedule type safety:** complete. Shared schedule, shift, employee, and dialog types now replace the relevant `any` values.
+- **Item 14 — Date and timezone consistency:** verify calendar-date behavior across import, filtering, storage, and display.
+- **Item 15 — Schedule refresh race conditions:** complete. A request ID guard prevents stale `loadData()` responses and errors from overwriting newer results.
+
+Items 9–13 are complete. Items 14–15 remain for future work.
+
+## Change history
+
+- Extended technical review — added Issues 9–15 for replacement safety, atomicity, query efficiency, error reporting, type safety, timezone consistency, and refresh race conditions.
+
+- Import safety decision — all dynamic batches remain sequential; no parallel requests are sent, preventing overlapping database writes and preserving ordered initialization/finalization.
+- Pagination fix — schedule search and past-date filter changes reset pagination to page 1, with safe clamping when result counts shrink.
+- Loading skeleton fix — replaced plain loading text with layout-matched shift and assignment skeletons, including an accessible loading status; verified working in the Schedule page.
+- Delete confirmation fix — replaced the native browser confirmation with an accessible Alert Dialog that identifies the schedule before deletion.
+- Pagination footer fix — empty filtered results now show `Showing 0 of 0 schedules`, while pagination controls remain hidden; verified by the user.
+- Delete dialog and footer verification — user confirmed both Issue 7 and Issue 8 behavior in the browser.
+
+- `4fa8ac3` — marked Schedule audit Issue 3 complete.
+- `3f3ff7a` — showed employee details in the import error notification.
+- `38abba5` — prevented duplicate schedule rows and labeled import errors.
+- `b008142` — recorded runtime import verification results.
+- `6c29dcc` — verified schedule server-action authentication.
+- `d5863df` — fixed schedule API authorization responses.
+- `16e9ec3` — handled duplicate schedules during batch import.
+- `ba36dcb` — reported created and updated schedule imports.
+- `ac5f439` — added dynamic schedule import batch sizes.
+- `cf2e4d4` — resolved project TypeScript errors before continuing the audit.
+
+## Documentation rules
+
+- Keep project documentation under `docs/`.
+- Do not add feature or audit documentation to the project root.
+- Update this checklist whenever an item is implemented or verified.
+- Use this document as the audit source of truth instead of relying on chat history.

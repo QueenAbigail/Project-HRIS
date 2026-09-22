@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
 import {
@@ -28,6 +29,7 @@ interface Site {
   code: string
   latitude?: number | null
   longitude?: number | null
+  timezone: 'WIB' | 'WITA' | 'WIT'
 }
 
 interface Company {
@@ -46,6 +48,7 @@ export default function ClientPage() {
   const [newItemCode, setNewItemCode] = useState('')
   const [newItemLatitude, setNewItemLatitude] = useState('')
   const [newItemLongitude, setNewItemLongitude] = useState('')
+  const [newItemTimezone, setNewItemTimezone] = useState<'WIB' | 'WITA' | 'WIT'>('WIB')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -120,6 +123,7 @@ export default function ClientPage() {
     setNewItemCode('')
     setNewItemLatitude('')
     setNewItemLongitude('')
+    setNewItemTimezone('WIB')
     setEditingCompanyId(companyId)
     setIsDialogOpen(true)
   }
@@ -139,6 +143,7 @@ export default function ClientPage() {
     setNewItemCode(site.code)
     setNewItemLatitude(site.latitude ? String(site.latitude) : '')
     setNewItemLongitude(site.longitude ? String(site.longitude) : '')
+    setNewItemTimezone(site.timezone || 'WIB')
     setEditingCompanyId(companyId)
     setIsDialogOpen(true)
   }
@@ -219,8 +224,8 @@ export default function ClientPage() {
         const latitude = newItemLatitude ? parseFloat(newItemLatitude) : null
         const longitude = newItemLongitude ? parseFloat(newItemLongitude) : null
         const body = editingItem 
-          ? { siteId: editingItem.id, name: newItemName, code: newItemCode, latitude, longitude } 
-          : { name: newItemName, code: newItemCode, latitude, longitude }
+          ? { siteId: editingItem.id, name: newItemName, code: newItemCode, latitude, longitude, timezone: newItemTimezone }
+          : { name: newItemName, code: newItemCode, latitude, longitude, timezone: newItemTimezone }
         const response = await fetch(`/api/companies/${editingCompanyId}/sites`, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
         
         if (!response.ok) {
@@ -229,7 +234,7 @@ export default function ClientPage() {
         }
         const result = await response.json()
 
-        setCompanies(prev => prev.map(c => c.id === editingCompanyId ? { ...c, sites: editingItem ? c.sites.map(s => s.id === editingItem.id ? { id: s.id, name: newItemName, code: newItemCode, latitude, longitude } : s) : [...c.sites, { id: result.id, name: result.name, code: result.code, latitude: result.latitude, longitude: result.longitude }] } : c))
+        setCompanies(prev => prev.map(c => c.id === editingCompanyId ? { ...c, sites: editingItem ? c.sites.map(s => s.id === editingItem.id ? { id: s.id, name: newItemName, code: newItemCode, latitude, longitude, timezone: newItemTimezone } : s) : [...c.sites, { id: result.id, name: result.name, code: result.code, latitude: result.latitude, longitude: result.longitude, timezone: result.timezone || newItemTimezone }] } : c))
         
         // Close dialog immediately after successful save
         setIsDialogOpen(false)
@@ -238,6 +243,7 @@ export default function ClientPage() {
         setNewItemCode('')
         setNewItemLatitude('')
         setNewItemLongitude('')
+        setNewItemTimezone('WIB')
         setEditingCompanyId('')
         setEditingType('')
         
@@ -503,6 +509,20 @@ export default function ClientPage() {
 }}
                     />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="site-timezone">Site timezone</Label>
+                  <Select value={newItemTimezone} onValueChange={(value: 'WIB' | 'WITA' | 'WIT') => setNewItemTimezone(value)}>
+                    <SelectTrigger id="site-timezone">
+                      <SelectValue placeholder="Select timezone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="WIB">WIB (UTC+7)</SelectItem>
+                      <SelectItem value="WITA">WITA (UTC+8)</SelectItem>
+                      <SelectItem value="WIT">WIT (UTC+9)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Attendance and patrol locations inherit this timezone.</p>
                 </div>
               </>
             )}

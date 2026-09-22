@@ -45,6 +45,8 @@ export interface Employee {
   position: string
   status: string
   joinDate: string
+  joinDateValue?: string
+  password?: string
   companyName?: string
   location: string
   locationCode: string
@@ -75,8 +77,9 @@ export interface Employee {
   userStatus?: string
   allowMobileAttendance?: boolean
   allowWebAppAccess?: boolean
+  allowWebAccess?: boolean
   site?: { name: string }
-  supervisor?: { name: string }
+  supervisor?: { id?: string; name: string }
 }
 
 interface EmployeeProfileSheetProps {
@@ -141,10 +144,6 @@ const employeeDetails: Record<string, Partial<Employee> & {
     totalWorkHours: 168,
     overtimeHours: 4,
     baseSalary: 3800,
-    recentActivity: [
-      { date: 'Mar 28, 2026', action: 'Checked In', time: '08:00 AM' },
-      { date: 'Mar 27, 2026', action: 'Shift Completed', time: '04:00 PM' },
-    ]
   },
 }
 

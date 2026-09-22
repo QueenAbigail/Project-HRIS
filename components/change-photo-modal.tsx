@@ -276,7 +276,9 @@ export function ChangePhotoModal({
               {/* Cropper on Left */}
               <div className="space-y-3">
                 <div className="relative w-full bg-background rounded-lg overflow-hidden border border-border" style={{ height: '280px' }}>
-                  <Cropper
+                  {(() => {
+                    const CropperComponent = Cropper as any
+                    return <CropperComponent
                     image={preview}
                     crop={crop}
                     zoom={zoom}
@@ -286,7 +288,13 @@ export function ChangePhotoModal({
                     onCropChange={setCrop}
                     onCropAreaChange={handleOnCropComplete}
                     onZoomChange={setZoom}
+                    rotation={0}
+                    minZoom={1}
+                    maxZoom={3}
+                    zoomSpeed={1}
+                    restrictPosition={false}
                   />
+                  })()}
                 </div>
 
                 {/* Zoom Controls */}

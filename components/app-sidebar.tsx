@@ -449,7 +449,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
                     <Link href={item.url} className="flex items-center min-w-0 gap-2">
                       <NavIcon icon={item.icon} />
                       <span className="truncate">{item.title}</span>
-                      {item.badge > 0 && (
+                      {(item.badge ?? 0) > 0 && (
                         <Badge variant="secondary" className="ml-auto text-xs flex-shrink-0">
                           {item.badge}
                         </Badge>
@@ -487,7 +487,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="lg">
                   <Avatar className="size-8 flex-shrink-0">
-                    <AvatarImage src={user?.avatar || "/placeholder-user.jpg"} alt={displayName} className="transition-opacity duration-300" />
+                    <AvatarImage src={(user as { avatar?: string | null } | null)?.avatar || "/placeholder-user.jpg"} alt={displayName} className="transition-opacity duration-300" />
                     <AvatarFallback className="bg-primary/10 text-primary font-medium">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
@@ -587,7 +587,7 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
       <ChangePhotoModal
         isOpen={isChangePhotoOpen}
         onClose={() => setIsChangePhotoOpen(false)}
-        currentAvatar={user?.avatar}
+        currentAvatar={(user as { avatar?: string | null } | null)?.avatar}
         onUpload={handlePhotoUpload}
       />
     </Sidebar>

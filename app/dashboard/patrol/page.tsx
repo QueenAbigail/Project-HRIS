@@ -13,7 +13,7 @@ export default async function PatrolPage() {
   
   // Fetch companies and sites from database
   const companies = await prisma.company.findMany({
-    where: isClient ? { id: currentUser?.companyId } : undefined,
+    where: isClient && currentUser?.companyId ? { id: currentUser.companyId } : undefined,
     include: {
       sites: {
         include: {

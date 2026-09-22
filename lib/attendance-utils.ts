@@ -90,10 +90,54 @@ export function isLateCheckIn(checkInTime: string | Date | null | undefined, sch
 export function calculateAttendanceStatus(
   actualCheckIn: string | Date | null | undefined,
   scheduledStart: string | Date | null | undefined,
+  siteTimezone?: string | null,
+  gracePeriodMinutes = 0,
 ): string {
   if (!actualCheckIn) return 'NOT_CHECKED_IN'
   if (!scheduledStart) return 'PRESENT'
-  return isLateCheckIn(actualCheckIn, scheduledStart) ? 'LATE' : 'PRESENT'
+
+  const actualMinutes = getLocalMinutes(actualCheckIn, siteTimezone)
+  const scheduledMinutes = getScheduledMinutes(scheduledStart)
+  if (actualMinutes === null || scheduledMinutes === null) return 'PRESENT'
+
+  return actualMinutes > scheduledMinutes + Math.max(0, gracePeriodMinutes) ? 'LATE' : 'PRESENT'
+}
+
+export function calculateLateMinutes(
+  actualCheckIn: string | Date | null | undefined,
+  scheduledStart: string | Date | null | undefined,
+  siteTimezone?: string | null,
+  gracePeriodMinutes = 0,
+): number {
+  if (!actualCheckIn || !scheduledStart) return 0
+  const actualMinutes = getLocalMinutes(actualCheckIn, siteTimezone)
+  const scheduledMinutes = getScheduledMinutes(scheduledStart)
+  if (actualMinutes === null || scheduledMinutes === null) return 0
+  return Math.max(0, actualMinutes - scheduledMinutes - Math.max(0, gracePeriodMinutes))
+}
+
+function getScheduledMinutes(value: string | Date): number | null {
+  const match = (value instanceof Date ? value.toISOString() : value).match(/(\\d{1,2}):(\\d{2})/)
+  if (!match) return null
+  return Number(match[1]) * 60 + Number(match[2])
+}
+
+function getLocalMinutes(value: string | Date, timezone?: string | null): number | null {
+  try {
+    const date = value instanceof Date ? value : new Date(value)
+    if (Number.isNaN(date.getTime())) return null
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: timezone || 'Asia/Jakarta',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(date)
+    const hour = parts.find((part) => part.type === 'hour')?.value
+    const minute = parts.find((part) => part.type === 'minute')?.value
+    return hour && minute ? Number(hour) * 60 + Number(minute) : null
+  } catch {
+    return null
+  }
 }
 
 export type ResolvedAttendanceStatus = 'PRESENT' | 'LATE' | 'ABSENT' | 'LEAVE' | 'NOT_CHECKED_IN'
@@ -110,25 +154,17 @@ export interface AttendanceRecordLike {
 /**
  * SINGLE SOURCE OF TRUTH for how an attendance record's status is displayed/counted.
  *
- * Rules (agreed with product):
- * - If the employee checked in, they are PRESENT (on time) or LATE. This is derived
- *   from the check-in itself so a stale stored status can never show them as Pending.
- *   Late = the record's precomputed lateMinutes > 0 (computed in GMT+7 at check-in),
- *   or the stored status already says LATE.
- * - If there is NO check-in, we trust the persisted status, which the `auto-absent`
- *   cron keeps fresh: LEAVE, ABSENT (past grace / shift end), or otherwise still
- *   NOT_CHECKED_IN (Pending). We never downgrade a cron-set ABSENT back to Pending.
+ * The persisted database status is authoritative. `actualCheckIn` is the factual
+ * timestamp, while status is the server-calculated classification. This prevents
+ * the UI from showing Present when the database still says NOT_CHECKED_IN.
  */
 export function resolveAttendanceStatus(record: AttendanceRecordLike): ResolvedAttendanceStatus {
   const stored = (record.status || '').toUpperCase()
 
-  if (record.actualCheckIn) {
-    const isLate = (record.lateMinutes ?? 0) > 0 || stored === 'LATE'
-    return isLate ? 'LATE' : 'PRESENT'
-  }
-
-  if (stored === 'LEAVE') return 'LEAVE'
+  if (stored === 'PRESENT') return 'PRESENT'
+  if (stored === 'LATE') return 'LATE'
   if (stored === 'ABSENT') return 'ABSENT'
+  if (stored === 'LEAVE') return 'LEAVE'
   return 'NOT_CHECKED_IN'
 }
 

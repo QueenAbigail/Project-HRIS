@@ -60,11 +60,11 @@ export function ShiftSwapDetailsModal({
     day: 'numeric',
   })
 
-  const statusColor = {
+  const statusColor = ({
     Pending: 'bg-yellow-100 text-yellow-800',
     Approved: 'bg-green-100 text-green-800',
     Rejected: 'bg-red-100 text-red-800',
-  }[swap.status]
+  } as Record<string, string>)[swap.status] ?? 'bg-muted text-muted-foreground'
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

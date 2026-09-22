@@ -272,10 +272,10 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
             ? `${savedSite.company?.name || 'N/A'} - ${savedSite.name}`
             : employee!.location,
           locationCode: savedSite?.code || employee!.locationCode,
-          certifications: formData.certifications
-            ? formData.certifications.split(',').map((item) => item.trim()).filter(Boolean)
-            : [],
-        })
+          certifications: typeof formData.certifications === 'string'
+            ? formData.certifications.split(',').map((item: string) => item.trim()).filter(Boolean)
+            : formData.certifications ?? [],
+        } as Employee)
         toast.success('Employee data updated successfully', {
           description: 'All changes have been saved.'
         })

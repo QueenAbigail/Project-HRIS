@@ -1,48 +1,64 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Clock, Download, Users, Plus } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import type { ScheduleDateRange } from '@/app/superadmin/actions'
 import { toast } from 'sonner'
 import { ShiftFormDialog } from '@/components/shifts/ShiftFormDialog'
 import { ScheduleImportDialog } from '@/components/shifts/ScheduleImportDialog'
-import { ScheduleTable } from '@/components/shifts/ScheduleTable'
+import { ScheduleTable, type Employee, type Schedule, type Shift } from '@/components/shifts/ScheduleTable'
+import { SchedulePageSkeleton } from '@/components/shifts/SchedulePageSkeleton'
 import { AddScheduleDialog } from '@/components/shifts/AddScheduleDialog'
 import { getShifts, getEmployeeSchedules } from '@/app/superadmin/actions'
 import { formatTime } from '@/lib/data'
 import { Edit } from 'lucide-react'
 
 export default function SchedulesPage() {
-  const [shifts, setShifts] = useState<any[]>([])
-  const [schedules, setSchedules] = useState<any[]>([])
+  const [shifts, setShifts] = useState<Shift[]>([])
+  const [schedules, setSchedules] = useState<Schedule[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [createShiftOpen, setCreateShiftOpen] = useState(false)
   const [editShiftOpen, setEditShiftOpen] = useState(false)
-  const [editingShift, setEditingShift] = useState<any>(null)
+  const [editingShift, setEditingShift] = useState<Shift | null>(null)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [addScheduleOpen, setAddScheduleOpen] = useState(false)
-  const [editingSchedule, setEditingSchedule] = useState<any>(null)
+  const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null)
+  const [scheduleDateRange, setScheduleDateRange] = useState<ScheduleDateRange>('upcoming')
+  const latestLoadId = useRef(0)
 
   useEffect(() => {
-    loadData()
-  }, [])
+    loadData(scheduleDateRange)
+  }, [scheduleDateRange])
 
-  const loadData = async () => {
+  const loadData = async (dateRange = scheduleDateRange) => {
+    const loadId = ++latestLoadId.current
+
     try {
       setLoading(true)
+      setLoadError(null)
       const [shiftsData, schedulesData] = await Promise.all([
         getShifts(),
-        getEmployeeSchedules(),
+        getEmployeeSchedules(dateRange),
       ])
+
+      if (loadId !== latestLoadId.current) return
+
       setShifts(shiftsData || [])
       setSchedules(schedulesData || [])
     } catch (error) {
-      console.error('Error loading data:', error)
-      toast.error('Failed to load data')
+      if (loadId !== latestLoadId.current) return
+
+      console.error('[v0] Error loading schedule data:', error)
+      const message = error instanceof Error ? error.message : 'Unable to load schedule data right now. Please try again.'
+      setLoadError(message)
+      toast.error(message)
     } finally {
-      setLoading(false)
+      if (loadId === latestLoadId.current) setLoading(false)
     }
   }
 
@@ -50,7 +66,7 @@ export default function SchedulesPage() {
     loadData()
   }
 
-  const handleAddSchedule = (schedule: any) => {
+  const handleAddSchedule = (schedule: Schedule) => {
     setEditingSchedule(schedule)
     setAddScheduleOpen(true)
   }
@@ -92,11 +108,11 @@ export default function SchedulesPage() {
           <Card>
             <CardHeader>
               <CardTitle>Shift Types</CardTitle>
-              <CardDescription>Define shift times and grace periods for your locations</CardDescription>
+              <CardDescription>Define local shift times and grace periods. Times are not converted to the admin&apos;s browser timezone.</CardDescription>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="text-center py-8 text-muted-foreground">Loading shifts...</div>
+                <SchedulePageSkeleton />
               ) : shifts.length === 0 ? (
                 <div className="text-center py-8">
                   <Clock className="size-8 mx-auto mb-2 text-muted-foreground" />
@@ -202,15 +218,25 @@ export default function SchedulesPage() {
           <Card>
             <CardHeader>
               <CardTitle>Schedule Assignments</CardTitle>
-              <CardDescription>View, edit, and manage all employee schedules (imported and manual)</CardDescription>
+              <CardDescription>View, edit, and manage all employee schedules (imported and manual). Shift times stay as entered and are interpreted in each employee&apos;s Site timezone.</CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="text-center py-8 text-muted-foreground">Loading schedules...</div>
-              ) : (
-                <ScheduleTable
+  {loading ? (
+  <SchedulePageSkeleton />
+  ) : loadError ? (
+  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-center">
+  <p className="font-medium text-destructive">Could not load schedules</p>
+  <p className="mt-1 text-sm text-muted-foreground">{loadError}</p>
+  <Button className="mt-4" variant="outline" onClick={() => loadData()}>
+  Try again
+  </Button>
+  </div>
+  ) : (
+  <ScheduleTable
                   schedules={schedules}
                   onEdit={handleAddSchedule}
+                  dateRange={scheduleDateRange}
+                  onDateRangeChange={setScheduleDateRange}
                   onDelete={() => loadData()}
                   onRefresh={loadData}
                 />

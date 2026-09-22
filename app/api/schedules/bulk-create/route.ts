@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getCurrentUser } from '@/lib/system'
-
-async function requireSuperAdmin() {
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'SUPER_ADMIN') {
-    throw new Error('Unauthorized')
-  }
-}
+import { requireSuperAdminResponse } from '@/lib/api-auth'
+import { isTodayOrEarlier, protectedDateMessage } from '@/lib/schedule-date-policy'
 
 // Bulk create multiple schedules
 export async function POST(req: NextRequest) {
   try {
-    await requireSuperAdmin()
-    const { schedules, replace = false, employeeId: filterEmployeeId } = await req.json()
+    const authResponse = await requireSuperAdminResponse()
+    if (authResponse) return authResponse
+    const { schedules, replace = false, employeeId: filterEmployeeId, allowProtectedDateChange = false } = await req.json()
+
+    if (!allowProtectedDateChange && schedules.some((schedule: { scheduleDate: string }) => isTodayOrEarlier(schedule.scheduleDate))) {
+      return NextResponse.json({ error: protectedDateMessage() }, { status: 409 })
+    }
 
     console.log('[v0] Bulk create received:', schedules.length, 'schedules, replace:', replace)
     console.log('[v0] First schedule sample:', schedules[0])

@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, type Variants } from 'framer-motion'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 
@@ -16,7 +16,7 @@ export function LoginLoading() {
 
   const isDark = theme === 'dark'
 
-  const pulseVariants = {
+  const pulseVariants: Variants = {
     animate: {
       scale: [1, 1.05, 1],
       transition: {
