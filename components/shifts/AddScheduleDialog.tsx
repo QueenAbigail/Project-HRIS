@@ -68,8 +68,11 @@ export function AddScheduleDialog({
 
   useEffect(() => {
     if (open && schedule) {
-      // In edit mode, load the single schedule data
-      const scheduleDate = String(schedule.scheduleDate ?? '').split('T')[0]
+      // Date-only schedule values must be formatted without browser timezone conversion.
+      const rawScheduleDate = schedule.scheduleDate instanceof Date
+        ? schedule.scheduleDate.toISOString()
+        : String(schedule.scheduleDate ?? '')
+      const scheduleDate = rawScheduleDate.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? ''
       const today = new Date().toISOString().split('T')[0]
       const isPast = scheduleDate < today
       

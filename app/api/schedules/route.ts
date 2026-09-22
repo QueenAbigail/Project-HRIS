@@ -58,13 +58,22 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const shift = await prisma.shift.findUnique({
+      where: { id: shiftId },
+      select: { startTime: true, endTime: true },
+    })
+
+    if (!shift) {
+      return NextResponse.json({ error: 'Shift not found' }, { status: 404 })
+    }
+
     const result = await prisma.schedule.create({
       data: {
         employeeId,
         shiftId,
-        scheduleDate: new Date(scheduleDate),
-        shiftStart: shiftStart || '',
-        shiftEnd: shiftEnd || '',
+        scheduleDate: new Date(`${scheduleDate}T00:00:00.000Z`),
+        shiftStart: shiftStart || shift.startTime,
+        shiftEnd: shiftEnd || shift.endTime,
         isException: isException ?? false,
         notes
       }

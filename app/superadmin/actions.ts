@@ -213,8 +213,8 @@ export async function getEmployeeSchedules(dateRange: ScheduleDateRange = 'upcom
       shiftId: schedule.shift.id,
       shiftName: schedule.shift.name,
       scheduleDate: schedule.scheduleDate,
-      shiftStart: schedule.shiftStart,
-      shiftEnd: schedule.shiftEnd,
+  shiftStart: schedule.shiftStart || schedule.shift.startTime,
+  shiftEnd: schedule.shiftEnd || schedule.shift.endTime,
       isException: schedule.isException,
       notes: schedule.notes,
       initials: schedule.employee.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()

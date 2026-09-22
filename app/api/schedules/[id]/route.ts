@@ -23,14 +23,23 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: protectedDateMessage(scheduleDate) }, { status: 409 })
     }
 
+    const shift = await prisma.shift.findUnique({
+      where: { id: shiftId },
+      select: { startTime: true, endTime: true },
+    })
+
+    if (!shift) {
+      return NextResponse.json({ error: 'Shift not found' }, { status: 404 })
+    }
+
     const result = await prisma.schedule.update({
       where: { id: id },
       data: {
         employeeId,
         shiftId,
-        scheduleDate: new Date(scheduleDate),
-        shiftStart,
-        shiftEnd,
+        scheduleDate: new Date(`${scheduleDate}T00:00:00.000Z`),
+        shiftStart: shiftStart || shift.startTime,
+        shiftEnd: shiftEnd || shift.endTime,
         isException: isException ?? false,
         notes
       }
