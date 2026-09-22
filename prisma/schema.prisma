@@ -242,8 +242,8 @@ model Attendance {
   shift          Shift?           @relation(fields: [shiftId], references: [id])
   scheduledStart String? // HH:MM
   scheduledEnd   String? // HH:MM
-  actualCheckIn  DateTime?
-  actualCheckOut DateTime?
+  actualCheckIn  DateTime? @db.Timestamptz(3)
+  actualCheckOut DateTime? @db.Timestamptz(3)
   status         AttendanceStatus @default(NOT_CHECKED_IN)
   lateMinutes    Int              @default(0)
   gpsLat         Float?           // GPS latitude for check-in
