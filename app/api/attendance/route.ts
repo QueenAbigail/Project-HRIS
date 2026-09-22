@@ -175,9 +175,7 @@ select: { id: true, companyId: true, timezone: true },
     }),
     ])
 
-    // Resolve display status via the shared single-source-of-truth helper:
-    // derive PRESENT/LATE from the check-in, but trust the persisted ABSENT/LEAVE
-    // status that the auto-absent cron maintains (never downgrade ABSENT to Pending).
+    // The persisted status is calculated by the server on write and is authoritative.
     const enrichedRecords = filtered.map((record: any) => ({
       ...record,
       status: resolveAttendanceStatus(record)
