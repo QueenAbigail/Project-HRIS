@@ -207,8 +207,36 @@ export function AddEmployeeDialog({
         ],
       ]
 
-      // Create worksheet
+      // Create the employee worksheet and a database sheet that feeds its dropdowns.
       const ws = XLSX.utils.aoa_to_sheet(templateData)
+      const databaseData = [
+        ['Sites', 'Departments', 'Positions', 'Employment Statuses', 'Marital Statuses', 'Religions', 'Blood Types', 'Genders', 'Roles', 'Statuses'],
+        ...Array.from({ length: Math.max(sites.length, departments.length, positions.length, employmentStatuses.length, maritalStatuses.length, religions.length, bloodTypes.length, 2, 4, 3) }, (_, index) => [
+          sites[index]?.name || '', departments[index]?.value || '', positions[index]?.value || '',
+          employmentStatuses[index]?.value || '', maritalStatuses[index]?.value || '', religions[index]?.value || '',
+          bloodTypes[index]?.value || '', ['Male', 'Female'][index] || '', ['STAFF', 'MANAGER', 'SITE_ADMIN', 'HR_ADMIN'][index] || '',
+          ['ACTIVE', 'INACTIVE', 'SUSPENDED'][index] || '',
+        ]),
+      ]
+      const databaseSheet = XLSX.utils.aoa_to_sheet(databaseData)
+      databaseSheet['!cols'] = [{ wch: 24 }, { wch: 28 }]
+
+      // SheetJS preserves these validation definitions in supported spreadsheet apps.
+      ws['!dataValidation'] = {
+        sqref: 'D2:F1000,N2:Q1000,R2:R1000,V2:X1000',
+        rules: [
+          { type: 'list', allowBlank: true, sqref: 'D2:D1000', formula1: "'Database'!$B$2:$B$1000" },
+          { type: 'list', allowBlank: true, sqref: 'E2:E1000', formula1: "'Database'!$C$2:$C$1000" },
+          { type: 'list', allowBlank: false, sqref: 'F2:F1000', formula1: "'Database'!$A$2:$A$1000" },
+          { type: 'list', allowBlank: true, sqref: 'N2:N1000', formula1: "'Database'!$I$2:$I$3" },
+          { type: 'list', allowBlank: true, sqref: 'O2:O1000', formula1: "'Database'!$G$2:$G$1000" },
+          { type: 'list', allowBlank: true, sqref: 'P2:P1000', formula1: "'Database'!$E$2:$E$1000" },
+          { type: 'list', allowBlank: true, sqref: 'Q2:Q1000', formula1: "'Database'!$D$2:$D$1000" },
+          { type: 'list', allowBlank: true, sqref: 'R2:R1000', formula1: "'Database'!$H$2:$H$1000" },
+          { type: 'list', allowBlank: true, sqref: 'V2:V1000', formula1: "'Database'!$J$2:$J$5" },
+          { type: 'list', allowBlank: true, sqref: 'W2:W1000', formula1: "'Database'!$K$2:$K$4" },
+        ],
+      }
       
       // Set column widths
       ws['!cols'] = [
@@ -244,6 +272,7 @@ export function AddEmployeeDialog({
       
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, 'Employees')
+      XLSX.utils.book_append_sheet(wb, databaseSheet, 'Database')
       
       // Download file
       XLSX.writeFile(wb, 'employee_template.xlsx')
