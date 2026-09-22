@@ -171,8 +171,9 @@ export function AddEmployeeDialog({
   // Download template function
   const handleDownloadTemplate = async () => {
     try {
-      const XLSX = await import('xlsx')
-      const templateData = [
+  const XLSX = await import('xlsx')
+  const ExcelJS = await import('exceljs')
+  const templateData = [
         [
           'Full Name*', 'Employee Code (NIP)*', 'Personal Email', 'Department', 'Position', 
           'Location (Site)*', 'Join Date', 'Phone Number', 'KTP Number', 'Address', 'Birth City', 'Birth Date',
@@ -270,12 +271,46 @@ export function AddEmployeeDialog({
         { wch: 15 }, // Supervisor
       ]
       
-      const wb = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(wb, ws, 'Employees')
-      XLSX.utils.book_append_sheet(wb, databaseSheet, 'Database')
-      
-      // Download file
-      XLSX.writeFile(wb, 'employee_template.xlsx')
+      const workbook = new ExcelJS.Workbook()
+      const employeesSheet = workbook.addWorksheet('Employees')
+      const database = workbook.addWorksheet('Database')
+      templateData.forEach((row) => employeesSheet.addRow(row))
+      databaseData.forEach((row) => database.addRow(row))
+
+      employeesSheet.columns = [
+        { width: 15 }, { width: 15 }, { width: 25 }, { width: 15 }, { width: 15 }, { width: 20 },
+        { width: 12 }, { width: 15 }, { width: 18 }, { width: 25 }, { width: 15 }, { width: 12 },
+        { width: 18 }, { width: 10 }, { width: 12 }, { width: 15 }, { width: 15 }, { width: 10 },
+        { width: 18 }, { width: 15 }, { width: 30 }, { width: 12 }, { width: 20 }, { width: 20 },
+        { width: 15 }, { width: 15 }, { width: 15 }, { width: 15 },
+      ]
+      database.columns.forEach((column) => { column.width = 24 })
+      database.state = 'veryHidden'
+      employeesSheet.getRow(1).font = { bold: true }
+      database.getRow(1).font = { bold: true }
+
+      const dropdowns = [
+        ['D', 'B'], ['E', 'C'], ['F', 'A'], ['N', 'H'], ['O', 'F'],
+        ['P', 'E'], ['Q', 'D'], ['R', 'G'], ['V', 'I'], ['W', 'J'],
+      ] as const
+      dropdowns.forEach(([target, source]) => {
+        for (let row = 2; row <= 1000; row++) {
+          employeesSheet.getCell(`${target}${row}`).dataValidation = {
+            type: 'list',
+            allowBlank: true,
+            formulae: [`Database!$${source}$2:$${source}$1000`],
+          }
+        }
+      })
+
+      const output = await workbook.xlsx.writeBuffer()
+      const blob = new Blob([output], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = 'employee_template.xlsx'
+      anchor.click()
+      URL.revokeObjectURL(url)
     } catch (error) {
     }
   }
