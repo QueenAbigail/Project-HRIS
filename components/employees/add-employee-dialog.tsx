@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Upload, UserPlus, FileSpreadsheet, Download, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react'
+import { Upload, UserPlus, FileSpreadsheet, Download, AlertCircle, CheckCircle2, Eye, EyeOff, RefreshCw } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { createEmployeeAction } from '@/app/actions/employee' // Taruh di baris paling atas bareng import lain
 
@@ -100,6 +100,32 @@ export function AddEmployeeDialog({
     // Step 4
     role: 'STAFF', allowMobileAttendance: 'false', allowWebAppAccess: 'false'
   })
+
+  const refreshMasterData = useCallback(async () => {
+      try {
+        setLoadingSites(true)
+        setLoadingMasterData(true)
+        const sitesResponse = await fetch('/api/sites')
+        if (sitesResponse.ok) setSites(await sitesResponse.json())
+        const categories = ['department', 'position', 'employmentStatus', 'maritalStatus', 'religion', 'bloodType', 'certificate']
+        const responses = await Promise.all(categories.map((cat) => fetch(`/api/master-data?category=${cat}`)))
+        const data = await Promise.all(responses.map((response) => response.json()))
+        setDepartments(Array.isArray(data[0]) ? data[0] : [])
+        setPositions(Array.isArray(data[1]) ? data[1] : [])
+        setEmploymentStatuses(Array.isArray(data[2]) ? data[2] : [])
+        setMaritalStatuses(Array.isArray(data[3]) ? data[3] : [])
+        setReligions(Array.isArray(data[4]) ? data[4] : [])
+        setBloodTypes(Array.isArray(data[5]) ? data[5] : [])
+        setCertifications(Array.isArray(data[6]) ? data[6] : [])
+        dataFetchedRef.current = true
+        toast.success('Master data refreshed')
+      } catch {
+        toast.error('Unable to refresh master data')
+      } finally {
+        setLoadingSites(false)
+        setLoadingMasterData(false)
+      }
+  }, [])
 
   // Fetch sites and master data from database (only once due to caching)
   useEffect(() => {
@@ -638,10 +664,16 @@ export function AddEmployeeDialog({
                   <p className="text-sm text-muted-foreground mb-3">
                     Not sure what format to use? Download our employee template to see the required columns and data structure for bulk imports.
                   </p>
-                  <Button variant="outline" className="mt-4 gap-2" onClick={handleDownloadTemplate}>
-                    <Download className="size-4" />
-                    Download Template
-                  </Button>
+  <div className="mt-4 flex flex-wrap gap-2">
+  <Button variant="outline" className="gap-2" onClick={refreshMasterData} disabled={loadingMasterData || loadingSites}>
+  <RefreshCw className={`size-4 ${loadingMasterData || loadingSites ? 'animate-spin' : ''}`} />
+  Refresh Master Data
+  </Button>
+  <Button variant="outline" className="gap-2" onClick={handleDownloadTemplate} disabled={loadingMasterData || loadingSites}>
+  <Download className="size-4" />
+  Download Template
+  </Button>
+  </div>
                 </div>
               </>
             )}
