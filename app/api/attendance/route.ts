@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
 import { resolveAttendanceStatus } from '@/lib/attendance-utils'
 import { getBusinessDate, getBusinessDateRange, getBusinessDateRangeForPreset, type SiteTimezone } from '@/lib/timezone'
+import { parseUtcTimestamp } from '@/lib/attendance-timestamps'
 
 // Helper function to calculate attendance status based on check-in time and scheduled time
 function calculateAttendanceStatus(actualCheckIn: string | null, scheduledStart: string | null, timezone: SiteTimezone | string = 'WIB'): string {
@@ -233,6 +234,15 @@ export async function POST(request: NextRequest) {
       notes
     } = body
 
+    const parsedCheckIn = parseUtcTimestamp(actualCheckIn)
+    const parsedCheckOut = parseUtcTimestamp(actualCheckOut)
+    if ((actualCheckIn && !parsedCheckIn) || (actualCheckOut && !parsedCheckOut)) {
+      return NextResponse.json(
+        { error: 'Check-in and check-out timestamps must be valid ISO timestamps with an explicit timezone, such as 2026-09-21T06:20:00.000Z' },
+        { status: 400 }
+      )
+    }
+
     // The employee's assigned site is authoritative. Mobile may send locationId,
     // but a missing value must never create an attendance row without a location.
     if (!userId) {
@@ -314,14 +324,14 @@ export async function POST(request: NextRequest) {
 
       // If actualCheckIn is provided, update check-in and recalculate status
       if (actualCheckIn && !existingAttendance.actualCheckIn) {
-        updateData.actualCheckIn = actualCheckIn
+        updateData.actualCheckIn = parsedCheckIn
         updateData.status = calculateAttendanceStatus(actualCheckIn, scheduledStart || existingAttendance.scheduledStart, siteTimezone)
         updateData.selfieCheckIn = selfieCheckIn
       }
 
       // If actualCheckOut is provided, update check-out and ensure status is properly set
       if (actualCheckOut) {
-        updateData.actualCheckOut = actualCheckOut
+        updateData.actualCheckOut = parsedCheckOut
         updateData.selfieCheckOut = selfieCheckOut
         
         // Ensure status is set based on check-in time (if it wasn't already)
@@ -337,9 +347,10 @@ export async function POST(request: NextRequest) {
       // If no status was set during check-in or check-out, calculate it now
       if (!updateData.status && existingAttendance.actualCheckIn) {
         updateData.status = calculateAttendanceStatus(
-          existingAttendance.actualCheckIn.toISOString().slice(11, 16),
-          scheduledStart || existingAttendance.scheduledStart
-        )
+      existingAttendance.actualCheckIn.toISOString(),
+      scheduledStart || existingAttendance.scheduledStart,
+      siteTimezone
+    )
       }
 
       const updated = await prisma.attendance.update({
@@ -371,8 +382,8 @@ export async function POST(request: NextRequest) {
         date: dateOnly,
         scheduledStart,
         scheduledEnd,
-        actualCheckIn,
-        actualCheckOut: actualCheckOut || null,
+        actualCheckIn: parsedCheckIn,
+        actualCheckOut: parsedCheckOut,
         status: calculatedStatus,
         lateMinutes: lateMinutes || 0,
         gpsLat: gpsLat || null,
