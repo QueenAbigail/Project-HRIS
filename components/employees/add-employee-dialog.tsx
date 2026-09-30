@@ -432,7 +432,7 @@ export function AddEmployeeDialog({
       let success = 0
       let failed = 0
       let errors: Array<{ row: number; name?: string; error: string }> = []
-      const batchSize = 10
+      const batchSize = 1
       for (let start = 0; start < importPreview.length; start += batchSize) {
         const formData = new FormData()
         formData.append('file', importFile)
@@ -726,12 +726,9 @@ export function AddEmployeeDialog({
             )}
             {importStatus === 'processing' && (
               <div className="flex flex-col items-center justify-center py-8 gap-4">
-  <div className="flex items-center justify-center">
-  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-  </div>
   <div className="w-full max-w-md text-center">
   <p className="font-semibold text-base">Importing Employees...</p>
-  <p className="mt-2 text-sm text-muted-foreground">Processed {importProcessed} of {importTotal} employees</p>
+  <p className="mt-2 text-sm text-muted-foreground">Processed {importProcessed} of {importTotal} employees (updated after each employee)</p>
   <Progress value={importProgress} className="mt-4" aria-label={`Import progress: ${importProgress}%`} />
   <p className="mt-2 text-sm font-medium">{importProgress}% complete</p>
   </div>
