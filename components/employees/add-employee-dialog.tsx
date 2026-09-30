@@ -648,12 +648,12 @@ export function AddEmployeeDialog({
           
           <TabsContent value="import" className="mt-4 space-y-4">
              {/* Konten Import Tetap Utuh */}
-             {importStatus === 'idle' && (
-              <>
-                <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-8 text-center">
-                  <Upload className="mx-auto size-12 text-muted-foreground/50" />
-                  <h3 className="mt-4 text-lg font-semibold">Upload Excel File</h3>
-                  <input type="file" accept=".xlsx" onChange={handleFileUpload} className="hidden" id="file-upload" />
+  <input type="file" accept=".xlsx,.xls" onChange={handleFileUpload} className="hidden" id="file-upload" />
+  {importStatus === 'idle' && !previewReady && (
+  <>
+  <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-8 text-center">
+  <Upload className="mx-auto size-12 text-muted-foreground/50" />
+  <h3 className="mt-4 text-lg font-semibold">Upload Excel File</h3>
                   <Button variant="outline" className="mt-4" onClick={() => document.getElementById('file-upload')?.click()}>
                     <Upload className="mr-2 size-4" /> Choose File
                   </Button>
@@ -680,9 +680,12 @@ export function AddEmployeeDialog({
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <h3 className="font-semibold">Review import</h3>
-                        <p className="text-sm text-muted-foreground">Existing employee codes will be updated. New codes will create employees. Blank optional cells keep existing values.</p>
-                      </div>
-                      <Button onClick={handleConfirmImport} disabled={importPreview.some((row) => row.error)}>Confirm Import</Button>
+  <p className="text-sm text-muted-foreground">Existing employee codes will be updated. New codes will create employees. Blank optional cells keep existing values.</p>
+  </div>
+  <div className="flex shrink-0 gap-2">
+  <Button variant="outline" onClick={() => document.getElementById('file-upload')?.click()}>Choose Different File</Button>
+  <Button onClick={handleConfirmImport} disabled={importPreview.some((row) => row.error)}>Confirm Import</Button>
+  </div>
                     </div>
                     <div className="mt-3 max-h-52 overflow-y-auto rounded border">
                       {importPreview.map((row) => (
