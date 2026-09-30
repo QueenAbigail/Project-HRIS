@@ -217,6 +217,11 @@ export default function ClientPage() {
         } else {
           setCompanies(prev => [...prev, { id: result.id, name: result.name, sites: [] }])
         }
+        setIsDialogOpen(false)
+        setEditingItem(null)
+        setNewItemName('')
+        setEditingCompanyId('')
+        setEditingType('')
         toast.success(editingItem ? 'Company updated' : 'Company added')
         void fetchCompanies(false)
       } else if (editingType === 'site') {
