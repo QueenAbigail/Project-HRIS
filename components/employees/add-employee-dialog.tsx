@@ -23,6 +23,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Upload, UserPlus, FileSpreadsheet, Download, AlertCircle, CheckCircle2, Eye, EyeOff, RefreshCw } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Progress } from '@/components/ui/progress'
 import { createEmployeeAction } from '@/app/actions/employee' // Taruh di baris paling atas bareng import lain
 
 export interface NewEmployee {
@@ -83,6 +84,9 @@ export function AddEmployeeDialog({
   const [importStatus, setImportStatus] = useState<'idle' | 'processing' | 'success' | 'error' | 'partial'>('idle')
   const [importCount, setImportCount] = useState(0)
   const [importFailed, setImportFailed] = useState(0)
+  const [importProgress, setImportProgress] = useState(0)
+  const [importProcessed, setImportProcessed] = useState(0)
+  const [importTotal, setImportTotal] = useState(0)
   const [importErrors, setImportErrors] = useState<Array<{row: number, name?: string, error: string}>>([])
   const [importFile, setImportFile] = useState<File | null>(null)
   const [importPreview, setImportPreview] = useState<Array<{row: number; name: string; employeeCode: string; location: string; action: 'create' | 'update'; error: string | null}>>([])
@@ -422,15 +426,33 @@ export function AddEmployeeDialog({
     if (!importFile || importPreview.some((row) => row.error)) return
     try {
       setImportStatus('processing')
-      const formData = new FormData()
-      formData.append('file', importFile)
-      const response = await fetch('/api/employees/import', { method: 'POST', body: formData })
-      const result = await response.json()
-      setImportCount(result.success || 0)
-      setImportFailed(result.failed || 0)
-      setImportErrors(result.errors || [])
-      setImportStatus(result.success > 0 && result.failed > 0 ? 'partial' : result.success > 0 ? 'success' : 'error')
-      if (result.success > 0) onImportEmployees?.([])
+      setImportProgress(0)
+      setImportProcessed(0)
+      setImportTotal(importPreview.length)
+      let success = 0
+      let failed = 0
+      let errors: Array<{ row: number; name?: string; error: string }> = []
+      const batchSize = 10
+      for (let start = 0; start < importPreview.length; start += batchSize) {
+        const formData = new FormData()
+        formData.append('file', importFile)
+        formData.append('start', String(start))
+        formData.append('end', String(Math.min(start + batchSize, importPreview.length)))
+        const response = await fetch('/api/employees/import', { method: 'POST', body: formData })
+        const result = await response.json()
+        if (!response.ok) throw new Error(result.error || 'Import failed')
+        success += result.success || 0
+        failed += result.failed || 0
+        errors = [...errors, ...(result.errors || [])]
+        const processed = Math.min(start + batchSize, importPreview.length)
+        setImportProcessed(processed)
+        setImportProgress(Math.round((processed / importPreview.length) * 100))
+      }
+      setImportCount(success)
+      setImportFailed(failed)
+      setImportErrors(errors)
+      setImportStatus(success > 0 && failed > 0 ? 'partial' : success > 0 ? 'success' : 'error')
+      if (success > 0) onImportEmployees?.([])
     } catch (error) {
       setImportStatus('error')
       setImportErrors([{ row: 0, error: error instanceof Error ? error.message : 'Import failed' }])
@@ -441,6 +463,9 @@ export function AddEmployeeDialog({
     setImportStatus('idle')
     setImportCount(0)
     setImportFailed(0)
+    setImportProgress(0)
+    setImportProcessed(0)
+    setImportTotal(0)
     setImportErrors([])
     setImportFile(null)
     setImportPreview([])
@@ -701,13 +726,15 @@ export function AddEmployeeDialog({
             )}
             {importStatus === 'processing' && (
               <div className="flex flex-col items-center justify-center py-8 gap-4">
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                </div>
-                <div className="text-center">
-                  <p className="font-semibold text-base">Importing Employees...</p>
-                  <p className="text-sm text-muted-foreground mt-2">Processing your file. This may take a moment.</p>
-                </div>
+  <div className="flex items-center justify-center">
+  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+  </div>
+  <div className="w-full max-w-md text-center">
+  <p className="font-semibold text-base">Importing Employees...</p>
+  <p className="mt-2 text-sm text-muted-foreground">Processed {importProcessed} of {importTotal} employees</p>
+  <Progress value={importProgress} className="mt-4" aria-label={`Import progress: ${importProgress}%`} />
+  <p className="mt-2 text-sm font-medium">{importProgress}% complete</p>
+  </div>
               </div>
             )}
             {importStatus === 'success' && (

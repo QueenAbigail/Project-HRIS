@@ -131,6 +131,10 @@ export async function POST(request: NextRequest) {
       console.log('[v0] First row data:', normalizedData[0])
     }
 
+    const start = Math.max(0, Number(formData.get('start') || 0))
+    const end = Math.min(normalizedData.length, Number(formData.get('end') || normalizedData.length))
+    const rowsToImport = normalizedData.slice(start, end)
+
     // Import employees
     const results = {
       success: 0,
@@ -138,9 +142,9 @@ export async function POST(request: NextRequest) {
       errors: [] as Array<{ row: number; name: string; error: string }>
     }
 
-    for (let i = 0; i < normalizedData.length; i++) {
-      const row = normalizedData[i] as any
-      const rowNum = i + 2 // +2 because row 1 is header, array is 0-indexed
+    for (let i = 0; i < rowsToImport.length; i++) {
+      const row = rowsToImport[i] as any
+      const rowNum = start + i + 2 // +2 because row 1 is header, array is 0-indexed
 
       try {
         // Validate required fields (use normalized header names)
