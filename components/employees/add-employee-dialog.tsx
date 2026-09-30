@@ -84,6 +84,10 @@ export function AddEmployeeDialog({
   const [importCount, setImportCount] = useState(0)
   const [importFailed, setImportFailed] = useState(0)
   const [importErrors, setImportErrors] = useState<Array<{row: number, name?: string, error: string}>>([])
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importPreview, setImportPreview] = useState<Array<{row: number; name: string; employeeCode: string; location: string; action: 'create' | 'update'; error: string | null}>>([])
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewReady, setPreviewReady] = useState(false)
   
   // State Manual Form Wizard
   const [step, setStep] = useState(1)
@@ -385,67 +389,62 @@ export function AddEmployeeDialog({
   }
 }
 
-  // Fitur Import - Upload ke API
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      toast.error('Please upload an Excel file (.xlsx or .xls)')
+      return
+    }
     try {
-      setImportStatus('processing')
-      setImportCount(0)
-      setImportFailed(0)
+      setPreviewLoading(true)
+      setImportFile(file)
       setImportErrors([])
-      
-      // Create FormData and send to API
       const formData = new FormData()
       formData.append('file', file)
-
-      const response = await fetch('/api/employees/import', {
-        method: 'POST',
-        body: formData
-      })
-
+      formData.append('mode', 'preview')
+      const response = await fetch('/api/employees/import', { method: 'POST', body: formData })
       const result = await response.json()
-
-      if (response.ok || result.success || result.failed) {
-        setImportCount(result.success || 0)
-        setImportFailed(result.failed || 0)
-        setImportErrors(result.errors || [])
-        
-        // Determine status
-        if (result.success > 0 && result.failed > 0) {
-          setImportStatus('partial')
-        } else if (result.success > 0) {
-          setImportStatus('success')
-        } else {
-          setImportStatus('error')
-        }
-        
-        // Trigger refresh of employee list
-        if (result.success > 0) {
-          onImportEmployees?.([])
-          // Auto close on full success after 2 seconds
-          if (result.failed === 0) {
-            setTimeout(() => {
-              handleOpenChange(false)
-            }, 2000)
-          }
-        }
-      } else {
-        setImportStatus('error')
-        setImportErrors([{ row: 0, error: result.error || 'Unknown error occurred' }])
-      }
+      if (!response.ok) throw new Error(result.error || 'Could not preview file')
+      setImportPreview(result.rows || [])
+      setPreviewReady(true)
+      toast.success(`Preview ready: ${result.total || 0} rows`)
     } catch (error) {
-      setImportStatus('error')
-      setImportErrors([{ row: 0, error: error instanceof Error ? error.message : 'Upload failed' }])
+      setImportPreview([])
+      setPreviewReady(false)
+      toast.error(error instanceof Error ? error.message : 'Could not preview file')
+    } finally {
+      setPreviewLoading(false)
     }
   }
 
-  const resetImportStatus = () => { 
+  const handleConfirmImport = async () => {
+    if (!importFile || importPreview.some((row) => row.error)) return
+    try {
+      setImportStatus('processing')
+      const formData = new FormData()
+      formData.append('file', importFile)
+      const response = await fetch('/api/employees/import', { method: 'POST', body: formData })
+      const result = await response.json()
+      setImportCount(result.success || 0)
+      setImportFailed(result.failed || 0)
+      setImportErrors(result.errors || [])
+      setImportStatus(result.success > 0 && result.failed > 0 ? 'partial' : result.success > 0 ? 'success' : 'error')
+      if (result.success > 0) onImportEmployees?.([])
+    } catch (error) {
+      setImportStatus('error')
+      setImportErrors([{ row: 0, error: error instanceof Error ? error.message : 'Import failed' }])
+    }
+  }
+
+  const resetImportStatus = () => {
     setImportStatus('idle')
     setImportCount(0)
     setImportFailed(0)
     setImportErrors([])
+    setImportFile(null)
+    setImportPreview([])
+    setPreviewReady(false)
   }
 
   return (
@@ -664,17 +663,37 @@ export function AddEmployeeDialog({
                   <p className="text-sm text-muted-foreground mb-3">
                     Not sure what format to use? Download our employee template to see the required columns and data structure for bulk imports.
                   </p>
-  <div className="mt-4 flex flex-wrap gap-2">
-  <Button variant="outline" className="gap-2" onClick={refreshMasterData} disabled={loadingMasterData || loadingSites}>
-  <RefreshCw className={`size-4 ${loadingMasterData || loadingSites ? 'animate-spin' : ''}`} />
-  Refresh Master Data
-  </Button>
-  <Button variant="outline" className="gap-2" onClick={handleDownloadTemplate} disabled={loadingMasterData || loadingSites}>
-  <Download className="size-4" />
-  Download Template
-  </Button>
-  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                  <Button variant="outline" className="gap-2" onClick={refreshMasterData} disabled={loadingMasterData || loadingSites}>
+                  <RefreshCw className={`size-4 ${loadingMasterData || loadingSites ? 'animate-spin' : ''}`} />
+                  Refresh Master Data
+                  </Button>
+                  <Button variant="outline" className="gap-2" onClick={handleDownloadTemplate} disabled={loadingMasterData || loadingSites}>
+                  <Download className="size-4" />
+                  Download Template
+                  </Button>
+                  </div>
                 </div>
+                {previewLoading && <Alert><AlertDescription>Reading and validating the file...</AlertDescription></Alert>}
+                {previewReady && (
+                  <div className="rounded-lg border p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="font-semibold">Review import</h3>
+                        <p className="text-sm text-muted-foreground">Existing employee codes will be updated. New codes will create employees. Blank optional cells keep existing values.</p>
+                      </div>
+                      <Button onClick={handleConfirmImport} disabled={importPreview.some((row) => row.error)}>Confirm Import</Button>
+                    </div>
+                    <div className="mt-3 max-h-52 overflow-y-auto rounded border">
+                      {importPreview.map((row) => (
+                        <div key={row.row} className="flex items-center justify-between gap-3 border-b p-2 text-sm last:border-0">
+                          <span>Row {row.row}: {row.name || 'Unnamed'} ({row.employeeCode || 'No code'})</span>
+                          <span className={row.error ? 'text-destructive' : 'text-muted-foreground'}>{row.error || (row.action === 'update' ? 'Will update' : 'New employee')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
             {importStatus === 'processing' && (

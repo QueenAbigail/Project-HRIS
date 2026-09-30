@@ -99,6 +99,33 @@ export async function POST(request: NextRequest) {
     }).filter((row: any) => Object.values(row).some((v: any) => v)) // Filter empty rows
 
     console.log('[v0] Parsed Excel data:', normalizedData.length, 'rows')
+    const mode = formData.get('mode')?.toString() || 'commit'
+    const employeeCodes = normalizedData.map((row: any) => String(row['Employee Code'] || '').trim()).filter(Boolean)
+    const duplicateCodes = employeeCodes.filter((code, index) => employeeCodes.indexOf(code) !== index)
+    const duplicateCodeSet = new Set(duplicateCodes)
+
+    if (mode === 'preview') {
+      const existingUsers = await prisma.user.findMany({
+        where: { employeeCode: { in: employeeCodes } },
+        select: { employeeCode: true },
+      })
+      const existingCodes = new Set(existingUsers.map((user) => user.employeeCode))
+      return NextResponse.json({
+        total: normalizedData.length,
+        rows: normalizedData.map((row: any, index: number) => ({
+          row: index + 2,
+          name: row['Full Name'] || '',
+          employeeCode: row['Employee Code'] || '',
+          location: row['Location'] || '',
+          action: existingCodes.has(row['Employee Code']) ? 'update' : 'create',
+          error: !row['Full Name'] || !row['Employee Code']
+            ? 'Full Name and Employee Code are required'
+            : duplicateCodeSet.has(row['Employee Code'])
+              ? 'Duplicate Employee Code in this file'
+              : null,
+        })),
+      })
+    }
     if (normalizedData.length > 0) {
       console.log('[v0] First row keys:', Object.keys(normalizedData[0]))
       console.log('[v0] First row data:', normalizedData[0])
@@ -318,6 +345,11 @@ export async function POST(request: NextRequest) {
           allowWebAppAccess: false
         }
 
+        // Empty optional cells are patch semantics: preserve existing employee values.
+        const updateData = Object.fromEntries(Object.entries(userData).filter(([key, value]) =>
+          key === 'id' || key === 'employeeCode' || value !== null
+        ))
+
         // Create or update user in database
         console.log(`[v0] Row ${rowNum}: Checking if user exists in database (ID: ${userId})`)
         const dbUserExists = await prisma.user.findUnique({
@@ -330,7 +362,7 @@ export async function POST(request: NextRequest) {
         console.log(`[v0] Row ${rowNum}: Upserting user (email: ${userData.email})`)
         await prisma.user.upsert({
           where: { email: userData.email },
-          update: userData,
+          update: updateData,
           create: {
             ...userData,
             id: userId // Use the auth user's ID when creating
