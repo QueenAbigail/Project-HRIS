@@ -48,6 +48,7 @@ interface Location {
   name: string
   code: string
   timezone: string
+  clientName: string
   }
 
 export default function GPSLocationsPage() {
@@ -98,7 +99,7 @@ export default function GPSLocationsPage() {
         const allSites: Site[] = []
         for (const company of companies) {
           if (company.sites) {
-            allSites.push(...company.sites)
+            allSites.push(...company.sites.map((site: Site) => ({ ...site, clientName: company.name })))
           }
         }
         setSites(allSites)
@@ -462,7 +463,7 @@ export default function GPSLocationsPage() {
                           <div className="flex items-center gap-3 flex-1 text-left">
                             <MapPin className="h-4 w-4 text-primary shrink-0" />
                             <div>
-                              <p className="font-semibold">{site.name}</p>
+                              <p className="font-semibold">{site.clientName} - {site.name}</p>
                               {isSiteLoading ? (
                                 <p className="flex items-center gap-1 text-xs text-muted-foreground" role="status">
                                   <Loader2 className="size-3 animate-spin" />
