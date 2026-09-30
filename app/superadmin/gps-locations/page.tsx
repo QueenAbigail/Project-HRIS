@@ -677,7 +677,7 @@ export default function GPSLocationsPage() {
                           <div className="flex items-center gap-3 flex-1 text-left">
                             <MapPin className="h-4 w-4 text-chart-2 shrink-0" />
                             <div>
-                              <p className="font-semibold">{site.name}</p>
+                              <p className="font-semibold">{site.clientName} - {site.name}</p>
                               <p className="text-xs text-muted-foreground">
                                 {locations.length} checkpoint{locations.length !== 1 ? 's' : ''}
                               </p>
