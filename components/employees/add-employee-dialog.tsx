@@ -675,29 +675,29 @@ export function AddEmployeeDialog({
                   </div>
                 </div>
                 {previewLoading && <Alert><AlertDescription>Reading and validating the file...</AlertDescription></Alert>}
-                {previewReady && (
-                  <div className="rounded-lg border p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <h3 className="font-semibold">Review import</h3>
-  <p className="text-sm text-muted-foreground">Existing employee codes will be updated. New codes will create employees. Blank optional cells keep existing values.</p>
-  </div>
-  <div className="flex shrink-0 gap-2">
-  <Button variant="outline" onClick={() => document.getElementById('file-upload')?.click()}>Choose Different File</Button>
-  <Button onClick={handleConfirmImport} disabled={importPreview.some((row) => row.error)}>Confirm Import</Button>
-  </div>
-                    </div>
-                    <div className="mt-3 max-h-52 overflow-y-auto rounded border">
-                      {importPreview.map((row) => (
-                        <div key={row.row} className="flex items-center justify-between gap-3 border-b p-2 text-sm last:border-0">
-                          <span>Row {row.row}: {row.name || 'Unnamed'} ({row.employeeCode || 'No code'})</span>
-                          <span className={row.error ? 'text-destructive' : 'text-muted-foreground'}>{row.error || (row.action === 'update' ? 'Will update' : 'New employee')}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </>
+            )}
+            {previewReady && importStatus === 'idle' && (
+              <div className="rounded-lg border p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold">Review import</h3>
+                    <p className="text-sm text-muted-foreground">Existing employee codes will be updated. New codes will create employees. Blank optional cells keep existing values.</p>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <Button variant="outline" onClick={() => document.getElementById('file-upload')?.click()}>Choose Different File</Button>
+                    <Button onClick={handleConfirmImport} disabled={importPreview.some((row) => row.error)}>Confirm Import</Button>
+                  </div>
+                </div>
+                <div className="mt-3 max-h-52 overflow-y-auto rounded border">
+                  {importPreview.map((row) => (
+                    <div key={row.row} className="flex items-center justify-between gap-3 border-b p-2 text-sm last:border-0">
+                      <span>Row {row.row}: {row.name || 'Unnamed'} ({row.employeeCode || 'No code'})</span>
+                      <span className={row.error ? 'text-destructive' : 'text-muted-foreground'}>{row.error || (row.action === 'update' ? 'Will update' : 'New employee')}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
             {importStatus === 'processing' && (
               <div className="flex flex-col items-center justify-center py-8 gap-4">
