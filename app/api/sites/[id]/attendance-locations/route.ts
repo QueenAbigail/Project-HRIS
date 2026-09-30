@@ -42,21 +42,27 @@ export async function GET(
   try {
     const { id: siteId } = await params
 
-    const locations = await prisma.attendanceLocation.findMany({
-      where: { siteId },
-      orderBy: { name: 'asc' },
-      select: {
-        id: true,
-        name: true,
-        latitude: true,
-        longitude: true,
-        radius: true,
-        timezone: true,
-        isActive: true,
-      },
-    })
+    const [locations, site] = await Promise.all([
+      prisma.attendanceLocation.findMany({
+        where: { siteId },
+        orderBy: { name: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          latitude: true,
+          longitude: true,
+          radius: true,
+          timezone: true,
+          isActive: true,
+        },
+      }),
+      prisma.site.findUnique({ where: { id: siteId }, select: { timezone: true } }),
+    ])
 
-    return NextResponse.json(locations)
+    return NextResponse.json(locations.map((location) => ({
+      ...location,
+      timezone: site?.timezone ?? location.timezone,
+    })))
   } catch (error) {
     console.error('[v0] Error fetching attendance locations:', error)
     return NextResponse.json(

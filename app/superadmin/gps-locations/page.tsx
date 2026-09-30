@@ -333,16 +333,17 @@ export default function GPSLocationsPage() {
   }
 
   const openEditDialog = (siteId: string, location: Location) => {
-    setLocationErrors({})
-    setSelectedSiteId(siteId)
-    setEditingLocation(location)
-    setNewLocation({
+  setLocationErrors({})
+  setSelectedSiteId(siteId)
+  setEditingLocation(location)
+  const site = sites.find((item) => item.id === siteId)
+  setNewLocation({
       name: location.name,
       latitude: location.latitude.toString(),
       longitude: location.longitude.toString(),
       radius: location.radius.toString(),
-      timezone: location.timezone,
-      isActive: location.isActive,
+  timezone: site?.timezone ?? location.timezone ?? 'WIB',
+  isActive: location.isActive,
     })
     setIsAddDialogOpen(true)
   }
