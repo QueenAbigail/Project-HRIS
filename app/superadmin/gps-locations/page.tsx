@@ -43,11 +43,12 @@ interface Location {
   isActive: boolean
 }
 
-interface Site {
+  interface Site {
   id: string
   name: string
   code: string
-}
+  timezone: string
+  }
 
 export default function GPSLocationsPage() {
   const [sites, setSites] = useState<Site[]>([])
@@ -323,11 +324,12 @@ export default function GPSLocationsPage() {
   }
 
   const openAddDialog = (siteId: string) => {
-    setLocationErrors({})
-    setSelectedSiteId(siteId)
-    setEditingLocation(null)
-    setNewLocation(DEFAULT_LOCATION)
-    setIsAddDialogOpen(true)
+  setLocationErrors({})
+  setSelectedSiteId(siteId)
+  setEditingLocation(null)
+  const site = sites.find((item) => item.id === siteId)
+  setNewLocation({ ...DEFAULT_LOCATION, timezone: site?.timezone ?? 'WIB' })
+  setIsAddDialogOpen(true)
   }
 
   const openEditDialog = (siteId: string, location: Location) => {
