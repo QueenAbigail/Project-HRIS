@@ -737,18 +737,24 @@ export function AddEmployeeDialog({
             {importStatus === 'success' && (
               <Alert className="border-success bg-success/10">
                 <CheckCircle2 className="size-4 text-success" />
-                <AlertTitle className="text-success">Import Successful!</AlertTitle>
-                <AlertDescription>Successfully imported {importCount} employee{importCount !== 1 ? 's' : ''}.</AlertDescription>
+  <AlertTitle className="text-success">Import Successful!</AlertTitle>
+  <AlertDescription className="flex flex-col gap-1">
+  <span>Successfully imported {importCount} employee{importCount !== 1 ? 's' : ''}.</span>
+  {importPreview.filter((row) => row.action === 'create').length > 0 && <span>New: {importPreview.filter((row) => row.action === 'create').length}</span>}
+  {importPreview.filter((row) => row.action === 'update').length > 0 && <span>Updated: {importPreview.filter((row) => row.action === 'update').length}</span>}
+  </AlertDescription>
               </Alert>
             )}
             {importStatus === 'partial' && (
               <>
                 <Alert className="border-amber-500 bg-amber-500/10">
                   <AlertCircle className="size-4 text-amber-600" />
-                  <AlertTitle className="text-amber-700">Partial Import</AlertTitle>
-                  <AlertDescription className="text-amber-700">
-                    Successfully imported {importCount} employee{importCount !== 1 ? 's' : ''}, but {importFailed} row{importFailed !== 1 ? 's' : ''} failed.
-                  </AlertDescription>
+  <AlertTitle className="text-amber-700">Partial Import</AlertTitle>
+  <AlertDescription className="flex flex-col gap-1 text-amber-700">
+  <span>Successfully imported {importCount} employee{importCount !== 1 ? 's' : ''}, but {importFailed} row{importFailed !== 1 ? 's' : ''} failed.</span>
+  {importPreview.filter((row) => row.action === 'create').length > 0 && <span>New: {importPreview.filter((row) => row.action === 'create').length}</span>}
+  {importPreview.filter((row) => row.action === 'update').length > 0 && <span>Updated: {importPreview.filter((row) => row.action === 'update').length}</span>}
+  </AlertDescription>
                 </Alert>
                 
                 {importErrors.length > 0 && (
