@@ -432,7 +432,7 @@ export function AddEmployeeDialog({
       let success = 0
       let failed = 0
       let errors: Array<{ row: number; name?: string; error: string }> = []
-      const batchSize = 1
+      const batchSize = importPreview.length <= 10 ? 1 : importPreview.length <= 50 ? 5 : 10
       for (let start = 0; start < importPreview.length; start += batchSize) {
         const formData = new FormData()
         formData.append('file', importFile)
