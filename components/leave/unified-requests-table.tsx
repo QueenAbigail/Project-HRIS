@@ -170,7 +170,7 @@ export function UnifiedRequestsTable() {
       return {
         title: `${request.user?.name}`,
         department: request.user?.department || '--',
-        typeLabel: request.leaveType || 'Unknown',
+        typeLabel: request.leaveType === 'TUKAR_SHIFT' ? 'Tukar Shift' : request.leaveType || 'Unknown',
         typeColor: 'bg-muted text-muted-foreground border-border',
         period: `${formatBusinessDate(request.startDate)} - ${formatBusinessDate(request.endDate)}`,
         days: typeof request.workingDaysCount === 'number' && request.workingDaysCount > 0

@@ -119,7 +119,7 @@ export function LeaveRequestDetailsModal({
             {/* Leave Type */}
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Leave Type</Label>
-              <p className="text-sm font-medium">{leave.leaveType || 'Unknown'}</p>
+              <p className="text-sm font-medium">{leave.leaveType === 'TUKAR_SHIFT' ? 'Tukar Shift' : leave.leaveType || 'Unknown'}</p>
             </div>
 
             {/* Period */}
