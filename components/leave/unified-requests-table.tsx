@@ -198,12 +198,12 @@ export function UnifiedRequestsTable() {
 
   const filteredRequests = requests.filter((request) => {
     const matchesStatus = filters.status === 'all' || request.status.toLowerCase() === filters.status
+    const normalizedRequestType = request.leaveType?.toUpperCase().replace(/[\s_-]/g, '')
     const matchesType = filters.leaveType === 'all-types' || (
       request.type === 'leave' && (
-        request.leaveType === filters.leaveType ||
-        (filters.leaveType === 'Cuti' && request.leaveType === 'IZIN') ||
-        (filters.leaveType === 'IZIN' && request.leaveType === 'Cuti') ||
-        (filters.leaveType === 'TUKAR_SHIFT' && request.leaveType === 'Tukar Shift')
+        (filters.leaveType === 'IZIN' && (normalizedRequestType === 'IZIN' || normalizedRequestType === 'CUTI')) ||
+        (filters.leaveType === 'TUKAR_SHIFT' && normalizedRequestType === 'TUKARSHIFT') ||
+        (filters.leaveType !== 'IZIN' && filters.leaveType !== 'TUKAR_SHIFT' && normalizedRequestType === filters.leaveType.toUpperCase().replace(/[\s_-]/g, ''))
       )
     )
     const matchesDepartment = filters.department === 'all-dept' || (

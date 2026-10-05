@@ -408,9 +408,11 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all-types">All Types</SelectItem>
-              {leaveTypes.map(type => (
-                <SelectItem key={type.value} value={type.value}>{type.value === 'Cuti' ? 'Izin' : type.value === 'TUKAR_SHIFT' ? 'Tukar Shift' : type.label}</SelectItem>
-              ))}
+              {leaveTypes.map(type => {
+                const filterValue = type.value === 'Cuti' || type.value === 'Izin' ? 'IZIN' : type.value === 'TukarShift' || type.value === 'TUKAR_SHIFT' || type.value === 'Tukar Shift' ? 'TUKAR_SHIFT' : type.value
+                const displayLabel = filterValue === 'IZIN' ? 'Izin' : filterValue === 'TUKAR_SHIFT' ? 'Tukar Shift' : type.label
+                return <SelectItem key={filterValue} value={filterValue}>{displayLabel}</SelectItem>
+              })}
             </SelectContent>
           </Select>
           <Select defaultValue="all-dept" disabled={loadingFilters} onValueChange={(value) => window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { department: value } }))}>
