@@ -173,7 +173,9 @@ export function UnifiedRequestsTable() {
         typeLabel: request.leaveType || 'Unknown',
         typeColor: 'bg-muted text-muted-foreground border-border',
         period: `${formatBusinessDate(request.startDate)} - ${formatBusinessDate(request.endDate)}`,
-        days: request.workingDaysCount ?? calculateDays(request.startDate, request.endDate),
+        days: typeof request.workingDaysCount === 'number' && request.workingDaysCount > 0
+    ? request.workingDaysCount
+    : calculateDays(request.startDate, request.endDate),
       }
     } else {
       return {
