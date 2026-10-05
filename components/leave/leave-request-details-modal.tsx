@@ -24,7 +24,20 @@ interface LeaveRequestDetailsModalProps {
   onReject: (id: string) => Promise<void>
 }
 
-function parseDayBreakdown(value: unknown): { summary?: string } | null {
+function calculateFallbackWorkingDays(startDate: string, endDate: string): number {
+  const start = new Date(`${startDate.slice(0, 10)}T00:00:00Z`)
+  const end = new Date(`${endDate.slice(0, 10)}T00:00:00Z`)
+  let count = 0
+
+  for (const current = new Date(start); current <= end; current.setUTCDate(current.getUTCDate() + 1)) {
+    const day = current.getUTCDay()
+    if (day >= 1 && day <= 5) count += 1
+  }
+
+  return count
+}
+
+function parseDayBreakdown(value: unknown): { summary?: string; workingDaysCount?: number } | null {
   if (!value) return null
   if (typeof value === 'object' && value !== null) {
     return value as { summary?: string }
@@ -73,6 +86,12 @@ export function LeaveRequestDetailsModal({
   }
 
   const dayBreakdown = parseDayBreakdown(leave.dayBreakdown)
+  const fallbackWorkingDays = calculateFallbackWorkingDays(leave.startDate, leave.endDate)
+  const workingDays = typeof leave.workingDaysCount === 'number' && leave.workingDaysCount > 0
+    ? leave.workingDaysCount
+    : dayBreakdown?.workingDaysCount && dayBreakdown.workingDaysCount > 0
+      ? dayBreakdown.workingDaysCount
+      : fallbackWorkingDays
 
   const statusColor = ({
     Pending: 'bg-yellow-100 text-yellow-800',
@@ -152,13 +171,7 @@ export function LeaveRequestDetailsModal({
               Leave Duration Breakdown
             </Label>
             <div className="text-sm text-blue-800 space-y-1">
-              {dayBreakdown?.summary ? (
-                <div>{dayBreakdown.summary}</div>
-              ) : leave.workingDaysCount != null ? (
-                <div>{leave.workingDaysCount} working day(s)</div>
-              ) : (
-                <div className="text-blue-700">Working-day breakdown unavailable</div>
-              )}
+              <div>{workingDays} working day(s)</div>
             </div>
           </div>
 
