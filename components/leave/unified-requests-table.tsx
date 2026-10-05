@@ -67,6 +67,7 @@ export function UnifiedRequestsTable() {
   const [selectedSwap, setSelectedSwap] = useState<UnifiedRequest | null>(null)
   const [leaveDetailsOpen, setLeaveDetailsOpen] = useState(false)
   const [swapDetailsOpen, setSwapDetailsOpen] = useState(false)
+  const [filters, setFilters] = useState({ status: 'all', leaveType: 'all-types', department: 'all-dept' })
 
   async function fetchRequests() {
   setLoading(true)
@@ -107,12 +108,18 @@ export function UnifiedRequestsTable() {
   }
 
   useEffect(() => {
+    const handleFiltersChanged = (event: Event) => {
+      const detail = (event as CustomEvent<Partial<typeof filters>>).detail
+      setFilters((current) => ({ ...current, ...detail }))
+    }
+    window.addEventListener('leaveFiltersChanged', handleFiltersChanged)
     const initialFetch = window.setTimeout(() => void fetchRequests(), 0)
     const handleRequestCreated = () => void fetchRequests()
     window.addEventListener('leaveRequestCreated', handleRequestCreated)
     return () => {
       window.clearTimeout(initialFetch)
       window.removeEventListener('leaveRequestCreated', handleRequestCreated)
+      window.removeEventListener('leaveFiltersChanged', handleFiltersChanged)
     }
   }, [])
 
@@ -189,6 +196,17 @@ export function UnifiedRequestsTable() {
     }
   }
 
+  const filteredRequests = requests.filter((request) => {
+    const matchesStatus = filters.status === 'all' || request.status.toLowerCase() === filters.status
+    const matchesType = filters.leaveType === 'all-types' || (request.type === 'leave' && request.leaveType === filters.leaveType)
+    const matchesDepartment = filters.department === 'all-dept' || (
+      request.type === 'leave'
+        ? request.user?.department === filters.department
+        : request.employeeFrom?.department === filters.department
+    )
+    return matchesStatus && matchesType && matchesDepartment
+  })
+
   if (loading) {
     return (
       <Card className="bg-card border-border">
@@ -235,14 +253,14 @@ export function UnifiedRequestsTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {requests.length === 0 ? (
+                {filteredRequests.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       No requests found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  requests.map((request) => {
+                  filteredRequests.map((request) => {
                     const display = getRequestDisplay(request)
 
                     return (

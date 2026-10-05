@@ -391,7 +391,7 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center gap-4">
-          <Select defaultValue="all">
+          <Select defaultValue="all" onValueChange={(value) => window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { status: value } }))}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -402,7 +402,7 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
               <SelectItem value="rejected">Rejected</SelectItem>
             </SelectContent>
           </Select>
-          <Select defaultValue="all-types" disabled={loadingFilters}>
+          <Select defaultValue="all-types" disabled={loadingFilters} onValueChange={(value) => window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { leaveType: value } }))}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Leave Type" />
             </SelectTrigger>
@@ -413,7 +413,7 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
               ))}
             </SelectContent>
           </Select>
-          <Select defaultValue="all-dept" disabled={loadingFilters}>
+          <Select defaultValue="all-dept" disabled={loadingFilters} onValueChange={(value) => window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { department: value } }))}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Department" />
             </SelectTrigger>
