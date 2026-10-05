@@ -107,63 +107,63 @@ export function LeaveRequestDetailsModal({
           <DialogDescription>Review and manage leave request</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Employee */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Employee</Label>
-            <p className="text-sm font-medium">{leave.user?.name}</p>
-            <p className="text-xs text-muted-foreground">{leave.user?.department}</p>
-          </div>
-
-          {/* Leave Type */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Leave Type</Label>
-            <p className="text-sm font-medium">
-              {leave.leaveType || 'Unknown'}
-            </p>
-          </div>
-
-          {/* Period */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Period</Label>
-            <p className="text-sm font-medium">
-              {formatBusinessDate(leave.startDate.slice(0, 10))} -{' '}
-              {formatBusinessDate(leave.endDate.slice(0, 10))}
-            </p>
-          </div>
-
-          {/* Status */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Status</Label>
-            <Badge className={`${statusColor} border-0`}>{leave.status}</Badge>
-          </div>
-
-          {/* Reason */}
-          {leave.reason && (
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Reason</Label>
-              <p className="text-sm">{leave.reason}</p>
+        <div className="space-y-5">
+          <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+            {/* Employee */}
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Employee</Label>
+              <p className="text-sm font-medium">{leave.user?.name}</p>
+              <p className="text-xs text-muted-foreground">{leave.user?.department}</p>
             </div>
-          )}
 
-          {/* Attachment */}
-          {leave.attachmentUrl && (
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground flex items-center gap-2">
-                <FileText className="size-4" />
-                Attachment Document
-              </Label>
-              <a
-                href={leave.attachmentUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-primary hover:underline text-sm"
-              >
-                <FileText className="size-4" />
-                View Document
-              </a>
+            {/* Leave Type */}
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Leave Type</Label>
+              <p className="text-sm font-medium">{leave.leaveType || 'Unknown'}</p>
             </div>
-          )}
+
+            {/* Period */}
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Period</Label>
+              <p className="text-sm font-medium">
+                {formatBusinessDate(leave.startDate.slice(0, 10))} -{' '}
+                {formatBusinessDate(leave.endDate.slice(0, 10))}
+              </p>
+            </div>
+
+            {/* Status */}
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Status</Label>
+              <Badge className={`${statusColor} border-0`}>{leave.status}</Badge>
+            </div>
+
+            {/* Reason */}
+            {leave.reason && (
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-xs text-muted-foreground">Reason</Label>
+                <p className="text-sm">{leave.reason}</p>
+              </div>
+            )}
+
+            {/* Attachment */}
+            {leave.attachmentUrl && (
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-xs text-muted-foreground flex items-center gap-2">
+                  <FileText className="size-4" />
+                  Attachment Document
+                </Label>
+                <a
+                  href={leave.attachmentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-primary hover:underline text-sm"
+                >
+                  <FileText className="size-4" />
+                  View Document
+                </a>
+              </div>
+            )}
+          </div>
 
           {/* Working Days Breakdown */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
