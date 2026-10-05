@@ -67,7 +67,10 @@ export function UnifiedRequestsTable() {
   const [selectedSwap, setSelectedSwap] = useState<UnifiedRequest | null>(null)
   const [leaveDetailsOpen, setLeaveDetailsOpen] = useState(false)
   const [swapDetailsOpen, setSwapDetailsOpen] = useState(false)
-  const [filters, setFilters] = useState({ status: 'all', leaveType: 'all-types', department: 'all-dept' })
+  const today = new Date()
+  const defaultStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10)
+  const defaultEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10)
+  const [filters, setFilters] = useState({ status: 'all', leaveType: 'all-types', department: 'all-dept', range: 'this-month', rangeStart: defaultStart, rangeEnd: defaultEnd })
 
   async function fetchRequests() {
   setLoading(true)
@@ -206,12 +209,15 @@ export function UnifiedRequestsTable() {
         (filters.leaveType !== 'IZIN' && filters.leaveType !== 'TUKAR_SHIFT' && normalizedRequestType === filters.leaveType.toUpperCase().replace(/[\s_-]/g, ''))
       )
     )
+    const requestStart = request.startDate.slice(0, 10)
+    const requestEnd = request.endDate.slice(0, 10)
+    const matchesRange = !filters.rangeStart || !filters.rangeEnd || (requestStart <= filters.rangeEnd && requestEnd >= filters.rangeStart)
     const matchesDepartment = filters.department === 'all-dept' || (
       request.type === 'leave'
         ? request.user?.department === filters.department
         : request.employeeFrom?.department === filters.department
     )
-    return matchesStatus && matchesType && matchesDepartment
+    return matchesRange && matchesStatus && matchesType && matchesDepartment
   })
 
   if (loading) {

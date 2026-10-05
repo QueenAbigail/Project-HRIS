@@ -76,6 +76,8 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loadingFilters, setLoadingFilters] = useState(true)
   const [filtersError, setFiltersError] = useState(false)
+  const [customRange, setCustomRange] = useState({ start: '', end: '' })
+  const [rangeSelection, setRangeSelection] = useState('this-month')
   const [loadingEmployees, setLoadingEmployees] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [validationInfo, setValidationInfo] = useState<any>(null)
@@ -391,6 +393,33 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center gap-4">
+          <Select defaultValue="this-month" onValueChange={(value) => {
+            setRangeSelection(value)
+            if (value === 'custom') {
+              setCustomRange({ start: '', end: '' })
+            }
+            const today = new Date()
+            const end = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+            const months = value === '3-months' ? 3 : value === '6-months' ? 6 : 1
+            const start = new Date(today.getFullYear(), today.getMonth() - months + 1, 1)
+            window.dispatchEvent(new CustomEvent('leaveFiltersChanged', {
+              detail: {
+                range: value,
+                rangeStart: value === 'custom' ? '' : start.toISOString().slice(0, 10),
+                rangeEnd: value === 'custom' ? '' : end.toISOString().slice(0, 10),
+              },
+            }))
+          }}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Date Range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="this-month">This Month</SelectItem>
+              <SelectItem value="3-months">3 Months</SelectItem>
+              <SelectItem value="6-months">6 Months</SelectItem>
+              <SelectItem value="custom">Custom Range</SelectItem>
+            </SelectContent>
+          </Select>
           <Select defaultValue="all" onValueChange={(value) => window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { status: value } }))}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Status" />
@@ -426,6 +455,33 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
               ))}
             </SelectContent>
           </Select>
+          {rangeSelection === 'custom' && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                aria-label="Range start date"
+                value={customRange.start}
+                onChange={(event) => {
+                  const start = event.target.value
+                  setCustomRange((current) => ({ ...current, start }))
+                  window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { range: 'custom', rangeStart: start, rangeEnd: customRange.end } }))
+                }}
+                className="h-10 rounded-md border bg-background px-3 text-sm"
+              />
+              <span className="text-sm text-muted-foreground">to</span>
+              <input
+                type="date"
+                aria-label="Range end date"
+                value={customRange.end}
+                onChange={(event) => {
+                  const end = event.target.value
+                  setCustomRange((current) => ({ ...current, end }))
+                  window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { range: 'custom', rangeStart: customRange.start, rangeEnd: end } }))
+                }}
+                className="h-10 rounded-md border bg-background px-3 text-sm"
+              />
+            </div>
+          )}
         </div>
       </div>
 
