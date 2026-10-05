@@ -177,7 +177,7 @@ export function UnifiedRequestsTable() {
       return {
         title: `${request.user?.name}`,
         department: request.user?.department || '--',
-        typeLabel: request.leaveType === 'TUKAR_SHIFT' ? 'Tukar Shift' : request.leaveType || 'Unknown',
+        typeLabel: request.leaveType === 'TUKAR_SHIFT' || request.leaveType === 'Tukar Shift' ? 'Tukar Shift' : request.leaveType === 'Cuti' || request.leaveType === 'IZIN' ? 'Izin' : request.leaveType || 'Unknown',
         typeColor: 'bg-muted text-muted-foreground border-border',
         period: `${formatBusinessDate(request.startDate)} - ${formatBusinessDate(request.endDate)}`,
         days: typeof request.workingDaysCount === 'number' && request.workingDaysCount > 0
@@ -198,7 +198,14 @@ export function UnifiedRequestsTable() {
 
   const filteredRequests = requests.filter((request) => {
     const matchesStatus = filters.status === 'all' || request.status.toLowerCase() === filters.status
-    const matchesType = filters.leaveType === 'all-types' || (request.type === 'leave' && request.leaveType === filters.leaveType)
+    const matchesType = filters.leaveType === 'all-types' || (
+      request.type === 'leave' && (
+        request.leaveType === filters.leaveType ||
+        (filters.leaveType === 'Cuti' && request.leaveType === 'IZIN') ||
+        (filters.leaveType === 'IZIN' && request.leaveType === 'Cuti') ||
+        (filters.leaveType === 'TUKAR_SHIFT' && request.leaveType === 'Tukar Shift')
+      )
+    )
     const matchesDepartment = filters.department === 'all-dept' || (
       request.type === 'leave'
         ? request.user?.department === filters.department

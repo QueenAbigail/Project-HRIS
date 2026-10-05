@@ -315,7 +315,7 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
                     ) : leaveTypes.length === 0 && !loadingFilters ? (
                       <SelectItem value="empty" disabled>No leave types configured</SelectItem>
                     ) : leaveTypes.map(type => (
-                      <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                      <SelectItem key={type.value} value={type.value}>{type.value === 'Cuti' ? 'Izin' : type.value === 'TUKAR_SHIFT' ? 'Tukar Shift' : type.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -409,7 +409,7 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
             <SelectContent>
               <SelectItem value="all-types">All Types</SelectItem>
               {leaveTypes.map(type => (
-                <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                <SelectItem key={type.value} value={type.value}>{type.value === 'Cuti' ? 'Izin' : type.value === 'TUKAR_SHIFT' ? 'Tukar Shift' : type.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
