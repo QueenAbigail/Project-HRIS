@@ -11,9 +11,10 @@ export type LoginInput = {
   password: string
   channel: AuthChannel
   deviceId?: string
+  remember?: boolean
 }
 
-export async function performLogin({ email, password, channel, deviceId }: LoginInput) {
+export async function performLogin({ email, password, channel, deviceId, remember = false }: LoginInput) {
   const normalizedEmail = email.trim().toLowerCase()
   const requestHeaders = await headers()
   const ipAddress = requestHeaders.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -42,7 +43,16 @@ export async function performLogin({ email, password, channel, deviceId }: Login
         getAll: () => cookieStore.getAll(),
         setAll: (cookiesToSet) => {
           try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+            cookiesToSet.forEach(({ name, value, options }) => {
+          const sessionOptions = { ...options }
+          if (remember) {
+            sessionOptions.maxAge = 60 * 60 * 24 * 30
+          } else {
+            delete sessionOptions.maxAge
+            delete sessionOptions.expires
+          }
+          cookieStore.set(name, value, sessionOptions)
+        })
           } catch {
             // Server Component renders cannot always mutate cookies.
           }
