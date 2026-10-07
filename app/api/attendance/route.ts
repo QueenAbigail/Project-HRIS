@@ -127,9 +127,9 @@ select: { id: true, companyId: true, timezone: true },
       }
     }
 
-    const [totalRecords, filtered] = await Promise.all([
-      prisma.attendance.count({ where }),
-      prisma.attendance.findMany({
+  const [totalRecords, filtered, statusRows] = await Promise.all([
+  prisma.attendance.count({ where }),
+  prisma.attendance.findMany({
       where,
       include: {
         user: {
@@ -173,9 +173,20 @@ select: { id: true, companyId: true, timezone: true },
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
+    prisma.attendance.findMany({
+      where,
+      select: { status: true, actualCheckIn: true, lateMinutes: true },
+    }),
     ])
 
-    // The persisted status is calculated by the server on write and is authoritative.
+    const statusCounts = statusRows.reduce((counts: Record<string, number>, record: any) => {
+      const status = resolveAttendanceStatus(record)
+      counts[status] = (counts[status] || 0) + 1
+      return counts
+    }, {})
+
+    // The status is derived consistently from persisted attendance facts.
+
     const enrichedRecords = filtered.map((record: any) => ({
       ...record,
       status: resolveAttendanceStatus(record)
@@ -189,6 +200,7 @@ select: { id: true, companyId: true, timezone: true },
         totalRecords,
         totalPages: Math.ceil(totalRecords / pageSize),
       },
+      statusCounts,
     })
   } catch (error) {
     console.error('[v0] Error fetching attendance:', {

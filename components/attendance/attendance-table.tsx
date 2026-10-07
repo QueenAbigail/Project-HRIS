@@ -113,6 +113,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [pagination, setPagination] = useState({ page: 1, pageSize: 25, totalRecords: 0, totalPages: 0 })
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({})
   const [prefetchedPage, setPrefetchedPage] = useState<{ page: number; records: AttendanceRecord[]; pagination: typeof pagination } | null>(null)
 
   useEffect(() => {
@@ -168,6 +169,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
         if (!cancelled) {
           setRecords(Array.isArray(data.records) ? data.records : [])
           setPagination(data.pagination)
+          setStatusCounts(data.statusCounts || {})
           setError(null)
 
           const nextPage = page + 1
@@ -221,6 +223,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
 
   const allRecords = records
   const statusRecords = records.map((record) => ({ record, status: resolveAttendanceStatus(record) }))
+  const totalStatusCount = (status: string) => statusCounts[status] ?? statusRecords.filter((item) => item.status === status).length
   const lateRecords = statusRecords.filter(({ status }) => status === 'LATE').map(({ record }) => record)
   const presentRecords = statusRecords.filter(({ status }) => status === 'PRESENT').map(({ record }) => record)
   const absentRecords = statusRecords.filter(({ status }) => status === 'ABSENT').map(({ record }) => record)
@@ -321,20 +324,20 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
               Attendance records with schedule integration
             </CardDescription>
           </div>
-          {records.length > 0 && (
+          {pagination.totalRecords > 0 && (
             <Badge variant="outline">
-              {records.length} records
+              {pagination.totalRecords} total records
             </Badge>
           )}
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="all">All ({allRecords.length})</TabsTrigger>
-              <TabsTrigger value="late" className="text-warning">Late ({lateRecords.length})</TabsTrigger>
-              <TabsTrigger value="present" className="text-success">Present ({presentRecords.length})</TabsTrigger>
-              <TabsTrigger value="absent" className="text-destructive">Absent ({absentRecords.length})</TabsTrigger>
-              <TabsTrigger value="pending" className="text-orange-500">Pending ({pendingRecords.length})</TabsTrigger>
+              <TabsTrigger value="all">All ({pagination.totalRecords})</TabsTrigger>
+              <TabsTrigger value="late" className="text-warning">Late ({totalStatusCount('LATE')})</TabsTrigger>
+              <TabsTrigger value="present" className="text-success">Present ({totalStatusCount('PRESENT')})</TabsTrigger>
+              <TabsTrigger value="absent" className="text-destructive">Absent ({totalStatusCount('ABSENT')})</TabsTrigger>
+              <TabsTrigger value="pending" className="text-orange-500">Pending ({totalStatusCount('NOT_CHECKED_IN')})</TabsTrigger>
             </TabsList>
             
             <TabsContent value="all" className="mt-4">
