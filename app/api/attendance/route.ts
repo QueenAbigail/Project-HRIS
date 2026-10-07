@@ -127,7 +127,7 @@ select: { id: true, companyId: true, timezone: true },
       }
     }
 
-  const [totalRecords, filtered, statusRows] = await Promise.all([
+  const [totalRecords, filtered, statusRows, bkoAssignments] = await Promise.all([
   prisma.attendance.count({ where }),
   prisma.attendance.findMany({
       where,
@@ -177,6 +177,17 @@ select: { id: true, companyId: true, timezone: true },
       where,
       select: { status: true, actualCheckIn: true, lateMinutes: true },
     }),
+    prisma.bkoAssignment.findMany({
+      where: {
+        status: 'Aktif',
+        substitute: isClient ? { companyId: currentUser?.companyId } : undefined,
+      },
+      select: {
+        substituteId: true,
+        substitute: { select: { name: true } },
+        leave: { select: { startDate: true, endDate: true, user: { select: { name: true } } } },
+      },
+    }),
     ])
 
     const statusCounts = statusRows.reduce((counts: Record<string, number>, record: any) => {
@@ -187,10 +198,26 @@ select: { id: true, companyId: true, timezone: true },
 
     // The status is derived consistently from persisted attendance facts.
 
-    const enrichedRecords = filtered.map((record: any) => ({
-      ...record,
-      status: resolveAttendanceStatus(record)
-    }))
+    const enrichedRecords = filtered.map((record: any) => {
+      const recordDate = String(record.date).slice(0, 10)
+      const bko = bkoAssignments.find((assignment: any) =>
+        assignment.substituteId === record.userId &&
+        recordDate >= String(assignment.leave.startDate).slice(0, 10) &&
+        recordDate <= String(assignment.leave.endDate).slice(0, 10)
+      )
+
+      return {
+        ...record,
+        status: resolveAttendanceStatus(record),
+        isBko: Boolean(bko),
+        bkoDetails: bko ? {
+          substituteName: bko.substitute.name,
+          coveredEmployeeName: bko.leave.user.name,
+          startDate: bko.leave.startDate,
+          endDate: bko.leave.endDate,
+        } : null,
+      }
+    })
 
     return NextResponse.json({
       records: enrichedRecords,

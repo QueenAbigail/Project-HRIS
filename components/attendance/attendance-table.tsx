@@ -64,6 +64,12 @@ interface AttendanceRecord {
   selfieCheckIn: string | null
   selfieCheckOut: string | null
   notes: string | null
+  isBko?: boolean
+  bkoDetails?: {
+    coveredEmployeeName: string
+    startDate: string
+    endDate: string
+  } | null
 }
 
 // Status formatting is now handled by attendance-utils.ts for consistent display across the app
@@ -247,7 +253,21 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <p className="font-medium text-sm">{record.user?.name}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-sm">{record.user?.name}</p>
+                  {record.isBko && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="h-5 border-blue-200 bg-blue-50 px-1.5 text-[10px] font-semibold text-blue-700">
+                          BKO
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        BKO backup replacement for {record.bkoDetails?.coveredEmployeeName || 'another employee'}
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">{record.user?.department || '--'}</p>
               </div>
             </div>
