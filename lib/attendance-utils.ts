@@ -154,17 +154,17 @@ export interface AttendanceRecordLike {
 /**
  * SINGLE SOURCE OF TRUTH for how an attendance record's status is displayed/counted.
  *
- * The persisted database status is authoritative. `actualCheckIn` is the factual
- * timestamp, while status is the server-calculated classification. This prevents
- * the UI from showing Present when the database still says NOT_CHECKED_IN.
+ * Check-in timestamps are factual and take precedence over stale pending
+ * classifications. Approved leave and absence statuses remain authoritative.
  */
 export function resolveAttendanceStatus(record: AttendanceRecordLike): ResolvedAttendanceStatus {
   const stored = (record.status || '').toUpperCase()
 
+  if (stored === 'LEAVE') return 'LEAVE'
+  if (stored === 'ABSENT' && !record.actualCheckIn) return 'ABSENT'
+  if (record.actualCheckIn) return (stored === 'LATE' || (record.lateMinutes ?? 0) > 0) ? 'LATE' : 'PRESENT'
   if (stored === 'PRESENT') return 'PRESENT'
   if (stored === 'LATE') return 'LATE'
-  if (stored === 'ABSENT') return 'ABSENT'
-  if (stored === 'LEAVE') return 'LEAVE'
   return 'NOT_CHECKED_IN'
 }
 
