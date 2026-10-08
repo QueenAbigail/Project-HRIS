@@ -127,9 +127,9 @@ select: { id: true, companyId: true, timezone: true },
       }
     }
 
-    const [totalRecords, filtered] = await Promise.all([
-      prisma.attendance.count({ where }),
-      prisma.attendance.findMany({
+  const [totalRecords, filtered, statusRows, bkoAssignments] = await Promise.all([
+  prisma.attendance.count({ where }),
+  prisma.attendance.findMany({
       where,
       include: {
         user: {
@@ -173,13 +173,51 @@ select: { id: true, companyId: true, timezone: true },
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
+    prisma.attendance.findMany({
+      where,
+      select: { status: true, actualCheckIn: true, lateMinutes: true },
+    }),
+    prisma.bkoAssignment.findMany({
+      where: {
+        status: 'Aktif',
+        substitute: isClient ? { companyId: currentUser?.companyId } : undefined,
+      },
+      select: {
+        substituteId: true,
+        substitute: { select: { name: true } },
+        leave: { select: { startDate: true, endDate: true, user: { select: { name: true } } } },
+      },
+    }),
     ])
 
-    // The persisted status is calculated by the server on write and is authoritative.
-    const enrichedRecords = filtered.map((record: any) => ({
-      ...record,
-      status: resolveAttendanceStatus(record)
-    }))
+    const statusCounts = statusRows.reduce((counts: Record<string, number>, record: any) => {
+      const status = resolveAttendanceStatus(record)
+      counts[status] = (counts[status] || 0) + 1
+      return counts
+    }, {})
+
+    // The status is derived consistently from persisted attendance facts.
+
+    const enrichedRecords = filtered.map((record: any) => {
+      const recordDate = String(record.date).slice(0, 10)
+      const bko = bkoAssignments.find((assignment: any) =>
+        assignment.substituteId === record.userId &&
+        recordDate >= String(assignment.leave.startDate).slice(0, 10) &&
+        recordDate <= String(assignment.leave.endDate).slice(0, 10)
+      )
+
+      return {
+        ...record,
+        status: resolveAttendanceStatus(record),
+        isBko: Boolean(bko),
+        bkoDetails: bko ? {
+          substituteName: bko.substitute.name,
+          coveredEmployeeName: bko.leave.user.name,
+          startDate: bko.leave.startDate,
+          endDate: bko.leave.endDate,
+        } : null,
+      }
+    })
 
     return NextResponse.json({
       records: enrichedRecords,
@@ -189,6 +227,7 @@ select: { id: true, companyId: true, timezone: true },
         totalRecords,
         totalPages: Math.ceil(totalRecords / pageSize),
       },
+      statusCounts,
     })
   } catch (error) {
     console.error('[v0] Error fetching attendance:', {

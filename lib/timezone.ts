@@ -34,7 +34,8 @@ export function getBusinessDate(date = new Date(), timezone: SiteTimezone | stri
 
 /** Format a business date for Indonesian users as DD-MM-YYYY. */
 export function formatBusinessDate(dateString: string): string {
-  const [year, month, day] = dateString.split('-')
+  const datePart = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/)?.slice(1) ?? dateString.split('-')
+  const [year, month, day] = datePart
   return `${day}-${month}-${year}`
 }
 

@@ -43,11 +43,13 @@ interface Location {
   isActive: boolean
 }
 
-interface Site {
+  interface Site {
   id: string
   name: string
   code: string
-}
+  timezone: string
+  clientName: string
+  }
 
 export default function GPSLocationsPage() {
   const [sites, setSites] = useState<Site[]>([])
@@ -97,7 +99,7 @@ export default function GPSLocationsPage() {
         const allSites: Site[] = []
         for (const company of companies) {
           if (company.sites) {
-            allSites.push(...company.sites)
+            allSites.push(...company.sites.map((site: Site) => ({ ...site, clientName: company.name })))
           }
         }
         setSites(allSites)
@@ -323,24 +325,26 @@ export default function GPSLocationsPage() {
   }
 
   const openAddDialog = (siteId: string) => {
-    setLocationErrors({})
-    setSelectedSiteId(siteId)
-    setEditingLocation(null)
-    setNewLocation(DEFAULT_LOCATION)
-    setIsAddDialogOpen(true)
+  setLocationErrors({})
+  setSelectedSiteId(siteId)
+  setEditingLocation(null)
+  const site = sites.find((item) => item.id === siteId)
+  setNewLocation({ ...DEFAULT_LOCATION, timezone: site?.timezone ?? 'WIB' })
+  setIsAddDialogOpen(true)
   }
 
   const openEditDialog = (siteId: string, location: Location) => {
-    setLocationErrors({})
-    setSelectedSiteId(siteId)
-    setEditingLocation(location)
-    setNewLocation({
+  setLocationErrors({})
+  setSelectedSiteId(siteId)
+  setEditingLocation(location)
+  const site = sites.find((item) => item.id === siteId)
+  setNewLocation({
       name: location.name,
       latitude: location.latitude.toString(),
       longitude: location.longitude.toString(),
       radius: location.radius.toString(),
-      timezone: location.timezone,
-      isActive: location.isActive,
+  timezone: site?.timezone ?? location.timezone ?? 'WIB',
+  isActive: location.isActive,
     })
     setIsAddDialogOpen(true)
   }
@@ -459,7 +463,7 @@ export default function GPSLocationsPage() {
                           <div className="flex items-center gap-3 flex-1 text-left">
                             <MapPin className="h-4 w-4 text-primary shrink-0" />
                             <div>
-                              <p className="font-semibold">{site.name}</p>
+                              <p className="font-semibold">{site.clientName} - {site.name}</p>
                               {isSiteLoading ? (
                                 <p className="flex items-center gap-1 text-xs text-muted-foreground" role="status">
                                   <Loader2 className="size-3 animate-spin" />
@@ -673,7 +677,7 @@ export default function GPSLocationsPage() {
                           <div className="flex items-center gap-3 flex-1 text-left">
                             <MapPin className="h-4 w-4 text-chart-2 shrink-0" />
                             <div>
-                              <p className="font-semibold">{site.name}</p>
+                              <p className="font-semibold">{site.clientName} - {site.name}</p>
                               <p className="text-xs text-muted-foreground">
                                 {locations.length} checkpoint{locations.length !== 1 ? 's' : ''}
                               </p>

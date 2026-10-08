@@ -191,7 +191,8 @@ export function LocationAttendance({ locationData, companyName = 'all', isClient
         {/* Location Breakdown by Company */}
         <Accordion type="single" collapsible className="w-full">
           {filteredData.map((company) => {
-            const companyAttendanceRate = company.attendanceRate
+            const isHeadOffice = company.companyName.trim().toLowerCase() === 'head office'
+            const companyAttendanceRate = isHeadOffice ? 100 : company.attendanceRate
             const companyHasLateCheckIns = company.late > 0
 
             return (
@@ -256,6 +257,8 @@ export function LocationAttendance({ locationData, companyName = 'all', isClient
                     {/* Individual Sites */}
                     <div className="space-y-2">
                       {company.sites.map((site) => {
+                        const isHeadOffice = site.locationName.trim().toLowerCase() === 'head office'
+                        const siteAttendanceRate = isHeadOffice ? 100 : site.attendanceRate
                         const hasLateCheckIns = site.late > 0
                         const hasDayOff = site.dayOff > 0
                         return (
@@ -278,17 +281,17 @@ export function LocationAttendance({ locationData, companyName = 'all', isClient
                               <Badge
                                 variant="outline"
                                 className={
-                                  site.attendanceRate >= 90
+                                  siteAttendanceRate >= 90
                                     ? 'bg-success/10 text-success border-success/20 text-xs'
-                                    : site.attendanceRate >= 75
+                                    : siteAttendanceRate >= 75
                                     ? 'bg-warning/10 text-warning border-warning/20 text-xs'
                                     : 'bg-destructive/10 text-destructive border-destructive/20 text-xs'
                                 }
                               >
-                                {site.attendanceRate}%
+                                {siteAttendanceRate}%
                               </Badge>
                             </div>
-                            <Progress value={site.attendanceRate} className="h-1.5" />
+                            <Progress value={siteAttendanceRate} className="h-1.5" />
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-2">
                               <span className="flex items-center gap-1">
                                 <UserCheck className="size-2" />

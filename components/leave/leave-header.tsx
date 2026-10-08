@@ -76,6 +76,9 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loadingFilters, setLoadingFilters] = useState(true)
   const [filtersError, setFiltersError] = useState(false)
+  const [customRange, setCustomRange] = useState({ start: '', end: '' })
+  const [rangeSelection, setRangeSelection] = useState('this-month')
+  const [rangePopoverOpen, setRangePopoverOpen] = useState(false)
   const [loadingEmployees, setLoadingEmployees] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [validationInfo, setValidationInfo] = useState<any>(null)
@@ -315,7 +318,7 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
                     ) : leaveTypes.length === 0 && !loadingFilters ? (
                       <SelectItem value="empty" disabled>No leave types configured</SelectItem>
                     ) : leaveTypes.map(type => (
-                      <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                      <SelectItem key={type.value} value={type.value}>{type.value === 'Cuti' ? 'Izin' : type.value === 'TUKAR_SHIFT' ? 'Tukar Shift' : type.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -391,7 +394,51 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center gap-4">
-          <Select defaultValue="all">
+          <Popover open={rangePopoverOpen} onOpenChange={setRangePopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-between sm:w-48">
+                {rangeSelection === 'this-month' ? 'This Month' : rangeSelection === '3-months' ? '3 Months' : rangeSelection === '6-months' ? '6 Months' : 'Custom Range'}
+                <ChevronsUpDown className="ml-2 size-4 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-72 p-2">
+              <div className="space-y-1">
+                {[
+                  ['this-month', 'This Month'],
+                  ['3-months', '3 Months'],
+                  ['6-months', '6 Months'],
+                ].map(([value, label]) => (
+                  <Button key={value} variant="ghost" className="w-full justify-start" onClick={() => {
+                    const today = new Date()
+                    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+                    const months = value === '3-months' ? 3 : value === '6-months' ? 6 : 1
+                    const start = new Date(today.getFullYear(), today.getMonth() - months + 1, 1)
+                    setRangeSelection(value)
+                    setRangePopoverOpen(false)
+                    window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { range: value, rangeStart: start.toISOString().slice(0, 10), rangeEnd: end.toISOString().slice(0, 10) } }))
+                  }}>{label}</Button>
+                ))}
+                <div className="border-t pt-2">
+                  <p className="px-2 pb-2 text-xs font-medium text-muted-foreground">Custom Range</p>
+                  <div className="grid gap-2">
+                    <Input type="date" aria-label="Range start date" value={customRange.start} onChange={(event) => {
+                      const start = event.target.value
+                      setRangeSelection('custom')
+                      setCustomRange((current) => ({ ...current, start }))
+                      window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { range: 'custom', rangeStart: start, rangeEnd: customRange.end } }))
+                    }} />
+                    <Input type="date" aria-label="Range end date" value={customRange.end} onChange={(event) => {
+                      const end = event.target.value
+                      setCustomRange((current) => ({ ...current, end }))
+                      setRangeSelection('custom')
+                      window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { range: 'custom', rangeStart: customRange.start, rangeEnd: end } }))
+                    }} />
+                  </div>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Select defaultValue="all" onValueChange={(value) => window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { status: value } }))}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -402,18 +449,20 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
               <SelectItem value="rejected">Rejected</SelectItem>
             </SelectContent>
           </Select>
-          <Select defaultValue="all-types" disabled={loadingFilters}>
+          <Select defaultValue="all-types" disabled={loadingFilters} onValueChange={(value) => window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { leaveType: value } }))}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Leave Type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all-types">All Types</SelectItem>
-              {leaveTypes.map(type => (
-                <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-              ))}
+              {leaveTypes.map(type => {
+                const filterValue = type.value === 'Cuti' || type.value === 'Izin' ? 'IZIN' : type.value === 'TukarShift' || type.value === 'TUKAR_SHIFT' || type.value === 'Tukar Shift' ? 'TUKAR_SHIFT' : type.value
+                const displayLabel = filterValue === 'IZIN' ? 'Izin' : filterValue === 'TUKAR_SHIFT' ? 'Tukar Shift' : type.label
+                return <SelectItem key={filterValue} value={filterValue}>{displayLabel}</SelectItem>
+              })}
             </SelectContent>
           </Select>
-          <Select defaultValue="all-dept" disabled={loadingFilters}>
+          <Select defaultValue="all-dept" disabled={loadingFilters} onValueChange={(value) => window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { department: value } }))}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Department" />
             </SelectTrigger>
@@ -424,6 +473,7 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
               ))}
             </SelectContent>
           </Select>
+
         </div>
       </div>
 

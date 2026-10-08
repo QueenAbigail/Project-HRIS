@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import type { NewEmployee } from './add-employee-dialog'
@@ -13,6 +14,8 @@ interface EmployeesHeaderProps {
 
 export function EmployeesHeader({ onAddEmployee, isClient = false }: EmployeesHeaderProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
+  const router = useRouter()
+  const refreshEmployees = () => router.refresh()
 
   return (
     <>
@@ -37,8 +40,12 @@ export function EmployeesHeader({ onAddEmployee, isClient = false }: EmployeesHe
         <AddEmployeeDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
-          onAddEmployee={onAddEmployee}
-        />
+  onAddEmployee={(employee) => {
+  onAddEmployee?.(employee)
+  refreshEmployees()
+  }}
+  onImportEmployees={() => refreshEmployees()}
+  />
       )}
     </>
   )

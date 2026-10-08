@@ -106,27 +106,27 @@ enum AnnouncementPriority {
 
 // Site model (from locations in constants.ts)
 model Site {
-  id          String                    @id @default(cuid())
-  name        String
-  code        String                    @unique
-  totalStaff  Int? // Optional, from stats
-  latitude    Decimal?                  @db.Decimal(10, 8) // Geographic latitude coordinate
-  longitude    Decimal?                  @db.Decimal(11, 8) // Geographic longitude coordinate
-  timezone    String                    @default("WIB") // Site timezone: WIB, WITA, or WIT
-  companyId   String?
-  company     Company?                  @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  users       User[]
-  attendances Attendance[]
-  attendanceLocations AttendanceLocation[] @relation("SiteAttendanceLocations")
-  patrolLocations PatrolLocation[]
-  patrols     Patrol[]
-  bulkImportRecords BulkImportRecord[] @relation("SiteBulkImports")
-  shiftSwaps  ShiftSwap[]
+  id                       String                    @id @default(cuid())
+  name                     String
+  code                     String                    @unique
+  totalStaff               Int? // Optional, from stats
+  latitude                 Decimal?                  @db.Decimal(10, 8) // Geographic latitude coordinate
+  longitude                Decimal?                  @db.Decimal(11, 8) // Geographic longitude coordinate
+  timezone                 String                    @default("WIB") // Site timezone: WIB, WITA, or WIT
+  companyId                String?
+  company                  Company?                  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  users                    User[]
+  attendances              Attendance[]
+  attendanceLocations      AttendanceLocation[]      @relation("SiteAttendanceLocations")
+  patrolLocations          PatrolLocation[]
+  patrols                  Patrol[]
+  bulkImportRecords        BulkImportRecord[]        @relation("SiteBulkImports")
+  shiftSwaps               ShiftSwap[]
   employeeShiftAssignments EmployeeShiftAssignment[]
-  announcements Announcement[] @relation("SiteAnnouncements")
-  
-  createdAt   DateTime                  @default(now())
-  updatedAt   DateTime                  @updatedAt
+  announcements            Announcement[]            @relation("SiteAnnouncements")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("sites")
 }
@@ -145,16 +145,16 @@ model Company {
 
 // Shift model (from shifts in constants.ts)
 model Shift {
-  id                 String                    @id @default(cuid())
-  code               String?                   @unique
-  name               String
-  startTime          String // HH:MM
-  endTime            String // HH:MM
-  gracePeriodMinutes Int
-  Attendance         Attendance[]
-  patrols            Patrol[]
-  schedules          Schedule[]                @relation("ScheduleShifts")
-  schedulePatterns   SchedulePattern[]
+  id                       String                    @id @default(cuid())
+  code                     String?                   @unique
+  name                     String
+  startTime                String // HH:MM
+  endTime                  String // HH:MM
+  gracePeriodMinutes       Int
+  Attendance               Attendance[]
+  patrols                  Patrol[]
+  schedules                Schedule[]                @relation("ScheduleShifts")
+  schedulePatterns         SchedulePattern[]
   employeeShiftAssignments EmployeeShiftAssignment[]
 
   @@map("shifts")
@@ -162,64 +162,65 @@ model Shift {
 
 // User model (employees/admins/clients, with role, site, supervisor)
 model User {
-  id                    String                    @id @default(cuid())
-  employeeCode          String?                   @unique
-  name                  String
-  email                 String                    @unique
-  personalEmail         String?
-  initials              String?
-  avatar                String?
-  department            String?
-  position              String?
-  role                  Role                      @default(STAFF)
-  companyId             String?
-  company               Company?                  @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  siteId                String
-  site                  Site                      @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  supervisorId          String?
-  supervisor            User?                     @relation("Supervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
-  supervisees           User[]                    @relation("Supervisor")
-  attendances           Attendance[]
-  leaves                Leave[]                   @relation("LeaveRequester")
-  bkoAssignments        BkoAssignment[]           @relation("BkoSubstitute")
-  bulkImports           BulkImportLog[] @relation("BulkImports")
-  patrols               Patrol[]
-  deviceBindings        DeviceBinding[]
-  authActivityLogs      AuthActivityLog[]
-  notifications         Notification[]
-  payrolls              Payroll[]
-  createdAt             DateTime                  @default(now())
-  updatedAt             DateTime                  @updatedAt
-  status                EmployeeStatus            @default(ACTIVE)
-  joinDate              DateTime?                 @db.Date
-  phoneNumber           String?
-  ktpNumber             String?                   @unique
-  address               String?
-  birthCity             String?
-  birthDate             DateTime?                 @db.Date
-  bpjsNumber            String?
-  gender                String?
-  religion              String?
-  maritalStatus         String?
-  employmentStatus      String?
-  bloodType             String?
-  npwpNumber            String?
-  ktaNumber             String?
-  certifications        String[]
-  ktaExpiry             DateTime?                 @db.Date
-  allowMobileAttendance Boolean                   @default(false)
-  allowWebAppAccess     Boolean                   @default(false)
-  expoPushToken         String?                   @db.Text
-  bankName              String?
-  accountHolder         String?
-  accountNumber         String?
-  swapsFrom             ShiftSwap[]               @relation("SwapFrom")
-  swapsTo               ShiftSwap[]               @relation("SwapTo")
-  schedules             Schedule[]                @relation("EmployeeSchedules")
+  id                       String                      @id @default(cuid())
+  employeeCode             String?                     @unique
+  name                     String
+  email                    String                      @unique
+  personalEmail            String?
+  initials                 String?
+  avatar                   String?
+  department               String?
+  position                 String?
+  role                     Role                        @default(STAFF)
+  companyId                String?
+  company                  Company?                    @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  siteId                   String
+  site                     Site                        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  supervisorId             String?
+  supervisor               User?                       @relation("Supervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
+  supervisees              User[]                      @relation("Supervisor")
+  attendances              Attendance[]
+  leaves                   Leave[]                     @relation("LeaveRequester")
+  replacedLeaves           Leave[]                     @relation("LeaveReplacement")
+  bkoAssignments           BkoAssignment[]             @relation("BkoSubstitute")
+  bulkImports              BulkImportLog[]             @relation("BulkImports")
+  patrols                  Patrol[]
+  deviceBindings           DeviceBinding[]
+  authActivityLogs         AuthActivityLog[]
+  notifications            Notification[]
+  payrolls                 Payroll[]
+  createdAt                DateTime                    @default(now())
+  updatedAt                DateTime                    @updatedAt
+  status                   EmployeeStatus              @default(ACTIVE)
+  joinDate                 DateTime?                   @db.Date
+  phoneNumber              String?
+  ktpNumber                String?                     @unique
+  address                  String?
+  birthCity                String?
+  birthDate                DateTime?                   @db.Date
+  bpjsNumber               String?
+  gender                   String?
+  religion                 String?
+  maritalStatus            String?
+  employmentStatus         String?
+  bloodType                String?
+  npwpNumber               String?
+  ktaNumber                String?
+  certifications           String[]
+  ktaExpiry                DateTime?                   @db.Date
+  allowMobileAttendance    Boolean                     @default(false)
+  allowWebAppAccess        Boolean                     @default(false)
+  expoPushToken            String?                     @db.Text
+  bankName                 String?
+  accountHolder            String?
+  accountNumber            String?
+  swapsFrom                ShiftSwap[]                 @relation("SwapFrom")
+  swapsTo                  ShiftSwap[]                 @relation("SwapTo")
+  schedules                Schedule[]                  @relation("EmployeeSchedules")
   patternAssignments       EmployeePatternAssignment[]
   employeeShiftAssignments EmployeeShiftAssignment[]
-  announcementsCreated  Announcement[]            @relation("AnnouncementCreatedBy")
-  announcementReadStatuses AnnouncementReadStatus[] @relation("AnnouncementReadStatus")
+  announcementsCreated     Announcement[]              @relation("AnnouncementCreatedBy")
+  announcementReadStatuses AnnouncementReadStatus[]    @relation("AnnouncementReadStatus")
 
   @@index([siteId])
   @@index([companyId])
@@ -227,7 +228,6 @@ model User {
   @@index([email])
   @@map("users")
 }
-
 
 // Junction for Employee Shift Assignment (schedules with workingDays array)
 // Attendance model (extended with GPS/selfie)
@@ -242,14 +242,14 @@ model Attendance {
   shift          Shift?           @relation(fields: [shiftId], references: [id])
   scheduledStart String? // HH:MM
   scheduledEnd   String? // HH:MM
-  actualCheckIn  DateTime? @db.Timestamptz(3)
-  actualCheckOut DateTime? @db.Timestamptz(3)
+  actualCheckIn  DateTime?        @db.Timestamptz(3)
+  actualCheckOut DateTime?        @db.Timestamptz(3)
   status         AttendanceStatus @default(NOT_CHECKED_IN)
   lateMinutes    Int              @default(0)
-  gpsLat         Float?           // GPS latitude for check-in
-  gpsLng         Float?           // GPS longitude for check-in
-  gpsLatPulang   Float?           // GPS latitude for check-out
-  gpsLngPulang   Float?           // GPS longitude for check-out
+  gpsLat         Float? // GPS latitude for check-in
+  gpsLng         Float? // GPS longitude for check-in
+  gpsLatPulang   Float? // GPS latitude for check-out
+  gpsLngPulang   Float? // GPS longitude for check-out
   selfieCheckIn  String? // URL
   selfieCheckOut String? // URL
   notes          String?
@@ -263,19 +263,23 @@ model Attendance {
 
 // Leave model (requests with approval)
 model Leave {
-  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId            String
-  user              User      @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Cascade)
-  leaveType         String    // Izin (displayed as 'Cuti' in UI), Sakit, TukarShift
-  startDate         DateTime  @db.Date
-  endDate           DateTime  @db.Date
+  user              User            @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Cascade)
+  leaveType         String // Izin (displayed as 'Cuti' in UI), Sakit, TukarShift
+  startDate         DateTime        @db.Date
+  endDate           DateTime        @db.Date
   reason            String?
   attachmentUrl     String?
-  status            String    @default("Pending") // Pending, Approved, Rejected
-  workingDaysCount  Int       @default(0) // Actual working days affected based on pattern
-  dayBreakdown      String?   // JSON string showing which days are counted vs skipped
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  status            String          @default("Pending") // Pending, Approved, Rejected
+  workingDaysCount  Int             @default(0) // Actual working days affected based on pattern
+  dayBreakdown      String? // JSON string showing which days are counted vs skipped
+  replacementUserId String?
+  replacementUser   User?           @relation("LeaveReplacement", fields: [replacementUserId], references: [id])
+  originalShiftType String?
+  targetShiftType   String?
+  createdAt         DateTime        @default(now()) @db.Timestamptz()
+  updatedAt         DateTime        @updatedAt @db.Timestamptz()
   bkoAssignments    BkoAssignment[]
 
   @@index([userId])
@@ -288,7 +292,7 @@ model BkoAssignment {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   leaveId      String   @unique @db.Uuid
   leave        Leave    @relation(fields: [leaveId], references: [id], onDelete: Cascade)
-  substituteId String   // Text reference to User id (which is cuid)
+  substituteId String // Text reference to User id (which is cuid)
   substitute   User     @relation("BkoSubstitute", fields: [substituteId], references: [id], onDelete: Cascade)
   status       String   @default("Aktif")
   createdAt    DateTime @default(now())
@@ -306,17 +310,17 @@ model SystemSettings {
   logoUrl        String?
   appName        String  @default("SecureGuard")
   appDescription String  @default("HR Administration")
-  appVersions   String? @map("AppVersions")
-  
+  appVersions    String? @map("AppVersions")
+
   @@map("system_settings")
 }
 
 model MasterData {
-  id        String   @id @default(cuid())
-  category  String   
-  value     String   
-  isActive  Boolean  @default(true) 
-  
+  id       String  @id @default(cuid())
+  category String
+  value    String
+  isActive Boolean @default(true)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -329,9 +333,9 @@ model AttendanceLocation {
   id        String   @id @default(cuid())
   siteId    String
   site      Site     @relation("SiteAttendanceLocations", fields: [siteId], references: [id], onDelete: Cascade)
-  name      String   // Name of attendance location (e.g., "Main Entrance", "Security Booth")
-  radius    Int      // Geofence radius in meters
-  latitude  Float    // GPS coordinates for validation
+  name      String // Name of attendance location (e.g., "Main Entrance", "Security Booth")
+  radius    Int // Geofence radius in meters
+  latitude  Float // GPS coordinates for validation
   longitude Float
   timezone  String   @default("WIB") // Indonesia timezone: WIB, WITA, or WIT
   isActive  Boolean  @default(true)
@@ -347,9 +351,9 @@ model PatrolLocation {
   id        String   @id @default(cuid())
   siteId    String
   site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  name      String   // Name of patrol location (e.g., "Gate A", "Building 1 Entrance")
-  radius    Int      // Geofence radius in meters
-  latitude  Float    // GPS coordinates for validation
+  name      String // Name of patrol location (e.g., "Gate A", "Building 1 Entrance")
+  radius    Int // Geofence radius in meters
+  latitude  Float // GPS coordinates for validation
   longitude Float
   timezone  String   @default("WIB") // Indonesia timezone: WIB, WITA, or WIT
   isActive  Boolean  @default(true)
@@ -363,27 +367,27 @@ model PatrolLocation {
 
 // Patrol model (patrol check-ins by user at specific times)
 model Patrol {
-  id                String              @id @default(cuid())
-  userId            String
-  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  siteId            String
-  site              Site                @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  patrolLocationId  String
-  patrolLocation    PatrolLocation      @relation(fields: [patrolLocationId], references: [id], onDelete: Cascade)
-  shiftId           String?
-  shift             Shift?              @relation(fields: [shiftId], references: [id])
-  date              DateTime            @db.Date // Date of patrol, no time component
-  status            PatrolStatus        @default(NOT_STARTED)
-  checkInTime       DateTime?           // Actual check-in time
-  gpsLat            Float?              // Actual GPS latitude for validation
-  gpsLng            Float?              // Actual GPS longitude
-  gpsAccuracy       Float?              // GPS accuracy in meters
-  barcodeScanned    Boolean             @default(false)
-  gpsValidated      Boolean             @default(false)
-  description       String?             // Description of patrol findings
-  evidence          PatrolEvidence[]
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  id               String           @id @default(cuid())
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  siteId           String
+  site             Site             @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  patrolLocationId String
+  patrolLocation   PatrolLocation   @relation(fields: [patrolLocationId], references: [id], onDelete: Cascade)
+  shiftId          String?
+  shift            Shift?           @relation(fields: [shiftId], references: [id])
+  date             DateTime         @db.Date // Date of patrol, no time component
+  status           PatrolStatus     @default(NOT_STARTED)
+  checkInTime      DateTime? // Actual check-in time
+  gpsLat           Float? // Actual GPS latitude for validation
+  gpsLng           Float? // Actual GPS longitude
+  gpsAccuracy      Float? // GPS accuracy in meters
+  barcodeScanned   Boolean          @default(false)
+  gpsValidated     Boolean          @default(false)
+  description      String? // Description of patrol findings
+  evidence         PatrolEvidence[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   @@unique([userId, patrolLocationId, date])
   @@index([userId])
@@ -395,11 +399,11 @@ model Patrol {
 
 // Patrol Evidence model (photos/documents from patrol)
 model PatrolEvidence {
-  id       String   @id @default(cuid())
-  patrolId String
-  patrol   Patrol   @relation(fields: [patrolId], references: [id], onDelete: Cascade)
-  imageUrl String   // URL to uploaded image
-  caption  String? // Description of what the photo shows
+  id        String   @id @default(cuid())
+  patrolId  String
+  patrol    Patrol   @relation(fields: [patrolId], references: [id], onDelete: Cascade)
+  imageUrl  String // URL to uploaded image
+  caption   String? // Description of what the photo shows
   createdAt DateTime @default(now())
 
   @@index([patrolId])
@@ -408,16 +412,16 @@ model PatrolEvidence {
 
 // Device Binding model - restricts accounts to single device/app login
 model DeviceBinding {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deviceId      String   // Device identifier from mobile app
-  deviceName    String   // e.g., "Samsung Galaxy S23 (Android)", "iPhone 14 Pro (iOS)"
-  deviceType    String   // "mobile" or "app"
-  appVersion    String?  // App version when bound
-  bindDate      DateTime @default(now())
-  lastUsed      DateTime @default(now()) @updatedAt
-  isActive      Boolean  @default(true)
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId   String // Device identifier from mobile app
+  deviceName String // e.g., "Samsung Galaxy S23 (Android)", "iPhone 14 Pro (iOS)"
+  deviceType String // "mobile" or "app"
+  appVersion String? // App version when bound
+  bindDate   DateTime @default(now())
+  lastUsed   DateTime @default(now()) @updatedAt
+  isActive   Boolean  @default(true)
 
   @@unique([userId, deviceType]) // One mobile device + one app per user
   @@unique([deviceId]) // Unique device identifier
@@ -428,21 +432,21 @@ model DeviceBinding {
 
 // Auth Activity Log - records every login attempt (web + mobile) with outcome and reason
 model AuthActivityLog {
-  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId       String?
-  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
-  email        String     // As entered, kept even if user lookup fails
-  channel      AuthChannel
-  result       AuthResult
-  action       String?    // ATTENDANCE_IN or ATTENDANCE_OUT
-  latitude     Float?
-  longitude    Float?
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String?
+  user           User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email          String // As entered, kept even if user lookup fails
+  channel        AuthChannel
+  result         AuthResult
+  action         String? // ATTENDANCE_IN or ATTENDANCE_OUT
+  latitude       Float?
+  longitude      Float?
   isMockLocation Boolean?
-  distance     Float?     // Distance from attendance point in meters
-  deviceId     String?    // Mobile only
-  ipAddress    String?
-  userAgent    String?    @db.Text
-  createdAt    DateTime   @default(now())
+  distance       Float? // Distance from attendance point in meters
+  deviceId       String? // Mobile only
+  ipAddress      String?
+  userAgent      String?     @db.Text
+  createdAt      DateTime    @default(now())
 
   @@index([createdAt])
   @@index([userId])
@@ -459,20 +463,20 @@ enum SchedulePatternType {
 }
 
 model SchedulePattern {
-  id               String             @id @default(cuid())
-  name             String
-  description      String?
-  type             SchedulePatternType
-  workingDays      String?
-  shiftId          String?
-  shift            Shift?             @relation(fields: [shiftId], references: [id], onDelete: SetNull)
-  rotatingPattern  String?
-  moduloPattern    String?
-  isActive         Boolean            @default(true)
-  assignedEmployees Int               @default(0)
-  assignments      EmployeePatternAssignment[]
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  id                String                      @id @default(cuid())
+  name              String
+  description       String?
+  type              SchedulePatternType
+  workingDays       String?
+  shiftId           String?
+  shift             Shift?                      @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  rotatingPattern   String?
+  moduloPattern     String?
+  isActive          Boolean                     @default(true)
+  assignedEmployees Int                         @default(0)
+  assignments       EmployeePatternAssignment[]
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
 
   @@index([shiftId])
 }
@@ -494,16 +498,16 @@ model EmployeePatternAssignment {
 }
 
 model EmployeeShiftAssignment {
-  id         String   @id @default(cuid())
-  employeeId String
-  employee   User     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  shiftId    String
-  shift      Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  locationId String
-  location   Site     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  employeeId  String
+  employee    User     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  shiftId     String
+  shift       Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  locationId  String
+  location    Site     @relation(fields: [locationId], references: [id], onDelete: Cascade)
   workingDays Int[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([employeeId])
   @@index([shiftId])
@@ -513,57 +517,57 @@ model EmployeeShiftAssignment {
 // Bulk Import Log - tracks all bulk import operations
 model BulkImportLog {
   id                String   @id @default(cuid())
-  fileName          String   // Original file name (e.g., "employees_patterns_2024.xlsx")
-  importedBy        String   // Admin user ID who performed import
+  fileName          String // Original file name (e.g., "employees_patterns_2024.xlsx")
+  importedBy        String // Admin user ID who performed import
   importedByUser    User     @relation("BulkImports", fields: [importedBy], references: [id], onDelete: SetNull)
-  totalRows         Int      // Total rows processed from file
-  successCount      Int      // Successfully imported rows
-  errorCount        Int      // Failed rows
-  validationDetails Json     // Detailed validation errors/warnings as JSON
+  totalRows         Int // Total rows processed from file
+  successCount      Int // Successfully imported rows
+  errorCount        Int // Failed rows
+  validationDetails Json // Detailed validation errors/warnings as JSON
   status            String   @default("SUCCESS") // SUCCESS, FAILED, PARTIAL
   createdAt         DateTime @default(now())
-  
+
   // Individual import records
-  importRecords     BulkImportRecord[]
-  
+  importRecords BulkImportRecord[]
+
   @@map("bulk_import_logs")
 }
 
 // Individual records from bulk import
 model BulkImportRecord {
-  id              String   @id @default(cuid())
+  id              String        @id @default(cuid())
   bulkImportLogId String
   bulkImportLog   BulkImportLog @relation(fields: [bulkImportLogId], references: [id], onDelete: Cascade)
-  
-  employeeId      String   // Original employee ID from file
-  employeeName    String?  // Employee name from file (for verification)
-  siteId          String   // Site where assigned
-  site            Site     @relation("SiteBulkImports", fields: [siteId], references: [id], onDelete: Cascade)
-  
-  startDate       DateTime // Assignment start date
-  endDate         DateTime? // Assignment end date
-  dailySchedule   Json     // Mon-Sun shift schedule from file
-  
-  status          String   @default("SUCCESS") // SUCCESS, ERROR
-  errorMessage    String?  // If status is ERROR, what went wrong
-  createdAt       DateTime @default(now())
-  
+
+  employeeId   String // Original employee ID from file
+  employeeName String? // Employee name from file (for verification)
+  siteId       String // Site where assigned
+  site         Site    @relation("SiteBulkImports", fields: [siteId], references: [id], onDelete: Cascade)
+
+  startDate     DateTime // Assignment start date
+  endDate       DateTime? // Assignment end date
+  dailySchedule Json // Mon-Sun shift schedule from file
+
+  status       String   @default("SUCCESS") // SUCCESS, ERROR
+  errorMessage String? // If status is ERROR, what went wrong
+  createdAt    DateTime @default(now())
+
   @@map("bulk_import_records")
 }
 
 model ShiftSwap {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  employeeFromId  String
-  employeeFrom    User      @relation("SwapFrom", fields: [employeeFromId], references: [id], onDelete: Cascade)
-  employeeToId    String
-  employeeTo      User      @relation("SwapTo", fields: [employeeToId], references: [id], onDelete: Cascade)
-  swapDate        DateTime  @db.Date
-  siteId          String
-  site            Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  reason          String?
-  status          String    @default("Pending") // Pending, Approved, Rejected
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeFromId String
+  employeeFrom   User     @relation("SwapFrom", fields: [employeeFromId], references: [id], onDelete: Cascade)
+  employeeToId   String
+  employeeTo     User     @relation("SwapTo", fields: [employeeToId], references: [id], onDelete: Cascade)
+  swapDate       DateTime @db.Date
+  siteId         String
+  site           Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  reason         String?
+  status         String   @default("Pending") // Pending, Approved, Rejected
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@unique([employeeFromId, employeeToId, swapDate]) // Prevent duplicate swaps on same date
   @@index([employeeFromId])
@@ -574,18 +578,18 @@ model ShiftSwap {
 }
 
 model Schedule {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  employeeId      String
-  employee        User      @relation("EmployeeSchedules", fields: [employeeId], references: [id], onDelete: Cascade)
-  shiftId         String
-  shift           Shift     @relation("ScheduleShifts", fields: [shiftId], references: [id], onDelete: Cascade)
-  scheduleDate    DateTime  @db.Date
-  shiftStart      String    // "09:00" format
-  shiftEnd        String    // "17:00" format
-  isException     Boolean   @default(false) // true if manually overridden
-  notes           String?   // e.g., "Swapped with John", "Manual override"
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeId   String
+  employee     User     @relation("EmployeeSchedules", fields: [employeeId], references: [id], onDelete: Cascade)
+  shiftId      String
+  shift        Shift    @relation("ScheduleShifts", fields: [shiftId], references: [id], onDelete: Cascade)
+  scheduleDate DateTime @db.Date
+  shiftStart   String // "09:00" format
+  shiftEnd     String // "17:00" format
+  isException  Boolean  @default(false) // true if manually overridden
+  notes        String? // e.g., "Swapped with John", "Manual override"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@unique([employeeId, scheduleDate]) // One schedule per employee per day
   @@index([employeeId])
@@ -595,18 +599,18 @@ model Schedule {
 }
 
 model CronLog {
-  id              String    @id @default(cuid())
-  jobName         String    @map("job_name") // "attendance_generation", "leave_processing", etc.
-  status          String    @default("pending") @map("status") // "success", "pending", "error", "running"
-  message         String?   @map("message")
-  recordsCreated  Int       @default(0) @map("records_created")
-  recordsSkipped  Int       @default(0) @map("records_skipped")
-  error           String?   @map("error")
-  duration        Int?      @map("duration") // Duration in milliseconds
-  startTime       DateTime  @default(now()) @map("start_time")
-  endTime         DateTime? @map("end_time")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  
+  id             String    @id @default(cuid())
+  jobName        String    @map("job_name") // "attendance_generation", "leave_processing", etc.
+  status         String    @default("pending") @map("status") // "success", "pending", "error", "running"
+  message        String?   @map("message")
+  recordsCreated Int       @default(0) @map("records_created")
+  recordsSkipped Int       @default(0) @map("records_skipped")
+  error          String?   @map("error")
+  duration       Int?      @map("duration") // Duration in milliseconds
+  startTime      DateTime  @default(now()) @map("start_time")
+  endTime        DateTime? @map("end_time")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
   @@index([jobName, createdAt])
   @@index([status])
   @@map("cron_logs")
@@ -621,7 +625,7 @@ model Notification {
   body      String
   type      NotificationType @default(SYSTEM)
   isRead    Boolean          @default(false)
-  metadata  Json?            // Store extra details like request_id, entity_type, link_id, etc.
+  metadata  Json? // Store extra details like request_id, entity_type, link_id, etc.
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
@@ -701,8 +705,8 @@ enum OvertimeHoursStatus {
 // TABLE 1: Salary Rules - Store salary configuration by position + site
 model SalaryRule {
   id                String    @id @default(cuid())
-  positionId        String    // References position/job title
-  siteId            String    // References site ID
+  positionId        String // References position/job title
+  siteId            String // References site ID
   baseSalary        Decimal   @db.Decimal(15, 2) // Monthly base salary
   positionAllowance Decimal   @db.Decimal(15, 2) // Position-specific allowance (e.g., risk allowance)
   minimumWage       Decimal   @db.Decimal(15, 2) // Government minimum wage baseline
@@ -720,14 +724,14 @@ model SalaryRule {
 
 // TABLE 2: Overtime Rules - Store overtime multiplier configurations
 model OvertimeRule {
-  id              String             @id @default(cuid())
-  type            OvertimeRuleType   // regular_backup, national_holiday, overtime_weekly
-  description     String             // e.g., "National Holiday Duty"
-  multiplier      Decimal            @db.Decimal(3, 2) // e.g., 1.5, 2.0, 2.5
-  maxHoursPerMonth Int?              // e.g., 20 hours max per month
-  status          String             @default("active") // active / inactive
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  id               String           @id @default(cuid())
+  type             OvertimeRuleType // regular_backup, national_holiday, overtime_weekly
+  description      String // e.g., "National Holiday Duty"
+  multiplier       Decimal          @db.Decimal(3, 2) // e.g., 1.5, 2.0, 2.5
+  maxHoursPerMonth Int? // e.g., 20 hours max per month
+  status           String           @default("active") // active / inactive
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   @@index([status])
   @@map("overtime_rules")
@@ -735,20 +739,20 @@ model OvertimeRule {
 
 // TABLE 3: Deduction Rules - Store deduction rates by position + site
 model DeductionRule {
-  id                    String                      @id @default(cuid())
-  positionId            String                      // Position/job title
-  siteId                String                      // References site ID
-  name                  String                      // e.g., "Income Tax", "Health Insurance"
-  type                  DeductionType               // tax, insurance, health, pension, special
-  deductionType         DeductionCalculationType    // percentage or fixed_amount
-  value                 Decimal                     @db.Decimal(8, 4) // % or fixed amount
-  isApplicableToAll     Boolean                     @default(true) // Applies to all employees in this position/site
-  riskLevel             String?                     // low, medium, high - for health/insurance variations
-  effectiveDate         DateTime                    @db.Date
-  endDate               DateTime?                   @db.Date
-  status                String                      @default("active") // active / inactive
-  createdAt             DateTime                    @default(now())
-  updatedAt             DateTime                    @updatedAt
+  id                String                   @id @default(cuid())
+  positionId        String // Position/job title
+  siteId            String // References site ID
+  name              String // e.g., "Income Tax", "Health Insurance"
+  type              DeductionType // tax, insurance, health, pension, special
+  deductionType     DeductionCalculationType // percentage or fixed_amount
+  value             Decimal                  @db.Decimal(8, 4) // % or fixed amount
+  isApplicableToAll Boolean                  @default(true) // Applies to all employees in this position/site
+  riskLevel         String? // low, medium, high - for health/insurance variations
+  effectiveDate     DateTime                 @db.Date
+  endDate           DateTime?                @db.Date
+  status            String                   @default("active") // active / inactive
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
 
   @@unique([positionId, siteId, type, riskLevel])
   @@index([siteId])
@@ -758,23 +762,23 @@ model DeductionRule {
 
 // TABLE 4: Payroll Periods - Define payroll periods and approval workflow
 model PayrollPeriod {
-  id                 String                @id @default(cuid())
-  month              DateTime              @db.Date // First day of month, e.g., 2026-07-01
-  startDate          DateTime              @db.Date
-  endDate            DateTime              @db.Date
-  status             PayrollPeriodStatus   @default(draft)
-  approvedBy         String?               // FK to User (admin/HRD who approved)
-  approvedAt         DateTime?
-  pdfGeneratedAt     DateTime?
-  notes              String?               @db.Text
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
-  
+  id             String              @id @default(cuid())
+  month          DateTime            @db.Date // First day of month, e.g., 2026-07-01
+  startDate      DateTime            @db.Date
+  endDate        DateTime            @db.Date
+  status         PayrollPeriodStatus @default(draft)
+  approvedBy     String? // FK to User (admin/HRD who approved)
+  approvedAt     DateTime?
+  pdfGeneratedAt DateTime?
+  notes          String?             @db.Text
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
   // Relations
-  calculations       PayrollCalculation[]  @relation("PeriodCalculations")
-  overtimeHours      PayrollOvertimeHours[] @relation("PeriodOvertimeHours")
-  deductionsApplied  PayrollDeductionsApplied[] @relation("PeriodDeductionsApplied")
-  bonuses            PayrollBonus[]        @relation("PeriodBonuses")
+  calculations      PayrollCalculation[]       @relation("PeriodCalculations")
+  overtimeHours     PayrollOvertimeHours[]     @relation("PeriodOvertimeHours")
+  deductionsApplied PayrollDeductionsApplied[] @relation("PeriodDeductionsApplied")
+  bonuses           PayrollBonus[]             @relation("PeriodBonuses")
 
   @@unique([month])
   @@index([status])
@@ -783,35 +787,35 @@ model PayrollPeriod {
 
 // TABLE 5: Payroll Calculations - Main table storing final calculated payroll
 model PayrollCalculation {
-  id                  String                    @id @default(cuid())
-  userId              String                    // References user ID
-  payrollPeriodId     String                    // References payroll period
-  payrollPeriod       PayrollPeriod             @relation("PeriodCalculations", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
-  
+  id              String        @id @default(cuid())
+  userId          String // References user ID
+  payrollPeriodId String // References payroll period
+  payrollPeriod   PayrollPeriod @relation("PeriodCalculations", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
+
   // Salary components
-  baseSalary          Decimal                   @db.Decimal(15, 2)
-  positionAllowance   Decimal                   @db.Decimal(15, 2)
-  overtimeEarnings    Decimal                   @db.Decimal(15, 2) @default(0)
-  bonusAmount         Decimal                   @db.Decimal(15, 2) @default(0)
-  
+  baseSalary        Decimal @db.Decimal(15, 2)
+  positionAllowance Decimal @db.Decimal(15, 2)
+  overtimeEarnings  Decimal @default(0) @db.Decimal(15, 2)
+  bonusAmount       Decimal @default(0) @db.Decimal(15, 2)
+
   // Deductions
-  totalDeductions     Decimal                   @db.Decimal(15, 2) @default(0)
-  
+  totalDeductions Decimal @default(0) @db.Decimal(15, 2)
+
   // Final amounts
-  grossSalary         Decimal                   @db.Decimal(15, 2) // base + allowance + overtime + bonus
-  netPay              Decimal                   @db.Decimal(15, 2) // grossSalary - totalDeductions
-  
+  grossSalary Decimal @db.Decimal(15, 2) // base + allowance + overtime + bonus
+  netPay      Decimal @db.Decimal(15, 2) // grossSalary - totalDeductions
+
   // Status & adjustments
-  status              PayrollCalculationStatus  @default(calculated)
-  adjustmentAmount    Decimal?                  @db.Decimal(15, 2)
-  adjustmentReason    String?
-  
+  status           PayrollCalculationStatus @default(calculated)
+  adjustmentAmount Decimal?                 @db.Decimal(15, 2)
+  adjustmentReason String?
+
   // Timestamps
-  calculatedAt        DateTime                  @default(now())
-  approvedAt          DateTime?
-  paidAt              DateTime?
-  createdAt           DateTime                  @default(now())
-  updatedAt           DateTime                  @updatedAt
+  calculatedAt DateTime  @default(now())
+  approvedAt   DateTime?
+  paidAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@unique([userId, payrollPeriodId])
   @@index([userId])
@@ -822,25 +826,25 @@ model PayrollCalculation {
 
 // TABLE 6: Payroll Overtime Hours - Track overtime hours per employee per month
 model PayrollOvertimeHours {
-  id              String                @id @default(cuid())
-  userId          String                // References user ID
-  payrollPeriodId String                // References payroll period
-  payrollPeriod   PayrollPeriod         @relation("PeriodOvertimeHours", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
-  overtimeRuleId  String                // References overtime rule
-  
-  date            DateTime              @db.Date // When overtime occurred
-  hours           Decimal               @db.Decimal(5, 2) // Hours worked
-  hourlyRate      Decimal               @db.Decimal(12, 2) // Base hourly rate calculated from salary
-  multiplier      Decimal               @db.Decimal(3, 2) // From overtime rule
-  totalAmount     Decimal               @db.Decimal(15, 2) // hours × hourlyRate × multiplier
-  
-  description     String?               // e.g., "Backup duty on 2026-07-15"
-  approvedBy      String?               // FK to User (manager approval)
-  approvedAt      DateTime?
-  status          OvertimeHoursStatus   @default(pending)
-  
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  id              String        @id @default(cuid())
+  userId          String // References user ID
+  payrollPeriodId String // References payroll period
+  payrollPeriod   PayrollPeriod @relation("PeriodOvertimeHours", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
+  overtimeRuleId  String // References overtime rule
+
+  date        DateTime @db.Date // When overtime occurred
+  hours       Decimal  @db.Decimal(5, 2) // Hours worked
+  hourlyRate  Decimal  @db.Decimal(12, 2) // Base hourly rate calculated from salary
+  multiplier  Decimal  @db.Decimal(3, 2) // From overtime rule
+  totalAmount Decimal  @db.Decimal(15, 2) // hours × hourlyRate × multiplier
+
+  description String? // e.g., "Backup duty on 2026-07-15"
+  approvedBy  String? // FK to User (manager approval)
+  approvedAt  DateTime?
+  status      OvertimeHoursStatus @default(pending)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([payrollPeriodId])
@@ -851,22 +855,22 @@ model PayrollOvertimeHours {
 
 // TABLE 7: Payroll Deductions Applied - Track actual deductions per employee per month
 model PayrollDeductionsApplied {
-  id                String                      @id @default(cuid())
-  userId            String                      // References user ID
-  payrollPeriodId   String                      // References payroll period
-  payrollPeriod     PayrollPeriod               @relation("PeriodDeductionsApplied", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
-  deductionRuleId   String                      // References deduction rule
-  
-  baseSalary        Decimal                     @db.Decimal(15, 2) // Used for percentage calculations
-  deductionType     String                      // Stores type for reference
-  deductionName     String                      // e.g., "Income Tax"
-  calculationType   DeductionCalculationType    // percentage or fixed_amount
-  baseValue         Decimal                     @db.Decimal(8, 4) // % or fixed amount
-  calculatedAmount  Decimal                     @db.Decimal(15, 2) // Actual deduction amount
-  
-  specialNotes      String?                     // e.g., "Company debt payment"
-  createdAt         DateTime                    @default(now())
-  updatedAt         DateTime                    @updatedAt
+  id              String        @id @default(cuid())
+  userId          String // References user ID
+  payrollPeriodId String // References payroll period
+  payrollPeriod   PayrollPeriod @relation("PeriodDeductionsApplied", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
+  deductionRuleId String // References deduction rule
+
+  baseSalary       Decimal                  @db.Decimal(15, 2) // Used for percentage calculations
+  deductionType    String // Stores type for reference
+  deductionName    String // e.g., "Income Tax"
+  calculationType  DeductionCalculationType // percentage or fixed_amount
+  baseValue        Decimal                  @db.Decimal(8, 4) // % or fixed amount
+  calculatedAmount Decimal                  @db.Decimal(15, 2) // Actual deduction amount
+
+  specialNotes String? // e.g., "Company debt payment"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([userId])
   @@index([payrollPeriodId])
@@ -876,22 +880,22 @@ model PayrollDeductionsApplied {
 
 // TABLE 8: Payroll Bonuses - Track bonus allocations (manual only)
 model PayrollBonus {
-  id              String            @id @default(cuid())
-  userId          String            // References user ID
-  payrollPeriodId String            // References payroll period
-  payrollPeriod   PayrollPeriod     @relation("PeriodBonuses", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
-  
-  type            BonusType         // performance, attendance, special, manual
-  amount          Decimal           @db.Decimal(15, 2)
-  reason          String            // Reason for bonus
-  status          BonusStatus       @default(pending_approval)
-  
-  approvedBy      String?           // FK to User (admin/manager approval)
-  approvedAt      DateTime?
-  notes           String?
-  
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id              String        @id @default(cuid())
+  userId          String // References user ID
+  payrollPeriodId String // References payroll period
+  payrollPeriod   PayrollPeriod @relation("PeriodBonuses", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
+
+  type   BonusType // performance, attendance, special, manual
+  amount Decimal     @db.Decimal(15, 2)
+  reason String // Reason for bonus
+  status BonusStatus @default(pending_approval)
+
+  approvedBy String? // FK to User (admin/manager approval)
+  approvedAt DateTime?
+  notes      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([payrollPeriodId])
@@ -906,7 +910,7 @@ model Payroll {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   month       String   @db.VarChar(50) // e.g., 'Juli 2026'
   publishDate DateTime @default(now()) @db.Date
-  pdfUrl      String?  // Supabase Storage URL for the payslip
+  pdfUrl      String? // Supabase Storage URL for the payslip
   status      String   @default("published") @db.VarChar(20)
   createdAt   DateTime @default(now()) @db.Timestamptz()
   updatedAt   DateTime @updatedAt
@@ -919,26 +923,26 @@ model Payroll {
 
 // Announcement model - for managing announcements and broadcasts
 model Announcement {
-  id                String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title             String
-  body              String                      @db.Text
-  createdBy         String
-  createdByUser     User                        @relation("AnnouncementCreatedBy", fields: [createdBy], references: [id], onDelete: Cascade)
-  createdAt         DateTime                    @default(now())
-  updatedAt         DateTime                    @updatedAt
-  
-  recipientType     AnnouncementRecipientType   @default(ALL_EMPLOYEES)
-  recipientSiteId   String?                     // If site-specific
-  recipientSite     Site?                       @relation("SiteAnnouncements", fields: [recipientSiteId], references: [id], onDelete: SetNull)
-  recipientDepartment String?                   // If department-specific
-  
-  priority          AnnouncementPriority        @default(MEDIUM)
-  attachmentUrl     String?                     // PDF or other file URL from Supabase Storage
-  
-  isActive          Boolean                     @default(true)
-  expiresAt         DateTime?                   // Optional: auto-hide after date
-  
-  readStatuses      AnnouncementReadStatus[]
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title         String
+  body          String   @db.Text
+  createdBy     String
+  createdByUser User     @relation("AnnouncementCreatedBy", fields: [createdBy], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  recipientType       AnnouncementRecipientType @default(ALL_EMPLOYEES)
+  recipientSiteId     String? // If site-specific
+  recipientSite       Site?                     @relation("SiteAnnouncements", fields: [recipientSiteId], references: [id], onDelete: SetNull)
+  recipientDepartment String? // If department-specific
+
+  priority      AnnouncementPriority @default(MEDIUM)
+  attachmentUrl String? // PDF or other file URL from Supabase Storage
+
+  isActive  Boolean   @default(true)
+  expiresAt DateTime? // Optional: auto-hide after date
+
+  readStatuses AnnouncementReadStatus[]
 
   @@index([createdBy])
   @@index([recipientType])
@@ -950,15 +954,15 @@ model Announcement {
 
 // AnnouncementReadStatus model - tracks which users have read/dismissed announcements
 model AnnouncementReadStatus {
-  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  announcementId  String        @db.Uuid
-  announcement    Announcement  @relation(fields: [announcementId], references: [id], onDelete: Cascade)
-  userId          String
-  user            User          @relation("AnnouncementReadStatus", fields: [userId], references: [id], onDelete: Cascade)
-  
-  readAt          DateTime?     // null = not read yet
-  dismissedAt     DateTime?     // When user dismissed/archived the announcement
-  createdAt       DateTime      @default(now())
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  announcementId String       @db.Uuid
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation("AnnouncementReadStatus", fields: [userId], references: [id], onDelete: Cascade)
+
+  readAt      DateTime? // null = not read yet
+  dismissedAt DateTime? // When user dismissed/archived the announcement
+  createdAt   DateTime  @default(now())
 
   @@unique([announcementId, userId])
   @@index([userId])

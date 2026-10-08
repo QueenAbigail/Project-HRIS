@@ -24,7 +24,20 @@ interface LeaveRequestDetailsModalProps {
   onReject: (id: string) => Promise<void>
 }
 
-function parseDayBreakdown(value: unknown): { summary?: string } | null {
+function calculateFallbackWorkingDays(startDate: string, endDate: string): number {
+  const start = new Date(`${startDate.slice(0, 10)}T00:00:00Z`)
+  const end = new Date(`${endDate.slice(0, 10)}T00:00:00Z`)
+  let count = 0
+
+  for (const current = new Date(start); current <= end; current.setUTCDate(current.getUTCDate() + 1)) {
+    const day = current.getUTCDay()
+    if (day >= 1 && day <= 5) count += 1
+  }
+
+  return count
+}
+
+function parseDayBreakdown(value: unknown): { summary?: string; workingDaysCount?: number } | null {
   if (!value) return null
   if (typeof value === 'object' && value !== null) {
     return value as { summary?: string }
@@ -73,6 +86,12 @@ export function LeaveRequestDetailsModal({
   }
 
   const dayBreakdown = parseDayBreakdown(leave.dayBreakdown)
+  const fallbackWorkingDays = calculateFallbackWorkingDays(leave.startDate, leave.endDate)
+  const workingDays = typeof leave.workingDaysCount === 'number' && leave.workingDaysCount > 0
+    ? leave.workingDaysCount
+    : dayBreakdown?.workingDaysCount && dayBreakdown.workingDaysCount > 0
+      ? dayBreakdown.workingDaysCount
+      : fallbackWorkingDays
 
   const statusColor = ({
     Pending: 'bg-yellow-100 text-yellow-800',
@@ -88,63 +107,63 @@ export function LeaveRequestDetailsModal({
           <DialogDescription>Review and manage leave request</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Employee */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Employee</Label>
-            <p className="text-sm font-medium">{leave.user?.name}</p>
-            <p className="text-xs text-muted-foreground">{leave.user?.department}</p>
-          </div>
-
-          {/* Leave Type */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Leave Type</Label>
-            <p className="text-sm font-medium">
-              {leave.leaveType || 'Unknown'}
-            </p>
-          </div>
-
-          {/* Period */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Period</Label>
-            <p className="text-sm font-medium">
-              {formatBusinessDate(leave.startDate.slice(0, 10))} -{' '}
-              {formatBusinessDate(leave.endDate.slice(0, 10))}
-            </p>
-          </div>
-
-          {/* Status */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Status</Label>
-            <Badge className={`${statusColor} border-0`}>{leave.status}</Badge>
-          </div>
-
-          {/* Reason */}
-          {leave.reason && (
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Reason</Label>
-              <p className="text-sm">{leave.reason}</p>
+        <div className="space-y-5">
+          <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
+            {/* Employee */}
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Employee</Label>
+              <p className="text-sm font-medium">{leave.user?.name}</p>
+              <p className="text-xs text-muted-foreground">{leave.user?.department}</p>
             </div>
-          )}
 
-          {/* Attachment */}
-          {leave.attachmentUrl && (
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground flex items-center gap-2">
-                <FileText className="size-4" />
-                Attachment Document
-              </Label>
-              <a
-                href={leave.attachmentUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-primary hover:underline text-sm"
-              >
-                <FileText className="size-4" />
-                View Document
-              </a>
+            {/* Leave Type */}
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Leave Type</Label>
+              <p className="text-sm font-medium">{leave.leaveType === 'TUKAR_SHIFT' ? 'Tukar Shift' : leave.leaveType || 'Unknown'}</p>
             </div>
-          )}
+
+            {/* Period */}
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Period</Label>
+              <p className="text-sm font-medium">
+                {formatBusinessDate(leave.startDate.slice(0, 10))} -{' '}
+                {formatBusinessDate(leave.endDate.slice(0, 10))}
+              </p>
+            </div>
+
+            {/* Status */}
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Status</Label>
+              <Badge className={`${statusColor} border-0`}>{leave.status}</Badge>
+            </div>
+
+            {/* Reason */}
+            {leave.reason && (
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-xs text-muted-foreground">Reason</Label>
+                <p className="text-sm">{leave.reason}</p>
+              </div>
+            )}
+
+            {/* Attachment */}
+            {leave.attachmentUrl && (
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-xs text-muted-foreground flex items-center gap-2">
+                  <FileText className="size-4" />
+                  Attachment Document
+                </Label>
+                <a
+                  href={leave.attachmentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-primary hover:underline text-sm"
+                >
+                  <FileText className="size-4" />
+                  View Document
+                </a>
+              </div>
+            )}
+          </div>
 
           {/* Working Days Breakdown */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
@@ -152,13 +171,7 @@ export function LeaveRequestDetailsModal({
               Leave Duration Breakdown
             </Label>
             <div className="text-sm text-blue-800 space-y-1">
-              {dayBreakdown?.summary ? (
-                <div>{dayBreakdown.summary}</div>
-              ) : leave.workingDaysCount != null ? (
-                <div>{leave.workingDaysCount} working day(s)</div>
-              ) : (
-                <div className="text-blue-700">Working-day breakdown unavailable</div>
-              )}
+              <div>{workingDays} working day(s)</div>
             </div>
           </div>
 

@@ -67,6 +67,10 @@ export function UnifiedRequestsTable() {
   const [selectedSwap, setSelectedSwap] = useState<UnifiedRequest | null>(null)
   const [leaveDetailsOpen, setLeaveDetailsOpen] = useState(false)
   const [swapDetailsOpen, setSwapDetailsOpen] = useState(false)
+  const today = new Date()
+  const defaultStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10)
+  const defaultEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10)
+  const [filters, setFilters] = useState({ status: 'all', leaveType: 'all-types', department: 'all-dept', range: 'this-month', rangeStart: defaultStart, rangeEnd: defaultEnd })
 
   async function fetchRequests() {
   setLoading(true)
@@ -107,12 +111,18 @@ export function UnifiedRequestsTable() {
   }
 
   useEffect(() => {
+    const handleFiltersChanged = (event: Event) => {
+      const detail = (event as CustomEvent<Partial<typeof filters>>).detail
+      setFilters((current) => ({ ...current, ...detail }))
+    }
+    window.addEventListener('leaveFiltersChanged', handleFiltersChanged)
     const initialFetch = window.setTimeout(() => void fetchRequests(), 0)
     const handleRequestCreated = () => void fetchRequests()
     window.addEventListener('leaveRequestCreated', handleRequestCreated)
     return () => {
       window.clearTimeout(initialFetch)
       window.removeEventListener('leaveRequestCreated', handleRequestCreated)
+      window.removeEventListener('leaveFiltersChanged', handleFiltersChanged)
     }
   }, [])
 
@@ -170,10 +180,12 @@ export function UnifiedRequestsTable() {
       return {
         title: `${request.user?.name}`,
         department: request.user?.department || '--',
-        typeLabel: request.leaveType || 'Unknown',
+        typeLabel: request.leaveType === 'TUKAR_SHIFT' || request.leaveType === 'Tukar Shift' ? 'Tukar Shift' : request.leaveType === 'Cuti' || request.leaveType === 'IZIN' ? 'Izin' : request.leaveType || 'Unknown',
         typeColor: 'bg-muted text-muted-foreground border-border',
         period: `${formatBusinessDate(request.startDate)} - ${formatBusinessDate(request.endDate)}`,
-        days: request.workingDaysCount ?? calculateDays(request.startDate, request.endDate),
+        days: typeof request.workingDaysCount === 'number' && request.workingDaysCount > 0
+    ? request.workingDaysCount
+    : calculateDays(request.startDate, request.endDate),
       }
     } else {
       return {
@@ -186,6 +198,27 @@ export function UnifiedRequestsTable() {
       }
     }
   }
+
+  const filteredRequests = requests.filter((request) => {
+    const matchesStatus = filters.status === 'all' || request.status.toLowerCase() === filters.status
+    const normalizedRequestType = request.leaveType?.toUpperCase().replace(/[\s_-]/g, '')
+    const matchesType = filters.leaveType === 'all-types' || (
+      request.type === 'leave' && (
+        (filters.leaveType === 'IZIN' && (normalizedRequestType === 'IZIN' || normalizedRequestType === 'CUTI')) ||
+        (filters.leaveType === 'TUKAR_SHIFT' && normalizedRequestType === 'TUKARSHIFT') ||
+        (filters.leaveType !== 'IZIN' && filters.leaveType !== 'TUKAR_SHIFT' && normalizedRequestType === filters.leaveType.toUpperCase().replace(/[\s_-]/g, ''))
+      )
+    )
+    const requestStart = request.startDate.slice(0, 10)
+    const requestEnd = request.endDate.slice(0, 10)
+    const matchesRange = !filters.rangeStart || !filters.rangeEnd || (requestStart <= filters.rangeEnd && requestEnd >= filters.rangeStart)
+    const matchesDepartment = filters.department === 'all-dept' || (
+      request.type === 'leave'
+        ? request.user?.department === filters.department
+        : request.employeeFrom?.department === filters.department
+    )
+    return matchesRange && matchesStatus && matchesType && matchesDepartment
+  })
 
   if (loading) {
     return (
@@ -233,14 +266,14 @@ export function UnifiedRequestsTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {requests.length === 0 ? (
+                {filteredRequests.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       No requests found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  requests.map((request) => {
+                  filteredRequests.map((request) => {
                     const display = getRequestDisplay(request)
 
                     return (

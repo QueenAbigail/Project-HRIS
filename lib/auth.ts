@@ -80,6 +80,7 @@ export async function login(email: string, password: string, remember: boolean) 
     email,
     password,
     channel: 'WEB',
+    remember,
   })
 
   return result
