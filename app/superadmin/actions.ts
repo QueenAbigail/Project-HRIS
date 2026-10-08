@@ -795,6 +795,29 @@ export async function generateTodayAttendanceRecords() {
 
     console.log('[v0] Found', todaysSchedules.length, 'schedules for attendance date')
 
+    const activeBkoAssignments = await prisma.bkoAssignment.findMany({
+      where: {
+        status: 'Aktif',
+        leave: {
+          status: 'Approved',
+          startDate: { lte: attendanceDate },
+          endDate: { gte: attendanceDate },
+        },
+      },
+      include: {
+        leave: {
+          include: {
+            user: { select: { id: true, name: true } },
+          },
+        },
+        substitute: {
+          select: { id: true, name: true, siteId: true },
+        },
+      },
+    })
+
+    console.log('[v0] Found', activeBkoAssignments.length, 'active BKO assignments for attendance date')
+
     let createdCount = 0
     let skippedCount = 0
 
@@ -878,6 +901,55 @@ export async function generateTodayAttendanceRecords() {
         console.error('[v0] Error creating attendance record for', schedule.employee.name, ':', createError)
         skippedCount++
         continue
+      }
+    }
+
+    for (const assignment of activeBkoAssignments) {
+      const coveredSchedule = await prisma.schedule.findFirst({
+        where: {
+          employeeId: assignment.leave.userId,
+          scheduleDate: attendanceDate,
+        },
+        include: {
+          shift: true,
+          employee: { select: { siteId: true } },
+        },
+      })
+      const locationId = assignment.substitute.siteId || coveredSchedule?.employee.siteId
+
+      if (!coveredSchedule || !locationId) {
+        console.log('[v0] Skipping BKO attendance: no covered schedule or site', assignment.substitute.name)
+        skippedCount++
+        continue
+      }
+
+      const existingAttendance = await prisma.attendance.findFirst({
+        where: { userId: assignment.substituteId, date: attendanceDate },
+      })
+
+      if (existingAttendance) {
+        skippedCount++
+        continue
+      }
+
+      try {
+        await prisma.attendance.create({
+          data: {
+            userId: assignment.substituteId,
+            locationId,
+            shiftId: coveredSchedule.shiftId,
+            date: attendanceDate,
+            scheduledStart: coveredSchedule.shiftStart,
+            scheduledEnd: coveredSchedule.shiftEnd,
+            status: 'NOT_CHECKED_IN' as any,
+            lateMinutes: 0,
+            notes: `BKO coverage for ${assignment.leave.user.name}`,
+          },
+        })
+        createdCount++
+      } catch (createError) {
+        console.error('[v0] Error creating BKO attendance record for', assignment.substitute.name, createError)
+        skippedCount++
       }
     }
 
