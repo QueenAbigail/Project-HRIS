@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
     const siteId = searchParams.get('siteId')
     const dateRange = searchParams.get('dateRange') || 'today'
     const department = searchParams.get('department')
+    const employeeName = searchParams.get('employeeName')?.trim()
     const date = searchParams.get('date') || getBusinessDate()
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
@@ -123,7 +124,15 @@ select: { id: true, companyId: true, timezone: true },
 
     if (department && department !== 'all') {
       where.user = {
-        department: department
+        ...(where.user || {}),
+        department,
+      }
+    }
+
+    if (employeeName) {
+      where.user = {
+        ...(where.user || {}),
+        name: { contains: employeeName, mode: 'insensitive' },
       }
     }
 

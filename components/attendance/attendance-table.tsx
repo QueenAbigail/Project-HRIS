@@ -13,9 +13,10 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Clock, AlertTriangle, MapPin, Loader2, Eye, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Clock, AlertTriangle, MapPin, Loader2, Eye, RefreshCw, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import type { GpsCoordinates } from '@/lib/constants'
 import { formatAttendanceStatus, getAttendanceLabel, getStatusStyles, resolveAttendanceStatus } from '@/lib/attendance-utils'
 import { AttendanceDetailsModal } from './attendance-details-modal'
@@ -120,11 +121,12 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
   const [pageSize, setPageSize] = useState(25)
   const [pagination, setPagination] = useState({ page: 1, pageSize: 25, totalRecords: 0, totalPages: 0 })
   const [statusCounts, setStatusCounts] = useState<Record<string, number>>({})
+  const [employeeName, setEmployeeName] = useState('')
   const [prefetchedPage, setPrefetchedPage] = useState<{ page: number; records: AttendanceRecord[]; pagination: typeof pagination } | null>(null)
 
   useEffect(() => {
     setPage(1)
-  }, [siteId, dateRange, customDateFrom, customDateTo, department, pageSize])
+  }, [siteId, dateRange, customDateFrom, customDateTo, department, pageSize, employeeName])
 
   useEffect(() => {
     let cancelled = false
@@ -157,6 +159,9 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
         }
         if (department && department !== 'all') {
           params.append('department', department)
+        }
+        if (employeeName.trim()) {
+          params.set('employeeName', employeeName.trim())
         }
 
         const response = await fetch(`/api/attendance?${params.toString()}`)
@@ -208,7 +213,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
 
     fetchAttendance()
     return () => { cancelled = true }
-  }, [siteId, dateRange, customDateFrom, customDateTo, department, refreshKey, retryKey, page, pageSize])
+  }, [siteId, dateRange, customDateFrom, customDateTo, department, employeeName, refreshKey, retryKey, page, pageSize])
 
   if (error && records.length === 0) {
     return (
@@ -350,8 +355,21 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
             </Badge>
           )}
         </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="all" className="w-full">
+          <CardContent>
+            <div className="mb-4 max-w-sm">
+              <label htmlFor="attendance-name-search" className="sr-only">Search attendance by employee name</label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                <Input
+                  id="attendance-name-search"
+                  value={employeeName}
+                  onChange={(event) => setEmployeeName(event.target.value)}
+                  placeholder="Search by employee name"
+                  className="pl-9"
+                />
+              </div>
+            </div>
+            <Tabs defaultValue="all" className="w-full">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="all">All ({pagination.totalRecords})</TabsTrigger>
               <TabsTrigger value="late" className="text-warning">Late ({totalStatusCount('LATE')})</TabsTrigger>
