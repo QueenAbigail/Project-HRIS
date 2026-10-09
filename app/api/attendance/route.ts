@@ -67,167 +67,212 @@ export async function GET(request: NextRequest) {
     const siteId = searchParams.get('siteId')
     const dateRange = searchParams.get('dateRange') || 'today'
     const department = searchParams.get('department')
+    const employeeName = searchParams.get('employeeName')?.trim()
     const date = searchParams.get('date') || getBusinessDate()
     const dateFrom = searchParams.get('dateFrom')
     const dateTo = searchParams.get('dateTo')
     const page = Math.max(Number.parseInt(searchParams.get('page') || '1', 10) || 1, 1)
     const pageSize = Math.min(Math.max(Number.parseInt(searchParams.get('pageSize') || '25', 10) || 25, 10), 50)
 
-    // Attendance.date stores the site's local calendar date as a date-only UTC value.
-    // For presets, build one calendar range per timezone so Today/Yesterday remain
-    // correct when a report includes WIB, WITA, and WIT sites together.
-    let dateFilter: any
-    if (dateRange === 'custom') {
-      const customRange = getBusinessDateRange(dateFrom || date, dateTo || dateFrom || date)
-      dateFilter = { gte: customRange.from, lte: customRange.to }
-    } else {
-      const requestedSite = siteId && siteId !== 'all'
-        ? await prisma.site.findUnique({ where: { id: siteId }, select: { id: true, companyId: true, timezone: true } })
-        : null
-      const sites = requestedSite
-        ? [requestedSite]
-        : await prisma.site.findMany({
-            where: isClient ? { companyId: currentUser?.companyId || undefined } : undefined,
-            select: { id: true, timezone: true },
-          })
-      const ranges = sites.map((site) => {
-        const presetRange = getBusinessDateRangeForPreset(dateRange, getBusinessDate(new Date(), site.timezone))
-        return { locationId: site.id, ...getBusinessDateRange(presetRange.dateFrom, presetRange.dateTo) }
-      })
-      dateFilter = ranges.length === 1
-        ? { gte: ranges[0].from, lte: ranges[0].to }
-        : { OR: ranges.map(({ locationId, from, to }) => ({ locationId, date: { gte: from, lte: to } })) }
-    }
+    // view=rows returns only the requested page, view=counts returns only totals,
+    // and the default returns both for backwards-compatible callers.
+    const requestedView = searchParams.get('view')
+    const view = requestedView === 'rows' || requestedView === 'counts' ? requestedView : 'all'
 
-    const where: any = dateFilter.OR ? dateFilter : { date: dateFilter }
-    
+    const requestedSite = siteId && siteId !== 'all'
+      ? await prisma.site.findUnique({ where: { id: siteId }, select: { id: true, companyId: true, timezone: true } })
+      : null
     if (siteId && siteId !== 'all') {
-      const requestedSite = await prisma.site.findUnique({
-        where: { id: siteId },
-select: { id: true, companyId: true, timezone: true },
-      })
       if (!requestedSite) {
         return NextResponse.json({ error: 'Site not found' }, { status: 404 })
       }
       if (isClient && requestedSite.companyId !== currentUser?.companyId) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
-      where.locationId = siteId
-    } else if (isClient) {
-      where.location = {
-        company: {
-          id: currentUser?.companyId
+    }
+
+    // Attendance.date stores the site's local calendar date as a date-only UTC value.
+    // Presets resolve one calendar range per timezone so Today/Yesterday stay correct
+    // when WIB, WITA, and WIT sites are reported together. Sites sharing a range are
+    // grouped so the database receives one indexable condition per distinct range.
+    let dateWhere: any
+    if (dateRange === 'custom') {
+      const customRange = getBusinessDateRange(dateFrom || date, dateTo || dateFrom || date)
+      dateWhere = { date: { gte: customRange.from, lte: customRange.to } }
+    } else {
+      const sites = requestedSite
+        ? [requestedSite]
+        : await prisma.site.findMany({
+            where: isClient ? { companyId: currentUser?.companyId || undefined } : undefined,
+            select: { id: true, timezone: true },
+          })
+      const rangeGroups = new Map<string, { from: Date; to: Date; siteIds: string[] }>()
+      for (const site of sites) {
+        const presetRange = getBusinessDateRangeForPreset(dateRange, getBusinessDate(new Date(), site.timezone))
+        const range = getBusinessDateRange(presetRange.dateFrom, presetRange.dateTo)
+        const key = `${range.from.toISOString()}|${range.to.toISOString()}`
+        const group = rangeGroups.get(key) || { from: range.from, to: range.to, siteIds: [] }
+        group.siteIds.push(site.id)
+        rangeGroups.set(key, group)
+      }
+      const groups = [...rangeGroups.values()]
+      if (groups.length === 0) {
+        const fallback = getBusinessDateRangeForPreset(dateRange, getBusinessDate())
+        const range = getBusinessDateRange(fallback.dateFrom, fallback.dateTo)
+        dateWhere = { date: { gte: range.from, lte: range.to } }
+      } else if (groups.length === 1) {
+        dateWhere = { date: { gte: groups[0].from, lte: groups[0].to } }
+      } else {
+        dateWhere = {
+          OR: groups.map(({ from, to, siteIds }) => ({ locationId: { in: siteIds }, date: { gte: from, lte: to } })),
         }
       }
     }
 
+    const filters: any[] = [dateWhere]
+    if (requestedSite) {
+      filters.push({ locationId: requestedSite.id })
+    } else if (isClient) {
+      filters.push({ location: { companyId: currentUser?.companyId } })
+    }
     if (department && department !== 'all') {
-      where.user = {
-        department: department
-      }
+      filters.push({ user: { department } })
+    }
+    if (employeeName) {
+      filters.push({ user: { name: { contains: employeeName, mode: 'insensitive' } } })
+    }
+    const where = { AND: filters }
+
+    const loadCounts = async () => {
+      // Status is derived from (stored status, has check-in, lateMinutes > 0), so three
+      // small grouped queries cover every combination without downloading rows.
+      const partitions = [
+        { where: { AND: [...filters, { actualCheckIn: null }] }, sample: { actualCheckIn: null, lateMinutes: 0 } },
+        { where: { AND: [...filters, { actualCheckIn: { not: null } }, { lateMinutes: { gt: 0 } }] }, sample: { actualCheckIn: new Date(0), lateMinutes: 1 } },
+        { where: { AND: [...filters, { actualCheckIn: { not: null } }, { lateMinutes: { lte: 0 } }] }, sample: { actualCheckIn: new Date(0), lateMinutes: 0 } },
+      ]
+      const grouped = await Promise.all(
+        partitions.map((partition) =>
+          (prisma.attendance.groupBy as any)({
+            by: ['status'],
+            where: partition.where,
+            _count: { _all: true },
+          }) as Promise<Array<{ status: string; _count: { _all: number } }>>
+        )
+      )
+      const statusCounts: Record<string, number> = {}
+      let totalRecords = 0
+      grouped.forEach((groups, index) => {
+        for (const group of groups) {
+          const status = resolveAttendanceStatus({ ...partitions[index].sample, status: group.status })
+          statusCounts[status] = (statusCounts[status] || 0) + group._count._all
+          totalRecords += group._count._all
+        }
+      })
+      return { statusCounts, totalRecords }
     }
 
-  const [totalRecords, filtered, statusRows, bkoAssignments] = await Promise.all([
-  prisma.attendance.count({ where }),
-  prisma.attendance.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            initials: true,
-            department: true,
-            position: true,
-            employeeCode: true,
-          }
+    const loadRows = async () => {
+      const rows = await prisma.attendance.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              initials: true,
+              department: true,
+              position: true,
+              employeeCode: true,
+            },
+          },
+          shift: {
+            select: {
+              id: true,
+              name: true,
+              startTime: true,
+              endTime: true,
+            },
+          },
+          location: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              timezone: true,
+              company: { select: { name: true } },
+            },
+          } as any,
         },
-        shift: {
-          select: {
-            id: true,
-            name: true,
-            startTime: true,
-            endTime: true,
-          }
-        },
-        location: {
-          select: {
-      id: true,
-      name: true,
-      code: true,
-      timezone: true,
-      company: {
-              select: {
-                name: true
-              }
-            }
-          }
-        } as any
-      },
-      orderBy: [
-        { date: 'desc' },
-        { actualCheckIn: 'desc' },
-        { id: 'desc' },
-      ],
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.attendance.findMany({
-      where,
-      select: { status: true, actualCheckIn: true, lateMinutes: true },
-    }),
-    prisma.bkoAssignment.findMany({
-      where: {
-        status: 'Aktif',
-        substitute: isClient ? { companyId: currentUser?.companyId } : undefined,
-      },
-      select: {
-        substituteId: true,
-        substitute: { select: { name: true } },
-        leave: { select: { startDate: true, endDate: true, user: { select: { name: true } } } },
-      },
-    }),
+        orderBy: [
+          { date: 'desc' },
+          { actualCheckIn: 'desc' },
+          { id: 'desc' },
+        ],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      })
+
+      // Only look up BKO assignments for the employees and dates on this page.
+      const userIds = [...new Set(rows.map((row: any) => row.userId as string))]
+      const rowDates = rows.map((row: any) => new Date(row.date).getTime())
+      const bkoAssignments = userIds.length
+        ? await prisma.bkoAssignment.findMany({
+            where: {
+              status: 'Aktif',
+              substituteId: { in: userIds },
+              leave: {
+                startDate: { lte: new Date(Math.max(...rowDates)) },
+                endDate: { gte: new Date(Math.min(...rowDates)) },
+              },
+            },
+            select: {
+              substituteId: true,
+              substitute: { select: { name: true } },
+              leave: { select: { startDate: true, endDate: true, user: { select: { name: true } } } },
+            },
+          })
+        : []
+      const assignmentsByUser = new Map<string, typeof bkoAssignments>()
+      for (const assignment of bkoAssignments) {
+        const list = assignmentsByUser.get(assignment.substituteId) || []
+        list.push(assignment)
+        assignmentsByUser.set(assignment.substituteId, list)
+      }
+
+      return rows.map((record: any) => {
+        const recordDate = new Date(record.date).toISOString().slice(0, 10)
+        const bko = assignmentsByUser.get(record.userId)?.find((assignment) =>
+          recordDate >= assignment.leave.startDate.toISOString().slice(0, 10) &&
+          recordDate <= assignment.leave.endDate.toISOString().slice(0, 10)
+        )
+
+        return {
+          ...record,
+          status: resolveAttendanceStatus(record),
+          isBko: Boolean(bko),
+          bkoDetails: bko ? {
+            substituteName: bko.substitute.name,
+            coveredEmployeeName: bko.leave.user.name,
+            startDate: bko.leave.startDate,
+            endDate: bko.leave.endDate,
+          } : null,
+        }
+      })
+    }
+
+    const [counts, records] = await Promise.all([
+      view === 'rows' ? null : loadCounts(),
+      view === 'counts' ? null : loadRows(),
     ])
 
-    const statusCounts = statusRows.reduce((counts: Record<string, number>, record: any) => {
-      const status = resolveAttendanceStatus(record)
-      counts[status] = (counts[status] || 0) + 1
-      return counts
-    }, {})
-
-    // The status is derived consistently from persisted attendance facts.
-
-    const enrichedRecords = filtered.map((record: any) => {
-      const recordDate = String(record.date).slice(0, 10)
-      const bko = bkoAssignments.find((assignment: any) =>
-        assignment.substituteId === record.userId &&
-        recordDate >= String(assignment.leave.startDate).slice(0, 10) &&
-        recordDate <= String(assignment.leave.endDate).slice(0, 10)
-      )
-
-      return {
-        ...record,
-        status: resolveAttendanceStatus(record),
-        isBko: Boolean(bko),
-        bkoDetails: bko ? {
-          substituteName: bko.substitute.name,
-          coveredEmployeeName: bko.leave.user.name,
-          startDate: bko.leave.startDate,
-          endDate: bko.leave.endDate,
-        } : null,
-      }
-    })
-
     return NextResponse.json({
-      records: enrichedRecords,
-      pagination: {
-        page,
-        pageSize,
-        totalRecords,
-        totalPages: Math.ceil(totalRecords / pageSize),
-      },
-      statusCounts,
+      ...(records ? { records } : {}),
+      pagination: counts
+        ? { page, pageSize, totalRecords: counts.totalRecords, totalPages: Math.ceil(counts.totalRecords / pageSize) }
+        : { page, pageSize },
+      ...(counts ? { statusCounts: counts.statusCounts, totalRecords: counts.totalRecords } : {}),
     })
   } catch (error) {
     console.error('[v0] Error fetching attendance:', {
