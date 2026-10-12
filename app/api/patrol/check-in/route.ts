@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
 import { getBusinessDate } from '@/lib/timezone'
-import { isValidAccuracy, isValidCoordinate, validatePatrolGps } from '@/lib/patrol-gps'
+import { isValidAccuracy, isValidCoordinate, isValidLongitude, validatePatrolGps } from '@/lib/patrol-gps'
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,14 +10,18 @@ export async function POST(request: NextRequest) {
     if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
-    const patrolLocationId = typeof body.patrolLocationId === 'string' ? body.patrolLocationId : null
-    const latitude = body.latitude
-    const longitude = body.longitude
-    const accuracy = body.accuracy
+    const patrolLocationId = typeof body.checkpointId === 'string'
+      ? body.checkpointId
+      : typeof body.patrolLocationId === 'string'
+        ? body.patrolLocationId
+        : null
+    const latitude = body.currentLatitude ?? body.latitude
+    const longitude = body.currentLongitude ?? body.longitude
+    const accuracy = body.gpsAccuracy ?? body.accuracy
 
-    if (!patrolLocationId || !isValidCoordinate(latitude) || !isValidCoordinate(longitude) || !isValidAccuracy(accuracy)) {
+    if (!patrolLocationId || !isValidCoordinate(latitude) || !isValidLongitude(longitude) || !isValidAccuracy(accuracy)) {
       return NextResponse.json(
-        { error: 'patrolLocationId, latitude, longitude, and non-negative accuracy are required' },
+        { error: 'checkpointId, currentLatitude, currentLongitude, and non-negative gpsAccuracy are required' },
         { status: 400 },
       )
     }

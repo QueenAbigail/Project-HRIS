@@ -49,7 +49,17 @@ export function validatePatrolGps(input: {
 }
 
 export function isValidCoordinate(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value)
+  return typeof value === 'number'
+    && Number.isFinite(value)
+    && value >= -90
+    && value <= 90
+}
+
+export function isValidLongitude(value: unknown): value is number {
+  return typeof value === 'number'
+    && Number.isFinite(value)
+    && value >= -180
+    && value <= 180
 }
 
 export function isValidAccuracy(value: unknown): value is number {
