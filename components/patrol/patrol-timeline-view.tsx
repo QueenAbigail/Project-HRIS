@@ -146,7 +146,7 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
                 <div className="mt-4 pt-4 border-t border-border space-y-3">
                   {patrol.gpsStatus === 'unverified' && patrol.distanceMeters !== null && (
                     <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2">
-                      <p className="text-sm font-medium text-warning-foreground">
+                      <p className="text-sm font-medium text-amber-950 dark:text-amber-100">
                         Distance from checkpoint: <span className="font-semibold">{patrol.distanceMeters.toLocaleString('en-US')} m</span>
                       </p>
                     </div>
