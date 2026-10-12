@@ -78,7 +78,7 @@ export function AttendanceEditDialog({ record, open, onOpenChange, onSaved }: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl gap-0 overflow-hidden p-0">
+      <DialogContent className="max-w-3xl gap-0 overflow-hidden p-0">
         <div className="border-b bg-gradient-to-br from-primary/[0.08] via-background to-background px-6 pb-5 pt-6">
           <DialogHeader className="pr-8">
             <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
@@ -117,11 +117,11 @@ export function AttendanceEditDialog({ record, open, onOpenChange, onSaved }: {
           </div>
         )}
         <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-2"><Label htmlFor="attendance-edit-check-in">Check-in</Label><Input id="attendance-edit-check-in" type="datetime-local" value={checkIn} onChange={(event) => setCheckIn(event.target.value)} /></div>
             <div className="space-y-2"><Label htmlFor="attendance-edit-check-out">Check-out</Label><Input id="attendance-edit-check-out" type="datetime-local" value={checkOut} onChange={(event) => setCheckOut(event.target.value)} /></div>
+            <div className="space-y-2"><Label>Status</Label><Select value={status} onValueChange={setStatus}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="PRESENT">Present</SelectItem><SelectItem value="LATE">Late</SelectItem><SelectItem value="ABSENT">Absent</SelectItem><SelectItem value="LEAVE">Leave</SelectItem><SelectItem value="NOT_CHECKED_IN">Pending</SelectItem></SelectContent></Select></div>
           </div>
-          <div className="space-y-2"><Label>Status</Label><Select value={status} onValueChange={setStatus}><SelectTrigger className="w-full sm:w-56"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="PRESENT">Present</SelectItem><SelectItem value="LATE">Late</SelectItem><SelectItem value="ABSENT">Absent</SelectItem><SelectItem value="LEAVE">Leave</SelectItem><SelectItem value="NOT_CHECKED_IN">Pending</SelectItem></SelectContent></Select></div>
           <div className="space-y-2">
             <Label htmlFor="attendance-edit-notes" className="flex items-center gap-2"><FileText className="size-4 text-muted-foreground" aria-hidden="true" />Notes</Label>
             <Textarea id="attendance-edit-notes" value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={2000} placeholder="Add a note about this attendance record (optional)" className="min-h-24 resize-y" />
