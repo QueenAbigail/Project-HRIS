@@ -2,7 +2,8 @@
 
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, User, Clock, CheckCircle2, AlertCircle } from 'lucide-react'
+import { MapPin, User, Clock, CheckCircle2, AlertCircle, Minus, Move, Plus, RotateCcw } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,11 @@ interface CheckpointStatus {
 
 export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
   const [selectedCheckpoint, setSelectedCheckpoint] = useState<CheckpointStatus | null>(null)
+  const [selectedEvidence, setSelectedEvidence] = useState<string | null>(null)
+  const [evidenceZoom, setEvidenceZoom] = useState(1)
+  const [evidencePan, setEvidencePan] = useState({ x: 0, y: 0 })
+  const [isDraggingEvidence, setIsDraggingEvidence] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const fetcher = async (url: string) => {
     const response = await fetch(url)
     if (!response.ok) throw new Error('Failed to load checkpoint data')
@@ -105,6 +111,29 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
   })
 
   const displayCheckpoints = checkpoints
+
+  const resetEvidenceView = () => {
+    setEvidenceZoom(1)
+    setEvidencePan({ x: 0, y: 0 })
+  }
+
+  const openEvidence = (imageUrl: string) => {
+    setSelectedEvidence(imageUrl)
+    resetEvidenceView()
+  }
+
+  const changeEvidenceZoom = (delta: number) => {
+    setEvidenceZoom((current) => {
+      const nextZoom = Math.min(5, Math.max(1, Number((current + delta).toFixed(1))))
+      if (nextZoom === 1) setEvidencePan({ x: 0, y: 0 })
+      return nextZoom
+    })
+  }
+
+  const closeEvidence = () => {
+    setSelectedEvidence(null)
+    resetEvidenceView()
+  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -292,7 +321,10 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
                     {selectedCheckpoint.lastPatrol.evidence?.length ? (
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                         {selectedCheckpoint.lastPatrol.evidence.map((imageUrl) => (
-                          <img key={imageUrl} src={imageUrl} alt="Patrol evidence" className="aspect-[3/4] w-full rounded-lg border object-contain bg-muted" />
+                          <button key={imageUrl} type="button" className="group relative overflow-hidden rounded-lg border bg-muted focus:outline-none focus:ring-2 focus:ring-ring" onClick={() => openEvidence(imageUrl)} aria-label="Inspect patrol evidence">
+                            <img src={imageUrl} alt="Patrol evidence" className="aspect-[3/4] w-full object-contain transition-opacity group-hover:opacity-75" />
+                            <span className="absolute inset-x-2 bottom-2 rounded-full bg-background/90 px-2 py-1 text-xs font-medium text-foreground opacity-0 transition-opacity group-hover:opacity-100">Click to zoom</span>
+                          </button>
                         ))}
                       </div>
                     ) : (
@@ -316,6 +348,38 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
               ) : (
                 <p className="text-muted-foreground">No patrol data available for this checkpoint.</p>
               )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedEvidence} onOpenChange={closeEvidence}>
+        <DialogContent className="max-w-2xl gap-0 overflow-hidden p-0">
+          <DialogHeader className="border-b px-6 py-4">
+            <div className="flex items-center justify-between gap-4 pr-8">
+              <div>
+                <DialogTitle>Patrol Evidence</DialogTitle>
+                <p className="mt-1 text-sm text-muted-foreground">Zoom in to inspect details. Drag the image when zoomed.</p>
+              </div>
+              <div className="flex items-center gap-1 rounded-lg border bg-muted/30 p-1">
+                <Button type="button" variant="ghost" size="icon" onClick={() => changeEvidenceZoom(-0.25)} disabled={evidenceZoom <= 1} aria-label="Zoom out"><Minus className="size-4" /></Button>
+                <span className="min-w-12 text-center text-xs font-medium tabular-nums">{Math.round(evidenceZoom * 100)}%</span>
+                <Button type="button" variant="ghost" size="icon" onClick={() => changeEvidenceZoom(0.25)} disabled={evidenceZoom >= 5} aria-label="Zoom in"><Plus className="size-4" /></Button>
+                <Button type="button" variant="ghost" size="icon" onClick={resetEvidenceView} disabled={evidenceZoom === 1 && evidencePan.x === 0 && evidencePan.y === 0} aria-label="Reset image view"><RotateCcw className="size-4" /></Button>
+              </div>
+            </div>
+          </DialogHeader>
+          {selectedEvidence && (
+            <div
+              className={`relative flex h-[min(72vh,680px)] items-center justify-center overflow-hidden bg-muted/40 p-4 ${evidenceZoom > 1 ? (isDraggingEvidence ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'}`}
+              onWheel={(event) => { event.preventDefault(); changeEvidenceZoom(event.deltaY < 0 ? 0.25 : -0.25) }}
+              onPointerDown={(event) => { if (evidenceZoom <= 1) return; event.currentTarget.setPointerCapture(event.pointerId); setIsDraggingEvidence(true); setDragStart({ x: event.clientX - evidencePan.x, y: event.clientY - evidencePan.y }) }}
+              onPointerMove={(event) => { if (isDraggingEvidence) setEvidencePan({ x: event.clientX - dragStart.x, y: event.clientY - dragStart.y }) }}
+              onPointerUp={() => setIsDraggingEvidence(false)}
+              onPointerCancel={() => setIsDraggingEvidence(false)}
+            >
+              <img src={selectedEvidence} alt="Full patrol evidence" draggable={false} className="max-h-full max-w-full select-none rounded-lg object-contain shadow-sm transition-transform duration-150" style={{ transform: `translate(${evidencePan.x}px, ${evidencePan.y}px) scale(${evidenceZoom})` }} />
+              {evidenceZoom === 1 && <div className="pointer-events-none absolute bottom-6 flex items-center gap-2 rounded-full bg-background/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm"><Move className="size-3.5" /> Use the controls or mouse wheel to zoom</div>}
             </div>
           )}
         </DialogContent>
