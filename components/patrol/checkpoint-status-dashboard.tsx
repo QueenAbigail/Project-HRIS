@@ -22,6 +22,7 @@ interface CheckpointStatus {
     gpsVerified: boolean
     photosCount: number
     notes?: string
+    evidence?: string[]
   }
   status: 'completed' | 'pending' | 'overdue'
 }
@@ -46,9 +47,25 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
     gpsVerified: boolean
     photos: number
     notes: string | null
+    evidence: string[]
   }>>(
     siteId && locations?.length
       ? `/api/patrol/records?siteId=${encodeURIComponent(siteId)}&date=today`
+      : null,
+    fetcher,
+    { revalidateOnFocus: false }
+  )
+  const { data: latestRecords } = useSWR<Array<{
+    locationId: string
+    officer: string
+    timestamp: string
+    gpsVerified: boolean
+    photos: number
+    notes: string | null
+    evidence: string[]
+  }>>(
+    siteId && locations?.length
+      ? `/api/patrol/records?siteId=${encodeURIComponent(siteId)}`
       : null,
     fetcher,
     { revalidateOnFocus: false }
@@ -66,19 +83,22 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
 
   const checkpoints: CheckpointStatus[] = (locations ?? []).map((location) => {
     const lastPatrol = records?.find((record) => record.locationId === location.id)
+    const latestPatrol = latestRecords?.find((record) => record.locationId === location.id)
+    const displayPatrol = lastPatrol ?? latestPatrol
     return {
       id: location.id,
       name: location.name,
       status: lastPatrol ? 'completed' : 'pending',
-      lastPatrol: lastPatrol
+      lastPatrol: displayPatrol
         ? {
-            officer: lastPatrol.officer,
-            time: new Date(lastPatrol.timestamp).toLocaleTimeString('en-GB', {
+            officer: displayPatrol.officer,
+            time: new Date(displayPatrol.timestamp).toLocaleTimeString('en-GB', {
               timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
             }),
-            gpsVerified: lastPatrol.gpsVerified,
-            photosCount: lastPatrol.photos,
-            notes: lastPatrol.notes ?? undefined,
+            gpsVerified: displayPatrol.gpsVerified,
+            photosCount: displayPatrol.photos,
+            notes: displayPatrol.notes ?? undefined,
+            evidence: displayPatrol.evidence,
           }
         : undefined,
     }
@@ -222,6 +242,11 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
             <div className="space-y-4 overflow-y-auto pr-4">
               {selectedCheckpoint.lastPatrol ? (
                 <>
+                  {selectedCheckpoint.status === 'pending' && (
+                    <div className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning-foreground">
+                      No patrol was recorded today. Showing the latest available patrol for testing and reference.
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-1">Officer</p>
@@ -264,9 +289,17 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
 
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-2">Evidence</p>
-                    <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-                      Evidence photos are not available for this patrol record.
-                    </div>
+                    {selectedCheckpoint.lastPatrol.evidence?.length ? (
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        {selectedCheckpoint.lastPatrol.evidence.map((imageUrl) => (
+                          <img key={imageUrl} src={imageUrl} alt="Patrol evidence" className="aspect-[3/4] w-full rounded-lg border object-contain bg-muted" />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+                        Evidence photos are not available for this patrol record.
+                      </div>
+                    )}
                   </div>
 
                   {selectedCheckpoint.lastPatrol.notes && (
