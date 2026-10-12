@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { CalendarDays, ChevronDown } from 'lucide-react'
+import { CalendarDays, ChevronDown, Minus, Move, Plus, RotateCcw } from 'lucide-react'
 import { getBusinessDate } from '@/lib/timezone'
 import {
   Dialog,
@@ -30,6 +30,10 @@ interface PatrolRecord {
 export function PatrolTimelineView({ siteId }: { siteId: string }) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
+  const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [patrols, setPatrols] = useState<PatrolRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
@@ -59,6 +63,20 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
 
     fetchPatrols()
   }, [siteId, selectedDate])
+
+  const resetPhotoView = () => {
+    setZoom(1)
+    setPan({ x: 0, y: 0 })
+  }
+
+  const openPhoto = (photo: string) => {
+    setSelectedPhoto(photo)
+    resetPhotoView()
+  }
+
+  const changeZoom = (delta: number) => {
+    setZoom((current) => Math.min(3, Math.max(1, Number((current + delta).toFixed(1)))))
+  }
 
   const timelineFilter = (
     <div className="flex flex-col gap-3 rounded-xl border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -135,7 +153,7 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
                             key={idx}
                             onClick={(e) => {
                               e.stopPropagation()
-                              setSelectedPhoto(photo)
+openPhoto(photo)
                             }}
                             className="relative group aspect-[3/4] w-full max-w-32 overflow-hidden rounded-lg bg-muted"
                           >
@@ -178,17 +196,57 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
       ))}
 
       {/* Photo Modal */}
-      <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Patrol Evidence</DialogTitle>
+      <Dialog open={!!selectedPhoto} onOpenChange={() => { setSelectedPhoto(null); resetPhotoView() }}>
+        <DialogContent className="max-w-2xl gap-0 overflow-hidden p-0">
+          <DialogHeader className="border-b px-6 py-4">
+            <div className="flex items-center justify-between gap-4 pr-8">
+              <div>
+                <DialogTitle>Patrol Evidence</DialogTitle>
+                <p className="mt-1 text-sm text-muted-foreground">Zoom in to inspect details. Drag the image when zoomed.</p>
+              </div>
+              <div className="flex items-center gap-1 rounded-lg border bg-muted/30 p-1">
+                <Button type="button" variant="ghost" size="icon" onClick={() => changeZoom(-0.25)} disabled={zoom <= 1} aria-label="Zoom out">
+                  <Minus className="size-4" />
+                </Button>
+                <span className="min-w-12 text-center text-xs font-medium tabular-nums">{Math.round(zoom * 100)}%</span>
+                <Button type="button" variant="ghost" size="icon" onClick={() => changeZoom(0.25)} disabled={zoom >= 3} aria-label="Zoom in">
+                  <Plus className="size-4" />
+                </Button>
+                <Button type="button" variant="ghost" size="icon" onClick={resetPhotoView} disabled={zoom === 1 && pan.x === 0 && pan.y === 0} aria-label="Reset image view">
+                  <RotateCcw className="size-4" />
+                </Button>
+              </div>
+            </div>
           </DialogHeader>
           {selectedPhoto && (
-            <img
-              src={selectedPhoto}
-              alt="Full evidence"
-              className="mx-auto max-h-[70vh] w-auto max-w-full rounded-lg object-contain"
-            />
+            <div
+              className={`relative flex h-[min(72vh,680px)] items-center justify-center overflow-hidden bg-muted/40 p-4 ${zoom > 1 ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'}`}
+              onWheel={(event) => {
+                event.preventDefault()
+                changeZoom(event.deltaY < 0 ? 0.25 : -0.25)
+              }}
+              onPointerDown={(event) => {
+                if (zoom <= 1) return
+                event.currentTarget.setPointerCapture(event.pointerId)
+                setIsDragging(true)
+                setDragStart({ x: event.clientX - pan.x, y: event.clientY - pan.y })
+              }}
+              onPointerMove={(event) => {
+                if (!isDragging) return
+                setPan({ x: event.clientX - dragStart.x, y: event.clientY - dragStart.y })
+              }}
+              onPointerUp={() => setIsDragging(false)}
+              onPointerCancel={() => setIsDragging(false)}
+            >
+              <img
+                src={selectedPhoto}
+                alt="Full evidence"
+                draggable={false}
+                className="max-h-full max-w-full select-none rounded-lg object-contain shadow-sm transition-transform duration-150"
+                style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
+              />
+              {zoom === 1 && <div className="pointer-events-none absolute bottom-6 flex items-center gap-2 rounded-full bg-background/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm"><Move className="size-3.5" /> Use the controls or mouse wheel to zoom</div>}
+            </div>
           )}
         </DialogContent>
       </Dialog>
