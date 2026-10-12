@@ -343,8 +343,8 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
             <Tabs defaultValue="all" className="w-full">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="all">All ({pagination.totalRecords})</TabsTrigger>
-              <TabsTrigger value="late" className="text-warning">Late ({totalStatusCount('LATE')})</TabsTrigger>
               <TabsTrigger value="present" className="text-success">Present ({totalStatusCount('PRESENT')})</TabsTrigger>
+              <TabsTrigger value="late" className="text-warning">Late ({totalStatusCount('LATE')})</TabsTrigger>
               <TabsTrigger value="absent" className="text-destructive">Absent ({totalStatusCount('ABSENT')})</TabsTrigger>
               <TabsTrigger value="pending" className="text-orange-500">Pending ({totalStatusCount('NOT_CHECKED_IN')})</TabsTrigger>
             </TabsList>
