@@ -11,11 +11,13 @@ import { Loader2 } from 'lucide-react'
 
 type EditableRecord = {
   id: string
+  date: string
   actualCheckIn: string | null
   actualCheckOut: string | null
   status: string
   notes: string | null
-  user: { name: string }
+  user: { name: string; department?: string | null; employeeCode?: string | null }
+  location?: { name: string; company?: { name: string } | null } | null
 }
 
 function toLocalInput(value: string | null) {
@@ -79,8 +81,26 @@ export function AttendanceEditDialog({ record, open, onOpenChange, onSaved }: {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit attendance</DialogTitle>
-          <DialogDescription>Update the attendance record for {record?.user.name}.</DialogDescription>
+          <DialogDescription>Update the attendance record for the selected employee.</DialogDescription>
         </DialogHeader>
+        {record && (
+          <div className="rounded-lg border bg-muted/30 px-4 py-3">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-foreground">{record.user.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {[record.user.employeeCode, record.user.department].filter(Boolean).join(' · ') || 'Employee'}
+                </p>
+              </div>
+              <div className="shrink-0 text-right text-sm">
+                <p className="font-medium text-foreground">{new Date(record.date).toLocaleDateString('en-GB')}</p>
+                <p className="max-w-48 truncate text-muted-foreground">
+                  {record.location?.company?.name ? `${record.location.company.name} - ` : ''}{record.location?.name || 'Unknown site'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2"><Label htmlFor="attendance-edit-check-in">Check-in</Label><Input id="attendance-edit-check-in" type="datetime-local" value={checkIn} onChange={(event) => setCheckIn(event.target.value)} /></div>
