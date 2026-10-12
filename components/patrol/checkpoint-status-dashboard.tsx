@@ -21,6 +21,7 @@ interface CheckpointStatus {
     officer: string
     time: string
     gpsVerified: boolean
+    distanceMeters: number | null
     photosCount: number
     notes?: string
     evidence?: string[]
@@ -51,6 +52,7 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
     officer: string
     timestamp: string
     gpsVerified: boolean
+    distanceMeters: number | null
     photos: number
     notes: string | null
     evidence: string[]
@@ -66,6 +68,7 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
     officer: string
     timestamp: string
     gpsVerified: boolean
+    distanceMeters: number | null
     photos: number
     notes: string | null
     evidence: string[]
@@ -102,6 +105,7 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
               timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
             }),
             gpsVerified: displayPatrol.gpsVerified,
+            distanceMeters: displayPatrol.distanceMeters,
             photosCount: displayPatrol.photos,
             notes: displayPatrol.notes ?? undefined,
             evidence: displayPatrol.evidence,
@@ -288,6 +292,14 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
                       <p className="font-semibold">{selectedCheckpoint.lastPatrol.time}</p>
                     </div>
                   </div>
+
+                  {!selectedCheckpoint.lastPatrol.gpsVerified && selectedCheckpoint.lastPatrol.distanceMeters !== null && (
+                    <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2">
+                      <p className="text-sm font-medium text-amber-950 dark:text-amber-100">
+                        Distance from checkpoint: <span className="font-semibold">{selectedCheckpoint.lastPatrol.distanceMeters.toLocaleString('en-US')} m</span>
+                      </p>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
