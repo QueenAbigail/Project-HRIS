@@ -69,7 +69,7 @@ export function PatrolPageClient({ clients, sitesByClient }: PatrolPageClientPro
             <SelectTrigger
               id="patrol-site-selector"
               aria-label="Change patrol site"
-              className="h-auto w-full justify-start border-0 bg-transparent p-0 text-left shadow-none hover:bg-transparent focus:ring-0"
+              className="h-auto w-full justify-start border-0 bg-transparent p-0 text-left text-3xl font-bold shadow-none hover:bg-transparent focus:ring-0 sm:text-4xl"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <MapPin className="h-6 w-6 shrink-0 text-muted-foreground" />
