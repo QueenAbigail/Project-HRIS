@@ -15,9 +15,16 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Clock, AlertTriangle, MapPin, Loader2, Eye, RefreshCw, ChevronLeft, ChevronRight, Search } from 'lucide-react'
+import { Building2, Clock, AlertTriangle, MapPin, Loader2, Eye, RefreshCw, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import type { GpsCoordinates } from '@/lib/constants'
 import { formatAttendanceStatus, getAttendanceLabel, getStatusStyles, resolveAttendanceStatus } from '@/lib/attendance-utils'
 import { AttendanceDetailsModal } from './attendance-details-modal'
@@ -126,7 +133,7 @@ function TimezoneTime({ value, record }: { value: string | null; record: Attenda
   )
 }
 
-export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDateFrom = '', customDateTo = '', department = 'all', refreshKey = 0 }: { siteId?: string; dateRange?: string; customDateFrom?: string; customDateTo?: string; department?: string; refreshKey?: number }) {
+export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDateFrom = '', customDateTo = '', department = 'all', refreshKey = 0, sites = [], loadingSites = false, onSiteChange }: { siteId?: string; dateRange?: string; customDateFrom?: string; customDateTo?: string; department?: string; refreshKey?: number; sites?: { id: string; name: string; company?: { name: string } | null }[]; loadingSites?: boolean; onSiteChange?: (value: string) => void }) {
   const [selectedRecord, setSelectedRecord] = useState<any>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const pageSize = 25
@@ -327,17 +334,38 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
           )}
         </CardHeader>
           <CardContent>
-            <div className="mb-4 max-w-sm">
-              <label htmlFor="attendance-name-search" className="sr-only">Search attendance by employee name</label>
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-                <Input
-                  id="attendance-name-search"
-                  value={employeeName}
-                  onChange={(event) => setEmployeeName(event.target.value)}
-                  placeholder="Search by employee name"
-                  className="pl-9"
-                />
+            <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end">
+              <div className="w-full sm:max-w-sm sm:flex-1">
+                <label htmlFor="attendance-name-search" className="sr-only">Search attendance by employee name</label>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                  <Input
+                    id="attendance-name-search"
+                    value={employeeName}
+                    onChange={(event) => setEmployeeName(event.target.value)}
+                    placeholder="Search by employee name"
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+              <div className="w-full sm:w-64">
+                <label htmlFor="attendance-site-filter" className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Building2 className="size-4" aria-hidden="true" />
+                  Filter by Site
+                </label>
+                <Select value={siteId} onValueChange={onSiteChange}>
+                  <SelectTrigger id="attendance-site-filter">
+                    <SelectValue placeholder={loadingSites ? 'Loading...' : 'Select site'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sites</SelectItem>
+                    {sites.map((site) => (
+                      <SelectItem key={site.id} value={site.id}>
+                        {site.company?.name ? `${site.company.name} - ${site.name}` : site.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <Tabs defaultValue="all" className="w-full">
