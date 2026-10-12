@@ -63,22 +63,6 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
     fetcher,
     { revalidateOnFocus: false }
   )
-  const { data: latestRecords } = useSWR<Array<{
-    locationId: string
-    officer: string
-    timestamp: string
-    gpsVerified: boolean
-    distanceMeters: number | null
-    photos: number
-    notes: string | null
-    evidence: string[]
-  }>>(
-    siteId && locations?.length
-      ? `/api/patrol/records?siteId=${encodeURIComponent(siteId)}`
-      : null,
-    fetcher,
-    { revalidateOnFocus: false }
-  )
   const error = locationsError || recordsError
   const isLoading = locationsLoading || (locations !== undefined && locations.length > 0 && recordsLoading)
 
@@ -92,23 +76,21 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
 
   const checkpoints: CheckpointStatus[] = (locations ?? []).map((location) => {
     const lastPatrol = records?.find((record) => record.locationId === location.id)
-    const latestPatrol = latestRecords?.find((record) => record.locationId === location.id)
-    const displayPatrol = lastPatrol ?? latestPatrol
     return {
       id: location.id,
       name: location.name,
       status: lastPatrol ? 'completed' : 'pending',
-      lastPatrol: displayPatrol
+      lastPatrol: lastPatrol
         ? {
-            officer: displayPatrol.officer,
-            time: new Date(displayPatrol.timestamp).toLocaleTimeString('en-GB', {
+            officer: lastPatrol.officer,
+            time: new Date(lastPatrol.timestamp).toLocaleTimeString('en-GB', {
               timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
             }),
-            gpsVerified: displayPatrol.gpsVerified,
-            distanceMeters: displayPatrol.distanceMeters,
-            photosCount: displayPatrol.photos,
-            notes: displayPatrol.notes ?? undefined,
-            evidence: displayPatrol.evidence,
+            gpsVerified: lastPatrol.gpsVerified,
+            distanceMeters: lastPatrol.distanceMeters,
+            photosCount: lastPatrol.photos,
+            notes: lastPatrol.notes ?? undefined,
+            evidence: lastPatrol.evidence,
           }
         : undefined,
     }
@@ -275,11 +257,7 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
             <div className="space-y-4 overflow-y-auto pr-4">
               {selectedCheckpoint.lastPatrol ? (
                 <>
-                  {selectedCheckpoint.status === 'pending' && (
-                    <div className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning-foreground">
-                      No patrol was recorded today. Showing the latest available patrol for testing and reference.
-                    </div>
-                  )}
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-1">Officer</p>
