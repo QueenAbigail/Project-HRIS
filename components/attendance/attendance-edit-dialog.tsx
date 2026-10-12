@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2 } from 'lucide-react'
+import { CalendarDays, Clock3, FileText, Loader2, MapPin, UserRound } from 'lucide-react'
 
 type EditableRecord = {
   id: string
@@ -78,38 +78,56 @@ export function AttendanceEditDialog({ record, open, onOpenChange, onSaved }: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Edit attendance</DialogTitle>
-          <DialogDescription>Update the attendance record for the selected employee.</DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-2xl gap-0 overflow-hidden p-0">
+        <div className="border-b bg-gradient-to-br from-primary/[0.08] via-background to-background px-6 pb-5 pt-6">
+          <DialogHeader className="pr-8">
+            <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+              <Clock3 className="size-4" aria-hidden="true" />
+              Attendance record
+            </div>
+            <DialogTitle className="text-2xl tracking-tight">Edit attendance</DialogTitle>
+            <DialogDescription className="mt-1">Review the employee details, then update the attendance information below.</DialogDescription>
+          </DialogHeader>
+        </div>
         {record && (
-          <div className="rounded-lg border bg-muted/30 px-4 py-3">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="truncate font-semibold text-foreground">{record.user.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {[record.user.employeeCode, record.user.department].filter(Boolean).join(' · ') || 'Employee'}
-                </p>
+          <div className="px-6 pt-5">
+            <div className="rounded-xl border bg-muted/20 p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <UserRound className="size-5" aria-hidden="true" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold text-foreground">{record.user.name}</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    {[record.user.employeeCode, record.user.department].filter(Boolean).join(' · ') || 'Employee'}
+                  </p>
+                </div>
               </div>
-              <div className="shrink-0 text-right text-sm">
-                <p className="font-medium text-foreground">{new Date(record.date).toLocaleDateString('en-GB')}</p>
-                <p className="max-w-48 truncate text-muted-foreground">
-                  {record.location?.company?.name ? `${record.location.company.name} - ` : ''}{record.location?.name || 'Unknown site'}
-                </p>
+              <div className="mt-4 grid gap-3 border-t pt-3 text-sm sm:grid-cols-2">
+                <div className="flex min-w-0 items-center gap-2 text-muted-foreground">
+                  <CalendarDays className="size-4 shrink-0 text-primary/70" aria-hidden="true" />
+                  <span>{new Date(record.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                </div>
+                <div className="flex min-w-0 items-center gap-2 text-muted-foreground">
+                  <MapPin className="size-4 shrink-0 text-primary/70" aria-hidden="true" />
+                  <span className="truncate">{record.location?.company?.name ? `${record.location.company.name} - ` : ''}{record.location?.name || 'Unknown site'}</span>
+                </div>
               </div>
             </div>
           </div>
         )}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2"><Label htmlFor="attendance-edit-check-in">Check-in</Label><Input id="attendance-edit-check-in" type="datetime-local" value={checkIn} onChange={(event) => setCheckIn(event.target.value)} /></div>
             <div className="space-y-2"><Label htmlFor="attendance-edit-check-out">Check-out</Label><Input id="attendance-edit-check-out" type="datetime-local" value={checkOut} onChange={(event) => setCheckOut(event.target.value)} /></div>
           </div>
-          <div className="space-y-2"><Label>Status</Label><Select value={status} onValueChange={setStatus}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="PRESENT">Present</SelectItem><SelectItem value="LATE">Late</SelectItem><SelectItem value="ABSENT">Absent</SelectItem><SelectItem value="LEAVE">Leave</SelectItem><SelectItem value="NOT_CHECKED_IN">Pending</SelectItem></SelectContent></Select></div>
-          <div className="space-y-2"><Label htmlFor="attendance-edit-notes">Notes</Label><Textarea id="attendance-edit-notes" value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={2000} /></div>
+          <div className="space-y-2"><Label>Status</Label><Select value={status} onValueChange={setStatus}><SelectTrigger className="w-full sm:w-56"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="PRESENT">Present</SelectItem><SelectItem value="LATE">Late</SelectItem><SelectItem value="ABSENT">Absent</SelectItem><SelectItem value="LEAVE">Leave</SelectItem><SelectItem value="NOT_CHECKED_IN">Pending</SelectItem></SelectContent></Select></div>
+          <div className="space-y-2">
+            <Label htmlFor="attendance-edit-notes" className="flex items-center gap-2"><FileText className="size-4 text-muted-foreground" aria-hidden="true" />Notes</Label>
+            <Textarea id="attendance-edit-notes" value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={2000} placeholder="Add a note about this attendance record (optional)" className="min-h-24 resize-y" />
+          </div>
           {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
-          <DialogFooter><Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button><Button type="submit" disabled={saving}>{saving && <Loader2 className="mr-2 size-4 animate-spin" />}Save changes</Button></DialogFooter>
+          <DialogFooter className="-mx-6 -mb-5 border-t bg-muted/20 px-6 py-4"><Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button><Button type="submit" disabled={saving}>{saving && <Loader2 className="mr-2 size-4 animate-spin" />}Save changes</Button></DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
