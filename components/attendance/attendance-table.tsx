@@ -14,6 +14,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -24,10 +25,11 @@ import {
 } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Clock, AlertTriangle, MapPin, Loader2, Eye, RefreshCw, ChevronLeft, ChevronRight, Search } from 'lucide-react'
+import { Clock, AlertTriangle, MapPin, Loader2, Eye, Pencil, MoreHorizontal, RefreshCw, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import type { GpsCoordinates } from '@/lib/constants'
 import { formatAttendanceStatus, getAttendanceLabel, getStatusStyles, resolveAttendanceStatus } from '@/lib/attendance-utils'
 import { AttendanceDetailsModal } from './attendance-details-modal'
+import { AttendanceEditDialog } from './attendance-edit-dialog'
 import { getBusinessDateRangeForPreset, formatBusinessDate } from '@/lib/timezone'
 
 interface AttendanceRecord {
@@ -136,6 +138,7 @@ function TimezoneTime({ value, record }: { value: string | null; record: Attenda
 export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDateFrom = '', customDateTo = '', department = 'all', refreshKey = 0, sites = [], loadingSites = false, onSiteChange }: { siteId?: string; dateRange?: string; customDateFrom?: string; customDateTo?: string; department?: string; refreshKey?: number; sites?: { id: string; name: string; company?: { name: string } | null }[]; loadingSites?: boolean; onSiteChange?: (value: string) => void }) {
   const [selectedRecord, setSelectedRecord] = useState<any>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
   const pageSize = 25
   const [employeeName, setEmployeeName] = useState('')
   const [searchName, setSearchName] = useState('')
@@ -185,6 +188,10 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
   const loading = !rowsQuery.data && !rowsQuery.error
   const isRefreshing = rowsQuery.isLoading
   const error = (rowsQuery.error || countsQuery.error)?.message ?? null
+  const refreshAfterEdit = () => {
+    rowsQuery.mutate()
+    countsQuery.mutate()
+  }
   const retry = () => {
     rowsQuery.mutate()
     countsQuery.mutate()
@@ -277,17 +284,21 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
             </Badge>
           </TableCell>
           <TableCell>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setSelectedRecord(record)
-                setDetailsOpen(true)
-              }}
-            >
-              <Eye className="size-4" />
-              View
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label={`Actions for ${record.user.name}`}>
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => { setSelectedRecord(record); setDetailsOpen(true) }}>
+                  <Eye className="size-4" /> View
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => { setSelectedRecord(record); setEditOpen(true) }}>
+                  <Pencil className="size-4" /> Edit
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </TableCell>
         </TableRow>
       ))}
@@ -502,6 +513,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
 
       {/* Details Dialog */}
       <AttendanceDetailsModal open={detailsOpen} onOpenChange={setDetailsOpen} record={selectedRecord} />
+      <AttendanceEditDialog open={editOpen} onOpenChange={setEditOpen} record={selectedRecord} onSaved={refreshAfterEdit} />
     </>
   )
 }
