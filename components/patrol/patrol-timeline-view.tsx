@@ -137,12 +137,12 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
                               e.stopPropagation()
                               setSelectedPhoto(photo)
                             }}
-                            className="relative group overflow-hidden rounded-lg bg-muted"
+                            className="relative group aspect-[3/4] w-full max-w-32 overflow-hidden rounded-lg bg-muted"
                           >
                             <img
                               src={photo}
                               alt={`Evidence ${idx + 1}`}
-                              className="w-full h-24 object-cover group-hover:opacity-75 transition-opacity"
+                              className="h-full w-full object-contain group-hover:opacity-75 transition-opacity"
                             />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                               <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100">
@@ -179,7 +179,7 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
 
       {/* Photo Modal */}
       <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Patrol Evidence</DialogTitle>
           </DialogHeader>
@@ -187,7 +187,7 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
             <img
               src={selectedPhoto}
               alt="Full evidence"
-              className="w-full rounded-lg"
+              className="mx-auto max-h-[70vh] w-auto max-w-full rounded-lg object-contain"
             />
           )}
         </DialogContent>
