@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
-import { BUSINESS_TIMEZONE } from '@/lib/timezone'
+import { BUSINESS_TIMEZONE, getBusinessDateBounds } from '@/lib/timezone'
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const siteId = searchParams.get('siteId')
+    const dateFilter = searchParams.get('date')
 
     if (!siteId) {
       return NextResponse.json(
@@ -37,10 +38,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    const { todayStart, todayEnd } = getBusinessDateBounds()
     const records = await prisma.patrol.findMany({
       where: {
         siteId: site.id,
         status: 'COMPLETED',
+        ...(dateFilter === 'today' ? { checkInTime: { gte: todayStart, lt: todayEnd } } : {}),
       },
       include: {
         patrolLocation: { select: { name: true } },

@@ -48,7 +48,7 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
     notes: string | null
   }>>(
     siteId && locations?.length
-      ? `/api/patrol/records?siteId=${encodeURIComponent(siteId)}`
+      ? `/api/patrol/records?siteId=${encodeURIComponent(siteId)}&date=today`
       : null,
     fetcher,
     { revalidateOnFocus: false }
@@ -146,6 +146,13 @@ export function CheckpointStatusDashboard({ siteId }: { siteId: string }) {
 
   return (
     <>
+      <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border bg-muted/30 px-4 py-3">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Today&apos;s checkpoint status</p>
+          <p className="text-xs text-muted-foreground">Only patrols recorded today are included. The latest patrol is shown when a checkpoint has multiple reports.</p>
+        </div>
+        <Badge variant="outline" className="shrink-0">{new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', year: 'numeric' }).format(new Date())}</Badge>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {displayCheckpoints.map((checkpoint) => (
           <Card
