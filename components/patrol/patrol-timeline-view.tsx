@@ -131,11 +131,6 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
                 >
                   {patrol.gpsStatus === 'verified' ? 'GPS Verified' : 'GPS Unverified'}
                 </Badge>
-                {patrol.gpsStatus === 'unverified' && patrol.distanceMeters !== null && (
-                  <span className="text-xs font-medium text-warning-foreground">
-                    {patrol.distanceMeters.toLocaleString('en-US')} m from checkpoint
-                  </span>
-                )}
               </div>
 
               <div className="space-y-1 text-sm">
@@ -149,6 +144,14 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
 
               {expandedId === patrol.id && (
                 <div className="mt-4 pt-4 border-t border-border space-y-3">
+                  {patrol.gpsStatus === 'unverified' && patrol.distanceMeters !== null && (
+                    <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2">
+                      <p className="text-sm font-medium text-warning-foreground">
+                        Distance from checkpoint: <span className="font-semibold">{patrol.distanceMeters.toLocaleString('en-US')} m</span>
+                      </p>
+                    </div>
+                  )}
+
                   <div>
                     <p className="text-sm font-medium mb-1">Observation:</p>
                     <p className="text-sm text-muted-foreground">{patrol.description}</p>
