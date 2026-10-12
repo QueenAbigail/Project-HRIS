@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
         photos: record.evidence.length,
         description: record.description || null,
         notes: record.description || null,
-        evidence: record.evidence,
+        evidence: record.evidence.map((item) => item.imageUrl).filter(Boolean),
       }
     })
 
