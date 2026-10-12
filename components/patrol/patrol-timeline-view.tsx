@@ -75,7 +75,11 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
   }
 
   const changeZoom = (delta: number) => {
-    setZoom((current) => Math.min(3, Math.max(1, Number((current + delta).toFixed(1)))))
+    setZoom((current) => {
+      const nextZoom = Math.min(5, Math.max(1, Number((current + delta).toFixed(1))))
+      if (nextZoom === 1) setPan({ x: 0, y: 0 })
+      return nextZoom
+    })
   }
 
   const timelineFilter = (
@@ -209,7 +213,7 @@ openPhoto(photo)
                   <Minus className="size-4" />
                 </Button>
                 <span className="min-w-12 text-center text-xs font-medium tabular-nums">{Math.round(zoom * 100)}%</span>
-                <Button type="button" variant="ghost" size="icon" onClick={() => changeZoom(0.25)} disabled={zoom >= 3} aria-label="Zoom in">
+                <Button type="button" variant="ghost" size="icon" onClick={() => changeZoom(0.25)} disabled={zoom >= 5} aria-label="Zoom in">
                   <Plus className="size-4" />
                 </Button>
                 <Button type="button" variant="ghost" size="icon" onClick={resetPhotoView} disabled={zoom === 1 && pan.x === 0 && pan.y === 0} aria-label="Reset image view">
