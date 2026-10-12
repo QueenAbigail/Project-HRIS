@@ -60,42 +60,35 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
     fetchPatrols()
   }, [siteId, selectedDate])
 
-  if (isLoading) {
-    return <div className="text-center text-muted-foreground py-8">Loading patrol records...</div>
-  }
-
-  if (hasError) {
-    return <div className="py-8 text-center text-sm text-muted-foreground">No patrol records found for this site.</div>
-  }
-
-  if (patrols.length === 0) {
-    return (
-      <div className="text-center text-muted-foreground py-12">
-        <p>No patrol records found for this site.</p>
-        <p className="text-sm mt-2">Patrol records will appear here as officers complete their rounds.</p>
+  const timelineFilter = (
+    <div className="flex flex-col gap-3 rounded-xl border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="font-semibold text-foreground">Patrol timeline</p>
+        <p className="text-sm text-muted-foreground">View patrol reports for a specific date.</p>
       </div>
-    )
+      <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+        <CalendarDays className="size-4 text-primary" aria-hidden="true" />
+        <span className="sr-only">Patrol date</span>
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={(event) => setSelectedDate(event.target.value)}
+          className="h-10 rounded-md border bg-background px-3 font-normal shadow-sm outline-none focus:ring-2 focus:ring-ring"
+          aria-label="Patrol date"
+        />
+      </label>
+    </div>
+  )
+
+  if (isLoading) return <div className="space-y-4">{timelineFilter}<div className="py-8 text-center text-muted-foreground">Loading patrol records...</div></div>
+  if (hasError) return <div className="space-y-4">{timelineFilter}<div className="py-8 text-center text-sm text-muted-foreground">Patrol records could not be loaded for this date.</div></div>
+  if (patrols.length === 0) {
+    return <div className="space-y-4">{timelineFilter}<div className="py-12 text-center text-muted-foreground"><p>No patrol records found for this date.</p><p className="mt-2 text-sm">Try another date to view completed patrols.</p></div></div>
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 rounded-xl border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="font-semibold text-foreground">Patrol timeline</p>
-          <p className="text-sm text-muted-foreground">View patrol reports for a specific date.</p>
-        </div>
-        <label className="flex items-center gap-2 text-sm font-medium text-foreground">
-          <CalendarDays className="size-4 text-primary" aria-hidden="true" />
-          <span className="sr-only">Patrol date</span>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(event) => setSelectedDate(event.target.value)}
-            className="h-10 rounded-md border bg-background px-3 font-normal shadow-sm outline-none focus:ring-2 focus:ring-ring"
-            aria-label="Patrol date"
-          />
-        </label>
-      </div>
+      {timelineFilter}
       {patrols.map((patrol) => (
         <Card
           key={patrol.id}
