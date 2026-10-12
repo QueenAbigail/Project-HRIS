@@ -62,46 +62,43 @@ export function PatrolPageClient({ clients, sitesByClient }: PatrolPageClientPro
 
   return (
     <>
-      {/* Site Header and Selector */}
+      {/* Site Selector */}
       {currentSite && (
-        <div className="flex flex-col gap-5 rounded-lg border border-border bg-card p-5 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">{currentSite.name}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Code: <span className="font-semibold">{currentSite.code}</span> •
-              Checkpoints: <span className="font-semibold">{currentSite.checkpointCount}</span>
-              {currentSite.clientName && (
-                <>
-                  {' '}
-                  • Company: <span className="font-semibold">{currentSite.clientName}</span>
-                </>
-              )}
-            </p>
-          </div>
-
-          <div className="w-full sm:w-72 sm:shrink-0">
-            <label htmlFor="patrol-site-selector" className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
-              <MapPin className="h-4 w-4" />
-              Site
-            </label>
-            <Select value={selectedSite || ''} onValueChange={setSelectedSite}>
-              <SelectTrigger id="patrol-site-selector" aria-label="Change patrol site">
+        <div className="rounded-lg border border-border bg-card p-5">
+          <Select value={selectedSite || ''} onValueChange={setSelectedSite}>
+            <SelectTrigger
+              id="patrol-site-selector"
+              aria-label="Change patrol site"
+              className="h-auto w-full justify-start border-0 bg-transparent p-0 text-left shadow-none hover:bg-transparent focus:ring-0"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <MapPin className="h-6 w-6 shrink-0 text-muted-foreground" />
                 <SelectValue placeholder="Choose a site" />
-              </SelectTrigger>
-              <SelectContent>
-                {allSites.map((site) => (
-                  <SelectItem key={site.id} value={site.id}>
-                    {site.name} ({site.code})
-                    {site.clientName && (
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        • {site.clientName}
-                      </span>
-                    )}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              {allSites.map((site) => (
+                <SelectItem key={site.id} value={site.id}>
+                  {site.name} ({site.code})
+                  {site.clientName && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      • {site.clientName}
+                    </span>
+                  )}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Code: <span className="font-semibold">{currentSite.code}</span> •
+            Checkpoints: <span className="font-semibold">{currentSite.checkpointCount}</span>
+            {currentSite.clientName && (
+              <>
+                {' '}
+                • Company: <span className="font-semibold">{currentSite.clientName}</span>
+              </>
+            )}
+          </p>
         </div>
       )}
 
