@@ -124,7 +124,8 @@ export function AttendanceEditDialog({ record, open, onOpenChange, onSaved }: {
           </div>
           <div className="space-y-2">
             <Label htmlFor="attendance-edit-notes" className="flex items-center gap-2"><FileText className="size-4 text-muted-foreground" aria-hidden="true" />Notes</Label>
-            <Textarea id="attendance-edit-notes" value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={2000} placeholder="Add a note about this attendance record (optional)" className="min-h-24 resize-y" />
+            <Textarea id="attendance-edit-notes" value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={2000} placeholder="Add a note about this attendance record (optional)" rows={2}
+              className="resize-y" />
           </div>
           {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
           <DialogFooter className="-mx-6 -mb-5 border-t bg-muted/20 px-6 py-4"><Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button><Button type="submit" disabled={saving}>{saving && <Loader2 className="mr-2 size-4 animate-spin" />}Save changes</Button></DialogFooter>
