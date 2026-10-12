@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Building2, Clock, AlertTriangle, MapPin, Loader2, Eye, RefreshCw, ChevronLeft, ChevronRight, Search } from 'lucide-react'
+import { Clock, AlertTriangle, MapPin, Loader2, Eye, RefreshCw, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import type { GpsCoordinates } from '@/lib/constants'
 import { formatAttendanceStatus, getAttendanceLabel, getStatusStyles, resolveAttendanceStatus } from '@/lib/attendance-utils'
 import { AttendanceDetailsModal } from './attendance-details-modal'
@@ -348,11 +348,8 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
                   />
                 </div>
               </div>
-              <div className="w-full sm:w-64">
-                <label htmlFor="attendance-site-filter" className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
-                  <Building2 className="size-4" aria-hidden="true" />
-                  Filter by Site
-                </label>
+              <div className="flex w-full justify-end sm:w-64 sm:ml-auto">
+                <label htmlFor="attendance-site-filter" className="sr-only">Filter attendance by site</label>
                 <Select value={siteId} onValueChange={onSiteChange}>
                   <SelectTrigger id="attendance-site-filter">
                     <SelectValue placeholder={loadingSites ? 'Loading...' : 'Select site'} />
