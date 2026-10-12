@@ -5,7 +5,8 @@ import { toast } from 'sonner'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ChevronDown } from 'lucide-react'
+import { CalendarDays, ChevronDown } from 'lucide-react'
+import { getBusinessDate } from '@/lib/timezone'
 import {
   Dialog,
   DialogContent,
@@ -32,13 +33,14 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
   const [patrols, setPatrols] = useState<PatrolRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
+  const [selectedDate, setSelectedDate] = useState(() => getBusinessDate())
 
   useEffect(() => {
     const fetchPatrols = async () => {
       setIsLoading(true)
       setHasError(false)
       try {
-        const response = await fetch(`/api/patrol/records?siteId=${encodeURIComponent(siteId)}`)
+        const response = await fetch(`/api/patrol/records?siteId=${encodeURIComponent(siteId)}&date=${encodeURIComponent(selectedDate)}`)
         if (!response.ok) throw new Error('Patrol records request failed')
         const data = await response.json()
         setPatrols(data)
@@ -56,7 +58,7 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
     if (!siteId) return
 
     fetchPatrols()
-  }, [siteId])
+  }, [siteId, selectedDate])
 
   if (isLoading) {
     return <div className="text-center text-muted-foreground py-8">Loading patrol records...</div>
@@ -76,7 +78,24 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 rounded-xl border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="font-semibold text-foreground">Patrol timeline</p>
+          <p className="text-sm text-muted-foreground">View patrol reports for a specific date.</p>
+        </div>
+        <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+          <CalendarDays className="size-4 text-primary" aria-hidden="true" />
+          <span className="sr-only">Patrol date</span>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(event) => setSelectedDate(event.target.value)}
+            className="h-10 rounded-md border bg-background px-3 font-normal shadow-sm outline-none focus:ring-2 focus:ring-ring"
+            aria-label="Patrol date"
+          />
+        </label>
+      </div>
       {patrols.map((patrol) => (
         <Card
           key={patrol.id}
