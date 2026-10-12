@@ -22,6 +22,7 @@ interface PatrolRecord {
   time?: string
   date: string
   gpsStatus: 'verified' | 'unverified'
+  distanceMeters: number | null
   photos: number
   description: string
   evidence: string[]
@@ -130,6 +131,11 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
                 >
                   {patrol.gpsStatus === 'verified' ? 'GPS Verified' : 'GPS Unverified'}
                 </Badge>
+                {patrol.gpsStatus === 'unverified' && patrol.distanceMeters !== null && (
+                  <span className="text-xs font-medium text-warning-foreground">
+                    {patrol.distanceMeters.toLocaleString('en-US')} m from checkpoint
+                  </span>
+                )}
               </div>
 
               <div className="space-y-1 text-sm">
