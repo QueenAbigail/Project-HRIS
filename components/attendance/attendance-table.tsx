@@ -318,7 +318,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
   return (
     <>
       <Card className={isRefreshing ? 'opacity-70 transition-opacity' : undefined} aria-busy={isRefreshing}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
           <div>
             <CardTitle>
               {dateRange === 'yesterday' ? "Yesterday's Attendance" : dateRange === 'week' ? "This Week's Attendance" : dateRange === 'month' ? "This Month's Attendance" : dateRange === 'custom' && customDateFrom && customDateTo ? `Attendance: ${customDateFrom} – ${customDateTo}` : "Today's Attendance"}
@@ -333,8 +333,8 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
             </Badge>
           )}
         </CardHeader>
-          <CardContent>
-            <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end">
+<CardContent className="pt-1">
+  <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end">
               <div className="w-full sm:max-w-sm sm:flex-1">
                 <label htmlFor="attendance-name-search" className="sr-only">Search attendance by employee name</label>
                 <div className="relative">
