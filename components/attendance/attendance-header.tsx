@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Calendar } from 'lucide-react'
+import { Calendar, RefreshCw } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -52,6 +52,8 @@ interface AttendanceHeaderProps {
   selectedDepartment?: string
   onDepartmentChange?: (dept: string) => void
   isClient?: boolean
+  isGeneratingAttendance?: boolean
+  onGenerateAttendance?: () => void
 }
 
 export function AttendanceHeader({ 
@@ -62,7 +64,9 @@ export function AttendanceHeader({
   onDateRangeChange,
   selectedDepartment = 'all',
   onDepartmentChange,
-  isClient = false
+  isClient = false,
+  isGeneratingAttendance = false,
+  onGenerateAttendance,
 }: AttendanceHeaderProps) {
   const [openCalendarSheet, setOpenCalendarSheet] = useState(false)
   const [departments, setDepartments] = useState<MasterDataItem[]>([])
@@ -153,14 +157,27 @@ export function AttendanceHeader({
               </SelectContent>
             </Select>
           </div>
-          <Button 
-            variant="outline"
-            onClick={() => setOpenCalendarSheet(true)}
-            className="w-full sm:w-auto"
-          >
-            <Calendar className="mr-2 size-4" />
-            Calendar
-          </Button>
+          <div className="flex w-full justify-end gap-2 sm:w-auto">
+            {!isClient && (
+              <Button
+                onClick={onGenerateAttendance}
+                disabled={isGeneratingAttendance}
+                variant="outline"
+                className="gap-2"
+                title="Generate pending attendance records for today based on assignments"
+              >
+                <RefreshCw className={isGeneratingAttendance ? 'animate-spin' : ''} />
+                {isGeneratingAttendance ? 'Generating...' : 'Generate Today'}
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => setOpenCalendarSheet(true)}
+            >
+              <Calendar className="mr-2 size-4" />
+              Calendar
+            </Button>
+          </div>
         </div>
       </div>
 

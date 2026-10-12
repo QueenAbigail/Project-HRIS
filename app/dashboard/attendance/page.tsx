@@ -6,7 +6,6 @@ import { AttendanceHeader } from '@/components/attendance/attendance-header'
 import { AttendanceStats } from '@/components/attendance/attendance-stats'
 import { AttendanceTable } from '@/components/attendance/attendance-table'
 import { Button } from '@/components/ui/button'
-import { RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Site {
@@ -124,23 +123,9 @@ export default function AttendancePage() {
         selectedDepartment={selectedDepartment}
         onDepartmentChange={setSelectedDepartment}
         isClient={isClient}
+        isGeneratingAttendance={isGeneratingAttendance}
+        onGenerateAttendance={handleGenerateAttendance}
       />
-
-      {!isClient && (
-        <div className="flex justify-end">
-          <Button
-            onClick={handleGenerateAttendance}
-            disabled={isGeneratingAttendance}
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            title="Generate pending attendance records for today based on assignments"
-          >
-            <RefreshCw className={`size-4 ${isGeneratingAttendance ? 'animate-spin' : ''}`} />
-            {isGeneratingAttendance ? 'Generating...' : 'Generate Today'}
-          </Button>
-        </div>
-      )}
 
       <AttendanceStats refreshKey={refreshKey} siteId={selectedSite} dateRange={dateRange} customDateFrom={customDateFrom} customDateTo={customDateTo} department={selectedDepartment} />
       <AttendanceTable refreshKey={refreshKey} siteId={selectedSite} dateRange={dateRange} customDateFrom={customDateFrom} customDateTo={customDateTo} department={selectedDepartment} sites={sites} loadingSites={loadingSites} onSiteChange={handleSiteChange} />
