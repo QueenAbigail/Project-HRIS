@@ -1,10 +1,10 @@
 import Link from 'next/link'
 import { ArrowUpRight, Wrench } from 'lucide-react'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { systemTools } from '@/lib/system-tools'
+import type { SystemTool } from '@/lib/system-tools'
 
-export function ToolsGateway() {
-  if (systemTools.length === 0) {
+export function ToolsGateway({ tools }: { tools: SystemTool[] }) {
+  if (tools.length === 0) {
     return (
       <Card className="border-dashed">
         <CardHeader className="items-center py-12 text-center">
@@ -22,7 +22,7 @@ export function ToolsGateway() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {systemTools.map((tool) => {
+      {tools.map((tool) => {
         const Icon = tool.icon
         return (
           <Link
