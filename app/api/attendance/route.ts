@@ -286,6 +286,46 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function PATCH(request: NextRequest) {
+  try {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (currentUser.role !== 'SUPER_ADMIN' && currentUser.role !== 'HR_ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const id = new URL(request.url).searchParams.get('id')
+    if (!id) return NextResponse.json({ error: 'Attendance record id is required.' }, { status: 400 })
+    const body = await request.json()
+    const { actualCheckIn, actualCheckOut, status, notes } = body
+    const parsedCheckIn = parseUtcTimestamp(actualCheckIn)
+    const parsedCheckOut = parseUtcTimestamp(actualCheckOut)
+    if ((actualCheckIn && !parsedCheckIn) || (actualCheckOut && !parsedCheckOut)) {
+      return NextResponse.json({ error: 'Check-in and check-out must be valid timestamps.' }, { status: 400 })
+    }
+    const validStatuses = ['PRESENT', 'LATE', 'ABSENT', 'LEAVE', 'NOT_CHECKED_IN'] as const
+    if (!validStatuses.includes(status)) return NextResponse.json({ error: 'Invalid attendance status.' }, { status: 400 })
+    if (notes !== null && notes !== undefined && typeof notes !== 'string') return NextResponse.json({ error: 'Notes must be text.' }, { status: 400 })
+
+    const existing = await prisma.attendance.findUnique({
+      where: { id },
+      include: { user: { select: { companyId: true } }, location: { select: { companyId: true } } },
+    })
+    if (!existing) return NextResponse.json({ error: 'Attendance record not found.' }, { status: 404 })
+    const hasAccess = currentUser.role === 'SUPER_ADMIN' || (!!currentUser.companyId && (existing.user.companyId === currentUser.companyId || existing.location?.companyId === currentUser.companyId))
+    if (!hasAccess) return NextResponse.json({ error: 'You do not have access to this attendance record.' }, { status: 403 })
+
+    const updated = await prisma.attendance.update({
+      where: { id },
+      data: { actualCheckIn: parsedCheckIn, actualCheckOut: parsedCheckOut, status, notes: typeof notes === 'string' ? notes.trim() || null : null, lateMinutes: status === 'LATE' ? Math.max(existing.lateMinutes, 1) : 0 },
+    })
+    return NextResponse.json({ record: updated })
+  } catch (error) {
+    console.error('[v0] Attendance update failed:', error)
+    return NextResponse.json({ error: 'Attendance could not be updated.' }, { status: 500 })
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const currentUser = await getCurrentUser()

@@ -5,15 +5,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { AttendanceHeader } from '@/components/attendance/attendance-header'
 import { AttendanceStats } from '@/components/attendance/attendance-stats'
 import { AttendanceTable } from '@/components/attendance/attendance-table'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Building2, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Site {
@@ -121,7 +113,7 @@ export default function AttendancePage() {
   }, [])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <AttendanceHeader 
         siteId={selectedSite} 
         dateRange={dateRange}
@@ -131,46 +123,12 @@ export default function AttendancePage() {
         selectedDepartment={selectedDepartment}
         onDepartmentChange={setSelectedDepartment}
         isClient={isClient}
+        isGeneratingAttendance={isGeneratingAttendance}
+        onGenerateAttendance={handleGenerateAttendance}
       />
 
-      {/* Site Filter & Generate Button */}
-      <div className="flex items-end gap-4 justify-between">
-        <div className="flex-1 max-w-xs">
-          <label className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2 block">
-            <Building2 className="h-4 w-4" />
-            Filter by Site
-          </label>
-          <Select value={selectedSite} onValueChange={handleSiteChange}>
-            <SelectTrigger>
-              <SelectValue placeholder={loadingSites ? 'Loading...' : 'Select site'} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sites</SelectItem>
-              {sites.map((site) => (
-                <SelectItem key={site.id} value={site.id}>
-                  {site.company?.name ? `${site.company.name} - ${site.name}` : site.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        {!isClient && (
-          <Button
-            onClick={handleGenerateAttendance}
-            disabled={isGeneratingAttendance}
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            title="Generate pending attendance records for today based on assignments"
-          >
-            <RefreshCw className={`size-4 ${isGeneratingAttendance ? 'animate-spin' : ''}`} />
-            {isGeneratingAttendance ? 'Generating...' : 'Generate Today'}
-          </Button>
-        )}
-      </div>
-
       <AttendanceStats refreshKey={refreshKey} siteId={selectedSite} dateRange={dateRange} customDateFrom={customDateFrom} customDateTo={customDateTo} department={selectedDepartment} />
-      <AttendanceTable refreshKey={refreshKey} siteId={selectedSite} dateRange={dateRange} customDateFrom={customDateFrom} customDateTo={customDateTo} department={selectedDepartment} />
+      <AttendanceTable refreshKey={refreshKey} siteId={selectedSite} dateRange={dateRange} customDateFrom={customDateFrom} customDateTo={customDateTo} department={selectedDepartment} sites={sites} loadingSites={loadingSites} onSiteChange={handleSiteChange} />
     </div>
   )
 }

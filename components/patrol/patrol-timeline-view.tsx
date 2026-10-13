@@ -5,7 +5,8 @@ import { toast } from 'sonner'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ChevronDown } from 'lucide-react'
+import { CalendarDays, ChevronDown, Minus, Move, Plus, RotateCcw } from 'lucide-react'
+import { getBusinessDate } from '@/lib/timezone'
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,7 @@ interface PatrolRecord {
   time?: string
   date: string
   gpsStatus: 'verified' | 'unverified'
+  distanceMeters: number | null
   photos: number
   description: string
   evidence: string[]
@@ -29,16 +31,21 @@ interface PatrolRecord {
 export function PatrolTimelineView({ siteId }: { siteId: string }) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
+  const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [patrols, setPatrols] = useState<PatrolRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
+  const [selectedDate, setSelectedDate] = useState(() => getBusinessDate())
 
   useEffect(() => {
     const fetchPatrols = async () => {
       setIsLoading(true)
       setHasError(false)
       try {
-        const response = await fetch(`/api/patrol/records?siteId=${encodeURIComponent(siteId)}`)
+        const response = await fetch(`/api/patrol/records?siteId=${encodeURIComponent(siteId)}&date=${encodeURIComponent(selectedDate)}`)
         if (!response.ok) throw new Error('Patrol records request failed')
         const data = await response.json()
         setPatrols(data)
@@ -56,27 +63,55 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
     if (!siteId) return
 
     fetchPatrols()
-  }, [siteId])
+  }, [siteId, selectedDate])
 
-  if (isLoading) {
-    return <div className="text-center text-muted-foreground py-8">Loading patrol records...</div>
+  const resetPhotoView = () => {
+    setZoom(1)
+    setPan({ x: 0, y: 0 })
   }
 
-  if (hasError) {
-    return <div className="py-8 text-center text-sm text-muted-foreground">No patrol records found for this site.</div>
+  const openPhoto = (photo: string) => {
+    setSelectedPhoto(photo)
+    resetPhotoView()
   }
 
-  if (patrols.length === 0) {
-    return (
-      <div className="text-center text-muted-foreground py-12">
-        <p>No patrol records found for this site.</p>
-        <p className="text-sm mt-2">Patrol records will appear here as officers complete their rounds.</p>
+  const changeZoom = (delta: number) => {
+    setZoom((current) => {
+      const nextZoom = Math.min(5, Math.max(1, Number((current + delta).toFixed(1))))
+      if (nextZoom === 1) setPan({ x: 0, y: 0 })
+      return nextZoom
+    })
+  }
+
+  const timelineFilter = (
+    <div className="flex flex-col gap-3 rounded-xl border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="font-semibold text-foreground">Patrol timeline</p>
+        <p className="text-sm text-muted-foreground">View patrol reports for a specific date.</p>
       </div>
-    )
+      <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+        <CalendarDays className="size-4 text-primary" aria-hidden="true" />
+        <span className="sr-only">Patrol date</span>
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={(event) => setSelectedDate(event.target.value)}
+          className="h-10 rounded-md border bg-background px-3 font-normal shadow-sm outline-none focus:ring-2 focus:ring-ring"
+          aria-label="Patrol date"
+        />
+      </label>
+    </div>
+  )
+
+  if (isLoading) return <div className="space-y-4">{timelineFilter}<div className="py-8 text-center text-muted-foreground">Loading patrol records...</div></div>
+  if (hasError) return <div className="space-y-4">{timelineFilter}<div className="py-8 text-center text-sm text-muted-foreground">Patrol records could not be loaded for this date.</div></div>
+  if (patrols.length === 0) {
+    return <div className="space-y-4">{timelineFilter}<div className="py-12 text-center text-muted-foreground"><p>No patrol records found for this date.</p><p className="mt-2 text-sm">Try another date to view completed patrols.</p></div></div>
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {timelineFilter}
       {patrols.map((patrol) => (
         <Card
           key={patrol.id}
@@ -109,6 +144,14 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
 
               {expandedId === patrol.id && (
                 <div className="mt-4 pt-4 border-t border-border space-y-3">
+                  {patrol.gpsStatus === 'unverified' && patrol.distanceMeters !== null && (
+                    <div className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2">
+                      <p className="text-sm font-medium text-amber-950 dark:text-amber-100">
+                        Distance from checkpoint: <span className="font-semibold">{patrol.distanceMeters.toLocaleString('en-US')} m</span>
+                      </p>
+                    </div>
+                  )}
+
                   <div>
                     <p className="text-sm font-medium mb-1">Observation:</p>
                     <p className="text-sm text-muted-foreground">{patrol.description}</p>
@@ -123,14 +166,14 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
                             key={idx}
                             onClick={(e) => {
                               e.stopPropagation()
-                              setSelectedPhoto(photo)
+openPhoto(photo)
                             }}
-                            className="relative group overflow-hidden rounded-lg bg-muted"
+                            className="relative group aspect-[3/4] w-full max-w-32 overflow-hidden rounded-lg bg-muted"
                           >
                             <img
                               src={photo}
                               alt={`Evidence ${idx + 1}`}
-                              className="w-full h-24 object-cover group-hover:opacity-75 transition-opacity"
+                              className="h-full w-full object-contain group-hover:opacity-75 transition-opacity"
                             />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                               <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100">
@@ -166,17 +209,57 @@ export function PatrolTimelineView({ siteId }: { siteId: string }) {
       ))}
 
       {/* Photo Modal */}
-      <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Patrol Evidence</DialogTitle>
+      <Dialog open={!!selectedPhoto} onOpenChange={() => { setSelectedPhoto(null); resetPhotoView() }}>
+        <DialogContent className="max-w-2xl gap-0 overflow-hidden p-0">
+          <DialogHeader className="border-b px-6 py-4">
+            <div className="flex items-center justify-between gap-4 pr-8">
+              <div>
+                <DialogTitle>Patrol Evidence</DialogTitle>
+                <p className="mt-1 text-sm text-muted-foreground">Zoom in to inspect details. Drag the image when zoomed.</p>
+              </div>
+              <div className="flex items-center gap-1 rounded-lg border bg-muted/30 p-1">
+                <Button type="button" variant="ghost" size="icon" onClick={() => changeZoom(-0.25)} disabled={zoom <= 1} aria-label="Zoom out">
+                  <Minus className="size-4" />
+                </Button>
+                <span className="min-w-12 text-center text-xs font-medium tabular-nums">{Math.round(zoom * 100)}%</span>
+                <Button type="button" variant="ghost" size="icon" onClick={() => changeZoom(0.25)} disabled={zoom >= 5} aria-label="Zoom in">
+                  <Plus className="size-4" />
+                </Button>
+                <Button type="button" variant="ghost" size="icon" onClick={resetPhotoView} disabled={zoom === 1 && pan.x === 0 && pan.y === 0} aria-label="Reset image view">
+                  <RotateCcw className="size-4" />
+                </Button>
+              </div>
+            </div>
           </DialogHeader>
           {selectedPhoto && (
-            <img
-              src={selectedPhoto}
-              alt="Full evidence"
-              className="w-full rounded-lg"
-            />
+            <div
+              className={`relative flex h-[min(72vh,680px)] items-center justify-center overflow-hidden bg-muted/40 p-4 ${zoom > 1 ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'}`}
+              onWheel={(event) => {
+                event.preventDefault()
+                changeZoom(event.deltaY < 0 ? 0.25 : -0.25)
+              }}
+              onPointerDown={(event) => {
+                if (zoom <= 1) return
+                event.currentTarget.setPointerCapture(event.pointerId)
+                setIsDragging(true)
+                setDragStart({ x: event.clientX - pan.x, y: event.clientY - pan.y })
+              }}
+              onPointerMove={(event) => {
+                if (!isDragging) return
+                setPan({ x: event.clientX - dragStart.x, y: event.clientY - dragStart.y })
+              }}
+              onPointerUp={() => setIsDragging(false)}
+              onPointerCancel={() => setIsDragging(false)}
+            >
+              <img
+                src={selectedPhoto}
+                alt="Full evidence"
+                draggable={false}
+                className="max-h-full max-w-full select-none rounded-lg object-contain shadow-sm transition-transform duration-150"
+                style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
+              />
+              {zoom === 1 && <div className="pointer-events-none absolute bottom-6 flex items-center gap-2 rounded-full bg-background/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm"><Move className="size-3.5" /> Use the controls or mouse wheel to zoom</div>}
+            </div>
           )}
         </DialogContent>
       </Dialog>

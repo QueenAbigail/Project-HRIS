@@ -63,22 +63,25 @@ export function PatrolPageClient({ clients, sitesByClient }: PatrolPageClientPro
   return (
     <>
       {/* Site Selector */}
-      <div className="flex items-end gap-4">
-        <div className="flex-1 max-w-xs">
-          <label className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            Select Site
-          </label>
+      {currentSite && (
+        <div className="rounded-lg border border-border bg-card p-5">
           <Select value={selectedSite || ''} onValueChange={setSelectedSite}>
-            <SelectTrigger>
-              <SelectValue placeholder="Choose a site" />
+            <SelectTrigger
+              id="patrol-site-selector"
+              aria-label="Change patrol site"
+              className="h-auto w-full justify-start border-0 bg-transparent p-0 text-left text-3xl font-bold shadow-none hover:bg-transparent focus:ring-0 sm:text-4xl"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <MapPin className="h-6 w-6 shrink-0 text-muted-foreground" />
+                <SelectValue placeholder="Choose a site" />
+              </div>
             </SelectTrigger>
             <SelectContent>
               {allSites.map((site) => (
                 <SelectItem key={site.id} value={site.id}>
                   {site.name} ({site.code})
                   {site.clientName && (
-                    <span className="text-xs text-muted-foreground ml-2">
+                    <span className="ml-2 text-xs text-muted-foreground">
                       • {site.clientName}
                     </span>
                   )}
@@ -86,25 +89,16 @@ export function PatrolPageClient({ clients, sitesByClient }: PatrolPageClientPro
               ))}
             </SelectContent>
           </Select>
-        </div>
-      </div>
-
-      {/* Site Header */}
-      {currentSite && (
-        <div className="flex items-start justify-between gap-4 p-4 bg-card border border-border rounded-lg">
-          <div>
-            <h2 className="text-2xl font-bold">{currentSite.name}</h2>
-            <p className="text-sm text-muted-foreground mt-2">
-              Code: <span className="font-semibold">{currentSite.code}</span> •
-              Checkpoints: <span className="font-semibold">{currentSite.checkpointCount}</span>
-              {currentSite.clientName && (
-                <>
-                  {' '}
-                  • Company: <span className="font-semibold">{currentSite.clientName}</span>
-                </>
-              )}
-            </p>
-          </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Code: <span className="font-semibold">{currentSite.code}</span> •
+            Checkpoints: <span className="font-semibold">{currentSite.checkpointCount}</span>
+            {currentSite.clientName && (
+              <>
+                {' '}
+                • Company: <span className="font-semibold">{currentSite.clientName}</span>
+              </>
+            )}
+          </p>
         </div>
       )}
 

@@ -14,13 +14,22 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Clock, AlertTriangle, MapPin, Loader2, Eye, RefreshCw, ChevronLeft, ChevronRight, Search } from 'lucide-react'
+import { Clock, AlertTriangle, MapPin, Loader2, Eye, Pencil, MoreHorizontal, RefreshCw, ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import type { GpsCoordinates } from '@/lib/constants'
 import { formatAttendanceStatus, getAttendanceLabel, getStatusStyles, resolveAttendanceStatus } from '@/lib/attendance-utils'
 import { AttendanceDetailsModal } from './attendance-details-modal'
+import { AttendanceEditDialog } from './attendance-edit-dialog'
 import { getBusinessDateRangeForPreset, formatBusinessDate } from '@/lib/timezone'
 
 interface AttendanceRecord {
@@ -126,9 +135,10 @@ function TimezoneTime({ value, record }: { value: string | null; record: Attenda
   )
 }
 
-export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDateFrom = '', customDateTo = '', department = 'all', refreshKey = 0 }: { siteId?: string; dateRange?: string; customDateFrom?: string; customDateTo?: string; department?: string; refreshKey?: number }) {
+export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDateFrom = '', customDateTo = '', department = 'all', refreshKey = 0, sites = [], loadingSites = false, onSiteChange }: { siteId?: string; dateRange?: string; customDateFrom?: string; customDateTo?: string; department?: string; refreshKey?: number; sites?: { id: string; name: string; company?: { name: string } | null }[]; loadingSites?: boolean; onSiteChange?: (value: string) => void }) {
   const [selectedRecord, setSelectedRecord] = useState<any>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
   const pageSize = 25
   const [employeeName, setEmployeeName] = useState('')
   const [searchName, setSearchName] = useState('')
@@ -178,6 +188,10 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
   const loading = !rowsQuery.data && !rowsQuery.error
   const isRefreshing = rowsQuery.isLoading
   const error = (rowsQuery.error || countsQuery.error)?.message ?? null
+  const refreshAfterEdit = () => {
+    rowsQuery.mutate()
+    countsQuery.mutate()
+  }
   const retry = () => {
     rowsQuery.mutate()
     countsQuery.mutate()
@@ -270,17 +284,21 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
             </Badge>
           </TableCell>
           <TableCell>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setSelectedRecord(record)
-                setDetailsOpen(true)
-              }}
-            >
-              <Eye className="size-4" />
-              View
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label={`Actions for ${record.user.name}`}>
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => { setSelectedRecord(record); setDetailsOpen(true) }}>
+                  <Eye className="size-4" /> View
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => { setSelectedRecord(record); setEditOpen(true) }}>
+                  <Pencil className="size-4" /> Edit
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </TableCell>
         </TableRow>
       ))}
@@ -311,7 +329,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
   return (
     <>
       <Card className={isRefreshing ? 'opacity-70 transition-opacity' : undefined} aria-busy={isRefreshing}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
           <div>
             <CardTitle>
               {dateRange === 'yesterday' ? "Yesterday's Attendance" : dateRange === 'week' ? "This Week's Attendance" : dateRange === 'month' ? "This Month's Attendance" : dateRange === 'custom' && customDateFrom && customDateTo ? `Attendance: ${customDateFrom} – ${customDateTo}` : "Today's Attendance"}
@@ -326,25 +344,43 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
             </Badge>
           )}
         </CardHeader>
-          <CardContent>
-            <div className="mb-4 max-w-sm">
-              <label htmlFor="attendance-name-search" className="sr-only">Search attendance by employee name</label>
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-                <Input
-                  id="attendance-name-search"
-                  value={employeeName}
-                  onChange={(event) => setEmployeeName(event.target.value)}
-                  placeholder="Search by employee name"
-                  className="pl-9"
-                />
+<CardContent className="pt-1">
+  <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end">
+              <div className="w-full sm:max-w-sm sm:flex-1">
+                <label htmlFor="attendance-name-search" className="sr-only">Search attendance by employee name</label>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                  <Input
+                    id="attendance-name-search"
+                    value={employeeName}
+                    onChange={(event) => setEmployeeName(event.target.value)}
+                    placeholder="Search by employee name"
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+              <div className="flex w-full justify-end sm:w-64 sm:ml-auto">
+                <label htmlFor="attendance-site-filter" className="sr-only">Filter attendance by site</label>
+                <Select value={siteId} onValueChange={onSiteChange}>
+                  <SelectTrigger id="attendance-site-filter">
+                    <SelectValue placeholder={loadingSites ? 'Loading...' : 'Select site'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sites</SelectItem>
+                    {sites.map((site) => (
+                      <SelectItem key={site.id} value={site.id}>
+                        {site.company?.name ? `${site.company.name} - ${site.name}` : site.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <Tabs defaultValue="all" className="w-full">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="all">All ({pagination.totalRecords})</TabsTrigger>
-              <TabsTrigger value="late" className="text-warning">Late ({totalStatusCount('LATE')})</TabsTrigger>
               <TabsTrigger value="present" className="text-success">Present ({totalStatusCount('PRESENT')})</TabsTrigger>
+              <TabsTrigger value="late" className="text-warning">Late ({totalStatusCount('LATE')})</TabsTrigger>
               <TabsTrigger value="absent" className="text-destructive">Absent ({totalStatusCount('ABSENT')})</TabsTrigger>
               <TabsTrigger value="pending" className="text-orange-500">Pending ({totalStatusCount('NOT_CHECKED_IN')})</TabsTrigger>
             </TabsList>
@@ -477,6 +513,7 @@ export function AttendanceTable({ siteId = 'all', dateRange = 'today', customDat
 
       {/* Details Dialog */}
       <AttendanceDetailsModal open={detailsOpen} onOpenChange={setDetailsOpen} record={selectedRecord} />
+      <AttendanceEditDialog open={editOpen} onOpenChange={setEditOpen} record={selectedRecord} onSaved={refreshAfterEdit} />
     </>
   )
 }
