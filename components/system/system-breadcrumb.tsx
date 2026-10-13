@@ -18,6 +18,7 @@ export function SystemBreadcrumb() {
     '/system/map-sites': 'Map Site',
     '/system/broadcast': 'Broadcast',
     '/system/reports': 'Reports',
+    '/system/tools': 'Tools',
     '/system/settings': 'Settings',
   }
 
