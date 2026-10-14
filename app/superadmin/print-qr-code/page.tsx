@@ -262,7 +262,13 @@ export default function PrintQRCodePage() {
             .qr-sticker canvas {
               display: block;
             }
-            
+
+            @media print {
+              .qr-sticker {
+                width: 100% !important;
+              }
+            }
+
             .qr-label {
               font-size: 8pt;
               line-height: 1.2;
@@ -591,10 +597,11 @@ export default function PrintQRCodePage() {
                         key={location.id}
                         className="qr-sticker border rounded-lg p-3 text-center bg-white flex flex-col items-center justify-center print:border print:rounded-md print:p-[4mm]"
                         id={`qr-${location.id}`}
-                        style={{
-                          width: '100%',
-                          aspectRatio: '1',
-                        }}
+  style={{
+  width: 'min(100%, 280px)',
+  aspectRatio: '1',
+  justifySelf: 'center',
+  }}
                       >
                         {/* Service Provider Name (Header) */}
                         <div className="text-[5pt] font-semibold text-gray-600 mb-0.5 truncate w-full print:text-[4pt] tracking-tight">
