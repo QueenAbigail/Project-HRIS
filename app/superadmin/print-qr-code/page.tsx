@@ -199,7 +199,28 @@ export default function PrintQRCodePage() {
       return
     }
 
-    const pageSize = layoutSettings.pageSize === 'A3' ? 'A3 portrait' : 'A4 portrait'
+    const isA3 = layoutSettings.pageSize === 'A3'
+    const pageWidthMm = isA3 ? 297 : 210
+    const pageHeightMm = isA3 ? 420 : 297
+    const pagePaddingMm = isA3 ? 12 : 10
+    const gapMm = layoutSettings.spacing === 'gap-3' ? 4 : layoutSettings.spacing === 'gap-2' ? 3 : 5
+    // Sticker size is computed in millimetres so every page fits the sheet exactly and the grid stays centred.
+    const stickerMm =
+      Math.floor(
+        Math.min(
+          (pageWidthMm - pagePaddingMm * 2 - gapMm * (layoutSettings.cols - 1)) / layoutSettings.cols,
+          (pageHeightMm - pagePaddingMm * 2 - gapMm * (layoutSettings.rows - 1)) / layoutSettings.rows
+        ) * 10
+      ) / 10
+
+    const pagesHtml = Array.from(printZone.querySelectorAll('.print-page'))
+      .map((page) => {
+        const stickers = Array.from(page.querySelectorAll('.qr-sticker'))
+          .map((sticker) => `<div class="qr-sticker">${sticker.querySelector('.qr-content')?.outerHTML ?? ''}</div>`)
+          .join('')
+        return `<section class="print-page"><div class="qr-grid">${stickers}</div></section>`
+      })
+      .join('')
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -208,118 +229,87 @@ export default function PrintQRCodePage() {
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>QR Code Print - ${layoutSettings.pageSize}</title>
-          <script src="https://cdn.tailwindcss.com"></script>
           <style>
             @page {
-              size: 297mm 420mm; 
-              margin: 10mm;
-            }
-            
-            body {
-              width: 297mm;
-              height: 420mm;
-              background-color: white !important;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-              overflow: hidden;
-            }
-            
-            #qr-print-zone {
-              width: 100%;
-              height: 100%;
-            }
-            
-            html {
-              background-color: white;
-            }
-            
-            .print-page {
-              page-break-after: always;
-              background-color: white;
+              size: ${isA3 ? 'A3' : 'A4'} portrait;
               margin: 0;
-              padding: 10mm;
-              width: 100%;
+            }
+
+            * {
               box-sizing: border-box;
             }
-            
-            .print-page:last-child {
-              page-break-after: avoid;
+
+            html,
+            body {
+              margin: 0;
+              padding: 0;
+              background-color: white;
+              font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
             }
-            
-            .qr-code-frame {
-              width: 68%;
-              aspect-ratio: 1;
+
+            .print-page {
+              width: ${pageWidthMm}mm;
+              height: ${pageHeightMm - 0.5}mm;
+              padding: ${pagePaddingMm}mm;
+              overflow: hidden;
               display: flex;
               align-items: center;
               justify-content: center;
-              margin: 2px auto 6px;
+              break-after: page;
+              page-break-after: always;
             }
 
-            .qr-code-frame svg {
-              display: block;
-              width: 100% !important;
-              height: 100% !important;
-              shape-rendering: crispEdges;
+            .print-page:last-child {
+              break-after: auto;
+              page-break-after: auto;
             }
 
             .qr-grid {
               display: grid;
-              grid-template-columns: repeat(${layoutSettings.cols}, 1fr);
-              gap: ${layoutSettings.spacing === 'gap-3' ? '12px' : layoutSettings.spacing === 'gap-2' ? '8px' : '16px'};
-              width: 100%;
+              grid-template-columns: repeat(${layoutSettings.cols}, ${stickerMm}mm);
+              grid-template-rows: repeat(${layoutSettings.rows}, ${stickerMm}mm);
+              gap: ${gapMm}mm;
             }
-            
+
             .qr-sticker {
-              container-type: inline-size;
-              border: 1px solid #e5e7eb;
-              border-radius: 4px;
-              padding: 8px;
-              text-align: center;
+              width: ${stickerMm}mm;
+              height: ${stickerMm}mm;
+              padding: 3%;
+              border: 0.3mm solid #d1d5db;
+              border-radius: 2.5mm;
               background-color: white;
               display: flex;
-              flex-direction: column;
               align-items: center;
               justify-content: center;
-              aspect-ratio: 1;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
+              text-align: center;
+              overflow: hidden;
             }
-            
+
             ${STICKER_SCALE_CSS}
 
-            .qr-label {
-              font-size: 8pt;
-              line-height: 1.2;
-              word-break: break-word;
-            }
-            
-            .qr-code-name {
-              font-weight: bold;
-              margin-bottom: 2px;
-            }
-            
-            .qr-location-name {
-              font-size: 7pt;
-              color: #6b7280;
+            .qr-header,
+            .qr-checkpoint,
+            .qr-company,
+            .qr-site {
+              width: 100%;
               overflow: hidden;
               text-overflow: ellipsis;
-              display: -webkit-box;
-              -webkit-line-clamp: 1;
-              -webkit-box-orient: vertical;
+              white-space: nowrap;
+              text-align: center;
             }
-            
-            @media print {
-              body {
-                margin: 0;
-                padding: 0;
-                width: 297mm;
-                height: 420mm;
-              }
-            }
+
+            .qr-header { letter-spacing: -0.025em; }
+            .qr-checkpoint,
+            .qr-company { font-weight: 700; color: #111827; }
+            .qr-company { margin-bottom: 0.5cqw; }
+            .qr-site { color: #4b5563; }
+            .qr-details { width: 100%; }
           </style>
         </head>
         <body>
-          ${printZone.outerHTML}
+          ${pagesHtml}
         </body>
       </html>
     `)
