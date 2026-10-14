@@ -74,7 +74,7 @@ const STICKER_SCALE_CSS = `
     flex-direction: column;
     align-items: center;
   }
-  .qr-header { font-size: 3.2cqw; line-height: 1.25; margin-bottom: 0.6cqw; }
+  .qr-header { font-size: 4.8cqw; line-height: 1.2; margin-bottom: 0.8cqw; font-weight: 700; color: #000; }
   .qr-checkpoint { font-size: 4cqw; line-height: 1.25; margin-bottom: 1.2cqw; }
   .qr-company { font-size: 4cqw; line-height: 1.25; }
   .qr-code-frame {
@@ -646,7 +646,7 @@ export default function PrintQRCodePage() {
                       >
                         <div className="qr-content">
                         {/* Service Provider Name (Header) */}
-                        <div className="qr-header mb-0.5 w-full truncate font-semibold text-gray-600 tracking-tight">
+                        <div className="qr-header w-full truncate tracking-tight">
                           {appSettings.appName === 'Your Company' ? 'Pro Maxima Rajawali' : appSettings.appName}
                         </div>
                         
