@@ -188,8 +188,18 @@ export default function SchedulesPage() {
               <div className="text-center py-12 text-muted-foreground space-y-4">
                 <Download className="size-12 mx-auto" />
                 <h3 className="text-lg font-semibold text-foreground">Import Daily Rosters</h3>
-                <p className="mb-4">Upload an Excel file with employee names and daily shift assignments (P, M, X, OFF)</p>
-                <Button onClick={() => setImportDialogOpen(true)}>
+  <p className="mb-4">Upload an Excel file with employee names and daily shift assignments (P, M, X, OFF)</p>
+  <div className="mx-auto mb-5 max-w-2xl rounded-lg border border-border bg-muted/30 p-4 text-left text-sm">
+  <p className="mb-2 font-medium text-foreground">Import rules</p>
+  <ul className="list-disc space-y-1 pl-5 leading-relaxed">
+  <li>Employee Code is the authoritative employee match; the name is informational.</li>
+  <li>Existing future schedules are updated; empty cells preserve the current schedule.</li>
+  <li><span className="font-medium text-foreground">OFF</span> or <span className="font-medium text-foreground">X</span> removes an existing future schedule.</li>
+  <li>Today and past schedules are protected and skipped.</li>
+  <li>Invalid or ambiguous rows appear in the post-import result review.</li>
+  </ul>
+  </div>
+  <Button onClick={() => setImportDialogOpen(true)}>
                   Select File to Upload
                 </Button>
               </div>

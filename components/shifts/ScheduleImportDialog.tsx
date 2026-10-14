@@ -26,13 +26,29 @@ interface ParsedSchedule {
   rowNumber: number
 }
 
+function normalizeExcelDate(value: unknown): string {
+  const raw = String(value ?? '').trim()
+  if (/^\d+(?:\.\d+)?$/.test(raw)) {
+    const serial = Number(raw)
+    if (serial > 0 && serial < 100000) {
+      return new Date((serial - 25569) * 86400 * 1000).toISOString().slice(0, 10)
+    }
+  }
+  const parsed = new Date(raw)
+  if (Number.isNaN(parsed.getTime())) throw new Error(`Invalid date format: ${raw}`)
+  return parsed.toISOString().slice(0, 10)
+}
+
 export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: ScheduleImportDialogProps) {
   const [file, setFile] = useState<File | null>(null)
   const [parsing, setParsing] = useState(false)
   const [importing, setImporting] = useState(false)
   const [preview, setPreview] = useState<ParsedSchedule[]>([])
-  const [step, setStep] = useState<'upload' | 'preview' | 'importing'>('upload')
+  const [importEntries, setImportEntries] = useState<ParsedSchedule[]>([])
+  const [step, setStep] = useState<'upload' | 'preview' | 'importing' | 'result'>('upload')
   const [progress, setProgress] = useState(0)
+  const [importErrors, setImportErrors] = useState<string[]>([])
+  const [importSummary, setImportSummary] = useState({ created: 0, updated: 0 })
   const [importStatus, setImportStatus] = useState('Preparing import...')
   const [dragActive, setDragActive] = useState(false)
   const [shiftCodes, setShiftCodes] = useState<string[]>([])
@@ -141,7 +157,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
               employeeName,
               employeeCode,
               employeeId: employeeCode,
-              date: String(header),
+              date: normalizeExcelDate(header),
               shift: String(shift).toUpperCase(),
               rowNumber: dataRows.indexOf(row) + 2,
             })
@@ -160,8 +176,9 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
         .filter((group) => group.length > 1)
         .map((group) => `Rows ${group.map((item) => item.rowNumber).join(' and ')} — ${group[0].employeeCode} on ${group[0].date} appears more than once.`)
       setDuplicateErrors(duplicateMessages)
-      setPreview(parsed.slice(0, 100))
-      setStep('preview')
+  setImportEntries(parsed)
+  setPreview(parsed.slice(0, 100))
+  setStep('preview')
       toast.success(`Parsed ${parsed.length} schedule entries`)
     } catch (error) {
       toast.error('Failed to parse Excel file')
@@ -179,13 +196,13 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
     try {
       setImporting(true)
       setStep('importing')
-      const batchSize = preview.length <= 100 ? 1 : preview.length <= 500 ? 5 : 10
-      const batches = Array.from(
-        { length: Math.ceil(preview.length / batchSize) },
-        (_, index) => preview.slice(index * batchSize, (index + 1) * batchSize),
-      )
-      const employeeCodes = Array.from(new Set(preview.map((item) => item.employeeCode).filter(Boolean)))
-      const dates = preview.map((item) => new Date(item.date)).filter((date) => !Number.isNaN(date.getTime()))
+  const batchSize = importEntries.length <= 100 ? 1 : importEntries.length <= 500 ? 5 : 10
+  const batches = Array.from(
+  { length: Math.ceil(importEntries.length / batchSize) },
+  (_, index) => importEntries.slice(index * batchSize, (index + 1) * batchSize),
+  )
+  const employeeCodes = Array.from(new Set(importEntries.map((item) => item.employeeCode).filter(Boolean)))
+  const dates = importEntries.map((item) => new Date(item.date)).filter((date) => !Number.isNaN(date.getTime()))
       const startDate = new Date(Math.min(...dates.map((date) => date.getTime()))).toISOString()
       const endDate = new Date(Math.max(...dates.map((date) => date.getTime()))).toISOString()
       let completed = 0
@@ -214,8 +231,8 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
         created += result.created
         updated += result.updated
         errors.push(...result.errors)
-        setProgress(Math.round((completed / preview.length) * 100))
-        setImportStatus(`Processed ${completed} of ${preview.length} schedule entries (updated every ${batchSize})`)
+  setProgress(Math.round((completed / importEntries.length) * 100))
+  setImportStatus(`Processed ${completed} of ${importEntries.length} schedule entries (updated every ${batchSize})`)
       }
 
       for (const [index, batch] of batches.entries()) {
@@ -223,16 +240,10 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
       }
 
       if (created + updated === 0) throw new Error(`No schedules were imported. ${errors.slice(0, 3).join(' ')}`)
-      if (errors.length > 0) {
-        toast.warning(`Import completed with ${errors.length} error${errors.length === 1 ? '' : 's'}`, {
-          description: errors.slice(0, 3).join(' • '),
-          duration: 10000,
-        })
-      } else {
-        toast.success(`Processed ${created} created and ${updated} updated schedules`)
-      }
+      setImportErrors(errors)
+      setImportSummary({ created, updated })
+      setStep('result')
       onSuccess?.()
-      setTimeout(() => { onOpenChange(false); resetDialog() }, 1000)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to import schedules')
       setStep('preview')
@@ -243,11 +254,14 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
 
   const resetDialog = () => {
     setFile(null)
-    setPreview([])
-    setDuplicateErrors([])
+  setPreview([])
+  setImportEntries([])
+  setDuplicateErrors([])
     setStep('upload')
     setProgress(0)
     setImportStatus('Preparing import...')
+    setImportErrors([])
+    setImportSummary({ created: 0, updated: 0 })
   }
 
   const handleClose = () => {
@@ -371,9 +385,34 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
           {step === 'importing' && (
             <div className="space-y-4">
               <Progress value={progress} />
-<p className="text-sm text-center text-muted-foreground">
-              {importStatus}
-            </p>
+              <p className="text-center text-sm text-muted-foreground">{importStatus}</p>
+            </div>
+          )}
+
+          {step === 'result' && (
+            <div className="space-y-4">
+              <Alert className={importErrors.length ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50'}>
+                {importErrors.length ? <AlertTriangle className="size-4 text-amber-600" /> : <CheckCircle2 className="size-4 text-emerald-600" />}
+                <AlertDescription>
+                  <p className="font-medium">
+                    Import completed: {importSummary.created} created, {importSummary.updated} updated.
+                  </p>
+                  <p className="mt-1 text-sm">
+                    {importErrors.length ? `${importErrors.length} entries need attention.` : 'All entries were imported successfully.'}
+                  </p>
+                </AlertDescription>
+              </Alert>
+
+              {importErrors.length > 0 && (
+                <div className="max-h-72 overflow-y-auto rounded-lg border border-border">
+                  <div className="border-b bg-muted px-4 py-2 text-sm font-medium">Errors and skipped entries</div>
+                  <ul className="divide-y divide-border text-sm">
+                    {importErrors.map((error, index) => (
+                      <li key={`${error}-${index}`} className="px-4 py-3 text-muted-foreground">{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -387,6 +426,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
               {importing ? 'Importing...' : 'Confirm & Import'}
             </Button>
           )}
+          {step === 'result' && <Button onClick={handleClose}>Close</Button>}
         </DialogFooter>
       </DialogContent>
     </Dialog>

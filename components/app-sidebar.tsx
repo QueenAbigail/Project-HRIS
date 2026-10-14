@@ -28,6 +28,7 @@ import {
   Camera,
   Bell,
   Loader2,
+  Wrench,
 } from 'lucide-react'
 
 import {
@@ -359,6 +360,11 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
       title: 'Reports',
       url: '/system/reports',
       icon: FileBarChart,
+    },
+    {
+      title: 'Tools',
+      url: '/system/tools',
+      icon: Wrench,
     },
     {
       title: 'Settings',
