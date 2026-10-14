@@ -764,16 +764,20 @@ export async function getImportAuditTrail(limit: number = 50) {
   }
 }
 
-// Auto-generate expected attendance records for today based on assignments
+// Auto-generate expected attendance records for the current Jakarta calendar day based on assignments
 export async function generateTodayAttendanceRecords() {
   try {
-    // Calculate the date to create attendance for
-    // Since cron runs at 17:00 UTC (00:00 GMT+7 next day), we create attendance for tomorrow
-    const attendanceDate = new Date()
-    attendanceDate.setDate(attendanceDate.getDate() + 1)
-    attendanceDate.setHours(0, 0, 0, 0)
+    // Store a date-only value at UTC midnight so Prisma date comparisons remain stable.
+    // At 17:00 UTC, this resolves to the next calendar day in Jakarta for the midnight cron.
+    const jakartaDate = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Jakarta',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date())
+    const attendanceDate = new Date(`${jakartaDate}T00:00:00.000Z`)
 
-    console.log('[v0] Starting attendance generation for date:', attendanceDate.toISOString().split('T')[0])
+    console.log('[v0] Starting attendance generation for date:', jakartaDate)
 
     // Get all schedules for the attendance date
     const todaysSchedules = await prisma.schedule.findMany({
