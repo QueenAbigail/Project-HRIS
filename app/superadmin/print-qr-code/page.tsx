@@ -583,12 +583,17 @@ export default function PrintQRCodePage() {
                 return (
                   <div
                     key={pageIndex}
-                    className={`print-page border-2 border-dashed rounded-lg mb-4 p-6 print:border-0 print:p-[5mm] print:mb-0 print:rounded-none bg-white`}
+                    className={`print-page mx-auto w-full max-w-[900px] border-2 border-dashed rounded-lg mb-4 p-6 print:border-0 print:p-[5mm] print:mb-0 print:rounded-none bg-white`}
+                    style={{
+                      aspectRatio: layoutSettings.pageSize === 'A3' ? '297 / 420' : '210 / 297',
+                      boxSizing: 'border-box',
+                    }}
                   >
                   <div
-                    className={`grid gap-${layoutSettings.spacing === 'gap-3' ? '3' : layoutSettings.spacing === 'gap-2' ? '2' : '4'}`}
+                    className={`grid h-full grid-rows-${layoutSettings.rows} gap-${layoutSettings.spacing === 'gap-3' ? '3' : layoutSettings.spacing === 'gap-2' ? '2' : '4'}`}
                     style={{
                       gridTemplateColumns: `repeat(${layoutSettings.cols}, 1fr)`,
+                      gridTemplateRows: `repeat(${layoutSettings.rows}, minmax(0, 1fr))`,
                       gap: layoutSettings.spacing === 'gap-3' ? '12px' : layoutSettings.spacing === 'gap-2' ? '8px' : '16px',
                     }}
                   >
