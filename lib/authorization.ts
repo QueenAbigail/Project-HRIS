@@ -14,6 +14,10 @@ export function canUseSystemTools(role?: string | null) {
   return role === 'SUPER_ADMIN' || role === 'HR_ADMIN'
 }
 
+export function canManagePayroll(role?: string | null) {
+  return role === 'SUPER_ADMIN' || role === 'HR_ADMIN'
+}
+
 export function canManageLeave(role?: string | null) {
   return role === 'SUPER_ADMIN' || role === 'HR_ADMIN'
 }
