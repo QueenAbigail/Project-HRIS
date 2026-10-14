@@ -240,7 +240,10 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
       }
 
       if (created + updated === 0) throw new Error(`No schedules were imported. ${errors.slice(0, 3).join(' ')}`)
-      setImportErrors(errors)
+      const reviewErrors = errors.filter(
+        (error) => !error.includes('Skipped protected date')
+      )
+      setImportErrors(reviewErrors)
       setImportSummary({ created, updated })
       setStep('result')
       onSuccess?.()
