@@ -66,10 +66,12 @@ export async function POST(req: NextRequest) {
         let scheduleDate: string
         try {
           let parsedDate: Date
-          if (typeof date === 'number') {
-            parsedDate = new Date((date - 25569) * 86400 * 1000)
+          const rawDate = String(date ?? '').trim()
+          // Excel may send date-only headers as serials, including after JSON stringification.
+          if (/^\d+(?:\.\d+)?$/.test(rawDate) && Number(rawDate) > 0 && Number(rawDate) < 100000) {
+            parsedDate = new Date((Number(rawDate) - 25569) * 86400 * 1000)
           } else {
-            parsedDate = new Date(date)
+            parsedDate = new Date(rawDate)
           }
 
           if (isNaN(parsedDate.getTime())) {

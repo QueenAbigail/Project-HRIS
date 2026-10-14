@@ -26,6 +26,19 @@ interface ParsedSchedule {
   rowNumber: number
 }
 
+function normalizeExcelDate(value: unknown): string {
+  const raw = String(value ?? '').trim()
+  if (/^\d+(?:\.\d+)?$/.test(raw)) {
+    const serial = Number(raw)
+    if (serial > 0 && serial < 100000) {
+      return new Date((serial - 25569) * 86400 * 1000).toISOString().slice(0, 10)
+    }
+  }
+  const parsed = new Date(raw)
+  if (Number.isNaN(parsed.getTime())) throw new Error(`Invalid date format: ${raw}`)
+  return parsed.toISOString().slice(0, 10)
+}
+
 export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: ScheduleImportDialogProps) {
   const [file, setFile] = useState<File | null>(null)
   const [parsing, setParsing] = useState(false)
@@ -141,7 +154,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
               employeeName,
               employeeCode,
               employeeId: employeeCode,
-              date: String(header),
+              date: normalizeExcelDate(header),
               shift: String(shift).toUpperCase(),
               rowNumber: dataRows.indexOf(row) + 2,
             })
