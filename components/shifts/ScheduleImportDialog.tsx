@@ -44,6 +44,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
   const [parsing, setParsing] = useState(false)
   const [importing, setImporting] = useState(false)
   const [preview, setPreview] = useState<ParsedSchedule[]>([])
+  const [importEntries, setImportEntries] = useState<ParsedSchedule[]>([])
   const [step, setStep] = useState<'upload' | 'preview' | 'importing'>('upload')
   const [progress, setProgress] = useState(0)
   const [importStatus, setImportStatus] = useState('Preparing import...')
@@ -173,8 +174,9 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
         .filter((group) => group.length > 1)
         .map((group) => `Rows ${group.map((item) => item.rowNumber).join(' and ')} — ${group[0].employeeCode} on ${group[0].date} appears more than once.`)
       setDuplicateErrors(duplicateMessages)
-      setPreview(parsed.slice(0, 100))
-      setStep('preview')
+  setImportEntries(parsed)
+  setPreview(parsed.slice(0, 100))
+  setStep('preview')
       toast.success(`Parsed ${parsed.length} schedule entries`)
     } catch (error) {
       toast.error('Failed to parse Excel file')
@@ -192,13 +194,13 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
     try {
       setImporting(true)
       setStep('importing')
-      const batchSize = preview.length <= 100 ? 1 : preview.length <= 500 ? 5 : 10
-      const batches = Array.from(
-        { length: Math.ceil(preview.length / batchSize) },
-        (_, index) => preview.slice(index * batchSize, (index + 1) * batchSize),
-      )
-      const employeeCodes = Array.from(new Set(preview.map((item) => item.employeeCode).filter(Boolean)))
-      const dates = preview.map((item) => new Date(item.date)).filter((date) => !Number.isNaN(date.getTime()))
+  const batchSize = importEntries.length <= 100 ? 1 : importEntries.length <= 500 ? 5 : 10
+  const batches = Array.from(
+  { length: Math.ceil(importEntries.length / batchSize) },
+  (_, index) => importEntries.slice(index * batchSize, (index + 1) * batchSize),
+  )
+  const employeeCodes = Array.from(new Set(importEntries.map((item) => item.employeeCode).filter(Boolean)))
+  const dates = importEntries.map((item) => new Date(item.date)).filter((date) => !Number.isNaN(date.getTime()))
       const startDate = new Date(Math.min(...dates.map((date) => date.getTime()))).toISOString()
       const endDate = new Date(Math.max(...dates.map((date) => date.getTime()))).toISOString()
       let completed = 0
@@ -227,8 +229,8 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
         created += result.created
         updated += result.updated
         errors.push(...result.errors)
-        setProgress(Math.round((completed / preview.length) * 100))
-        setImportStatus(`Processed ${completed} of ${preview.length} schedule entries (updated every ${batchSize})`)
+  setProgress(Math.round((completed / importEntries.length) * 100))
+  setImportStatus(`Processed ${completed} of ${importEntries.length} schedule entries (updated every ${batchSize})`)
       }
 
       for (const [index, batch] of batches.entries()) {
@@ -256,8 +258,9 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
 
   const resetDialog = () => {
     setFile(null)
-    setPreview([])
-    setDuplicateErrors([])
+  setPreview([])
+  setImportEntries([])
+  setDuplicateErrors([])
     setStep('upload')
     setProgress(0)
     setImportStatus('Preparing import...')
