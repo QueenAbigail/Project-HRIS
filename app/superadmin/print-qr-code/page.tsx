@@ -54,6 +54,38 @@ interface AppSettings {
   appDescription?: string
 }
 
+// Every size is in container-query width units (cqw) of the sticker, so the whole
+// composition keeps one fixed ratio whether the sticker is small (A3 4x5) or large (A4 2x3).
+const STICKER_SCALE_CSS = `
+  .qr-sticker {
+    container-type: inline-size;
+  }
+  .qr-content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .qr-header { font-size: 3.2cqw; line-height: 1.25; margin-bottom: 0.6cqw; }
+  .qr-company { font-size: 4cqw; line-height: 1.25; margin-bottom: 1.2cqw; }
+  .qr-code-frame {
+    width: 68cqw;
+    height: 68cqw;
+    flex: 0 0 auto;
+    margin: 1cqw auto 2cqw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .qr-code-frame canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  .qr-site { font-size: 3.8cqw; line-height: 1.25; }
+  .qr-location { font-size: 3.2cqw; line-height: 1.25; }
+`
+
 export default function PrintQRCodePage() {
   const [selectedSite, setSelectedSite] = useState('all')
   const [locationType, setLocationType] = useState('attendance')
@@ -242,28 +274,7 @@ export default function PrintQRCodePage() {
               print-color-adjust: exact;
             }
             
-            .qr-code-frame {
-              width: 100%;
-              aspect-ratio: 1;
-              flex: 0 0 auto;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              margin: 2px auto 6px;
-            }
-
-            .qr-header { font-size: 2.2cqw; }
-            .qr-company { font-size: 3cqw; }
-            .qr-site { font-size: 3cqw; }
-            .qr-location { font-size: 2.2cqw; }
-
-            .qr-code-frame canvas {
-              display: block;
-              width: 100% !important;
-              height: 100% !important;
-              max-width: 100%;
-              max-height: 100%;
-            }
+            ${STICKER_SCALE_CSS}
 
             .qr-sticker canvas {
               display: block;
@@ -552,6 +563,7 @@ export default function PrintQRCodePage() {
           <CardContent>
             {/* A3/A4 Print-Ready Container */}
             <style>{`
+              ${STICKER_SCALE_CSS}
               @media print {
                 @page {
                   size: ${layoutSettings.pageSize === 'A3' ? 'A3' : 'A4'};
@@ -614,7 +626,7 @@ export default function PrintQRCodePage() {
   justifySelf: 'center',
   }}
                       >
-                        <div className="qr-content flex w-[82%] flex-col items-center">
+                        <div className="qr-content">
                         {/* Service Provider Name (Header) */}
                         <div className="qr-header mb-0.5 w-full truncate font-semibold text-gray-600 tracking-tight">
                           {appSettings.appName}
@@ -626,7 +638,7 @@ export default function PrintQRCodePage() {
                         </div>
                         
                         {/* QR Code */}
-                        <div className={layoutSettings.pageSize === 'A4' ? 'qr-code-frame qr-code-frame-a4' : 'qr-code-frame'}>
+                        <div className="qr-code-frame">
                           <QRCodeCanvas
                             value={JSON.stringify({
                               id: location.id,
