@@ -276,17 +276,8 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Import Daily Schedules</DialogTitle>
-          <DialogDescription asChild>
-            <div className="space-y-2">
-              <p>Upload an Excel file with employee names and daily shift assignments.</p>
-              <ul className="list-disc space-y-1 pl-5 text-xs leading-relaxed text-muted-foreground">
-                <li>Employee Code is the authoritative employee match; the name is informational.</li>
-                <li>Existing future schedules are updated; empty cells are skipped and preserve the current schedule.</li>
-                <li><span className="font-medium text-foreground">OFF</span> or <span className="font-medium text-foreground">X</span> removes an existing future schedule.</li>
-                <li>Today and past schedules are protected and skipped.</li>
-                <li>Invalid or ambiguous rows continue to the result review after import.</li>
-              </ul>
-            </div>
+          <DialogDescription>
+            Upload an Excel file with employee names and daily shift assignments
           </DialogDescription>
         </DialogHeader>
 
