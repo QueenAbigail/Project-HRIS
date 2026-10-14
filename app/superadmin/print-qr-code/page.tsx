@@ -227,6 +227,7 @@ export default function PrintQRCodePage() {
             }
             
             .qr-sticker {
+              container-type: inline-size;
               border: 1px solid #e5e7eb;
               border-radius: 4px;
               padding: 8px;
@@ -242,7 +243,7 @@ export default function PrintQRCodePage() {
             }
             
             .qr-code-frame {
-              width: 82%;
+              width: 100%;
               aspect-ratio: 1;
               flex: 0 0 auto;
               display: flex;
@@ -250,6 +251,11 @@ export default function PrintQRCodePage() {
               justify-content: center;
               margin: 2px auto 6px;
             }
+
+            .qr-header { font-size: 2.2cqw; }
+            .qr-company { font-size: 3cqw; }
+            .qr-site { font-size: 3cqw; }
+            .qr-location { font-size: 2.2cqw; }
 
             .qr-code-frame canvas {
               display: block;
@@ -610,12 +616,12 @@ export default function PrintQRCodePage() {
                       >
                         <div className="qr-content flex w-[82%] flex-col items-center">
                         {/* Service Provider Name (Header) */}
-                        <div className={layoutSettings.pageSize === 'A4' ? 'text-[7pt] font-semibold text-gray-600 mb-0.5 truncate w-full print:text-[4pt] tracking-tight' : 'text-[5pt] font-semibold text-gray-600 mb-0.5 truncate w-full print:text-[4pt] tracking-tight'}>
+                        <div className="qr-header mb-0.5 w-full truncate font-semibold text-gray-600 tracking-tight">
                           {appSettings.appName}
                         </div>
                         
                         {/* Client Company Name */}
-                        <div className={layoutSettings.pageSize === 'A4' ? 'text-[8pt] font-bold text-gray-900 mb-1 truncate w-full print:text-[5pt]' : 'text-[6pt] font-bold text-gray-900 mb-1 truncate w-full print:text-[5pt]'}>
+                        <div className="qr-company mb-1 w-full truncate font-bold text-gray-900">
                           {location.clientCompanyName || location.siteName}
                         </div>
                         
@@ -639,11 +645,11 @@ export default function PrintQRCodePage() {
                         </div>
                         
                         {/* Location Details Label */}
-                        <div className={layoutSettings.pageSize === 'A4' ? 'text-sm space-y-0.5 w-full print:text-[8pt]' : 'text-xs space-y-0.5 w-full print:text-[8pt]'}>
-                          <div className={layoutSettings.pageSize === 'A4' ? 'font-semibold text-gray-800 truncate text-[8pt]' : 'font-semibold text-gray-800 truncate text-[6pt]'}>
+                        <div className="qr-details w-full space-y-0.5">
+                          <div className="qr-site font-semibold text-gray-800 truncate">
                             {location.siteName}
                           </div>
-                          <div className={layoutSettings.pageSize === 'A4' ? 'text-gray-600 line-clamp-1 print:text-[5pt] text-[7pt]' : 'text-gray-600 line-clamp-1 print:text-[5pt] text-[5pt]'}>
+                          <div className="qr-location text-gray-600 line-clamp-1">
                             {location.name}
                           </div>
                         </div>
