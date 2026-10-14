@@ -105,7 +105,7 @@ export default function PrintQRCodePage() {
   const [allAttendanceLocations, setAllAttendanceLocations] = useState<Location[]>([])
   const [allPatrolLocations, setAllPatrolLocations] = useState<Location[]>([])
   const [sites, setSites] = useState<Site[]>([])
-  const [appSettings, setAppSettings] = useState<AppSettings>({ appName: 'Your Company' })
+  const [appSettings, setAppSettings] = useState<AppSettings>({ appName: 'Pro Maxima Rajawali' })
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isPrinting, setIsPrinting] = useState(false)
@@ -123,7 +123,7 @@ export default function PrintQRCodePage() {
       
       setAllAttendanceLocations(attendance)
       setAllPatrolLocations(patrol)
-      setAppSettings(settings || { appName: 'Your Company' })
+      setAppSettings(settings || { appName: 'Pro Maxima Rajawali' })
       
       // Add 'All Sites' option at the beginning
       setSites([
@@ -647,7 +647,7 @@ export default function PrintQRCodePage() {
                         <div className="qr-content">
                         {/* Service Provider Name (Header) */}
                         <div className="qr-header mb-0.5 w-full truncate font-semibold text-gray-600 tracking-tight">
-                          {appSettings.appName}
+                          {appSettings.appName === 'Your Company' ? 'Pro Maxima Rajawali' : appSettings.appName}
                         </div>
                         
                         {/* Checkpoint Name */}
