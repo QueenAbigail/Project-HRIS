@@ -45,8 +45,10 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
   const [importing, setImporting] = useState(false)
   const [preview, setPreview] = useState<ParsedSchedule[]>([])
   const [importEntries, setImportEntries] = useState<ParsedSchedule[]>([])
-  const [step, setStep] = useState<'upload' | 'preview' | 'importing'>('upload')
+  const [step, setStep] = useState<'upload' | 'preview' | 'importing' | 'result'>('upload')
   const [progress, setProgress] = useState(0)
+  const [importErrors, setImportErrors] = useState<string[]>([])
+  const [importSummary, setImportSummary] = useState({ created: 0, updated: 0 })
   const [importStatus, setImportStatus] = useState('Preparing import...')
   const [dragActive, setDragActive] = useState(false)
   const [shiftCodes, setShiftCodes] = useState<string[]>([])
@@ -238,16 +240,10 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
       }
 
       if (created + updated === 0) throw new Error(`No schedules were imported. ${errors.slice(0, 3).join(' ')}`)
-      if (errors.length > 0) {
-        toast.warning(`Import completed with ${errors.length} error${errors.length === 1 ? '' : 's'}`, {
-          description: errors.slice(0, 3).join(' • '),
-          duration: 10000,
-        })
-      } else {
-        toast.success(`Processed ${created} created and ${updated} updated schedules`)
-      }
+      setImportErrors(errors)
+      setImportSummary({ created, updated })
+      setStep('result')
       onSuccess?.()
-      setTimeout(() => { onOpenChange(false); resetDialog() }, 1000)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to import schedules')
       setStep('preview')
@@ -264,6 +260,8 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
     setStep('upload')
     setProgress(0)
     setImportStatus('Preparing import...')
+    setImportErrors([])
+    setImportSummary({ created: 0, updated: 0 })
   }
 
   const handleClose = () => {
@@ -387,9 +385,34 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
           {step === 'importing' && (
             <div className="space-y-4">
               <Progress value={progress} />
-<p className="text-sm text-center text-muted-foreground">
-              {importStatus}
-            </p>
+              <p className="text-center text-sm text-muted-foreground">{importStatus}</p>
+            </div>
+          )}
+
+          {step === 'result' && (
+            <div className="space-y-4">
+              <Alert className={importErrors.length ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50'}>
+                {importErrors.length ? <AlertTriangle className="size-4 text-amber-600" /> : <CheckCircle2 className="size-4 text-emerald-600" />}
+                <AlertDescription>
+                  <p className="font-medium">
+                    Import completed: {importSummary.created} created, {importSummary.updated} updated.
+                  </p>
+                  <p className="mt-1 text-sm">
+                    {importErrors.length ? `${importErrors.length} entries need attention.` : 'All entries were imported successfully.'}
+                  </p>
+                </AlertDescription>
+              </Alert>
+
+              {importErrors.length > 0 && (
+                <div className="max-h-72 overflow-y-auto rounded-lg border border-border">
+                  <div className="border-b bg-muted px-4 py-2 text-sm font-medium">Errors and skipped entries</div>
+                  <ul className="divide-y divide-border text-sm">
+                    {importErrors.map((error, index) => (
+                      <li key={`${error}-${index}`} className="px-4 py-3 text-muted-foreground">{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -403,6 +426,7 @@ export function ScheduleImportDialog({ open, onOpenChange, onSuccess }: Schedule
               {importing ? 'Importing...' : 'Confirm & Import'}
             </Button>
           )}
+          {step === 'result' && <Button onClick={handleClose}>Close</Button>}
         </DialogFooter>
       </DialogContent>
     </Dialog>
