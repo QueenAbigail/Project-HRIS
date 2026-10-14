@@ -245,6 +245,13 @@ export default function PrintQRCodePage() {
               width: 68%;
               aspect-ratio: 1;
               flex: 0 0 auto;
+
+            }
+
+            .qr-code-frame-a4 {
+              width: 82%;
+            }
+
               display: flex;
               align-items: center;
               justify-content: center;
@@ -609,17 +616,17 @@ export default function PrintQRCodePage() {
   }}
                       >
                         {/* Service Provider Name (Header) */}
-                        <div className="text-[5pt] font-semibold text-gray-600 mb-0.5 truncate w-full print:text-[4pt] tracking-tight">
+                        <div className={layoutSettings.pageSize === 'A4' ? 'text-[7pt] font-semibold text-gray-600 mb-0.5 truncate w-full print:text-[4pt] tracking-tight' : 'text-[5pt] font-semibold text-gray-600 mb-0.5 truncate w-full print:text-[4pt] tracking-tight'}>
                           {appSettings.appName}
                         </div>
                         
                         {/* Client Company Name */}
-                        <div className="text-[6pt] font-bold text-gray-900 mb-1 truncate w-full print:text-[5pt]">
+                        <div className={layoutSettings.pageSize === 'A4' ? 'text-[8pt] font-bold text-gray-900 mb-1 truncate w-full print:text-[5pt]' : 'text-[6pt] font-bold text-gray-900 mb-1 truncate w-full print:text-[5pt]'}>
                           {location.clientCompanyName || location.siteName}
                         </div>
                         
                         {/* QR Code */}
-                        <div className="qr-code-frame">
+                        <div className={layoutSettings.pageSize === 'A4' ? 'qr-code-frame qr-code-frame-a4' : 'qr-code-frame'}>
                           <QRCodeCanvas
                             value={JSON.stringify({
                               id: location.id,
@@ -638,11 +645,11 @@ export default function PrintQRCodePage() {
                         </div>
                         
                         {/* Location Details Label */}
-                        <div className="text-xs space-y-0.5 w-full print:text-[8pt]">
-                          <div className="font-semibold text-gray-800 truncate text-[6pt]">
+                        <div className={layoutSettings.pageSize === 'A4' ? 'text-sm space-y-0.5 w-full print:text-[8pt]' : 'text-xs space-y-0.5 w-full print:text-[8pt]'}>
+                          <div className={layoutSettings.pageSize === 'A4' ? 'font-semibold text-gray-800 truncate text-[8pt]' : 'font-semibold text-gray-800 truncate text-[6pt]'}>
                             {location.siteName}
                           </div>
-                          <div className="text-gray-600 text-[5pt] line-clamp-1 print:text-[5pt]">
+                          <div className={layoutSettings.pageSize === 'A4' ? 'text-gray-600 line-clamp-1 print:text-[5pt] text-[7pt]' : 'text-gray-600 line-clamp-1 print:text-[5pt] text-[5pt]'}>
                             {location.name}
                           </div>
                         </div>
