@@ -21,7 +21,7 @@ import {
 import {
   Checkbox,
 } from '@/components/ui/checkbox'
-import { QRCodeCanvas } from 'qrcode.react'
+import { QRCodeSVG } from 'qrcode.react'
 import { MapPin, Printer, Download, Search, X, Loader2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { getAttendanceLocations, getPatrolLocations, getAllSites } from '@/app/superadmin/actions'
@@ -54,6 +54,48 @@ interface AppSettings {
   appDescription?: string
 }
 
+// Every size is in container-query width units (cqw) of the sticker, so the whole
+// composition keeps one fixed ratio whether the sticker is small (A3 4x5) or large (A4 2x3).
+const STICKER_SCALE_CSS = `
+  .qr-cell {
+    container-type: size;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .qr-sticker {
+    container-type: inline-size;
+  }
+  .qr-content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .qr-header { font-size: 4.8cqw; line-height: 1.2; margin-bottom: 0.8cqw; font-weight: 700; color: #000; }
+  .qr-checkpoint { font-size: 4cqw; line-height: 1.25; margin-bottom: 1.2cqw; }
+  .qr-company { font-size: 4cqw; line-height: 1.25; }
+  .qr-code-frame {
+    width: 68cqw;
+    height: 68cqw;
+    flex: 0 0 auto;
+    margin: 1cqw auto 2cqw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .qr-code-frame svg {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    shape-rendering: crispEdges;
+  }
+  .qr-site { font-size: 3.8cqw; line-height: 1.25; }
+  .qr-location { font-size: 3.2cqw; line-height: 1.25; }
+`
+
 export default function PrintQRCodePage() {
   const [selectedSite, setSelectedSite] = useState('all')
   const [locationType, setLocationType] = useState('attendance')
@@ -63,7 +105,7 @@ export default function PrintQRCodePage() {
   const [allAttendanceLocations, setAllAttendanceLocations] = useState<Location[]>([])
   const [allPatrolLocations, setAllPatrolLocations] = useState<Location[]>([])
   const [sites, setSites] = useState<Site[]>([])
-  const [appSettings, setAppSettings] = useState<AppSettings>({ appName: 'Your Company' })
+  const [appSettings, setAppSettings] = useState<AppSettings>({ appName: 'Pro Maxima Rajawali' })
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isPrinting, setIsPrinting] = useState(false)
@@ -81,7 +123,7 @@ export default function PrintQRCodePage() {
       
       setAllAttendanceLocations(attendance)
       setAllPatrolLocations(patrol)
-      setAppSettings(settings || { appName: 'Your Company' })
+      setAppSettings(settings || { appName: 'Pro Maxima Rajawali' })
       
       // Add 'All Sites' option at the beginning
       setSites([
@@ -204,6 +246,22 @@ export default function PrintQRCodePage() {
               page-break-after: avoid;
             }
             
+            .qr-code-frame {
+              width: 68%;
+              aspect-ratio: 1;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin: 2px auto 6px;
+            }
+
+            .qr-code-frame svg {
+              display: block;
+              width: 100% !important;
+              height: 100% !important;
+              shape-rendering: crispEdges;
+            }
+
             .qr-grid {
               display: grid;
               grid-template-columns: repeat(${layoutSettings.cols}, 1fr);
@@ -212,6 +270,7 @@ export default function PrintQRCodePage() {
             }
             
             .qr-sticker {
+              container-type: inline-size;
               border: 1px solid #e5e7eb;
               border-radius: 4px;
               padding: 8px;
@@ -226,12 +285,8 @@ export default function PrintQRCodePage() {
               print-color-adjust: exact;
             }
             
-            .qr-sticker svg {
-              max-width: 100%;
-              height: auto;
-              margin-bottom: 6px;
-            }
-            
+            ${STICKER_SCALE_CSS}
+
             .qr-label {
               font-size: 8pt;
               line-height: 1.2;
@@ -278,17 +333,34 @@ export default function PrintQRCodePage() {
   }
 
   const handleDownloadQR = (location: Location) => {
-    const qrRef = document.getElementById(`qr-${location.id}`)
-    if (qrRef) {
-      const canvas = qrRef.querySelector('canvas')
-      if (canvas) {
-        const url = canvas.toDataURL('image/png')
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `${location.siteName}-${location.name}-${location.code}-QR.png`
-        link.click()
-      }
+    const svg = document.getElementById(`qr-${location.id}`)?.querySelector('svg')
+    if (!svg) return
+
+    const svgMarkup = new XMLSerializer().serializeToString(svg)
+    const svgUrl = URL.createObjectURL(new Blob([svgMarkup], { type: 'image/svg+xml' }))
+    const image = new Image()
+    image.crossOrigin = 'anonymous'
+    image.onload = () => {
+      const qrPixels = 1024
+      const quietZone = 128
+      const canvas = document.createElement('canvas')
+      canvas.width = qrPixels + quietZone * 2
+      canvas.height = qrPixels + quietZone * 2
+      const context = canvas.getContext('2d')
+      if (!context) return
+      context.fillStyle = '#ffffff'
+      context.fillRect(0, 0, canvas.width, canvas.height)
+      context.imageSmoothingEnabled = false
+      context.drawImage(image, quietZone, quietZone, qrPixels, qrPixels)
+      URL.revokeObjectURL(svgUrl)
+
+      const link = document.createElement('a')
+      link.href = canvas.toDataURL('image/png')
+      link.download = `${location.siteName}-${location.name}-${location.code}-QR.png`
+      link.click()
     }
+    image.onerror = () => URL.revokeObjectURL(svgUrl)
+    image.src = svgUrl
   }
 
   // Get layout settings
@@ -509,6 +581,7 @@ export default function PrintQRCodePage() {
           <CardContent>
             {/* A3/A4 Print-Ready Container */}
             <style>{`
+              ${STICKER_SCALE_CSS}
               @media print {
                 @page {
                   size: ${layoutSettings.pageSize === 'A3' ? 'A3' : 'A4'};
@@ -546,38 +619,45 @@ export default function PrintQRCodePage() {
                 return (
                   <div
                     key={pageIndex}
-                    className={`print-page border-2 border-dashed rounded-lg mb-4 p-6 print:border-0 print:p-[5mm] print:mb-0 print:rounded-none bg-white`}
+                    className={`print-page mx-auto w-full max-w-[900px] border-2 border-dashed rounded-lg mb-4 p-6 print:border-0 print:p-[5mm] print:mb-0 print:rounded-none bg-white`}
+                    style={{
+                      aspectRatio: layoutSettings.pageSize === 'A3' ? '297 / 420' : '210 / 297',
+                      boxSizing: 'border-box',
+                    }}
                   >
                   <div
-                    className={`grid gap-${layoutSettings.spacing === 'gap-3' ? '3' : layoutSettings.spacing === 'gap-2' ? '2' : '4'}`}
+                    className={`grid h-full grid-rows-${layoutSettings.rows} gap-${layoutSettings.spacing === 'gap-3' ? '3' : layoutSettings.spacing === 'gap-2' ? '2' : '4'}`}
                     style={{
                       gridTemplateColumns: `repeat(${layoutSettings.cols}, 1fr)`,
+                      gridTemplateRows: `repeat(${layoutSettings.rows}, minmax(0, 1fr))`,
                       gap: layoutSettings.spacing === 'gap-3' ? '12px' : layoutSettings.spacing === 'gap-2' ? '8px' : '16px',
                     }}
                   >
                     {pageItems.map((location) => (
+                      <div key={location.id} className="qr-cell">
                       <div
-                        key={location.id}
                         className="qr-sticker border rounded-lg p-3 text-center bg-white flex flex-col items-center justify-center print:border print:rounded-md print:p-[4mm]"
                         id={`qr-${location.id}`}
                         style={{
-                          width: '100%',
+                          width: layoutSettings.pageSize === 'A4' ? 'min(100cqw, 100cqh)' : 'min(100cqw, 100cqh, 280px)',
                           aspectRatio: '1',
+                          flexShrink: 0,
                         }}
                       >
+                        <div className="qr-content">
                         {/* Service Provider Name (Header) */}
-                        <div className="text-[5pt] font-semibold text-gray-600 mb-0.5 truncate w-full print:text-[4pt] tracking-tight">
-                          {appSettings.appName}
+                        <div className="qr-header w-full truncate tracking-tight">
+                          {appSettings.appName === 'Your Company' ? 'Pro Maxima Rajawali' : appSettings.appName}
                         </div>
                         
-                        {/* Client Company Name */}
-                        <div className="text-[6pt] font-bold text-gray-900 mb-1 truncate w-full print:text-[5pt]">
-                          {location.clientCompanyName || location.siteName}
+                        {/* Checkpoint Name */}
+                        <div className="qr-checkpoint w-full truncate font-bold text-gray-900">
+                          {location.name}
                         </div>
                         
                         {/* QR Code */}
-                        <div className="mb-1.5 flex-grow flex items-center justify-center">
-                          <QRCodeCanvas
+                        <div className="qr-code-frame">
+                          <QRCodeSVG
                             value={JSON.stringify({
                               id: location.id,
                               code: location.code,
@@ -594,15 +674,17 @@ export default function PrintQRCodePage() {
                           />
                         </div>
                         
-                        {/* Location Details Label */}
-                        <div className="text-xs space-y-0.5 w-full print:text-[8pt]">
-                          <div className="font-semibold text-gray-800 truncate text-[6pt]">
+                        {/* Company and Site Name */}
+                        <div className="qr-details w-full space-y-0.5">
+                          <div className="qr-company truncate font-bold text-gray-900">
+                            {location.clientCompanyName || location.siteName}
+                          </div>
+                          <div className="qr-site text-gray-600 truncate">
                             {location.siteName}
                           </div>
-                          <div className="text-gray-600 text-[5pt] line-clamp-1 print:text-[5pt]">
-                            {location.name}
-                          </div>
                         </div>
+                        </div>
+                      </div>
                       </div>
                     ))}
                   </div>
