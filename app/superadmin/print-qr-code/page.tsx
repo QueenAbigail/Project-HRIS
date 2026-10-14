@@ -57,6 +57,14 @@ interface AppSettings {
 // Every size is in container-query width units (cqw) of the sticker, so the whole
 // composition keeps one fixed ratio whether the sticker is small (A3 4x5) or large (A4 2x3).
 const STICKER_SCALE_CSS = `
+  .qr-cell {
+    container-type: size;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
   .qr-sticker {
     container-type: inline-size;
   }
@@ -278,12 +286,6 @@ export default function PrintQRCodePage() {
 
             .qr-sticker canvas {
               display: block;
-            }
-
-            @media print {
-              .qr-sticker {
-                width: 100% !important;
-              }
             }
 
             .qr-label {
@@ -616,15 +618,15 @@ export default function PrintQRCodePage() {
                     }}
                   >
                     {pageItems.map((location) => (
+                      <div key={location.id} className="qr-cell">
                       <div
-                        key={location.id}
                         className="qr-sticker border rounded-lg p-3 text-center bg-white flex flex-col items-center justify-center print:border print:rounded-md print:p-[4mm]"
                         id={`qr-${location.id}`}
-  style={{
-  width: layoutSettings.pageSize === 'A4' ? '100%' : 'min(100%, 280px)',
-  aspectRatio: '1',
-  justifySelf: 'center',
-  }}
+                        style={{
+                          width: layoutSettings.pageSize === 'A4' ? 'min(100cqw, 100cqh)' : 'min(100cqw, 100cqh, 280px)',
+                          aspectRatio: '1',
+                          flexShrink: 0,
+                        }}
                       >
                         <div className="qr-content">
                         {/* Service Provider Name (Header) */}
@@ -666,6 +668,7 @@ export default function PrintQRCodePage() {
                           </div>
                         </div>
                         </div>
+                      </div>
                       </div>
                     ))}
                   </div>
