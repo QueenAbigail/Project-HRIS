@@ -204,6 +204,21 @@ export default function PrintQRCodePage() {
               page-break-after: avoid;
             }
             
+            .qr-code-frame {
+              width: 68%;
+              aspect-ratio: 1;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin: 2px auto 6px;
+            }
+
+            .qr-code-frame canvas {
+              display: block;
+              width: 100% !important;
+              height: 100% !important;
+            }
+
             .qr-grid {
               display: grid;
               grid-template-columns: repeat(${layoutSettings.cols}, 1fr);
@@ -226,10 +241,26 @@ export default function PrintQRCodePage() {
               print-color-adjust: exact;
             }
             
-            .qr-sticker svg {
+            .qr-code-frame {
+              width: 68%;
+              aspect-ratio: 1;
+              flex: 0 0 auto;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin: 2px auto 6px;
+            }
+
+            .qr-code-frame canvas {
+              display: block;
+              width: 100% !important;
+              height: 100% !important;
               max-width: 100%;
-              height: auto;
-              margin-bottom: 6px;
+              max-height: 100%;
+            }
+
+            .qr-sticker canvas {
+              display: block;
             }
             
             .qr-label {
@@ -576,7 +607,7 @@ export default function PrintQRCodePage() {
                         </div>
                         
                         {/* QR Code */}
-                        <div className="mb-1.5 flex-grow flex items-center justify-center">
+                        <div className="qr-code-frame">
                           <QRCodeCanvas
                             value={JSON.stringify({
                               id: location.id,
