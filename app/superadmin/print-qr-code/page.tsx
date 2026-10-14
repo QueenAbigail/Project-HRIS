@@ -75,7 +75,8 @@ const STICKER_SCALE_CSS = `
     align-items: center;
   }
   .qr-header { font-size: 3.2cqw; line-height: 1.25; margin-bottom: 0.6cqw; }
-  .qr-company { font-size: 4cqw; line-height: 1.25; margin-bottom: 1.2cqw; }
+  .qr-checkpoint { font-size: 4cqw; line-height: 1.25; margin-bottom: 1.2cqw; }
+  .qr-company { font-size: 4cqw; line-height: 1.25; }
   .qr-code-frame {
     width: 68cqw;
     height: 68cqw;
@@ -649,9 +650,9 @@ export default function PrintQRCodePage() {
                           {appSettings.appName}
                         </div>
                         
-                        {/* Client Company Name */}
-                        <div className="qr-company mb-1 w-full truncate font-bold text-gray-900">
-                          {location.clientCompanyName || location.siteName}
+                        {/* Checkpoint Name */}
+                        <div className="qr-checkpoint w-full truncate font-bold text-gray-900">
+                          {location.name}
                         </div>
                         
                         {/* QR Code */}
@@ -673,13 +674,13 @@ export default function PrintQRCodePage() {
                           />
                         </div>
                         
-                        {/* Location Details Label */}
+                        {/* Company and Site Name */}
                         <div className="qr-details w-full space-y-0.5">
-                          <div className="qr-site font-semibold text-gray-800 truncate">
-                            {location.siteName}
+                          <div className="qr-company truncate font-bold text-gray-900">
+                            {location.clientCompanyName || location.siteName}
                           </div>
-                          <div className="qr-location text-gray-600 line-clamp-1">
-                            {location.name}
+                          <div className="qr-site text-gray-600 truncate">
+                            {location.siteName}
                           </div>
                         </div>
                         </div>
