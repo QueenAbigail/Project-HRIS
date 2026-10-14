@@ -213,6 +213,14 @@ export default function PrintQRCodePage() {
         ) * 10
       ) / 10
 
+    // 1 unit = 1% of the sticker's inner width (sticker minus 3% padding each side and the 0.3mm borders),
+    // which is what 1cqw means in the preview. Print windows don't resolve cqw reliably, so use mm.
+    const unitMm = (stickerMm * 0.94 - 0.6) / 100
+    const printStickerCss = STICKER_SCALE_CSS.replace(/container-type:[^;]+;/g, '').replace(
+      /(\d*\.?\d+)cqw/g,
+      (_, value) => `${(parseFloat(value) * unitMm).toFixed(4)}mm`
+    )
+
     const pagesHtml = Array.from(printZone.querySelectorAll('.print-page'))
       .map((page) => {
         const stickers = Array.from(page.querySelectorAll('.qr-sticker'))
@@ -287,7 +295,7 @@ export default function PrintQRCodePage() {
               overflow: hidden;
             }
 
-            ${STICKER_SCALE_CSS}
+            ${printStickerCss}
 
             .qr-header,
             .qr-checkpoint,
@@ -303,7 +311,7 @@ export default function PrintQRCodePage() {
             .qr-header { letter-spacing: -0.025em; }
             .qr-checkpoint,
             .qr-company { font-weight: 700; color: #111827; }
-            .qr-company { margin-bottom: 0.5cqw; }
+            .qr-company { margin-bottom: ${(0.5 * unitMm).toFixed(4)}mm; }
             .qr-site { color: #4b5563; }
             .qr-details { width: 100%; }
           </style>
