@@ -242,16 +242,9 @@ export default function PrintQRCodePage() {
             }
             
             .qr-code-frame {
-              width: 68%;
+              width: 82%;
               aspect-ratio: 1;
               flex: 0 0 auto;
-
-            }
-
-            .qr-code-frame-a4 {
-              width: 82%;
-            }
-
               display: flex;
               align-items: center;
               justify-content: center;
@@ -615,6 +608,7 @@ export default function PrintQRCodePage() {
   justifySelf: 'center',
   }}
                       >
+                        <div className="qr-content flex w-[82%] flex-col items-center">
                         {/* Service Provider Name (Header) */}
                         <div className={layoutSettings.pageSize === 'A4' ? 'text-[7pt] font-semibold text-gray-600 mb-0.5 truncate w-full print:text-[4pt] tracking-tight' : 'text-[5pt] font-semibold text-gray-600 mb-0.5 truncate w-full print:text-[4pt] tracking-tight'}>
                           {appSettings.appName}
@@ -652,6 +646,7 @@ export default function PrintQRCodePage() {
                           <div className={layoutSettings.pageSize === 'A4' ? 'text-gray-600 line-clamp-1 print:text-[5pt] text-[7pt]' : 'text-gray-600 line-clamp-1 print:text-[5pt] text-[5pt]'}>
                             {location.name}
                           </div>
+                        </div>
                         </div>
                       </div>
                     ))}
