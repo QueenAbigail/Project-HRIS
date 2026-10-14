@@ -603,7 +603,7 @@ export default function PrintQRCodePage() {
                         className="qr-sticker border rounded-lg p-3 text-center bg-white flex flex-col items-center justify-center print:border print:rounded-md print:p-[4mm]"
                         id={`qr-${location.id}`}
   style={{
-  width: 'min(100%, 280px)',
+  width: layoutSettings.pageSize === 'A4' ? '100%' : 'min(100%, 280px)',
   aspectRatio: '1',
   justifySelf: 'center',
   }}
