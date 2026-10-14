@@ -21,7 +21,7 @@ import {
 import {
   Checkbox,
 } from '@/components/ui/checkbox'
-import { QRCodeCanvas } from 'qrcode.react'
+import { QRCodeSVG } from 'qrcode.react'
 import { MapPin, Printer, Download, Search, X, Loader2 } from 'lucide-react'
 import { Label } from '@/components/ui/label'
 import { getAttendanceLocations, getPatrolLocations, getAllSites } from '@/app/superadmin/actions'
@@ -85,10 +85,11 @@ const STICKER_SCALE_CSS = `
     align-items: center;
     justify-content: center;
   }
-  .qr-code-frame canvas {
+  .qr-code-frame svg {
     display: block;
     width: 100% !important;
     height: 100% !important;
+    shape-rendering: crispEdges;
   }
   .qr-site { font-size: 3.8cqw; line-height: 1.25; }
   .qr-location { font-size: 3.2cqw; line-height: 1.25; }
@@ -253,10 +254,11 @@ export default function PrintQRCodePage() {
               margin: 2px auto 6px;
             }
 
-            .qr-code-frame canvas {
+            .qr-code-frame svg {
               display: block;
               width: 100% !important;
               height: 100% !important;
+              shape-rendering: crispEdges;
             }
 
             .qr-grid {
@@ -283,10 +285,6 @@ export default function PrintQRCodePage() {
             }
             
             ${STICKER_SCALE_CSS}
-
-            .qr-sticker canvas {
-              display: block;
-            }
 
             .qr-label {
               font-size: 8pt;
@@ -334,17 +332,34 @@ export default function PrintQRCodePage() {
   }
 
   const handleDownloadQR = (location: Location) => {
-    const qrRef = document.getElementById(`qr-${location.id}`)
-    if (qrRef) {
-      const canvas = qrRef.querySelector('canvas')
-      if (canvas) {
-        const url = canvas.toDataURL('image/png')
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `${location.siteName}-${location.name}-${location.code}-QR.png`
-        link.click()
-      }
+    const svg = document.getElementById(`qr-${location.id}`)?.querySelector('svg')
+    if (!svg) return
+
+    const svgMarkup = new XMLSerializer().serializeToString(svg)
+    const svgUrl = URL.createObjectURL(new Blob([svgMarkup], { type: 'image/svg+xml' }))
+    const image = new Image()
+    image.crossOrigin = 'anonymous'
+    image.onload = () => {
+      const qrPixels = 1024
+      const quietZone = 128
+      const canvas = document.createElement('canvas')
+      canvas.width = qrPixels + quietZone * 2
+      canvas.height = qrPixels + quietZone * 2
+      const context = canvas.getContext('2d')
+      if (!context) return
+      context.fillStyle = '#ffffff'
+      context.fillRect(0, 0, canvas.width, canvas.height)
+      context.imageSmoothingEnabled = false
+      context.drawImage(image, quietZone, quietZone, qrPixels, qrPixels)
+      URL.revokeObjectURL(svgUrl)
+
+      const link = document.createElement('a')
+      link.href = canvas.toDataURL('image/png')
+      link.download = `${location.siteName}-${location.name}-${location.code}-QR.png`
+      link.click()
     }
+    image.onerror = () => URL.revokeObjectURL(svgUrl)
+    image.src = svgUrl
   }
 
   // Get layout settings
@@ -641,7 +656,7 @@ export default function PrintQRCodePage() {
                         
                         {/* QR Code */}
                         <div className="qr-code-frame">
-                          <QRCodeCanvas
+                          <QRCodeSVG
                             value={JSON.stringify({
                               id: location.id,
                               code: location.code,
