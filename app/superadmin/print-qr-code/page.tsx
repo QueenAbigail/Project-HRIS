@@ -341,17 +341,76 @@ export default function PrintQRCodePage() {
     const image = new Image()
     image.crossOrigin = 'anonymous'
     image.onload = () => {
-      const qrPixels = 1024
-      const quietZone = 128
+      // All sizes are percentages of the sticker width, mirroring the cqw values used by the preview.
+      const size = 1600
+      const unit = size / 100
+      const fontFamily = 'Inter, "Helvetica Neue", Arial, sans-serif'
       const canvas = document.createElement('canvas')
-      canvas.width = qrPixels + quietZone * 2
-      canvas.height = qrPixels + quietZone * 2
+      canvas.width = size
+      canvas.height = size
       const context = canvas.getContext('2d')
       if (!context) return
+
       context.fillStyle = '#ffffff'
-      context.fillRect(0, 0, canvas.width, canvas.height)
+      context.fillRect(0, 0, size, size)
+
+      context.strokeStyle = '#d1d5db'
+      context.lineWidth = 4
+      context.beginPath()
+      context.roundRect(2, 2, size - 4, size - 4, 32)
+      context.stroke()
+
+      const maxTextWidth = size * 0.88
+      const lineHeight = 1.25
+      const lines = [
+        {
+          text: appSettings.appName === 'Your Company' ? 'Pro Maxima Rajawali' : appSettings.appName,
+          fontSize: 4.8 * unit,
+          weight: '700',
+          color: '#000000',
+          gapAfter: 0.8 * unit,
+        },
+        { text: location.name, fontSize: 4 * unit, weight: '700', color: '#111827', gapAfter: 1 * unit },
+      ]
+      const qrSize = 68 * unit
+      const bottomLines = [
+        {
+          text: location.clientCompanyName || location.siteName,
+          fontSize: 4 * unit,
+          weight: '700',
+          color: '#111827',
+          gapAfter: 0.5 * unit,
+        },
+        { text: location.siteName, fontSize: 3.8 * unit, weight: '400', color: '#4b5563', gapAfter: 0 },
+      ]
+      const qrMarginBottom = 2 * unit
+
+      const totalHeight =
+        [...lines, ...bottomLines].reduce((sum, line) => sum + line.fontSize * lineHeight + line.gapAfter, 0) +
+        qrSize +
+        qrMarginBottom
+      let y = (size - totalHeight) / 2
+
+      const drawLine = (line: { text: string; fontSize: number; weight: string; color: string; gapAfter: number }) => {
+        let fontSize = line.fontSize
+        context.font = `${line.weight} ${fontSize}px ${fontFamily}`
+        const measured = context.measureText(line.text).width
+        if (measured > maxTextWidth) {
+          fontSize = fontSize * (maxTextWidth / measured)
+          context.font = `${line.weight} ${fontSize}px ${fontFamily}`
+        }
+        context.fillStyle = line.color
+        context.textAlign = 'center'
+        context.textBaseline = 'middle'
+        context.fillText(line.text, size / 2, y + (line.fontSize * lineHeight) / 2)
+        y += line.fontSize * lineHeight + line.gapAfter
+      }
+
+      lines.forEach(drawLine)
       context.imageSmoothingEnabled = false
-      context.drawImage(image, quietZone, quietZone, qrPixels, qrPixels)
+      context.drawImage(image, (size - qrSize) / 2, y, qrSize, qrSize)
+      y += qrSize + qrMarginBottom
+      bottomLines.forEach(drawLine)
       URL.revokeObjectURL(svgUrl)
 
       const link = document.createElement('a')
