@@ -147,23 +147,6 @@ export function DeductionRuleDialog({
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>Risk Level (optional)</Label>
-              <Select
-                value={form.riskLevel}
-                onValueChange={(v) => update('riskLevel', v as DeductionRuleFormValues['riskLevel'])}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Not specified</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -235,39 +218,17 @@ export function DeductionRuleDialog({
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="rule-effective">Effective Date</Label>
-              <Input
-                id="rule-effective"
-                type="date"
-                required
-                value={form.effectiveDate}
-                onChange={(e) => update('effectiveDate', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="rule-end">End Date (optional)</Label>
-              <Input
-                id="rule-end"
-                type="date"
-                min={form.effectiveDate}
-                value={form.endDate}
-                onChange={(e) => update('endDate', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={form.status} onValueChange={(v) => update('status', v as DeductionRuleFormValues['status'])}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label>Status</Label>
+            <Select value={form.status} onValueChange={(v) => update('status', v as DeductionRuleFormValues['status'])}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {error && (
