@@ -180,14 +180,21 @@ export function PositionSalaryTab() {
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto rounded-lg border">
-                <Table>
+                <Table className="table-fixed">
+                  <colgroup>
+                    <col className="w-auto" />
+                    <col className="w-[72px]" />
+                    <col className="w-[190px]" />
+                    <col className="w-[160px]" />
+                    <col className="w-[96px]" />
+                  </colgroup>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Position</TableHead>
-                      <TableHead className="text-right">Employees</TableHead>
-                      <TableHead className="text-right">Position Allowance</TableHead>
-                      <TableHead className="text-right">Base Salary</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="w-[72px] px-2 text-center">Employees</TableHead>
+                      <TableHead className="w-[190px] text-right">Position Allowance</TableHead>
+                      <TableHead className="w-[160px] text-right">Base Salary</TableHead>
+                      <TableHead className="w-[96px] px-2 text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -201,8 +208,8 @@ export function PositionSalaryTab() {
                     {site.rows.map((row) => (
                       <TableRow key={row.positionId}>
                         <TableCell className="font-medium">{row.positionName}</TableCell>
-                        <TableCell className="text-right text-sm">{row.employeeCount}</TableCell>
-                        <TableCell className="text-right text-sm">
+                        <TableCell className="w-[72px] px-2 text-center text-sm">{row.employeeCount}</TableCell>
+                        <TableCell className="w-[190px] text-right text-sm">
                           {row.current ? (
                             <span className="text-success">{formatRupiah(row.current.positionAllowance)}</span>
                           ) : (
@@ -223,12 +230,12 @@ export function PositionSalaryTab() {
                             </div>
                           )}
                         </TableCell>
-                        <TableCell className="text-right font-medium">
+                        <TableCell className="w-[160px] text-right font-medium">
                           {row.current && site.minimumWage !== null
                             ? formatRupiah(site.minimumWage + row.current.positionAllowance)
                             : <span className="font-normal text-muted-foreground">-</span>}
                         </TableCell>
-                        <TableCell className="space-x-1 text-right">
+                        <TableCell className="w-[96px] space-x-1 px-2 text-right">
                           <Button
                             size="sm"
                             variant="ghost"
