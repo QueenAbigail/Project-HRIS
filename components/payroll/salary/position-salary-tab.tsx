@@ -182,18 +182,20 @@ export function PositionSalaryTab() {
               <div className="overflow-x-auto rounded-lg border">
                 <Table className="table-fixed">
                   <colgroup>
-                    <col className="w-auto" />
+                    <col className="w-[220px]" />
                     <col className="w-[72px]" />
-                    <col className="w-[190px]" />
-                    <col className="w-[160px]" />
+                    <col className="w-[150px]" />
+                    <col className="w-[150px]" />
+                    <col className="w-[150px]" />
                     <col className="w-[96px]" />
                   </colgroup>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Position</TableHead>
+                      <TableHead className="w-[220px]">Position</TableHead>
                       <TableHead className="w-[72px] px-2 text-center">Employees</TableHead>
-                      <TableHead className="w-[190px] text-right">Position Allowance</TableHead>
-                      <TableHead className="w-[160px] text-right">Base Salary</TableHead>
+                      <TableHead className="w-[150px] text-right">Base Salary</TableHead>
+                      <TableHead className="w-[150px] text-right">Position Allowance</TableHead>
+                      <TableHead className="w-[150px] text-right">Total Salary</TableHead>
                       <TableHead className="w-[96px] px-2 text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -209,28 +211,13 @@ export function PositionSalaryTab() {
                       <TableRow key={row.positionId}>
                         <TableCell className="font-medium">{row.positionName}</TableCell>
                         <TableCell className="w-[72px] px-2 text-center text-sm">{row.employeeCount}</TableCell>
-                        <TableCell className="w-[190px] text-right text-sm">
-                          {row.current ? (
-                            <span className="text-success">{formatRupiah(row.current.positionAllowance)}</span>
-                          ) : (
-                            <span className="text-muted-foreground">Not set</span>
-                          )}
-                          {row.scheduled && (
-                            <div className="mt-1 flex items-center justify-end gap-1 text-xs text-muted-foreground">
-                              <CalendarClock className="h-3 w-3 text-warning" />
-                              {formatRupiah(row.scheduled.positionAllowance)} from {formatDate(row.scheduled.effectiveDate)}
-                              <button
-                                type="button"
-                                onClick={() => cancelScheduled(row.scheduled!.id)}
-                                aria-label={`Cancel scheduled change for ${row.positionName}`}
-                                className="rounded p-0.5 hover:bg-muted"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </div>
-                          )}
+                        <TableCell className="w-[150px] text-right text-sm">
+                          {site.minimumWage !== null ? formatRupiah(site.minimumWage) : <span className="text-muted-foreground">Not set</span>}
                         </TableCell>
-                        <TableCell className="w-[160px] text-right font-medium">
+                        <TableCell className="w-[150px] text-right text-sm">
+                          {row.current ? formatRupiah(row.current.positionAllowance) : <span className="text-muted-foreground">Not set</span>}
+                        </TableCell>
+                        <TableCell className="w-[150px] text-right font-medium">
                           {row.current && site.minimumWage !== null
                             ? formatRupiah(site.minimumWage + row.current.positionAllowance)
                             : <span className="font-normal text-muted-foreground">-</span>}
