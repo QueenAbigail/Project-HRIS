@@ -723,7 +723,7 @@ model SalaryBase {
 // TABLE 1: Salary Rules - Store salary configuration by position + site
 model SalaryRule {
   id                String    @id @default(cuid())
-  positionId        String // References position/job title
+  positionId        String // References master_data.id (category = 'position')
   siteId            String // References site ID
   salaryBaseId      String? // Minimum wage record this rule was calculated from
   salaryBase        SalaryBase? @relation(fields: [salaryBaseId], references: [id], onDelete: SetNull)
@@ -736,7 +736,7 @@ model SalaryRule {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  @@unique([positionId, siteId])
+  @@unique([positionId, siteId, effectiveDate])
   @@index([siteId])
   @@index([salaryBaseId])
   @@index([status])
