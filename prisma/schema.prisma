@@ -750,7 +750,7 @@ model DeductionRule {
   updatedAt     DateTime                 @updatedAt
 
   assignments   DeductionRuleSiteAssignment[]
-  applied       PayrollDeductionApplied[]
+  applied       PayrollDeductionsApplied[]
 
   @@unique([name, type])
   @@index([status])
