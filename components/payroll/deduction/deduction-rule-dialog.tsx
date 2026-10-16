@@ -1,252 +1,51 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  ALL_SCOPE,
-  deductionTypeGroups,
-  type DeductionRule,
-  type DeductionRuleFormValues,
-  type SiteOption,
-} from './types'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import type { DeductionRule, DeductionRuleFormValues, DeductionType } from './types'
 
-interface DeductionRuleDialogProps {
+const empty: DeductionRuleFormValues = { name: '', type: 'tax', deductionType: 'percentage', value: '', status: 'active' }
+const groups: { id: DeductionType; label: string }[] = [
+  { id: 'tax', label: 'Tax' }, { id: 'insurance', label: 'Social Insurance' }, { id: 'health', label: 'Health Insurance' },
+  { id: 'pension', label: 'Pension' }, { id: 'special', label: 'Special' },
+]
+
+export function DeductionRuleDialog({ open, rule, onOpenChange, onSubmit }: {
   open: boolean
   rule: DeductionRule | null
-  positions: string[]
-  sites: SiteOption[]
   onOpenChange: (open: boolean) => void
   onSubmit: (values: DeductionRuleFormValues) => Promise<string | null>
-}
-
-function today() {
-  return new Date().toISOString().slice(0, 10)
-}
-
-function toFormValues(rule: DeductionRule | null): DeductionRuleFormValues {
-  if (!rule) {
-    return {
-      name: '',
-      type: 'tax',
-      deductionType: 'percentage',
-      value: '',
-      positionId: ALL_SCOPE,
-      siteId: ALL_SCOPE,
-      riskLevel: 'none',
-      effectiveDate: today(),
-      endDate: '',
-      status: 'active',
-    }
-  }
-  return {
-    name: rule.name,
-    type: rule.type,
-    deductionType: rule.deductionType,
-    value: String(rule.value),
-    positionId: rule.positionId,
-    siteId: rule.siteId,
-    riskLevel: rule.riskLevel ?? 'none',
-    effectiveDate: rule.effectiveDate,
-    endDate: rule.endDate ?? '',
-    status: rule.status,
-  }
-}
-
-export function DeductionRuleDialog({
-  open,
-  rule,
-  positions,
-  sites,
-  onOpenChange,
-  onSubmit,
-}: DeductionRuleDialogProps) {
-  const [form, setForm] = useState<DeductionRuleFormValues>(toFormValues(rule))
+}) {
+  const [form, setForm] = useState(empty)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-
   useEffect(() => {
-    if (open) {
-      setForm(toFormValues(rule))
-      setError(null)
-    }
-  }, [open, rule])
-
-  const update = <K extends keyof DeductionRuleFormValues>(
-    key: K,
-    value: DeductionRuleFormValues[K],
-  ) => setForm((prev) => ({ ...prev, [key]: value }))
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault()
-    setSaving(true)
+    setForm(rule ? { name: rule.name, type: rule.type, deductionType: rule.deductionType, value: String(rule.value), status: rule.status } : empty)
     setError(null)
-    const message = await onSubmit(form)
+  }, [rule, open])
+  const update = <K extends keyof DeductionRuleFormValues>(key: K, value: DeductionRuleFormValues[K]) => setForm((current) => ({ ...current, [key]: value }))
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault(); setSaving(true); setError(null)
+    const result = await onSubmit(form)
+    if (result) setError(result); else onOpenChange(false)
     setSaving(false)
-    if (message) setError(message)
   }
-
-  const positionOptions =
-    form.positionId !== ALL_SCOPE && !positions.includes(form.positionId)
-      ? [form.positionId, ...positions]
-      : positions
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>{rule ? 'Edit Deduction Rule' : 'Add Deduction Rule'}</DialogTitle>
-          <DialogDescription>
-            Rules apply to every employee in the selected position and site.
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="rule-name">Deduction Name</Label>
-            <Input
-              id="rule-name"
-              required
-              maxLength={200}
-              value={form.name}
-              onChange={(e) => update('name', e.target.value)}
-              placeholder="e.g., Income Tax (PPh 21)"
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Category</Label>
-              <Select value={form.type} onValueChange={(v) => update('type', v as DeductionRuleFormValues['type'])}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {deductionTypeGroups.map((group) => (
-                    <SelectItem key={group.id} value={group.id}>
-                      {group.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Calculation</Label>
-              <Select
-                value={form.deductionType}
-                onValueChange={(v) => update('deductionType', v as DeductionRuleFormValues['deductionType'])}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="percentage">Percentage (%)</SelectItem>
-                  <SelectItem value="fixed_amount">Fixed Amount (Rp)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="rule-value">Value</Label>
-              <Input
-                id="rule-value"
-                type="number"
-                required
-                min={0}
-                max={form.deductionType === 'percentage' ? 100 : 9999.9999}
-                step="any"
-                value={form.value}
-                onChange={(e) => update('value', e.target.value)}
-                placeholder={form.deductionType === 'percentage' ? 'e.g., 5' : 'e.g., 500'}
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Position</Label>
-              <Select value={form.positionId} onValueChange={(v) => update('positionId', v)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL_SCOPE}>All positions</SelectItem>
-                  {positionOptions.map((position) => (
-                    <SelectItem key={position} value={position}>
-                      {position}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Site</Label>
-              <Select value={form.siteId} onValueChange={(v) => update('siteId', v)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL_SCOPE}>All sites</SelectItem>
-                  {sites.map((site) => (
-                    <SelectItem key={site.id} value={site.id}>
-                      {site.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Status</Label>
-            <Select value={form.status} onValueChange={(v) => update('status', v as DeductionRuleFormValues['status'])}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {error && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
-            </p>
-          )}
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? 'Saving...' : 'Save'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent>
+    <DialogHeader><DialogTitle>{rule ? 'Edit Deduction Rule' : 'Add Deduction Rule'}</DialogTitle></DialogHeader>
+    <form onSubmit={submit} className="space-y-4">
+      <div className="space-y-2"><Label htmlFor="deduction-name">Deduction Name</Label><Input id="deduction-name" required value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="e.g., BPJS Employment" /></div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2"><Label>Category</Label><Select value={form.type} onValueChange={(v) => update('type', v as DeductionType)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{groups.map((group) => <SelectItem key={group.id} value={group.id}>{group.label}</SelectItem>)}</SelectContent></Select></div>
+        <div className="space-y-2"><Label>Calculation</Label><Select value={form.deductionType} onValueChange={(v) => update('deductionType', v as DeductionRuleFormValues['deductionType'])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="percentage">Percentage (%)</SelectItem><SelectItem value="fixed_amount">Fixed amount</SelectItem></SelectContent></Select></div>
+      </div>
+      <div className="space-y-2"><Label htmlFor="deduction-value">Value</Label><Input id="deduction-value" type="number" min="0" step="0.0001" required value={form.value} onChange={(e) => update('value', e.target.value)} placeholder={form.deductionType === 'percentage' ? 'e.g., 3' : 'e.g., 100000'} /></div>
+      <div className="space-y-2"><Label>Status</Label><Select value={form.status} onValueChange={(v) => update('status', v as DeductionRuleFormValues['status'])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select></div>
+      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button></div>
+    </form>
+  </DialogContent></Dialog>
 }

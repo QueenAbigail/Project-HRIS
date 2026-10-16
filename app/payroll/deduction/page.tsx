@@ -39,11 +39,6 @@ function toPayload(values: DeductionRuleFormValues) {
     type: values.type,
     deductionType: values.deductionType,
     value: Number(values.value),
-    positionId: values.positionId,
-    siteId: values.siteId,
-    riskLevel: values.riskLevel === 'none' ? null : values.riskLevel,
-    effectiveDate: values.effectiveDate,
-    endDate: values.endDate || null,
     status: values.status,
   }
 }
@@ -145,7 +140,6 @@ export default function ManageDeductionPage() {
             key={group.id}
             group={group}
             rules={groupRules}
-            sites={data?.sites ?? []}
             onEdit={openEdit}
             onDeactivate={setDeactivateTarget}
           />
@@ -155,8 +149,6 @@ export default function ManageDeductionPage() {
       <DeductionRuleDialog
         open={dialogOpen}
         rule={editingRule}
-        positions={data?.positions ?? []}
-        sites={data?.sites ?? []}
         onOpenChange={setDialogOpen}
         onSubmit={handleSubmit}
       />

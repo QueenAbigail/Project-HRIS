@@ -737,27 +737,39 @@ model OvertimeRule {
   @@map("overtime_rules")
 }
 
-// TABLE 3: Deduction Rules - Store deduction rates by position + site
+// TABLE 3: Deduction Rules - Reusable deduction definitions
 model DeductionRule {
-  id                String                   @id @default(cuid())
-  positionId        String // Position/job title
-  siteId            String // References site ID
-  name              String // e.g., "Income Tax", "Health Insurance"
-  type              DeductionType // tax, insurance, health, pension, special
-  deductionType     DeductionCalculationType // percentage or fixed_amount
-  value             Decimal                  @db.Decimal(8, 4) // % or fixed amount
-  isApplicableToAll Boolean                  @default(true) // Applies to all employees in this position/site
-  riskLevel         String? // low, medium, high - for health/insurance variations
-  effectiveDate     DateTime                 @db.Date
-  endDate           DateTime?                @db.Date
-  status            String                   @default("active") // active / inactive
-  createdAt         DateTime                 @default(now())
-  updatedAt         DateTime                 @updatedAt
+  id            String                   @id @default(cuid())
+  name          String
+  type          DeductionType
+  deductionType DeductionCalculationType
+  value         Decimal                  @db.Decimal(8, 4)
+  status        String                   @default("active")
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
 
-  @@unique([positionId, siteId, type, riskLevel])
-  @@index([siteId])
+  assignments   DeductionRuleSiteAssignment[]
+  applied       PayrollDeductionApplied[]
+
+  @@unique([name, type])
   @@index([status])
   @@map("deduction_rules")
+}
+
+// TABLE 3b: Assign reusable deduction rules to the sites that use them
+model DeductionRuleSiteAssignment {
+  id              String        @id @default(cuid())
+  deductionRuleId String
+  siteId          String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  deductionRule DeductionRule @relation(fields: [deductionRuleId], references: [id], onDelete: Cascade)
+  site          Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([deductionRuleId, siteId])
+  @@index([siteId])
+  @@map("deduction_rule_site_assignments")
 }
 
 // TABLE 4: Payroll Periods - Define payroll periods and approval workflow
