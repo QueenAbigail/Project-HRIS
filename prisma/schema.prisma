@@ -124,6 +124,7 @@ model Site {
   shiftSwaps               ShiftSwap[]
   employeeShiftAssignments EmployeeShiftAssignment[]
   announcements            Announcement[]            @relation("SiteAnnouncements")
+  deductionAssignments     DeductionRuleSiteAssignment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -872,6 +873,7 @@ model PayrollDeductionsApplied {
   payrollPeriodId String // References payroll period
   payrollPeriod   PayrollPeriod @relation("PeriodDeductionsApplied", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
   deductionRuleId String // References deduction rule
+  deductionRule   DeductionRule @relation(fields: [deductionRuleId], references: [id], onDelete: Restrict)
 
   baseSalary       Decimal                  @db.Decimal(15, 2) // Used for percentage calculations
   deductionType    String // Stores type for reference

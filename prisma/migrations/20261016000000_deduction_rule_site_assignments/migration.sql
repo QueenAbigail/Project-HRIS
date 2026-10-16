@@ -22,3 +22,5 @@ CREATE INDEX "deduction_rule_site_assignments_siteId_idx" ON "deduction_rule_sit
 
 ALTER TABLE "deduction_rule_site_assignments" ADD CONSTRAINT "deduction_rule_site_assignments_deductionRuleId_fkey" FOREIGN KEY ("deductionRuleId") REFERENCES "deduction_rules"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "deduction_rule_site_assignments" ADD CONSTRAINT "deduction_rule_site_assignments_siteId_fkey" FOREIGN KEY ("siteId") REFERENCES "sites"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "payroll_deductions_applied" ADD CONSTRAINT "payroll_deductions_applied_deductionRuleId_fkey" FOREIGN KEY ("deductionRuleId") REFERENCES "deduction_rules"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
