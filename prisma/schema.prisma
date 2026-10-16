@@ -125,6 +125,7 @@ model Site {
   employeeShiftAssignments EmployeeShiftAssignment[]
   announcements            Announcement[]            @relation("SiteAnnouncements")
   deductionAssignments     DeductionRuleSiteAssignment[]
+  salaryBases              SalaryBase[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -703,11 +704,29 @@ enum OvertimeHoursStatus {
   rejected
 }
 
+// Salary Base - Regional minimum wage (UMK/UMP) per site, effective-dated so a raise can be scheduled ahead
+model SalaryBase {
+  id            String   @id @default(cuid())
+  siteId        String
+  site          Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  minimumWage   Decimal  @db.Decimal(15, 2)
+  effectiveDate DateTime @db.Date // First day of the month this wage starts to apply
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  salaryRules   SalaryRule[]
+
+  @@unique([siteId, effectiveDate])
+  @@index([siteId])
+  @@map("salary_base")
+}
+
 // TABLE 1: Salary Rules - Store salary configuration by position + site
 model SalaryRule {
   id                String    @id @default(cuid())
   positionId        String // References position/job title
   siteId            String // References site ID
+  salaryBaseId      String? // Minimum wage record this rule was calculated from
+  salaryBase        SalaryBase? @relation(fields: [salaryBaseId], references: [id], onDelete: SetNull)
   baseSalary        Decimal   @db.Decimal(15, 2) // Monthly base salary
   positionAllowance Decimal   @db.Decimal(15, 2) // Position-specific allowance (e.g., risk allowance)
   minimumWage       Decimal   @db.Decimal(15, 2) // Government minimum wage baseline
@@ -719,6 +738,7 @@ model SalaryRule {
 
   @@unique([positionId, siteId])
   @@index([siteId])
+  @@index([salaryBaseId])
   @@index([status])
   @@map("salary_rules")
 }

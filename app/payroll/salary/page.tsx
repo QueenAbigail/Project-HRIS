@@ -24,6 +24,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Plus, Edit2, Trash2, MapPin, Loader2, Save, X } from 'lucide-react'
+import { BaseSalaryTab } from '@/components/payroll/salary/base-salary-tab'
 
 interface SalaryRule {
   id: string
@@ -175,8 +176,6 @@ export default function ManageSalaryPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
-  const [editingMinWage, setEditingMinWage] = useState<{ siteId: string; wage: number } | null>(null)
-  const [minWageEditOpen, setMinWageEditOpen] = useState(false)
   const [showAllPositions, setShowAllPositions] = useState(false)
 
   const groupedRules = mockSites.map(site => {
@@ -234,23 +233,6 @@ export default function ManageSalaryPage() {
       setSalaryRules(prev => prev.filter(r => r.id !== deleteTarget))
       setDeleteOpen(false)
       setDeleteTarget(null)
-    }
-  }
-
-  const handleEditMinWage = (siteId: string, wage: number) => {
-    setEditingMinWage({ siteId, wage })
-    setMinWageEditOpen(true)
-  }
-
-  const handleSaveMinWage = () => {
-    if (editingMinWage) {
-      setSalaryRules(prev => prev.map(r => 
-        r.siteId === editingMinWage.siteId 
-          ? { ...r, minimumWage: editingMinWage.wage }
-          : r
-      ))
-      setMinWageEditOpen(false)
-      setEditingMinWage(null)
     }
   }
 
@@ -377,50 +359,7 @@ export default function ManageSalaryPage() {
       )}
 
       {/* Manage Base Salary View */}
-      {view === 'base' && (
-        <div className="space-y-6">
-          <div className="grid gap-4">
-            {mockSites.map((site) => {
-              const currentMinWage = salaryRules.find(r => r.siteId === site.id)?.minimumWage || site.minimumWage
-              return (
-                <Card key={site.id}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <MapPin className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <CardTitle>{site.name}</CardTitle>
-                          <CardDescription>{site.location}</CardDescription>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={() => handleEditMinWage(site.id, currentMinWage)}
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                        Set Minimum Wage
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="p-4 bg-muted rounded-lg">
-                      <Label className="text-muted-foreground text-xs uppercase tracking-wide">Current Minimum Wage</Label>
-                      <p className="text-3xl font-bold mt-2">{formatCurrency(currentMinWage)}</p>
-                    </div>
-                    <div className="text-sm text-muted-foreground space-y-2">
-                      <p>• All positions at this site will use this minimum wage as their base calculation</p>
-                      <p>• Position allowances are added to this minimum wage to calculate final base salary</p>
-                      <p>• Updating this value will affect all position calculations for {site.name}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        </div>
-      )}
+      {view === 'base' && <BaseSalaryTab />}
 
       {/* Edit Position Allowance Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
@@ -460,41 +399,6 @@ export default function ManageSalaryPage() {
                 <Button onClick={handleSaveRule} className="gap-2">
                   <Save className="h-4 w-4" />
                   Save Changes
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Minimum Wage Dialog */}
-      <Dialog open={minWageEditOpen} onOpenChange={setMinWageEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Minimum Wage</DialogTitle>
-            <DialogDescription>
-              Set the minimum wage for {editingMinWage && mockSites.find(s => s.id === editingMinWage.siteId)?.name}
-            </DialogDescription>
-          </DialogHeader>
-          {editingMinWage && (
-            <div className="space-y-4">
-              <div>
-                <Label>Minimum Wage</Label>
-                <Input
-                  type="number"
-                  value={editingMinWage.wage}
-                  onChange={(e) => setEditingMinWage({ ...editingMinWage, wage: parseInt(e.target.value) || 0 })}
-                  className="mt-2"
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  This is the base salary for all positions at this site before position allowance is added.
-                </p>
-              </div>
-              <div className="flex gap-3 justify-end">
-                <Button variant="outline" onClick={() => setMinWageEditOpen(false)}>Cancel</Button>
-                <Button onClick={handleSaveMinWage} className="gap-2">
-                  <Save className="h-4 w-4" />
-                  Update
                 </Button>
               </div>
             </div>
