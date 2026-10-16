@@ -727,6 +727,7 @@ model SalaryRule {
 model OvertimeRule {
   id               String           @id @default(cuid())
   type             OvertimeRuleType // regular_backup, national_holiday, overtime_weekly
+  hour             Int              @default(1) // Overtime hour tier (1 = first hour, 2 = second hour, ...)
   description      String // e.g., "National Holiday Duty"
   multiplier       Decimal          @db.Decimal(3, 2) // e.g., 1.5, 2.0, 2.5
   maxHoursPerMonth Int? // e.g., 20 hours max per month
@@ -734,6 +735,7 @@ model OvertimeRule {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
+  @@unique([type, hour])
   @@index([status])
   @@map("overtime_rules")
 }
