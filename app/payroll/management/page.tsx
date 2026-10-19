@@ -251,7 +251,7 @@ export default function PayrollManagementPage() {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Site Overview</TabsTrigger>
-          <TabsTrigger value="details">Site Details</TabsTrigger>
+          <TabsTrigger value="details">Site Details <span className="ml-1 hidden text-xs text-muted-foreground sm:inline">(Read-only)</span></TabsTrigger>
           <TabsTrigger value="validation">Issues & Validation</TabsTrigger>
         </TabsList>
 
@@ -330,11 +330,15 @@ export default function PayrollManagementPage() {
                         </CardDescription>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Badge variant="outline" className={statusStyles[selectedSite.status]}>
-                        {selectedSite.status.charAt(0).toUpperCase() + selectedSite.status.slice(1)}
-                      </Badge>
-                    </div>
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline" className={statusStyles[selectedSite.status]}>
+                          {selectedSite.status.charAt(0).toUpperCase() + selectedSite.status.slice(1)}
+                        </Badge>
+                        <Button onClick={() => router.push(`/payroll/management/${selectedSite.siteId}`)}>
+                          <Edit className="mr-2 size-4" />
+                          Manage Payroll
+                        </Button>
+                      </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -383,26 +387,12 @@ export default function PayrollManagementPage() {
                       Last updated: {selectedSite.lastUpdated}
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                      {selectedSite.status === 'draft' && (
-                        <>
-                          <Button variant="outline">
-                            <Edit className="size-4 mr-2" />
-                            Edit Payroll
-                          </Button>
-                          <Button onClick={() => setLockOpen(true)}>
-                            <Lock className="size-4 mr-2" />
-                            Lock Site
-                          </Button>
-                        </>
-                      )}
-                      {selectedSite.status === 'processing' && (
-                        <Button disabled>
-                          Processing...
-                        </Button>
-                      )}
+                      <p className="max-w-md text-sm text-muted-foreground">
+                        Read-only overview. Use Manage Payroll to edit employee pay, add adjustments, or finalize this site.
+                      </p>
                       <Button variant="outline">
-                        <Download className="size-4 mr-2" />
-                        Export
+                        <Download className="mr-2 size-4" />
+                        Export Overview
                       </Button>
                     </div>
                   </div>
@@ -448,9 +438,9 @@ export default function PayrollManagementPage() {
                       </TableBody>
                     </Table>
                   </div>
-                  <Button className="mt-4" variant="outline">
-                    Add Adjustment
-                  </Button>
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    Adjustments are managed from the Manage Payroll workspace.
+                  </p>
                 </CardContent>
               </Card>
             </div>
