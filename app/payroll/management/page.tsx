@@ -260,33 +260,33 @@ export default function PayrollManagementPage() {
                 <Table className="min-w-[1120px]">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Site Name</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead className="text-right">Employees</TableHead>
+                      <TableHead className="text-center">Site Name</TableHead>
+                      <TableHead className="text-center">Location</TableHead>
+                      <TableHead className="text-center">Employees</TableHead>
                       <TableHead className="text-right">Gross Payroll</TableHead>
                       <TableHead className="text-right">Bonus</TableHead>
                       <TableHead className="text-right">Deductions</TableHead>
                       <TableHead className="text-right">Net Payroll</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                      <TableHead className="text-center">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {sitePayrolls.map((site) => (
                       <TableRow key={site.siteId} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">{site.siteName}</TableCell>
-                        <TableCell className="text-right text-sm">{site.location}</TableCell>
-                        <TableCell className="text-right text-sm">{site.employees}</TableCell>
+                        <TableCell className="text-center font-medium">{site.siteName}</TableCell>
+                        <TableCell className="text-center text-sm">{site.location}</TableCell>
+                        <TableCell className="text-center text-sm">{site.employees}</TableCell>
                         <TableCell className="text-right text-sm">{formatCurrency(site.grossPayroll)}</TableCell>
                         <TableCell className="text-right text-sm text-success">{formatCurrency(site.bonusAmount)}</TableCell>
                         <TableCell className="text-right text-sm text-destructive">{formatCurrency(site.deductionsAmount)}</TableCell>
                         <TableCell className="text-right text-sm font-medium text-success">{formatCurrency(site.netPayroll)}</TableCell>
-                        <TableCell>
+                        <TableCell className="text-center">
                           <Badge variant="outline" className={statusStyles[site.status]}>
                             {site.status.charAt(0).toUpperCase() + site.status.slice(1)}
                           </Badge>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap text-right">
+                        <TableCell className="whitespace-nowrap text-center">
                           <Button
                             variant="ghost"
                             size="sm"
