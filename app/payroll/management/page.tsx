@@ -54,6 +54,7 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import { KpiCard } from '@/components/payroll/kpi-card'
 
 interface SitePayroll {
   siteId: string
@@ -238,66 +239,12 @@ export default function PayrollManagementPage() {
       </div>
 
       {/* Overall Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-5">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Users className="size-4" />
-              Total Employees
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{totalEmployees}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <DollarSign className="size-4" />
-              Gross Payroll
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{formatCurrency(totalGrossPayroll)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="size-4" />
-              Bonus
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-success">{formatCurrency(totalBonus)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <AlertCircle className="size-4" />
-              Deductions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-destructive">{formatCurrency(totalDeductions)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Check className="size-4" />
-              Net Payroll
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-success">{formatCurrency(totalNetPayroll)}</p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] gap-4">
+        <KpiCard label="Total Employees" value={String(totalEmployees)} icon={Users} />
+        <KpiCard label="Gross Payroll" value={formatCurrency(totalGrossPayroll)} icon={DollarSign} />
+        <KpiCard label="Bonus" value={formatCurrency(totalBonus)} icon={TrendingUp} tone="success" />
+        <KpiCard label="Deductions" value={formatCurrency(totalDeductions)} icon={AlertCircle} tone="destructive" />
+        <KpiCard label="Net Payroll" value={formatCurrency(totalNetPayroll)} icon={Check} tone="success" />
       </div>
 
       {/* Site Selection and Management */}
