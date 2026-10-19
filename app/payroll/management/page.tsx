@@ -256,12 +256,12 @@ export default function PayrollManagementPage() {
               <CardDescription>Click on a site to view details and manage payroll adjustments</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border overflow-x-auto">
-                <Table>
+              <div className="overflow-x-auto rounded-lg border">
+                <Table className="min-w-[1120px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Site Name</TableHead>
-                      <TableHead className="text-right">Location</TableHead>
+                      <TableHead>Location</TableHead>
                       <TableHead className="text-right">Employees</TableHead>
                       <TableHead className="text-right">Gross Payroll</TableHead>
                       <TableHead className="text-right">Bonus</TableHead>
@@ -286,7 +286,7 @@ export default function PayrollManagementPage() {
                             {site.status.charAt(0).toUpperCase() + site.status.slice(1)}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="whitespace-nowrap text-right">
                           <Button
                             variant="ghost"
                             size="sm"
