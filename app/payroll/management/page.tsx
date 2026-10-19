@@ -330,15 +330,9 @@ export default function PayrollManagementPage() {
                         </CardDescription>
                       </div>
                     </div>
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline" className={statusStyles[selectedSite.status]}>
-                          {selectedSite.status.charAt(0).toUpperCase() + selectedSite.status.slice(1)}
-                        </Badge>
-                        <Button onClick={() => router.push(`/payroll/management/${selectedSite.siteId}`)}>
-                          <Edit className="mr-2 size-4" />
-                          Manage Payroll
-                        </Button>
-                      </div>
+                      <Badge variant="outline" className={statusStyles[selectedSite.status]}>
+                        {selectedSite.status.charAt(0).toUpperCase() + selectedSite.status.slice(1)}
+                      </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -388,7 +382,7 @@ export default function PayrollManagementPage() {
                     </div>
                     <div className="flex gap-2 flex-wrap">
                       <p className="max-w-md text-sm text-muted-foreground">
-                        Read-only overview. Use Manage Payroll to edit employee pay, add adjustments, or finalize this site.
+                        Read-only overview. Manage payroll from the Site Overview tab.
                       </p>
                       <Button variant="outline">
                         <Download className="mr-2 size-4" />
