@@ -13,7 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
 import {
   Dialog,
   DialogContent,
@@ -246,13 +246,9 @@ export default function PayrollManagementPage() {
         <KpiCard label="Net Payroll" value={formatCurrency(totalNetPayroll)} icon={Check} tone="success" />
       </div>
 
-      {/* Site Selection and Management */}
+      {/* Site Overview */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-1">
-          <TabsTrigger value="overview">Site Overview</TabsTrigger>
-        </TabsList>
-
-        {/* Site Overview Tab */}
+        {/* Site Overview Content */}
         <TabsContent value="overview" className="space-y-4">
           <Card>
             <CardHeader>
