@@ -49,7 +49,6 @@ import {
   Users,
   DollarSign,
   AlertTriangle,
-  Edit,
   MapPin,
   TrendingUp,
 } from 'lucide-react'
@@ -409,7 +408,6 @@ export default function PayrollManagementPage() {
                           <TableHead>Amount</TableHead>
                           <TableHead>Reason</TableHead>
                           <TableHead>Date</TableHead>
-                          <TableHead>Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -424,9 +422,6 @@ export default function PayrollManagementPage() {
                             <TableCell className="font-medium text-right">{formatCurrency(adj.amount)}</TableCell>
                             <TableCell className="text-sm">{adj.reason}</TableCell>
                             <TableCell className="text-sm">{adj.date}</TableCell>
-                            <TableCell>
-                              <Button variant="ghost" size="sm">Edit</Button>
-                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
