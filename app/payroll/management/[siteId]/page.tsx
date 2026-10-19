@@ -286,7 +286,7 @@ export default function SiteManagementPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -295,7 +295,7 @@ export default function SiteManagementPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{siteInfo.employees}</p>
+            <p className="truncate text-xl font-bold tabular-nums xl:text-2xl">{siteInfo.employees}</p>
           </CardContent>
         </Card>
 
@@ -307,7 +307,7 @@ export default function SiteManagementPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{formatCurrency(siteInfo.grossPayroll)}</p>
+            <p className="truncate text-xl font-bold tabular-nums xl:text-2xl" title={formatCurrency(siteInfo.grossPayroll)}>{formatCurrency(siteInfo.grossPayroll)}</p>
           </CardContent>
         </Card>
 
@@ -319,7 +319,7 @@ export default function SiteManagementPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-success">{formatCurrency(siteInfo.bonusAmount)}</p>
+            <p className="truncate text-xl font-bold tabular-nums xl:text-2xl text-success" title={formatCurrency(siteInfo.bonusAmount)}>{formatCurrency(siteInfo.bonusAmount)}</p>
           </CardContent>
         </Card>
 
@@ -328,7 +328,7 @@ export default function SiteManagementPage() {
             <CardTitle className="text-sm font-medium">Deductions</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-destructive">{formatCurrency(siteInfo.deductionsAmount)}</p>
+            <p className="truncate text-xl font-bold tabular-nums xl:text-2xl text-destructive" title={formatCurrency(siteInfo.deductionsAmount)}>{formatCurrency(siteInfo.deductionsAmount)}</p>
           </CardContent>
         </Card>
 
@@ -337,7 +337,7 @@ export default function SiteManagementPage() {
             <CardTitle className="text-sm font-medium">Net Payroll</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-success">{formatCurrency(siteInfo.netPayroll)}</p>
+            <p className="truncate text-xl font-bold tabular-nums xl:text-2xl text-success" title={formatCurrency(siteInfo.netPayroll)}>{formatCurrency(siteInfo.netPayroll)}</p>
           </CardContent>
         </Card>
       </div>

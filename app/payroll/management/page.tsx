@@ -238,7 +238,7 @@ export default function PayrollManagementPage() {
       </div>
 
       {/* Overall Summary Cards */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <KpiCard label="Total Employees" value={String(totalEmployees)} icon={Users} />
         <KpiCard label="Gross Payroll" value={formatCurrency(totalGrossPayroll)} icon={DollarSign} />
         <KpiCard label="Bonus" value={formatCurrency(totalBonus)} icon={TrendingUp} tone="success" />
