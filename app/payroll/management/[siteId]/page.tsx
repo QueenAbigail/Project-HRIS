@@ -42,7 +42,6 @@ import {
 import {
   ArrowLeft,
   MapPin,
-  Users,
   DollarSign,
   TrendingUp,
   Edit,
@@ -286,19 +285,7 @@ export default function SiteManagementPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Total Employees
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="truncate text-xl font-bold tabular-nums xl:text-2xl">{siteInfo.employees}</p>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
