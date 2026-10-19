@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { resolveEmployeePosition } from '@/lib/position-resolver'
 import { revalidatePath } from 'next/cache'
 
 function friendlyEmployeeError(error: unknown): string {
@@ -169,6 +170,15 @@ export async function updateEmployeeAction(userId: string, formData: any) {
       }
     }
 
+    if (updateData.position !== undefined || formData.positionId) {
+      const resolved = await resolveEmployeePosition({
+        positionId: formData.positionId,
+        position: updateData.position,
+      })
+      if (resolved.position) updateData.position = resolved.position
+      updateData.positionId = resolved.positionId
+    }
+
     // 3. Handle location/siteId and auto-update companyId
     if (formData.location && formData.location !== '') {
       updateData.siteId = formData.location
@@ -239,6 +249,11 @@ export async function createEmployeeAction(formData: any) {
     if (authError) throw new Error("Gagal bikin kunci akses (Auth): " + authError.message)
     authUserId = authData.user.id; // Simpen ID-nya
 
+    const resolvedPosition = await resolveEmployeePosition({
+      positionId: formData.positionId,
+      position: formData.position,
+    })
+
     // 3. Masukin Data ke Prisma
     await prisma.user.create({
       data: {
@@ -248,7 +263,10 @@ export async function createEmployeeAction(formData: any) {
         email: hrisEmail, 
         personalEmail: formData.personalEmail,
         department: formData.department,
-        position: formData.position,
+        position: resolvedPosition.position,
+        ...(resolvedPosition.positionId
+          ? { positionRef: { connect: { id: resolvedPosition.positionId } } }
+          : {}),
         role: formData.systemRole, // Pastikan dari frontend ngirim string yang match sama Enum lu
         
         // Relasi ke lokasi (site)

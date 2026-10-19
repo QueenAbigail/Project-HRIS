@@ -11,8 +11,6 @@ async function access() {
   return canManagePayroll(user.role) ? null : NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 }
 
-const normalize = (value: string) => value.trim().toLowerCase()
-
 export async function GET() {
   const denied = await access(); if (denied) return denied
   try {
@@ -25,18 +23,17 @@ export async function GET() {
       prisma.masterData.findMany({ where: { category: 'position' }, orderBy: { value: 'asc' } }),
       prisma.salaryRule.findMany(),
       prisma.user.groupBy({
-        by: ['siteId', 'position'],
-        where: { status: 'ACTIVE', position: { not: null } },
+        by: ['siteId', 'positionId'],
+        where: { status: 'ACTIVE', positionId: { not: null } },
         _count: { _all: true },
       }),
     ])
 
     const nameById = new Map(masterPositions.map((p) => [p.id, p.value]))
-    const idByName = new Map(masterPositions.map((p) => [normalize(p.value), p.id]))
 
     const employeesBySite = new Map<string, Map<string, number>>()
     for (const row of headcount) {
-      const positionId = row.position ? idByName.get(normalize(row.position)) : undefined
+      const positionId = row.positionId
       if (!positionId) continue
       const counts = employeesBySite.get(row.siteId) ?? new Map<string, number>()
       counts.set(positionId, (counts.get(positionId) ?? 0) + row._count._all)

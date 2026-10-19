@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { loadPositionLookup } from '@/lib/position-resolver'
 import { createClient } from '@supabase/supabase-js'
 
 // Lazy initialize Supabase client to avoid build-time errors
@@ -134,6 +135,8 @@ export async function POST(request: NextRequest) {
     const start = Math.max(0, Number(formData.get('start') || 0))
     const end = Math.min(normalizedData.length, Number(formData.get('end') || normalizedData.length))
     const rowsToImport = normalizedData.slice(start, end)
+
+    const positionLookup = await loadPositionLookup()
 
     // Import employees
     const results = {
@@ -311,6 +314,8 @@ export async function POST(request: NextRequest) {
           supervisorId = supervisor?.id || null
         }
 
+        const matchedPosition = positionLookup.resolveByName(row['Position'])
+
         // Prepare user data with NULL handling
         const userData = {
           id: userId,
@@ -320,7 +325,8 @@ export async function POST(request: NextRequest) {
           personalEmail: toNullIfEmpty(row['Personal Email']),
           initials: fullName?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 3),
           department: row['Department'] || 'Unassigned',
-          position: row['Position'] || 'Unassigned',
+          position: matchedPosition?.value ?? (row['Position'] || 'Unassigned'),
+          positionId: matchedPosition?.id ?? null,
           siteId: site.id,
           companyId: site.companyId,
           supervisorId: supervisorId,

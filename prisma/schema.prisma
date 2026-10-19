@@ -173,6 +173,8 @@ model User {
   avatar                   String?
   department               String?
   position                 String?
+  positionId               String?
+  positionRef              MasterData?                 @relation("UserPosition", fields: [positionId], references: [id], onDelete: SetNull)
   role                     Role                        @default(STAFF)
   companyId                String?
   company                  Company?                    @relation(fields: [companyId], references: [id], onDelete: SetNull)
@@ -228,6 +230,7 @@ model User {
   @@index([companyId])
   @@index([supervisorId])
   @@index([email])
+  @@index([positionId])
   @@map("users")
 }
 
@@ -322,6 +325,7 @@ model MasterData {
   category String
   value    String
   isActive Boolean @default(true)
+  users    User[]  @relation("UserPosition")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
