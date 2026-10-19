@@ -302,7 +302,7 @@ export default function MonthlyRecapPage() {
       </div>
 
       {/* Current Month Summary Cards */}
-      <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="min-w-0">
 
           <CardHeader className="pb-3">
@@ -344,15 +344,7 @@ export default function MonthlyRecapPage() {
           </CardContent>
         </Card>
 
-        <Card className="min-w-0">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Avg Per Employee</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xl font-bold leading-tight break-words sm:text-2xl">{formatCurrency(latestRecord.averagePerEmployee)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Net average</p>
-          </CardContent>
-        </Card>
+
       </div>
 
       {/* Trend Indicators */}
