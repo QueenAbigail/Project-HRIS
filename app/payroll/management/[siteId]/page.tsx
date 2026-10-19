@@ -343,12 +343,66 @@ export default function SiteManagementPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="employees" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="summary" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="summary">Site Summary</TabsTrigger>
           <TabsTrigger value="employees">Employee Payroll</TabsTrigger>
           <TabsTrigger value="adjustments">Adjustments</TabsTrigger>
+          <TabsTrigger value="validation">Issues & Validation</TabsTrigger>
           <TabsTrigger value="finalize">Finalize & Lock</TabsTrigger>
         </TabsList>
+
+        {/* Site Summary Tab */}
+        <TabsContent value="summary" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>{siteInfo.siteName} Payroll Summary</CardTitle>
+              <CardDescription>
+                Read-only overview for {siteInfo.location} during the {`March 2026`} payroll period.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Payroll status</p>
+                <Badge variant="outline" className="mt-2 bg-slate-100 text-slate-700">{siteInfo.status.charAt(0).toUpperCase() + siteInfo.status.slice(1)}</Badge>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Last updated</p>
+                <p className="mt-2 font-medium">March 31, 2026 at 2:30 PM</p>
+              </div>
+              <div className="rounded-lg border p-4 md:col-span-2">
+                <p className="text-sm text-muted-foreground">Payroll formula</p>
+                <p className="mt-2 font-medium">Gross payroll + bonuses − deductions = net payroll</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Validation Tab */}
+        <TabsContent value="validation" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-600" />
+                Issues & Validation
+              </CardTitle>
+              <CardDescription>Resolve these items before finalizing {siteInfo.siteName} payroll.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                Validation checks are shown here for this site only. Payroll cannot be safely finalized until blocking issues are resolved.
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="font-medium">Missing attendance records</p>
+                <p className="mt-1 text-sm text-muted-foreground">Review attendance and timesheet data for 2 employees.</p>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="font-medium">Budget review</p>
+                <p className="mt-1 text-sm text-muted-foreground">Confirm the Field Security budget variance before locking.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Employee Payroll Tab */}
         <TabsContent value="employees" className="space-y-4">

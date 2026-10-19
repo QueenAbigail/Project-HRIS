@@ -248,10 +248,8 @@ export default function PayrollManagementPage() {
 
       {/* Site Selection and Management */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1">
           <TabsTrigger value="overview">Site Overview</TabsTrigger>
-          <TabsTrigger value="details">Site Details <span className="ml-1 hidden text-xs text-muted-foreground sm:inline">(Read-only)</span></TabsTrigger>
-          <TabsTrigger value="validation">Issues & Validation</TabsTrigger>
         </TabsList>
 
         {/* Site Overview Tab */}
