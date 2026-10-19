@@ -309,7 +309,7 @@ export default function MonthlyRecapPage() {
             <CardTitle className="text-sm font-medium">Current Payroll</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xl font-bold leading-tight break-words sm:text-2xl">{formatCurrency(latestRecord.totalPayroll)}</p>
+            <p className="truncate text-lg font-bold leading-tight sm:text-xl">{formatCurrency(latestRecord.totalPayroll)}</p>
             <p className="text-xs text-muted-foreground mt-1">{latestRecord.totalEmployees} employees</p>
           </CardContent>
         </Card>
@@ -319,7 +319,7 @@ export default function MonthlyRecapPage() {
             <CardTitle className="text-sm font-medium">Total Bonus</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xl font-bold leading-tight break-words text-success sm:text-2xl">{formatCurrency(latestRecord.totalBonus)}</p>
+            <p className="truncate text-lg font-bold leading-tight text-success sm:text-xl">{formatCurrency(latestRecord.totalBonus)}</p>
             <p className="text-xs text-muted-foreground mt-1">{latestRecord.month}</p>
           </CardContent>
         </Card>
@@ -329,7 +329,7 @@ export default function MonthlyRecapPage() {
             <CardTitle className="text-sm font-medium">Deductions</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xl font-bold leading-tight break-words text-destructive sm:text-2xl">{formatCurrency(latestRecord.totalDeductions)}</p>
+            <p className="truncate text-lg font-bold leading-tight text-destructive sm:text-xl">{formatCurrency(latestRecord.totalDeductions)}</p>
             <p className="text-xs text-muted-foreground mt-1">{((latestRecord.totalDeductions / latestRecord.totalPayroll) * 100).toFixed(1)}% of payroll</p>
           </CardContent>
         </Card>
@@ -339,7 +339,7 @@ export default function MonthlyRecapPage() {
             <CardTitle className="text-sm font-medium">Net Payroll</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xl font-bold leading-tight break-words text-success sm:text-2xl">{formatCurrency(latestRecord.netPayroll)}</p>
+            <p className="truncate text-lg font-bold leading-tight text-success sm:text-xl">{formatCurrency(latestRecord.netPayroll)}</p>
             <p className="text-xs text-muted-foreground mt-1">After deductions</p>
           </CardContent>
         </Card>
