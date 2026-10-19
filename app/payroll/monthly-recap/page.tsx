@@ -302,53 +302,54 @@ export default function MonthlyRecapPage() {
       </div>
 
       {/* Current Month Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-5">
-        <Card>
+      <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <Card className="min-w-0">
+
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Current Payroll</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{formatCurrency(latestRecord.totalPayroll)}</p>
+            <p className="text-xl font-bold leading-tight break-words sm:text-2xl">{formatCurrency(latestRecord.totalPayroll)}</p>
             <p className="text-xs text-muted-foreground mt-1">{latestRecord.totalEmployees} employees</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Total Bonus</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-success">{formatCurrency(latestRecord.totalBonus)}</p>
+            <p className="text-xl font-bold leading-tight break-words text-success sm:text-2xl">{formatCurrency(latestRecord.totalBonus)}</p>
             <p className="text-xs text-muted-foreground mt-1">{latestRecord.month}</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Deductions</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-destructive">{formatCurrency(latestRecord.totalDeductions)}</p>
+            <p className="text-xl font-bold leading-tight break-words text-destructive sm:text-2xl">{formatCurrency(latestRecord.totalDeductions)}</p>
             <p className="text-xs text-muted-foreground mt-1">{((latestRecord.totalDeductions / latestRecord.totalPayroll) * 100).toFixed(1)}% of payroll</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Net Payroll</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-success">{formatCurrency(latestRecord.netPayroll)}</p>
+            <p className="text-xl font-bold leading-tight break-words text-success sm:text-2xl">{formatCurrency(latestRecord.netPayroll)}</p>
             <p className="text-xs text-muted-foreground mt-1">After deductions</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium">Avg Per Employee</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{formatCurrency(latestRecord.averagePerEmployee)}</p>
+            <p className="text-xl font-bold leading-tight break-words sm:text-2xl">{formatCurrency(latestRecord.averagePerEmployee)}</p>
             <p className="text-xs text-muted-foreground mt-1">Net average</p>
           </CardContent>
         </Card>
