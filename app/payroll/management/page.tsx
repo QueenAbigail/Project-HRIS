@@ -405,7 +405,7 @@ export default function PayrollManagementPage() {
                         <TableRow>
                           <TableHead>Employee</TableHead>
                           <TableHead>Type</TableHead>
-                          <TableHead>Amount</TableHead>
+                          <TableHead className="text-right">Amount</TableHead>
                           <TableHead>Reason</TableHead>
                           <TableHead>Date</TableHead>
                         </TableRow>
