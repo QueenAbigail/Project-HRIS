@@ -263,10 +263,10 @@ export default function PayrollManagementPage() {
                       <TableHead className="text-center">Site Name</TableHead>
                       <TableHead className="text-center">Location</TableHead>
                       <TableHead className="text-center">Employees</TableHead>
-                      <TableHead className="text-right">Gross Payroll</TableHead>
-                      <TableHead className="text-right">Bonus</TableHead>
-                      <TableHead className="text-right">Deductions</TableHead>
-                      <TableHead className="text-right">Net Payroll</TableHead>
+                      <TableHead className="text-center">Gross Payroll</TableHead>
+                      <TableHead className="text-center">Bonus</TableHead>
+                      <TableHead className="text-center">Deductions</TableHead>
+                      <TableHead className="text-center">Net Payroll</TableHead>
                       <TableHead className="text-center">Status</TableHead>
                       <TableHead className="text-center">Action</TableHead>
                     </TableRow>
