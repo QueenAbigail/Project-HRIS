@@ -536,7 +536,7 @@ export default function SiteManagementPage() {
 
       {/* Employee Payroll Details Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-h-[calc(100vh-2rem)] max-w-4xl overflow-hidden p-0">
+        <DialogContent className="w-[calc(100vw-1rem)] max-h-[calc(100vh-2rem)] max-w-none overflow-hidden p-0 sm:w-[calc(100vw-4rem)] lg:w-[calc(100vw-8rem)]">
           <DialogHeader className="border-b px-6 py-5">
             {payrollDetail ? (
               <div className="flex items-center gap-3">
