@@ -566,13 +566,24 @@ export default function SiteManagementPage() {
                     </p>
                   </div>
                   {payrollDetail === 'overtime' ? (
-                    <div className="rounded-lg border p-4 text-sm">
-                      <h3 className="font-semibold">Calculation source</h3>
-                      <dl className="mt-3 space-y-3">
-                        <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Approved overtime</dt><dd className="font-medium">{editingEmployee.overtimeHours || 0} hours</dd></div>
-                        <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Applied rule</dt><dd className="text-right font-medium">{editingEmployee.overtimeRule || 'Active overtime rule'}</dd></div>
-                        <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Exceptional changes</dt><dd className="font-medium">Adjustments tab</dd></div>
-                      </dl>
+                    <div className="space-y-3">
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Overtime days</p><p className="mt-1 text-xl font-semibold">2 days</p></div>
+                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Total hours</p><p className="mt-1 text-xl font-semibold">{editingEmployee.overtimeHours || 0} hours</p></div>
+                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Hours per day</p><p className="mt-1 text-xl font-semibold">2.5 hours</p></div>
+                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Rate per hour</p><p className="mt-1 text-xl font-semibold tabular-nums">Rp 300.000</p></div>
+                      </div>
+                      <div className="rounded-lg border p-4 text-sm">
+                        <div className="flex items-center justify-between gap-4"><h3 className="font-semibold">Daily overtime breakdown</h3><span className="text-xs text-muted-foreground">Mockup data</span></div>
+                        <div className="mt-3 overflow-x-auto">
+                          <table className="w-full min-w-[520px] text-left">
+                            <thead className="border-b text-xs text-muted-foreground"><tr><th className="pb-2 font-medium">Date</th><th className="pb-2 font-medium">Hours</th><th className="pb-2 font-medium">Rate / hour</th><th className="pb-2 text-right font-medium">Daily amount</th></tr></thead>
+                            <tbody className="divide-y"><tr><td className="py-3">March 14, 2026</td><td className="py-3">2.5 hrs</td><td className="py-3 tabular-nums">Rp 300.000</td><td className="py-3 text-right font-medium tabular-nums">Rp 750.000</td></tr><tr><td className="py-3">March 21, 2026</td><td className="py-3">2.5 hrs</td><td className="py-3 tabular-nums">Rp 300.000</td><td className="py-3 text-right font-medium tabular-nums">Rp 750.000</td></tr></tbody>
+                            <tfoot className="border-t"><tr><td colSpan={3} className="pt-3 font-semibold">Total calculated overtime</td><td className="pt-3 text-right font-bold text-success tabular-nums">Rp 1.500.000</td></tr></tfoot>
+                          </table>
+                        </div>
+                      </div>
+                      <div className="rounded-lg border p-4 text-sm"><h3 className="font-semibold">Calculation source</h3><dl className="mt-3 grid gap-3 sm:grid-cols-2"><div><dt className="text-muted-foreground">Applied rule</dt><dd className="font-medium">{editingEmployee.overtimeRule || 'Fixed OT rate · Rp 300.000/hour'}</dd></div><div><dt className="text-muted-foreground">Exceptional changes</dt><dd className="font-medium">Adjustments tab</dd></div></dl></div>
                     </div>
                   ) : (
                     <div className="rounded-lg border p-4 text-sm">
