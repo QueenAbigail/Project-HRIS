@@ -590,15 +590,20 @@ export default function SiteManagementPage() {
               ) : (
               <div className="space-y-4">
                 <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr]">
-                <div className="rounded-xl border bg-muted/30 p-4 lg:col-span-3">
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Employee payroll</p>
-                    <p className="text-xl font-semibold">{editingEmployee.name}</p>
-                    <p className="text-sm text-muted-foreground">{editingEmployee.position} · {siteInfo.siteName}</p>
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t pt-3">
-                    <p className="text-sm text-muted-foreground"><strong className="font-semibold text-foreground">March 2026</strong> payroll period · Read-only view</p>
-                    <Badge variant="secondary">Draft</Badge>
+                <div className="rounded-xl border bg-muted/30 p-5 lg:col-span-3">
+                  <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Employee payroll</p>
+                      <h2 className="mt-1 text-2xl font-bold tracking-tight">{editingEmployee.name}</h2>
+                      <p className="mt-1 text-sm text-muted-foreground">{editingEmployee.position} · {siteInfo.siteName}</p>
+                    </div>
+                    <div className="flex items-center justify-between gap-4 sm:justify-end">
+                      <div className="text-left sm:text-right">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Payroll period</p>
+                        <p className="mt-1 text-sm text-muted-foreground"><strong className="font-semibold text-foreground">March 2026</strong> · Read-only view</p>
+                      </div>
+                      <Badge variant="secondary">Draft</Badge>
+                    </div>
                   </div>
                 </div>
                 <div className="rounded-lg border p-4">
