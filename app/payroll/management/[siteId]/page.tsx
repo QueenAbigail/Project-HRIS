@@ -21,8 +21,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -177,12 +175,6 @@ export default function SiteManagementPage() {
     setEditOpen(true)
   }
 
-  const handleSaveEmployee = () => {
-    if (!editingEmployee) return
-    setEmployees(prev => prev.map(e => e.employeeId === editingEmployee.employeeId ? editingEmployee : e))
-    setEditOpen(false)
-    setEditingEmployee(null)
-  }
 
   const handleDeleteAdjustment = (adjId: string) => {
     setDeleteTarget(adjId)
@@ -533,73 +525,61 @@ export default function SiteManagementPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Edit Employee Dialog */}
+      {/* Employee Payroll Details Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Edit Employee Payroll</DialogTitle>
+            <DialogTitle>Employee Payroll Details</DialogTitle>
+            <DialogDescription>
+              Read-only calculation breakdown for the {`March 2026`} payroll period.
+            </DialogDescription>
           </DialogHeader>
           {editingEmployee && (
-            <div className="space-y-4">
-              <div>
-                <Label>Employee</Label>
-                <Input value={editingEmployee.name} disabled />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Base Salary</Label>
-                  <Input
-                    type="number"
-                    value={editingEmployee.baseSalary}
-                    onChange={(e) => setEditingEmployee({
-                      ...editingEmployee,
-                      baseSalary: Number(e.target.value)
-                    })}
-                  />
+            <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-lg border bg-muted/30 p-4 sm:col-span-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Employee</p>
+                  <p className="mt-1 text-lg font-semibold">{editingEmployee.name}</p>
+                  <p className="text-sm text-muted-foreground">{editingEmployee.position} · {siteInfo.siteName}</p>
                 </div>
-                <div>
-                  <Label>Overtime</Label>
-                  <Input
-                    type="number"
-                    value={editingEmployee.overtime}
-                    onChange={(e) => setEditingEmployee({
-                      ...editingEmployee,
-                      overtime: Number(e.target.value)
-                    })}
-                  />
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">Base salary</p>
+                  <p className="mt-1 text-lg font-semibold tabular-nums">{formatCurrency(editingEmployee.baseSalary)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">From salary setup · read-only</p>
                 </div>
-                <div>
-                  <Label>Bonus</Label>
-                  <Input
-                    type="number"
-                    value={editingEmployee.bonus}
-                    onChange={(e) => setEditingEmployee({
-                      ...editingEmployee,
-                      bonus: Number(e.target.value)
-                    })}
-                  />
-                </div>
-                <div>
-                  <Label>Deductions</Label>
-                  <Input
-                    type="number"
-                    value={editingEmployee.deductions}
-                    onChange={(e) => setEditingEmployee({
-                      ...editingEmployee,
-                      deductions: Number(e.target.value)
-                    })}
-                  />
+                <div className="rounded-lg border p-4">
+                  <p className="text-sm text-muted-foreground">Calculated net pay</p>
+                  <p className="mt-1 text-lg font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.baseSalary + editingEmployee.overtime + editingEmployee.bonus - editingEmployee.deductions)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Base salary + allowance + overtime − deductions</p>
                 </div>
               </div>
-              <div className="bg-slate-100 p-3 rounded-lg">
-                <p className="text-sm text-muted-foreground">Calculated Net Pay</p>
-                <p className="text-2xl font-bold">
-                  {formatCurrency(editingEmployee.baseSalary + editingEmployee.overtime + editingEmployee.bonus - editingEmployee.deductions)}
-                </p>
-              </div>
-              <div className="flex gap-3 justify-end">
-                <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
-                <Button onClick={handleSaveEmployee}>Save Changes</Button>
+
+              <details className="group rounded-lg border" open>
+                <summary className="cursor-pointer list-none p-4 font-medium">Overtime calculation</summary>
+                <div className="border-t bg-muted/20 px-4 py-3 text-sm">
+                  <div className="flex items-center justify-between gap-4"><span className="text-muted-foreground">Calculated amount</span><span className="font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.overtime)}</span></div>
+                  <p className="mt-2 text-xs text-muted-foreground">Calculated from approved attendance/overtime records and the active overtime rule. Any exceptional adjustment belongs in the Adjustments tab.</p>
+                </div>
+              </details>
+
+              <details className="group rounded-lg border" open>
+                <summary className="cursor-pointer list-none p-4 font-medium">Allowance calculation</summary>
+                <div className="border-t bg-muted/20 px-4 py-3 text-sm">
+                  <div className="flex items-center justify-between gap-4"><span className="text-muted-foreground">Calculated allowance</span><span className="font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.bonus)}</span></div>
+                  <p className="mt-2 text-xs text-muted-foreground">From the employee&apos;s eligible allowance records for this payroll period. Additional one-off payments belong in the Adjustments tab.</p>
+                </div>
+              </details>
+
+              <details className="group rounded-lg border" open>
+                <summary className="cursor-pointer list-none p-4 font-medium">Deduction calculation</summary>
+                <div className="border-t bg-muted/20 px-4 py-3 text-sm">
+                  <div className="flex items-center justify-between gap-4"><span className="text-muted-foreground">Calculated deductions</span><span className="font-semibold tabular-nums text-destructive">{formatCurrency(editingEmployee.deductions)}</span></div>
+                  <p className="mt-2 text-xs text-muted-foreground">Calculated from active deduction rules and approved deductions. Exceptional deductions must be added through the Adjustments tab.</p>
+                </div>
+              </details>
+
+              <div className="flex justify-end pt-2">
+                <Button variant="outline" onClick={() => setEditOpen(false)}>Close</Button>
               </div>
             </div>
           )}
