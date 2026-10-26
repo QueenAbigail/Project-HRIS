@@ -536,8 +536,8 @@ export default function SiteManagementPage() {
 
       {/* Employee Payroll Details Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-h-[calc(100vh-2rem)] w-[calc(100vw-1rem)] max-w-none gap-0 overflow-hidden p-0 sm:w-[calc(100vw-4rem)] sm:max-w-[1600px] lg:w-[calc(100vw-8rem)]">
-          <DialogHeader className="border-b px-6 py-5">
+        <DialogContent className="max-h-[calc(100vh-1rem)] w-[calc(100vw-1rem)] max-w-none gap-0 overflow-hidden p-0 sm:w-[calc(100vw-4rem)] sm:max-w-[1600px] lg:w-[calc(100vw-8rem)]">
+          <DialogHeader className="border-b px-5 py-3">
             {payrollDetail ? (
               <div className="flex items-center gap-3">
                 <Button variant="ghost" size="icon" aria-label="Back to payroll overview" onClick={() => setPayrollDetail(null)}>
@@ -556,9 +556,9 @@ export default function SiteManagementPage() {
             )}
           </DialogHeader>
           {editingEmployee && (
-            <div className="max-h-[calc(100vh-10rem)] overflow-y-auto px-6 py-5">
+            <div className="max-h-[calc(100vh-6rem)] overflow-y-auto px-5 py-3">
               {payrollDetail ? (
-                <div className="space-y-4">
+                <div className="space-y-2">
                   <div className="rounded-lg border bg-muted/30 p-5">
                     <p className="text-sm text-muted-foreground">{payrollDetail === 'overtime' ? 'Calculated overtime' : 'Calculated deductions'}</p>
                     <p className={`mt-2 text-3xl font-bold tabular-nums ${payrollDetail === 'overtime' ? 'text-success' : 'text-destructive'}`}>
@@ -588,9 +588,9 @@ export default function SiteManagementPage() {
                   <div className="flex justify-end"><Button variant="outline" onClick={() => setPayrollDetail(null)}>Back to overview</Button></div>
                 </div>
               ) : (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr]">
-                <div className="rounded-xl border bg-muted/30 p-5 lg:col-span-3">
+                <div className="rounded-xl border bg-muted/30 p-3 lg:col-span-3">
                   <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Employee payroll</p>
@@ -621,7 +621,7 @@ export default function SiteManagementPage() {
               </div>
 
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <button type="button" className="group flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors hover:border-primary/40 hover:bg-muted/40" onClick={() => setPayrollDetail('overtime')}>
+              <button type="button" className="group flex w-full items-center gap-4 rounded-xl border p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40" onClick={() => setPayrollDetail('overtime')}>
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success"><Clock3 className="h-5 w-5" /></span>
                 <span className="min-w-0 flex-1"><span className="block font-medium">Overtime calculation</span><span className="mt-1 block text-sm text-muted-foreground">{editingEmployee.overtimeHours || 0} approved hours · View applied rule</span></span>
                 <span className="flex items-center gap-2"><span className="font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.overtime)}</span><ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" /></span>
@@ -633,7 +633,7 @@ export default function SiteManagementPage() {
                 <span className="font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.bonus)}</span>
               </div>
 
-              <button type="button" className="group flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors hover:border-destructive/40 hover:bg-muted/40" onClick={() => setPayrollDetail('deductions')}>
+              <button type="button" className="group flex w-full items-center gap-4 rounded-xl border p-3 text-left transition-colors hover:border-destructive/40 hover:bg-muted/40" onClick={() => setPayrollDetail('deductions')}>
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive"><ReceiptText className="h-5 w-5" /></span>
                 <span className="min-w-0 flex-1"><span className="block font-medium">Deduction calculation</span><span className="mt-1 block text-sm text-muted-foreground">View applied rules and deductions</span></span>
                 <span className="flex items-center gap-2"><span className="font-semibold tabular-nums text-destructive">{formatCurrency(editingEmployee.deductions)}</span><ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" /></span>
@@ -696,7 +696,7 @@ export default function SiteManagementPage() {
               Upload a timesheet file containing employee duty days and overtime hours. Allowance information is calculated separately from eligible allowance records.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-2">
             {/* File Upload Area */}
             <div className="border-2 border-dashed rounded-lg p-6 text-center">
               <input
