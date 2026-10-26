@@ -49,6 +49,9 @@ import {
   AlertCircle,
   Calendar,
   Upload,
+  ChevronRight,
+  Clock3,
+  ReceiptText,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
@@ -533,10 +536,10 @@ export default function SiteManagementPage() {
 
       {/* Employee Payroll Details Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
+        <DialogContent className="max-h-[calc(100vh-2rem)] max-w-2xl overflow-hidden p-0">
+          <DialogHeader className="border-b px-6 py-5">
             {payrollDetail ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <Button variant="ghost" size="icon" aria-label="Back to payroll overview" onClick={() => setPayrollDetail(null)}>
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
@@ -553,7 +556,7 @@ export default function SiteManagementPage() {
             )}
           </DialogHeader>
           {editingEmployee && (
-            <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
+            <div className="max-h-[calc(100vh-10rem)] overflow-y-auto px-6 py-5">
               {payrollDetail ? (
                 <div className="space-y-4">
                   <div className="rounded-lg border bg-muted/30 p-5">
@@ -586,12 +589,18 @@ export default function SiteManagementPage() {
                 </div>
               ) : (
               <div className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-lg border bg-muted/30 p-4 sm:col-span-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Employee</p>
-                  <p className="mt-1 text-lg font-semibold">{editingEmployee.name}</p>
-                  <p className="text-sm text-muted-foreground">{editingEmployee.position} · {siteInfo.siteName}</p>
+                <div className="rounded-xl border bg-muted/30 p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Employee payroll</p>
+                      <p className="mt-1 text-xl font-semibold">{editingEmployee.name}</p>
+                      <p className="text-sm text-muted-foreground">{editingEmployee.position} · {siteInfo.siteName}</p>
+                    </div>
+                    <Badge variant="secondary" className="shrink-0">Draft</Badge>
+                  </div>
+                  <p className="mt-3 text-xs text-muted-foreground">March 2026 payroll period · Read-only view</p>
                 </div>
+                <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-lg border p-4">
                   <p className="text-sm text-muted-foreground">Base salary</p>
                   <p className="mt-1 text-lg font-semibold tabular-nums">{formatCurrency(editingEmployee.baseSalary)}</p>
@@ -604,26 +613,22 @@ export default function SiteManagementPage() {
                 </div>
               </div>
 
-              <button type="button" className="w-full rounded-lg border p-4 text-left transition-colors hover:bg-muted/40" onClick={() => setPayrollDetail('overtime')}>
-                <div className="flex items-center justify-between gap-4">
-                  <div><p className="font-medium">Overtime calculation</p><p className="mt-1 text-sm text-muted-foreground">View approved hours and applied rule</p></div>
-                  <span className="font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.overtime)}</span>
-                </div>
+              <button type="button" className="group flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors hover:border-primary/40 hover:bg-muted/40" onClick={() => setPayrollDetail('overtime')}>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success"><Clock3 className="h-5 w-5" /></span>
+                <span className="min-w-0 flex-1"><span className="block font-medium">Overtime calculation</span><span className="mt-1 block text-sm text-muted-foreground">{editingEmployee.overtimeHours || 0} approved hours · View applied rule</span></span>
+                <span className="flex items-center gap-2"><span className="font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.overtime)}</span><ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" /></span>
               </button>
 
-              <details className="group rounded-lg border" open>
-                <summary className="cursor-pointer list-none p-4 font-medium">Allowance calculation</summary>
-                <div className="border-t bg-muted/20 px-4 py-3 text-sm">
-                  <div className="flex items-center justify-between gap-4"><span className="text-muted-foreground">Calculated allowance</span><span className="font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.bonus)}</span></div>
-                  <p className="mt-2 text-xs text-muted-foreground">{editingEmployee.allowanceSource || 'Eligible allowance records for this payroll period.'} Additional one-off payments belong in the Adjustments tab.</p>
-                </div>
-              </details>
+              <div className="flex items-center gap-4 rounded-xl border bg-muted/20 p-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success">+</span>
+                <span className="min-w-0 flex-1"><span className="block font-medium">Allowance</span><span className="mt-1 block text-sm text-muted-foreground">{editingEmployee.allowanceSource || 'Eligible allowance records'}</span></span>
+                <span className="font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.bonus)}</span>
+              </div>
 
-              <button type="button" className="w-full rounded-lg border p-4 text-left transition-colors hover:bg-muted/40" onClick={() => setPayrollDetail('deductions')}>
-                <div className="flex items-center justify-between gap-4">
-                  <div><p className="font-medium">Deduction calculation</p><p className="mt-1 text-sm text-muted-foreground">View applied rules and deductions</p></div>
-                  <span className="font-semibold tabular-nums text-destructive">{formatCurrency(editingEmployee.deductions)}</span>
-                </div>
+              <button type="button" className="group flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors hover:border-destructive/40 hover:bg-muted/40" onClick={() => setPayrollDetail('deductions')}>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive"><ReceiptText className="h-5 w-5" /></span>
+                <span className="min-w-0 flex-1"><span className="block font-medium">Deduction calculation</span><span className="mt-1 block text-sm text-muted-foreground">View applied rules and deductions</span></span>
+                <span className="flex items-center gap-2"><span className="font-semibold tabular-nums text-destructive">{formatCurrency(editingEmployee.deductions)}</span><ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" /></span>
               </button>
 
               <div className="flex justify-end pt-2">
