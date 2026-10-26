@@ -599,7 +599,7 @@ export default function SiteManagementPage() {
                     </div>
                     <Badge variant="secondary" className="shrink-0">Draft</Badge>
                   </div>
-                  <p className="mt-3 text-xs text-muted-foreground">March 2026 payroll period · Read-only view</p>
+                  <p className="mt-3 text-right text-xs text-muted-foreground"><strong className="font-semibold text-foreground">March 2026</strong> payroll period · Read-only view</p>
                 </div>
                 <div className="rounded-lg border p-4">
                   <p className="text-sm text-muted-foreground">Base salary</p>
