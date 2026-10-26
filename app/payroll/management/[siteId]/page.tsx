@@ -165,6 +165,7 @@ export default function SiteManagementPage() {
   const [employees, setEmployees] = useState<SiteEmployee[]>(siteEmployees)
   const [editingEmployee, setEditingEmployee] = useState<SiteEmployee | null>(null)
   const [editOpen, setEditOpen] = useState(false)
+  const [payrollDetail, setPayrollDetail] = useState<'overtime' | 'deductions' | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [lockOpen, setLockOpen] = useState(false)
@@ -176,6 +177,7 @@ export default function SiteManagementPage() {
 
   const handleEditEmployee = (employee: SiteEmployee) => {
     setEditingEmployee(employee)
+    setPayrollDetail(null)
     setEditOpen(true)
   }
 
@@ -533,14 +535,58 @@ export default function SiteManagementPage() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Employee Payroll Details</DialogTitle>
-            <DialogDescription>
-              Read-only calculation breakdown for the {`March 2026`} payroll period.
-            </DialogDescription>
+            {payrollDetail ? (
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" aria-label="Back to payroll overview" onClick={() => setPayrollDetail(null)}>
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <div>
+                  <DialogTitle>{payrollDetail === 'overtime' ? 'Overtime Calculation' : 'Deduction Calculation'}</DialogTitle>
+                  <DialogDescription>Detailed read-only breakdown for {editingEmployee?.name}.</DialogDescription>
+                </div>
+              </div>
+            ) : (
+              <>
+                <DialogTitle>Employee Payroll Details</DialogTitle>
+                <DialogDescription>Read-only calculation breakdown for the {`March 2026`} payroll period.</DialogDescription>
+              </>
+            )}
           </DialogHeader>
           {editingEmployee && (
             <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
-              <div className="grid gap-4 sm:grid-cols-2">
+              {payrollDetail ? (
+                <div className="space-y-4">
+                  <div className="rounded-lg border bg-muted/30 p-5">
+                    <p className="text-sm text-muted-foreground">{payrollDetail === 'overtime' ? 'Calculated overtime' : 'Calculated deductions'}</p>
+                    <p className={`mt-2 text-3xl font-bold tabular-nums ${payrollDetail === 'overtime' ? 'text-success' : 'text-destructive'}`}>
+                      {formatCurrency(payrollDetail === 'overtime' ? editingEmployee.overtime : editingEmployee.deductions)}
+                    </p>
+                  </div>
+                  {payrollDetail === 'overtime' ? (
+                    <div className="rounded-lg border p-4 text-sm">
+                      <h3 className="font-semibold">Calculation source</h3>
+                      <dl className="mt-3 space-y-3">
+                        <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Approved overtime</dt><dd className="font-medium">{editingEmployee.overtimeHours || 0} hours</dd></div>
+                        <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Applied rule</dt><dd className="text-right font-medium">{editingEmployee.overtimeRule || 'Active overtime rule'}</dd></div>
+                        <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Exceptional changes</dt><dd className="font-medium">Adjustments tab</dd></div>
+                      </dl>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border p-4 text-sm">
+                      <h3 className="font-semibold">Calculation source</h3>
+                      <dl className="mt-3 space-y-3">
+                        <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Applied source</dt><dd className="text-right font-medium">{editingEmployee.deductionSource || 'Active deduction rules'}</dd></div>
+                        <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Payroll period</dt><dd className="font-medium">March 2026</dd></div>
+                        <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Exceptional changes</dt><dd className="font-medium">Adjustments tab</dd></div>
+                      </dl>
+                    </div>
+                  )}
+                  <p className="rounded-lg bg-muted/40 p-4 text-sm text-muted-foreground">This value is calculated from payroll rules and approved records. It is read-only here; exceptional changes must be managed from the Adjustments tab.</p>
+                  <div className="flex justify-end"><Button variant="outline" onClick={() => setPayrollDetail(null)}>Back to overview</Button></div>
+                </div>
+              ) : (
+              <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-lg border bg-muted/30 p-4 sm:col-span-2">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Employee</p>
                   <p className="mt-1 text-lg font-semibold">{editingEmployee.name}</p>
@@ -558,13 +604,12 @@ export default function SiteManagementPage() {
                 </div>
               </div>
 
-              <details className="group rounded-lg border" open>
-                <summary className="cursor-pointer list-none p-4 font-medium">Overtime calculation</summary>
-                <div className="border-t bg-muted/20 px-4 py-3 text-sm">
-                  <div className="flex items-center justify-between gap-4"><span className="text-muted-foreground">Calculated amount</span><span className="font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.overtime)}</span></div>
-                  <p className="mt-2 text-xs text-muted-foreground">{editingEmployee.overtimeHours ? `${editingEmployee.overtimeHours} approved hours · ` : ''}{editingEmployee.overtimeRule || 'Approved attendance/overtime records and the active overtime rule.'} Any exceptional adjustment belongs in the Adjustments tab.</p>
+              <button type="button" className="w-full rounded-lg border p-4 text-left transition-colors hover:bg-muted/40" onClick={() => setPayrollDetail('overtime')}>
+                <div className="flex items-center justify-between gap-4">
+                  <div><p className="font-medium">Overtime calculation</p><p className="mt-1 text-sm text-muted-foreground">View approved hours and applied rule</p></div>
+                  <span className="font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.overtime)}</span>
                 </div>
-              </details>
+              </button>
 
               <details className="group rounded-lg border" open>
                 <summary className="cursor-pointer list-none p-4 font-medium">Allowance calculation</summary>
@@ -574,17 +619,18 @@ export default function SiteManagementPage() {
                 </div>
               </details>
 
-              <details className="group rounded-lg border" open>
-                <summary className="cursor-pointer list-none p-4 font-medium">Deduction calculation</summary>
-                <div className="border-t bg-muted/20 px-4 py-3 text-sm">
-                  <div className="flex items-center justify-between gap-4"><span className="text-muted-foreground">Calculated deductions</span><span className="font-semibold tabular-nums text-destructive">{formatCurrency(editingEmployee.deductions)}</span></div>
-                  <p className="mt-2 text-xs text-muted-foreground">{editingEmployee.deductionSource || 'Active deduction rules and approved deductions.'} Exceptional deductions must be added through the Adjustments tab.</p>
+              <button type="button" className="w-full rounded-lg border p-4 text-left transition-colors hover:bg-muted/40" onClick={() => setPayrollDetail('deductions')}>
+                <div className="flex items-center justify-between gap-4">
+                  <div><p className="font-medium">Deduction calculation</p><p className="mt-1 text-sm text-muted-foreground">View applied rules and deductions</p></div>
+                  <span className="font-semibold tabular-nums text-destructive">{formatCurrency(editingEmployee.deductions)}</span>
                 </div>
-              </details>
+              </button>
 
               <div className="flex justify-end pt-2">
                 <Button variant="outline" onClick={() => setEditOpen(false)}>Close</Button>
               </div>
+              </div>
+              )}
             </div>
           )}
         </DialogContent>
