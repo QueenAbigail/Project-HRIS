@@ -590,7 +590,7 @@ export default function SiteManagementPage() {
               ) : (
               <div className="space-y-4">
                 <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr]">
-                <div className="rounded-xl border bg-muted/30 p-4">
+                <div className="rounded-xl border bg-muted/30 p-4 lg:col-span-3">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Employee payroll</p>
