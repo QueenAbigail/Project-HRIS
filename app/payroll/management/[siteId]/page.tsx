@@ -42,8 +42,6 @@ import {
 import {
   ArrowLeft,
   MapPin,
-  DollarSign,
-  TrendingUp,
   Edit,
   Trash2,
   Check,
@@ -284,51 +282,6 @@ export default function SiteManagementPage() {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Gross Payroll
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="truncate text-xl font-bold tabular-nums xl:text-2xl" title={formatCurrency(siteInfo.grossPayroll)}>{formatCurrency(siteInfo.grossPayroll)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Bonus
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="truncate text-xl font-bold tabular-nums xl:text-2xl text-success" title={formatCurrency(siteInfo.bonusAmount)}>{formatCurrency(siteInfo.bonusAmount)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Deductions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="truncate text-xl font-bold tabular-nums xl:text-2xl text-destructive" title={formatCurrency(siteInfo.deductionsAmount)}>{formatCurrency(siteInfo.deductionsAmount)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Net Payroll</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="truncate text-xl font-bold tabular-nums xl:text-2xl text-success" title={formatCurrency(siteInfo.netPayroll)}>{formatCurrency(siteInfo.netPayroll)}</p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Tabs */}
       <Tabs defaultValue="summary" className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">
@@ -348,7 +301,23 @@ export default function SiteManagementPage() {
                 Read-only overview for {siteInfo.location} during the {`March 2026`} payroll period.
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
+            <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Gross Payroll</p>
+                <p className="mt-2 text-xl font-bold tabular-nums">{formatCurrency(siteInfo.grossPayroll)}</p>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Bonus</p>
+                <p className="mt-2 text-xl font-bold tabular-nums text-success">{formatCurrency(siteInfo.bonusAmount)}</p>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Deductions</p>
+                <p className="mt-2 text-xl font-bold tabular-nums text-destructive">{formatCurrency(siteInfo.deductionsAmount)}</p>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Net Payroll</p>
+                <p className="mt-2 text-xl font-bold tabular-nums text-success">{formatCurrency(siteInfo.netPayroll)}</p>
+              </div>
               <div className="rounded-lg border p-4">
                 <p className="text-sm text-muted-foreground">Payroll status</p>
                 <Badge variant="outline" className="mt-2 bg-slate-100 text-slate-700">{siteInfo.status.charAt(0).toUpperCase() + siteInfo.status.slice(1)}</Badge>
