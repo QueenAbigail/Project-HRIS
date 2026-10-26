@@ -606,15 +606,17 @@ export default function SiteManagementPage() {
                     </div>
                   </div>
                 </div>
-                <div className="rounded-lg border p-4">
-                  <p className="text-sm text-muted-foreground">Base salary</p>
-                  <p className="mt-1 text-lg font-semibold tabular-nums">{formatCurrency(editingEmployee.baseSalary)}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">From salary setup · read-only</p>
-                </div>
-                <div className="rounded-lg border p-4">
-                  <p className="text-sm text-muted-foreground">Calculated net pay</p>
-                  <p className="mt-1 text-lg font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.baseSalary + editingEmployee.overtime + editingEmployee.bonus - editingEmployee.deductions)}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Base salary + allowance + overtime − deductions</p>
+                <div className="grid gap-3 sm:grid-cols-2 lg:col-span-3">
+                  <div className="rounded-lg border p-4">
+                    <p className="text-sm text-muted-foreground">Base salary</p>
+                    <p className="mt-1 text-lg font-semibold tabular-nums">{formatCurrency(editingEmployee.baseSalary)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">From salary setup · read-only</p>
+                  </div>
+                  <div className="rounded-lg border p-4">
+                    <p className="text-sm text-muted-foreground">Calculated net pay</p>
+                    <p className="mt-1 text-lg font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.baseSalary + editingEmployee.overtime + editingEmployee.bonus - editingEmployee.deductions)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Base salary + allowance + overtime − deductions</p>
+                  </div>
                 </div>
               </div>
 
