@@ -590,16 +590,20 @@ export default function SiteManagementPage() {
               ) : (
               <div className="space-y-4">
                 <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr]">
-                <div className="rounded-xl border bg-muted/30 p-4 lg:col-span-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Employee payroll</p>
-                      <p className="mt-1 text-xl font-semibold">{editingEmployee.name}</p>
-                      <p className="text-sm text-muted-foreground">{editingEmployee.position} · {siteInfo.siteName}</p>
+                <div className="rounded-xl border bg-muted/30 p-3 lg:col-span-3">
+                  <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Employee payroll</p>
+                        <p className="text-lg font-semibold">{editingEmployee.name}</p>
+                        <p className="text-sm text-muted-foreground">{editingEmployee.position} · {siteInfo.siteName}</p>
+                      </div>
                     </div>
-                    <Badge variant="secondary" className="shrink-0">Draft</Badge>
+                    <div className="flex shrink-0 items-center gap-3 text-right">
+                      <p className="text-xs text-muted-foreground"><strong className="font-semibold text-foreground">March 2026</strong> payroll period · Read-only</p>
+                      <Badge variant="secondary">Draft</Badge>
+                    </div>
                   </div>
-                  <p className="mt-3 text-right text-xs text-muted-foreground"><strong className="font-semibold text-foreground">March 2026</strong> payroll period · Read-only view</p>
                 </div>
                 <div className="rounded-lg border p-4">
                   <p className="text-sm text-muted-foreground">Base salary</p>
