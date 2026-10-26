@@ -58,8 +58,12 @@ interface SiteEmployee {
   position: string
   baseSalary: number
   overtime: number
+  overtimeHours?: number
+  overtimeRule?: string
   bonus: number
+  allowanceSource?: string
   deductions: number
+  deductionSource?: string
   netPay: number
   status: 'draft' | 'processing' | 'finalized'
 }
@@ -110,7 +114,7 @@ const mockSiteDetails = {
 // Mock employees by site
 const mockSiteEmployees: Record<string, SiteEmployee[]> = {
   'S1': [
-    { employeeId: 'E001', name: 'Michael Chen', position: 'Security Head', baseSalary: 12000000, overtime: 1500000, bonus: 500000, deductions: 2500000, netPay: 10000000, status: 'draft' },
+    { employeeId: 'E001', name: 'Michael Chen', position: 'Security Head', baseSalary: 12000000, overtime: 1500000, overtimeHours: 5, overtimeRule: 'Fixed OT rate · Rp 300.000/hour', bonus: 500000, allowanceSource: 'Attendance allowance · 5 qualifying days', deductions: 2500000, deductionSource: 'BPJS and loan deduction rules', netPay: 10000000, status: 'draft' },
     { employeeId: 'E002', name: 'Sarah Williams', position: 'Guard', baseSalary: 11000000, overtime: 800000, bonus: 400000, deductions: 2200000, netPay: 8700000, status: 'draft' },
     { employeeId: 'E003', name: 'David Rodriguez', position: 'Guard', baseSalary: 10500000, overtime: 1200000, bonus: 300000, deductions: 2100000, netPay: 8700000, status: 'draft' },
     { employeeId: 'E004', name: 'Emily Johnson', position: 'Guard', baseSalary: 9800000, overtime: 0, bonus: 200000, deductions: 1800000, netPay: 7200000, status: 'draft' },
@@ -299,7 +303,7 @@ export default function SiteManagementPage() {
                 <p className="mt-2 text-xl font-bold tabular-nums">{formatCurrency(siteInfo.grossPayroll)}</p>
               </div>
               <div className="rounded-lg border p-4">
-                <p className="text-sm text-muted-foreground">Bonus</p>
+                <p className="text-sm text-muted-foreground">Allowance</p>
                 <p className="mt-2 text-xl font-bold tabular-nums text-success">{formatCurrency(siteInfo.bonusAmount)}</p>
               </div>
               <div className="rounded-lg border p-4">
@@ -377,7 +381,7 @@ export default function SiteManagementPage() {
                       <TableHead>Position</TableHead>
                       <TableHead className="text-right">Base Salary</TableHead>
                       <TableHead className="text-right">Overtime</TableHead>
-                      <TableHead className="text-right">Bonus</TableHead>
+                      <TableHead className="text-right">Allowance</TableHead>
                       <TableHead className="text-right">Deductions</TableHead>
                       <TableHead className="text-right">Net Pay</TableHead>
                       <TableHead>Status</TableHead>
@@ -558,7 +562,7 @@ export default function SiteManagementPage() {
                 <summary className="cursor-pointer list-none p-4 font-medium">Overtime calculation</summary>
                 <div className="border-t bg-muted/20 px-4 py-3 text-sm">
                   <div className="flex items-center justify-between gap-4"><span className="text-muted-foreground">Calculated amount</span><span className="font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.overtime)}</span></div>
-                  <p className="mt-2 text-xs text-muted-foreground">Calculated from approved attendance/overtime records and the active overtime rule. Any exceptional adjustment belongs in the Adjustments tab.</p>
+                  <p className="mt-2 text-xs text-muted-foreground">{editingEmployee.overtimeHours ? `${editingEmployee.overtimeHours} approved hours · ` : ''}{editingEmployee.overtimeRule || 'Approved attendance/overtime records and the active overtime rule.'} Any exceptional adjustment belongs in the Adjustments tab.</p>
                 </div>
               </details>
 
@@ -566,7 +570,7 @@ export default function SiteManagementPage() {
                 <summary className="cursor-pointer list-none p-4 font-medium">Allowance calculation</summary>
                 <div className="border-t bg-muted/20 px-4 py-3 text-sm">
                   <div className="flex items-center justify-between gap-4"><span className="text-muted-foreground">Calculated allowance</span><span className="font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.bonus)}</span></div>
-                  <p className="mt-2 text-xs text-muted-foreground">From the employee&apos;s eligible allowance records for this payroll period. Additional one-off payments belong in the Adjustments tab.</p>
+                  <p className="mt-2 text-xs text-muted-foreground">{editingEmployee.allowanceSource || 'Eligible allowance records for this payroll period.'} Additional one-off payments belong in the Adjustments tab.</p>
                 </div>
               </details>
 
@@ -574,7 +578,7 @@ export default function SiteManagementPage() {
                 <summary className="cursor-pointer list-none p-4 font-medium">Deduction calculation</summary>
                 <div className="border-t bg-muted/20 px-4 py-3 text-sm">
                   <div className="flex items-center justify-between gap-4"><span className="text-muted-foreground">Calculated deductions</span><span className="font-semibold tabular-nums text-destructive">{formatCurrency(editingEmployee.deductions)}</span></div>
-                  <p className="mt-2 text-xs text-muted-foreground">Calculated from active deduction rules and approved deductions. Exceptional deductions must be added through the Adjustments tab.</p>
+                  <p className="mt-2 text-xs text-muted-foreground">{editingEmployee.deductionSource || 'Active deduction rules and approved deductions.'} Exceptional deductions must be added through the Adjustments tab.</p>
                 </div>
               </details>
 
@@ -629,7 +633,7 @@ export default function SiteManagementPage() {
           <DialogHeader>
             <DialogTitle>Import Timesheet</DialogTitle>
             <DialogDescription>
-              Upload a timesheet file containing employee duty days, overtime hours, and bonus information. The system will automatically calculate payroll based on the imported data.
+              Upload a timesheet file containing employee duty days and overtime hours. Allowance information is calculated separately from eligible allowance records.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -662,7 +666,7 @@ export default function SiteManagementPage() {
                 <li>Employee ID or Name</li>
                 <li>Duty Days (working days)</li>
                 <li>Overtime Hours</li>
-                <li>Bonus Amount (optional)</li>
+                <li>Allowance eligibility reference (optional)</li>
               </ul>
             </div>
 
