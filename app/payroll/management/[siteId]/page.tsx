@@ -536,7 +536,7 @@ export default function SiteManagementPage() {
 
       {/* Employee Payroll Details Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-h-[calc(100vh-2rem)] max-w-2xl overflow-hidden p-0">
+        <DialogContent className="max-h-[calc(100vh-2rem)] max-w-4xl overflow-hidden p-0">
           <DialogHeader className="border-b px-6 py-5">
             {payrollDetail ? (
               <div className="flex items-center gap-3">
@@ -613,6 +613,7 @@ export default function SiteManagementPage() {
                 </div>
               </div>
 
+              <div className="grid gap-3 md:grid-cols-2">
               <button type="button" className="group flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors hover:border-primary/40 hover:bg-muted/40" onClick={() => setPayrollDetail('overtime')}>
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success"><Clock3 className="h-5 w-5" /></span>
                 <span className="min-w-0 flex-1"><span className="block font-medium">Overtime calculation</span><span className="mt-1 block text-sm text-muted-foreground">{editingEmployee.overtimeHours || 0} approved hours · View applied rule</span></span>
@@ -630,11 +631,12 @@ export default function SiteManagementPage() {
                 <span className="min-w-0 flex-1"><span className="block font-medium">Deduction calculation</span><span className="mt-1 block text-sm text-muted-foreground">View applied rules and deductions</span></span>
                 <span className="flex items-center gap-2"><span className="font-semibold tabular-nums text-destructive">{formatCurrency(editingEmployee.deductions)}</span><ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" /></span>
               </button>
+              </div>
 
               <div className="flex justify-end pt-2">
                 <Button variant="outline" onClick={() => setEditOpen(false)}>Close</Button>
               </div>
-              </div>
+            </div>
               )}
             </div>
           )}
