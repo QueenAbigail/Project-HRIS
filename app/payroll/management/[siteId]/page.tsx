@@ -536,7 +536,7 @@ export default function SiteManagementPage() {
 
       {/* Employee Payroll Details Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="w-[calc(100vw-1rem)] max-h-[calc(100vh-2rem)] max-w-none overflow-hidden p-0 sm:w-[calc(100vw-4rem)] lg:w-[calc(100vw-8rem)]">
+        <DialogContent className="max-h-[calc(100vh-2rem)] w-[calc(100vw-1rem)] max-w-none gap-0 overflow-hidden p-0 sm:w-[calc(100vw-4rem)] sm:max-w-[1600px] lg:w-[calc(100vw-8rem)]">
           <DialogHeader className="border-b px-6 py-5">
             {payrollDetail ? (
               <div className="flex items-center gap-3">
@@ -589,6 +589,7 @@ export default function SiteManagementPage() {
                 </div>
               ) : (
               <div className="space-y-4">
+                <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr]">
                 <div className="rounded-xl border bg-muted/30 p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -600,7 +601,6 @@ export default function SiteManagementPage() {
                   </div>
                   <p className="mt-3 text-xs text-muted-foreground">March 2026 payroll period · Read-only view</p>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-lg border p-4">
                   <p className="text-sm text-muted-foreground">Base salary</p>
                   <p className="mt-1 text-lg font-semibold tabular-nums">{formatCurrency(editingEmployee.baseSalary)}</p>
@@ -613,7 +613,7 @@ export default function SiteManagementPage() {
                 </div>
               </div>
 
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               <button type="button" className="group flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors hover:border-primary/40 hover:bg-muted/40" onClick={() => setPayrollDetail('overtime')}>
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success"><Clock3 className="h-5 w-5" /></span>
                 <span className="min-w-0 flex-1"><span className="block font-medium">Overtime calculation</span><span className="mt-1 block text-sm text-muted-foreground">{editingEmployee.overtimeHours || 0} approved hours · View applied rule</span></span>
