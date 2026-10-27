@@ -525,7 +525,6 @@ export default function MonthlyRecapPage() {
                             <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Allowance</TableHead>
                             <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Overtime</TableHead>
                             <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Deductions</TableHead>
-                            <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Tax</TableHead>
                             <TableHead className="h-10 pr-4 text-right text-xs font-medium uppercase tracking-wide">Net Pay</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -574,7 +573,6 @@ export default function MonthlyRecapPage() {
                                     <span className="text-muted-foreground">—</span>
                                   )}
                                 </TableCell>
-                                <TableCell className="py-3 text-right tabular-nums">{formatCurrency(employee.tax)}</TableCell>
                                 <TableCell className="py-3 pr-4 text-right font-semibold tabular-nums">
                                   {formatCurrency(employee.netPay)}
                                 </TableCell>
