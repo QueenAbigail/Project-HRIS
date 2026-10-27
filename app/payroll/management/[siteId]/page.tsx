@@ -163,7 +163,9 @@ export default function SiteManagementPage() {
   
   const siteInfo = mockSiteDetails[siteId as keyof typeof mockSiteDetails]
   const siteEmployees = mockSiteEmployees[siteId as keyof typeof mockSiteEmployees] || []
-  const adjustments = mockAdjustments[siteId as keyof typeof mockAdjustments] || []
+  const [adjustments, setAdjustments] = useState<SitePayrollAdjustment[]>(mockAdjustments[siteId as keyof typeof mockAdjustments] || [])
+  const [addAdjustmentOpen, setAddAdjustmentOpen] = useState(false)
+  const [newAdjustment, setNewAdjustment] = useState({ employee: '', type: 'bonus', reason: '', amount: '', date: '2026-03-31' })
   
   const [employees, setEmployees] = useState<SiteEmployee[]>(siteEmployees)
   const [editingEmployee, setEditingEmployee] = useState<SiteEmployee | null>(null)
@@ -184,6 +186,21 @@ export default function SiteManagementPage() {
     setEditOpen(true)
   }
 
+
+  const handleAddAdjustment = () => {
+    const amount = Number(newAdjustment.amount)
+    if (!newAdjustment.employee || !newAdjustment.reason || !Number.isFinite(amount) || amount <= 0) return
+    setAdjustments((current) => [...current, {
+      id: `adj-${Date.now()}`,
+      employee: newAdjustment.employee,
+      type: newAdjustment.type as SitePayrollAdjustment['type'],
+      amount,
+      reason: newAdjustment.reason,
+      date: newAdjustment.date,
+    }])
+    setNewAdjustment({ employee: '', type: 'bonus', reason: '', amount: '', date: '2026-03-31' })
+    setAddAdjustmentOpen(false)
+  }
 
   const handleDeleteAdjustment = (adjId: string) => {
     setDeleteTarget(adjId)
@@ -430,7 +447,7 @@ export default function SiteManagementPage() {
         <TabsContent value="adjustments" className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Payroll Adjustments</h3>
-            <Button>
+            <Button onClick={() => setAddAdjustmentOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Adjustment
             </Button>
@@ -671,6 +688,19 @@ export default function SiteManagementPage() {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={addAdjustmentOpen} onOpenChange={setAddAdjustmentOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader><DialogTitle>Add Payroll Adjustment</DialogTitle><DialogDescription>Add a one-time payroll adjustment for this site.</DialogDescription></DialogHeader>
+          <div className="grid gap-4 py-2">
+            <label className="grid gap-2 text-sm font-medium">Employee<select className="h-10 rounded-md border bg-background px-3" value={newAdjustment.employee} onChange={(event) => setNewAdjustment((current) => ({ ...current, employee: event.target.value }))}><option value="">Select employee</option>{employees.map((employee) => <option key={employee.employeeId} value={employee.name}>{employee.name}</option>)}</select></label>
+            <div className="grid gap-4 sm:grid-cols-2"><label className="grid gap-2 text-sm font-medium">Type<select className="h-10 rounded-md border bg-background px-3" value={newAdjustment.type} onChange={(event) => setNewAdjustment((current) => ({ ...current, type: event.target.value }))}><option value="bonus">Bonus</option><option value="overtime">Overtime</option><option value="deduction">Deduction</option></select></label><label className="grid gap-2 text-sm font-medium">Amount<input type="number" min="1" className="h-10 rounded-md border bg-background px-3" placeholder="1500000" value={newAdjustment.amount} onChange={(event) => setNewAdjustment((current) => ({ ...current, amount: event.target.value }))} /></label></div>
+            <label className="grid gap-2 text-sm font-medium">Reason<input className="h-10 rounded-md border bg-background px-3" placeholder="Performance bonus" value={newAdjustment.reason} onChange={(event) => setNewAdjustment((current) => ({ ...current, reason: event.target.value }))} /></label>
+            <label className="grid gap-2 text-sm font-medium">Date<input type="date" className="h-10 rounded-md border bg-background px-3" value={newAdjustment.date} onChange={(event) => setNewAdjustment((current) => ({ ...current, date: event.target.value }))} /></label>
+          </div>
+          <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setAddAdjustmentOpen(false)}>Cancel</Button><Button onClick={handleAddAdjustment}>Save Adjustment</Button></div>
         </DialogContent>
       </Dialog>
 
