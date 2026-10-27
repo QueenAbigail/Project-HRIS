@@ -437,8 +437,8 @@ export default function MonthlyRecapPage() {
                         <TableRow>
                           <TableHead>Employee</TableHead>
                           <TableHead className="text-right">Base Pay</TableHead>
-                          <TableHead className="text-right">Overtime</TableHead>
                           <TableHead className="text-right">Allowance</TableHead>
+                          <TableHead className="text-right">Overtime</TableHead>
                           <TableHead className="text-right">Deductions</TableHead>
                           <TableHead className="text-right">Tax</TableHead>
                           <TableHead className="text-right">Net Pay</TableHead>
@@ -449,8 +449,8 @@ export default function MonthlyRecapPage() {
                           <TableRow key={record.employeeId}>
                             <TableCell className="font-medium">{record.employeeName}</TableCell>
                             <TableCell className="text-right text-sm">{formatCurrency(record.basePay)}</TableCell>
-                            <TableCell className="text-right text-sm text-success">{formatCurrency(record.overtime)}</TableCell>
                             <TableCell className="text-right text-sm text-success">{formatCurrency(record.bonus)}</TableCell>
+                            <TableCell className="text-right text-sm text-success">{formatCurrency(record.overtime)}</TableCell>
                             <TableCell className="text-right text-sm text-destructive">{formatCurrency(record.deductions)}</TableCell>
                             <TableCell className="text-right text-sm">{formatCurrency(record.tax)}</TableCell>
                             <TableCell className="text-right text-sm font-medium">{formatCurrency(record.netPay)}</TableCell>
@@ -522,8 +522,8 @@ export default function MonthlyRecapPage() {
                             <TableHead className="h-10 text-xs font-medium uppercase tracking-wide">Employee</TableHead>
                             <TableHead className="h-10 text-center text-xs font-medium uppercase tracking-wide">Days</TableHead>
                             <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Base Pay</TableHead>
-                            <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Overtime</TableHead>
                             <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Allowance</TableHead>
+                            <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Overtime</TableHead>
                             <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Deductions</TableHead>
                             <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Tax</TableHead>
                             <TableHead className="h-10 pr-4 text-right text-xs font-medium uppercase tracking-wide">Net Pay</TableHead>
@@ -550,19 +550,19 @@ export default function MonthlyRecapPage() {
                                 </TableCell>
                                 <TableCell className="py-3 text-center tabular-nums text-muted-foreground">22/22</TableCell>
                                 <TableCell className="py-3 text-right tabular-nums">{formatCurrency(employee.basePay)}</TableCell>
+                                <TableCell className="py-3 text-right tabular-nums">
+                                  {employee.bonus > 0 ? (
+                                    <span className="text-success">{formatCurrency(employee.bonus)}</span>
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </TableCell>
                                 <TableCell className="py-3 text-right">
                                   {employee.overtime > 0 ? (
                                     <div className="leading-tight">
                                       <p className="tabular-nums text-success">{formatCurrency(employee.overtime)}</p>
                                       <p className="text-xs tabular-nums text-muted-foreground">{overtimeHours}h</p>
                                     </div>
-                                  ) : (
-                                    <span className="text-muted-foreground">—</span>
-                                  )}
-                                </TableCell>
-                                <TableCell className="py-3 text-right tabular-nums">
-                                  {employee.bonus > 0 ? (
-                                    <span className="text-success">{formatCurrency(employee.bonus)}</span>
                                   ) : (
                                     <span className="text-muted-foreground">—</span>
                                   )}
