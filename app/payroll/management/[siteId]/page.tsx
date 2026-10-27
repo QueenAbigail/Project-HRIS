@@ -507,7 +507,7 @@ export default function SiteManagementPage() {
 
         {/* Finalize & Lock Tab */}
         <TabsContent value="finalize" className="space-y-4">
-          <Card className="border-amber-200 bg-amber-50">
+          <Card className="border-amber-500/30 bg-amber-500/10">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-amber-600" />
@@ -518,7 +518,7 @@ export default function SiteManagementPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-white rounded-lg p-4 space-y-2 border">
+              <div className="rounded-lg border border-amber-500/30 bg-background/70 p-4 space-y-2">
                 <p className="text-sm font-medium">Payroll Summary</p>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
@@ -541,8 +541,8 @@ export default function SiteManagementPage() {
               </div>
               <Button
                 onClick={() => setLockOpen(true)}
-                className="w-full"
-              >
+  className="w-full text-primary-foreground"
+  >
                 <Lock className="h-4 w-4 mr-2" />
                 Lock and Finalize Payroll
               </Button>
