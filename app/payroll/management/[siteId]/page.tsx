@@ -344,10 +344,7 @@ export default function SiteManagementPage() {
                 <p className="text-sm text-muted-foreground">Last updated</p>
                 <p className="mt-2 font-medium">March 31, 2026 at 2:30 PM</p>
               </div>
-              <div className="rounded-lg border p-4 md:col-span-2">
-                <p className="text-sm text-muted-foreground">Payroll formula</p>
-                <p className="mt-2 font-medium">Gross payroll + bonuses − deductions = net payroll</p>
-              </div>
+
             </CardContent>
           </Card>
         </TabsContent>
