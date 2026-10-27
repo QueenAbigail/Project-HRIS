@@ -362,29 +362,26 @@ export default function MonthlyRecapPage() {
                         <TableHeader>
                           <TableRow>
                             <TableHead>Site</TableHead>
-                            <TableHead className="text-right">Location</TableHead>
-                            <TableHead className="text-right">Employees</TableHead>
+                                                      <TableHead className="text-right">Employees</TableHead>
                             <TableHead className="text-right">Payroll</TableHead>
                             <TableHead className="text-right">Bonus</TableHead>
                             <TableHead className="text-right">Deductions</TableHead>
-                            <TableHead className="text-right">Net Payroll</TableHead>
-                          </TableRow>
+  <TableHead className="text-right">Net Payroll</TableHead>
+  <TableHead className="text-right">Payroll Detail</TableHead>
+  </TableRow>
                         </TableHeader>
                         <TableBody>
                           {record.sites?.map((site) => (
-                            <TableRow 
-                              key={site.siteId}
-                              className="cursor-pointer hover:bg-muted/50 transition-colors"
-                              onClick={() => handleSiteClick(site, record)}
-                            >
+  <TableRow key={site.siteId}>
                               <TableCell className="font-medium text-sm">{site.siteName}</TableCell>
                               <TableCell className="text-right text-sm">{site.location}</TableCell>
                               <TableCell className="text-right text-sm">{site.employees}</TableCell>
                               <TableCell className="text-right text-sm">{formatCurrency(site.payroll)}</TableCell>
                               <TableCell className="text-right text-sm text-success">{formatCurrency(site.bonus)}</TableCell>
                               <TableCell className="text-right text-sm text-destructive">{formatCurrency(site.deductions)}</TableCell>
-                              <TableCell className="text-right text-sm font-medium text-success">{formatCurrency(site.netPayroll)}</TableCell>
-                            </TableRow>
+  <TableCell className="text-right text-sm font-medium text-success">{formatCurrency(site.netPayroll)}</TableCell>
+  <TableCell className="text-right"><Button variant="outline" size="sm" onClick={() => handleSiteClick(site, record)}>Payroll Detail</Button></TableCell>
+  </TableRow>
                           ))}
                         </TableBody>
                       </Table>
