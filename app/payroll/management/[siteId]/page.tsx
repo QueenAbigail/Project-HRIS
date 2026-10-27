@@ -589,13 +589,23 @@ export default function SiteManagementPage() {
                       <div className="rounded-lg border p-4 text-sm"><h3 className="font-semibold">Calculation source</h3><dl className="mt-3 grid gap-3 sm:grid-cols-2"><div><dt className="text-muted-foreground">Applied rule</dt><dd className="font-medium">{editingEmployee.overtimeRule || 'Fixed OT rate · Rp 300.000/hour'}</dd></div><div><dt className="text-muted-foreground">Exceptional changes</dt><dd className="font-medium">Adjustments tab</dd></div></dl></div>
                     </div>
                   ) : (
-                    <div className="rounded-lg border p-4 text-sm">
-                      <h3 className="font-semibold">Calculation source</h3>
-                      <dl className="mt-3 space-y-3">
-                        <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Applied source</dt><dd className="text-right font-medium">{editingEmployee.deductionSource || 'Active deduction rules'}</dd></div>
-                        <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Payroll period</dt><dd className="font-medium">March 2026</dd></div>
-                        <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Exceptional changes</dt><dd className="font-medium">Adjustments tab</dd></div>
-                      </dl>
+                    <div className="space-y-3">
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Deduction items</p><p className="mt-1 text-xl font-semibold">2 items</p></div>
+                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Payroll period</p><p className="mt-1 text-xl font-semibold">March 2026</p></div>
+                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Total deductions</p><p className="mt-1 text-xl font-semibold tabular-nums text-destructive">{formatCurrency(editingEmployee.deductions)}</p></div>
+                      </div>
+                      <div className="rounded-lg border p-4 text-sm">
+                        <div className="flex items-center justify-between gap-4"><h3 className="font-semibold">Deduction breakdown</h3><span className="text-xs text-muted-foreground">Mockup data</span></div>
+                        <div className="mt-3 overflow-x-auto">
+                          <table className="w-full min-w-[620px] text-left">
+                            <thead className="border-b text-xs text-muted-foreground"><tr><th className="pb-2 font-medium">Deduction</th><th className="pb-2 font-medium">Category</th><th className="pb-2 font-medium">Calculation basis</th><th className="pb-2 text-right font-medium">Amount</th></tr></thead>
+                            <tbody className="divide-y"><tr><td className="py-3 font-medium">BPJS Ketenagakerjaan</td><td className="py-3 text-muted-foreground">Social security</td><td className="py-3 text-muted-foreground">2% × Rp 12.000.000 salary</td><td className="py-3 text-right font-medium tabular-nums">Rp 240.000</td></tr><tr><td className="py-3 font-medium">Employee loan repayment</td><td className="py-3 text-muted-foreground">Loan</td><td className="py-3 text-muted-foreground">Monthly installment · fixed</td><td className="py-3 text-right font-medium tabular-nums">Rp 2.260.000</td></tr></tbody>
+                            <tfoot className="border-t"><tr><td colSpan={3} className="pt-3 font-semibold">Total deductions</td><td className="pt-3 text-right font-bold text-destructive tabular-nums">Rp 2.500.000</td></tr></tfoot>
+                          </table>
+                        </div>
+                      </div>
+                      <div className="rounded-lg border p-4 text-sm"><h3 className="font-semibold">Calculation source</h3><dl className="mt-3 grid gap-3 sm:grid-cols-2"><div><dt className="text-muted-foreground">Applied source</dt><dd className="font-medium">{editingEmployee.deductionSource || 'BPJS and loan deduction rules'}</dd></div><div><dt className="text-muted-foreground">Exceptional changes</dt><dd className="font-medium">Adjustments tab</dd></div></dl></div>
                     </div>
                   )}
                   <p className="rounded-lg bg-muted/40 p-4 text-sm text-muted-foreground">This value is calculated from payroll rules and approved records. It is read-only here; exceptional changes must be managed from the Adjustments tab.</p>
