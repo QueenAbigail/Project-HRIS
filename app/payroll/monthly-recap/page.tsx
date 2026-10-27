@@ -29,8 +29,6 @@ import {
   Gift,
   Loader2,
   MinusCircle,
-  TrendingDown,
-  TrendingUp,
   Users,
   Wallet,
 } from 'lucide-react'
@@ -244,19 +242,7 @@ export default function MonthlyRecapPage() {
   const [siteLoading, setSiteLoading] = useState(false)
   const [siteEmployees, setSiteEmployees] = useState<DetailedRecord[]>([])
 
-  const latestRecord = mockMonthlyRecords[0]
-  const previousRecord = mockMonthlyRecords[1]
-  
-  const payrollTrend = latestRecord.totalPayroll - previousRecord.totalPayroll
-  const payrollTrendPercent = ((payrollTrend / previousRecord.totalPayroll) * 100).toFixed(1)
-  
-  const bonusTrend = latestRecord.totalBonus - previousRecord.totalBonus
-  const bonusTrendPercent = previousRecord.totalBonus > 0 
-    ? ((bonusTrend / previousRecord.totalBonus) * 100).toFixed(1)
-    : '0'
-  
-  const netPayrollTrend = latestRecord.netPayroll - previousRecord.netPayroll
-  const netPayrollTrendPercent = ((netPayrollTrend / previousRecord.netPayroll) * 100).toFixed(1)
+
 
   useEffect(() => {
     if (selectedRecord) {
@@ -313,117 +299,6 @@ export default function MonthlyRecapPage() {
           <Download className="size-4 mr-2" />
           Export Report
         </Button>
-      </div>
-
-      {/* Current Month Summary Cards */}
-      <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card className="min-w-0">
-
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Current Payroll</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="truncate text-lg font-bold leading-tight sm:text-xl">{formatCurrency(latestRecord.totalPayroll)}</p>
-            <p className="text-xs text-muted-foreground mt-1">{latestRecord.totalEmployees} employees</p>
-          </CardContent>
-        </Card>
-
-        <Card className="min-w-0">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Bonus</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="truncate text-lg font-bold leading-tight text-success sm:text-xl">{formatCurrency(latestRecord.totalBonus)}</p>
-            <p className="text-xs text-muted-foreground mt-1">{latestRecord.month}</p>
-          </CardContent>
-        </Card>
-
-        <Card className="min-w-0">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Deductions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="truncate text-lg font-bold leading-tight text-destructive sm:text-xl">{formatCurrency(latestRecord.totalDeductions)}</p>
-            <p className="text-xs text-muted-foreground mt-1">{((latestRecord.totalDeductions / latestRecord.totalPayroll) * 100).toFixed(1)}% of payroll</p>
-          </CardContent>
-        </Card>
-
-        <Card className="min-w-0">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Net Payroll</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="truncate text-lg font-bold leading-tight text-success sm:text-xl">{formatCurrency(latestRecord.netPayroll)}</p>
-            <p className="text-xs text-muted-foreground mt-1">After deductions</p>
-          </CardContent>
-        </Card>
-
-
-      </div>
-
-      {/* Trend Indicators */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Payroll Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              {payrollTrend >= 0 ? (
-                <TrendingUp className="size-5 text-success" />
-              ) : (
-                <TrendingDown className="size-5 text-destructive" />
-              )}
-              <span className={`text-lg font-semibold ${payrollTrend >= 0 ? 'text-success' : 'text-destructive'}`}>
-                {payrollTrend >= 0 ? '+' : ''}{payrollTrendPercent}%
-              </span>
-              <span className="text-sm text-muted-foreground">vs {previousRecord.month}</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">{formatCurrency(Math.abs(payrollTrend))} difference</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Bonus Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              {bonusTrend > 0 ? (
-                <TrendingUp className="size-5 text-success" />
-              ) : bonusTrend < 0 ? (
-                <TrendingDown className="size-5 text-destructive" />
-              ) : (
-                <span className="text-muted-foreground">-</span>
-              )}
-              <span className={`text-lg font-semibold ${bonusTrend > 0 ? 'text-success' : bonusTrend < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                {bonusTrend >= 0 ? '+' : ''}{bonusTrendPercent}%
-              </span>
-              <span className="text-sm text-muted-foreground">vs {previousRecord.month}</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">{formatCurrency(Math.abs(bonusTrend))} difference</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Net Payroll Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              {netPayrollTrend >= 0 ? (
-                <TrendingUp className="size-5 text-success" />
-              ) : (
-                <TrendingDown className="size-5 text-destructive" />
-              )}
-              <span className={`text-lg font-semibold ${netPayrollTrend >= 0 ? 'text-success' : 'text-destructive'}`}>
-                {netPayrollTrend >= 0 ? '+' : ''}{netPayrollTrendPercent}%
-              </span>
-              <span className="text-sm text-muted-foreground">vs {previousRecord.month}</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">{formatCurrency(Math.abs(netPayrollTrend))} difference</p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Monthly History with Expandable Details */}
