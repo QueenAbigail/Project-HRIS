@@ -337,7 +337,7 @@ export default function MonthlyRecapPage() {
                       <p className="text-lg font-semibold">{formatCurrency(record.totalPayroll)}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Bonus</p>
+                      <p className="text-xs text-muted-foreground">Allowance</p>
                       <p className="text-lg font-semibold text-success">{formatCurrency(record.totalBonus)}</p>
                     </div>
                     <div>
@@ -360,7 +360,7 @@ export default function MonthlyRecapPage() {
                             <TableHead>Site</TableHead>
                                                       <TableHead className="text-right">Employees</TableHead>
                             <TableHead className="text-right">Payroll</TableHead>
-                            <TableHead className="text-right">Bonus</TableHead>
+                            <TableHead className="text-right">Allowance</TableHead>
                             <TableHead className="text-right">Deductions</TableHead>
   <TableHead className="text-right">Net Payroll</TableHead>
   <TableHead className="text-right">Payroll Detail</TableHead>
@@ -415,7 +415,7 @@ export default function MonthlyRecapPage() {
                   <p className="text-2xl font-bold mt-2">{formatCurrency(selectedRecord.totalTax + selectedRecord.totalInsurance)}</p>
                 </div>
                 <div className="p-4 border rounded-lg">
-                  <p className="text-sm text-muted-foreground">Bonus Paid</p>
+                  <p className="text-sm text-muted-foreground">Allowance Paid</p>
                   <p className="text-2xl font-bold text-success mt-2">{formatCurrency(selectedRecord.totalBonus)}</p>
                 </div>
                 <div className="p-4 border rounded-lg">
@@ -438,7 +438,7 @@ export default function MonthlyRecapPage() {
                           <TableHead>Employee</TableHead>
                           <TableHead className="text-right">Base Pay</TableHead>
                           <TableHead className="text-right">Overtime</TableHead>
-                          <TableHead className="text-right">Bonus</TableHead>
+                          <TableHead className="text-right">Allowance</TableHead>
                           <TableHead className="text-right">Deductions</TableHead>
                           <TableHead className="text-right">Tax</TableHead>
                           <TableHead className="text-right">Net Pay</TableHead>
@@ -523,7 +523,7 @@ export default function MonthlyRecapPage() {
                             <TableHead className="h-10 text-center text-xs font-medium uppercase tracking-wide">Days</TableHead>
                             <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Base Pay</TableHead>
                             <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Overtime</TableHead>
-                            <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Bonus</TableHead>
+                            <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Allowance</TableHead>
                             <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Deductions</TableHead>
                             <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Tax</TableHead>
                             <TableHead className="h-10 pr-4 text-right text-xs font-medium uppercase tracking-wide">Net Pay</TableHead>
