@@ -20,17 +20,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  Banknote,
   Building2,
   ChevronDown,
   ChevronRight,
   Download,
   Eye,
-  Gift,
   Loader2,
-  MinusCircle,
   Users,
-  Wallet,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
@@ -503,27 +499,6 @@ export default function MonthlyRecapPage() {
           {selectedSite && selectedMonth && (
             <>
               <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
-                {/* Site Summary */}
-                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                  {[
-                    { label: 'Total Payroll', value: selectedSite.payroll, icon: Wallet, tone: 'text-foreground', tile: 'bg-primary/10 text-primary' },
-                    { label: 'Bonus', value: selectedSite.bonus, icon: Gift, tone: 'text-success', tile: 'bg-success/10 text-success' },
-                    { label: 'Deductions', value: selectedSite.deductions, icon: MinusCircle, tone: 'text-destructive', tile: 'bg-destructive/10 text-destructive' },
-                    { label: 'Net Payroll', value: selectedSite.netPayroll, icon: Banknote, tone: 'text-success', tile: 'bg-success/10 text-success' },
-                  ].map((item) => (
-                    <div key={item.label} className="rounded-xl border bg-card p-4 shadow-xs">
-                      <div className="flex items-center gap-2">
-                        <span className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${item.tile}`}>
-                          <item.icon className="size-4" />
-                        </span>
-                        <p className="text-sm text-muted-foreground">{item.label}</p>
-                      </div>
-                      <p className={`mt-3 whitespace-nowrap text-lg font-semibold tabular-nums xl:text-2xl ${item.tone}`}>
-                        {formatCurrency(item.value)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
 
                 {/* Employee Details Table */}
                 <section aria-labelledby="site-employees-heading" className="space-y-3">
