@@ -319,7 +319,7 @@ export default function SiteManagementPage() {
                 Read-only overview for {siteInfo.location} during the {`March 2026`} payroll period.
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-lg border p-4">
                 <p className="text-sm text-muted-foreground">Gross Payroll</p>
                 <p className="mt-2 text-xl font-bold tabular-nums">{formatCurrency(siteInfo.grossPayroll)}</p>
@@ -336,11 +336,11 @@ export default function SiteManagementPage() {
                 <p className="text-sm text-muted-foreground">Net Payroll</p>
                 <p className="mt-2 text-xl font-bold tabular-nums text-success">{formatCurrency(siteInfo.netPayroll)}</p>
               </div>
-              <div className="rounded-lg border p-4">
+              <div className="rounded-lg border p-4 lg:col-span-2">
                 <p className="text-sm text-muted-foreground">Payroll status</p>
                 <Badge variant="outline" className="mt-2 bg-slate-100 text-slate-700">{siteInfo.status.charAt(0).toUpperCase() + siteInfo.status.slice(1)}</Badge>
               </div>
-              <div className="rounded-lg border p-4">
+              <div className="rounded-lg border p-4 lg:col-span-2">
                 <p className="text-sm text-muted-foreground">Last updated</p>
                 <p className="mt-2 font-medium">March 31, 2026 at 2:30 PM</p>
               </div>
