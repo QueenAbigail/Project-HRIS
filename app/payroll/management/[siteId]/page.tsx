@@ -600,8 +600,7 @@ export default function SiteManagementPage() {
                           </table>
                         </div>
                       </div>
-                      <div className="rounded-lg border p-4 text-sm"><h3 className="font-semibold">Calculation source</h3><dl className="mt-3 grid gap-3 sm:grid-cols-2"><div><dt className="text-muted-foreground">Applied rule</dt><dd className="font-medium">{editingEmployee.overtimeRule || 'Fixed OT rate · Rp 300.000/hour'}</dd></div><div><dt className="text-muted-foreground">Exceptional changes</dt><dd className="font-medium">Adjustments tab</dd></div></dl></div>
-                    </div>
+                                          </div>
                   ) : (
                     <div className="space-y-3">
                       <div className="grid gap-3 sm:grid-cols-3">
@@ -619,8 +618,7 @@ export default function SiteManagementPage() {
                           </table>
                         </div>
                       </div>
-                      <div className="rounded-lg border p-4 text-sm"><h3 className="font-semibold">Calculation source</h3><dl className="mt-3 grid gap-3 sm:grid-cols-2"><div><dt className="text-muted-foreground">Applied source</dt><dd className="font-medium">{editingEmployee.deductionSource || 'BPJS and loan deduction rules'}</dd></div><div><dt className="text-muted-foreground">Exceptional changes</dt><dd className="font-medium">Adjustments tab</dd></div></dl></div>
-                    </div>
+                                          </div>
                   )}
                   <p className="rounded-lg bg-muted/40 p-4 text-sm text-muted-foreground">This value is calculated from payroll rules and approved records. It is read-only here; exceptional changes must be managed from the Adjustments tab.</p>
                   <div className="flex justify-end"><Button variant="outline" onClick={() => setPayrollDetail(null)}>Back to overview</Button></div>
