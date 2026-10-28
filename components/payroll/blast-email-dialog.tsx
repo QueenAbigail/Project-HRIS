@@ -28,7 +28,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer'
-import { Mail, Send, Users, Search, X } from 'lucide-react'
+import { Mail, Send, Smartphone, Users, Search, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { defaultEmailTemplates } from '@/lib/email-templates'
 
@@ -60,7 +60,7 @@ export function BlastEmailDialog({ open, onOpenChange, siteName }: BlastEmailDia
   const [selectedTemplate, setSelectedTemplate] = useState('payslip')
   const [subject, setSubject] = useState(payslipTemplate.subject)
   const [message, setMessage] = useState(payslipTemplate.message)
-  const [attachPayslip, setAttachPayslip] = useState(true)
+  const [sendEmailNotification, setSendEmailNotification] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [openRecipientDrawer, setOpenRecipientDrawer] = useState(false)
   const [selectedEmployees, setSelectedEmployees] = useState<number[]>(
@@ -113,9 +113,9 @@ export function BlastEmailDialog({ open, onOpenChange, siteName }: BlastEmailDia
     }
   }
 
-  const handleSendEmail = async () => {
+  const handlePublishPayslips = async () => {
     setIsSending(true)
-    // Simulate sending email - replace with actual API call
+    // Simulate publishing to the mobile app - replace with actual API call
     await new Promise(resolve => setTimeout(resolve, 1500))
     setIsSending(false)
     onOpenChange(false)
@@ -145,11 +145,11 @@ export function BlastEmailDialog({ open, onOpenChange, siteName }: BlastEmailDia
       <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Mail className="size-5" />
-            Send Payslips to Employees
+            <Smartphone className="size-5" />
+            Publish Payslips to Mobile App
           </DialogTitle>
           <DialogDescription>
-            Send unsent payslips for this site. Select recipients and compose your message.
+            Make unsent payslips available in the mobile app. Email notification is optional.
           </DialogDescription>
         </DialogHeader>
 
@@ -164,7 +164,7 @@ export function BlastEmailDialog({ open, onOpenChange, siteName }: BlastEmailDia
               </div>
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Users className="size-3" />
-                <span>{getRecipientCount()} employee(s) will receive this email</span>
+                <span>{getRecipientCount()} employee(s) will receive this payslip in the mobile app</span>
               </div>
               <Button
                 variant="ghost"
@@ -179,25 +179,28 @@ export function BlastEmailDialog({ open, onOpenChange, siteName }: BlastEmailDia
               </Button>
             </div>
 
-            {/* Attach Payslip Option */}
-            <div className="flex items-center space-x-2 pt-4 border-t">
+            {/* Optional email notification */}
+            <div className="flex items-start space-x-2 pt-4 border-t">
               <Checkbox
-                id="attach-payslip"
-                checked={attachPayslip}
-                onCheckedChange={(checked) => setAttachPayslip(checked as boolean)}
+                id="send-email-notification"
+                checked={sendEmailNotification}
+                onCheckedChange={(checked) => setSendEmailNotification(checked === true)}
               />
-              <Label htmlFor="attach-payslip" className="text-sm font-normal cursor-pointer">
-                Attach payslip PDF to email
-              </Label>
+              <div className="space-y-1">
+                <Label htmlFor="send-email-notification" className="cursor-pointer text-sm font-normal">
+                  Also send an email notification (optional)
+                </Label>
+                <p className="text-xs text-muted-foreground">The payslip will still be available in the mobile app.</p>
+              </div>
             </div>
           </div>
 
-          {/* Right Column - Template, Subject and Message */}
+          {/* Optional email notification */}
           <div className="space-y-4">
             {/* Email Template */}
             <div className="space-y-2">
-              <Label htmlFor="template">Email Template</Label>
-              <Select value={selectedTemplate} onValueChange={handleTemplateChange}>
+              <Label htmlFor="template">Optional Email Notification</Label>
+              <Select value={selectedTemplate} onValueChange={handleTemplateChange} disabled={!sendEmailNotification}>
                 <SelectTrigger id="template">
                   <SelectValue placeholder="Select a template" />
                 </SelectTrigger>
@@ -213,13 +216,13 @@ export function BlastEmailDialog({ open, onOpenChange, siteName }: BlastEmailDia
 
             {/* Subject */}
             <div className="space-y-2">
-              <Label htmlFor="subject">Subject</Label>
+              <Label htmlFor="subject">Email Subject</Label>
               <Input
                 id="subject"
                 placeholder="Enter email subject..."
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                disabled={selectedTemplate !== 'custom'}
+                disabled={!sendEmailNotification || selectedTemplate !== 'custom'}
                 className={selectedTemplate !== 'custom' ? 'opacity-60 cursor-not-allowed' : ''}
               />
             </div>
@@ -232,7 +235,7 @@ export function BlastEmailDialog({ open, onOpenChange, siteName }: BlastEmailDia
                 placeholder="Enter your message..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                disabled={selectedTemplate !== 'custom'}
+                disabled={!sendEmailNotification || selectedTemplate !== 'custom'}
                 rows={5}
                 className={`resize-none ${selectedTemplate !== 'custom' ? 'opacity-60 cursor-not-allowed' : ''}`}
               />
@@ -246,7 +249,7 @@ export function BlastEmailDialog({ open, onOpenChange, siteName }: BlastEmailDia
             <DrawerHeader className="pb-3">
               <DrawerTitle>Select Recipients</DrawerTitle>
               <DrawerDescription>
-                View and manage email recipients from the selected site
+                View and manage mobile app recipients from this site
               </DrawerDescription>
             </DrawerHeader>
 
@@ -341,13 +344,13 @@ export function BlastEmailDialog({ open, onOpenChange, siteName }: BlastEmailDia
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSendEmail} disabled={isSending}>
+          <Button onClick={handlePublishPayslips} disabled={isSending}>
             {isSending ? (
-              <>Sending...</>
+              <>Publishing...</>
             ) : (
               <>
-                <Send className="mr-2 size-4" />
-                Send Email
+                <Smartphone className="mr-2 size-4" />
+                Publish Payslips
               </>
             )}
           </Button>

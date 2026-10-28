@@ -119,7 +119,7 @@ export default function SitePayslipPage() {
             </CardTitle>
             <Button className="gap-2" onClick={() => setBlastEmailOpen(true)}>
               <Mail className="size-4" aria-hidden="true" />
-              Send Not Sent Payslips
+              Publish Not Sent Payslips
             </Button>
           </div>
           <div className="relative w-full">
