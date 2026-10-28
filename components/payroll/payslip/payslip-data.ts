@@ -43,9 +43,9 @@ export function getGross(record: Pick<PayslipRecord, 'baseSalary' | 'overtime' |
   return record.baseSalary + record.overtime + record.bonus + record.allowances
 }
 
-/** Payslip values use Indonesian thousands separators for a consistent payroll display. */
+/** Mock payroll values are stored in thousands of rupiah; display full rupiah amounts. */
 export function formatPayslipAmount(amount: number) {
-  return `Rp ${amount.toLocaleString('id-ID')}`
+  return `Rp ${(amount * 1000).toLocaleString('id-ID')}`
 }
 
 function build(raw: RawPayslip): PayslipRecord {
