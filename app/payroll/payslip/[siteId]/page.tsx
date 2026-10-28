@@ -33,12 +33,6 @@ export default function SitePayslipPage() {
   const site = getSite(params.siteId)
   const siteRecords = useMemo(() => getSiteRecords(params.siteId), [params.siteId])
 
-  const departments = useMemo(
-    () => ['All Departments', ...Array.from(new Set(siteRecords.map((record) => record.department)))],
-    [siteRecords],
-  )
-
-  const [department, setDepartment] = useState('All Departments')
   const [status, setStatus] = useState(statuses[0])
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<PayslipRecord | null>(null)
@@ -47,12 +41,11 @@ export default function SitePayslipPage() {
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase()
     return siteRecords.filter((record) => {
-      if (department !== 'All Departments' && record.department !== department) return false
       if (status !== statuses[0] && record.status !== status) return false
       if (term && !`${record.name} ${record.id}`.toLowerCase().includes(term)) return false
       return true
     })
-  }, [siteRecords, department, status, query])
+    }, [siteRecords, status, query])
 
   if (!site) {
     return (
@@ -100,18 +93,6 @@ export default function SitePayslipPage() {
       </div>
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center">
-        <Select value={department} onValueChange={setDepartment}>
-          <SelectTrigger className="w-full md:w-48" aria-label="Department">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {departments.map((item) => (
-              <SelectItem key={item} value={item}>
-                {item}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <Select value={status} onValueChange={setStatus}>
           <SelectTrigger className="w-full capitalize md:w-40" aria-label="Payment status">
             <SelectValue />
