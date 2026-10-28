@@ -13,19 +13,19 @@ export function PayslipSummary({ records }: PayslipSummaryProps) {
 
   const items = [
     { label: 'Payslips', value: String(records.length), hint: 'In selected period', icon: FileText },
-    { label: 'Total Net Pay', value: formatPayslipAmount(totalNetPay), hint: 'After deductions', icon: Wallet, wide: true },
+    { label: 'Total Net Pay', value: formatPayslipAmount(totalNetPay), hint: 'After deductions', icon: Wallet },
     { label: 'Paid', value: String(paidCount), hint: 'Ready to distribute', icon: CheckCircle2 },
     { label: 'Pending', value: String(pendingCount), hint: 'Awaiting payment', icon: Clock },
   ]
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-      {items.map(({ label, value, hint, icon: Icon, wide }) => (
-        <Card key={label} className={`bg-card border-border ${wide ? 'sm:col-span-2 xl:col-span-2' : ''}`}>
-          <CardContent className="flex items-start justify-between gap-3 p-5">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {items.map(({ label, value, hint, icon: Icon }) => (
+        <Card key={label} className="min-w-0 bg-card border-border">
+          <CardContent className="flex items-start justify-between gap-3 p-4 sm:p-5">
             <div className="min-w-0 flex-1">
               <p className="text-sm text-muted-foreground">{label}</p>
-              <p className="mt-1 whitespace-nowrap text-2xl font-semibold tracking-tight">{value}</p>
+              <p className="mt-1 whitespace-nowrap text-[clamp(1.15rem,2.2vw,1.5rem)] font-semibold tracking-tight">{value}</p>
               <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
             </div>
             <div className="rounded-lg bg-primary/10 p-2 text-primary">
