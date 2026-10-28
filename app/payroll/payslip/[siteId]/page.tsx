@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, MapPin, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,6 +28,8 @@ const statuses = ['All Status', 'paid', 'pending', 'failed']
 export default function SitePayslipPage() {
   const router = useRouter()
   const params = useParams<{ siteId: string }>()
+  const searchParams = useSearchParams()
+  const period = searchParams.get('period') ?? payslipPeriods[0]
   const site = getSite(params.siteId)
   const siteRecords = useMemo(() => getSiteRecords(params.siteId), [params.siteId])
 
@@ -36,7 +38,6 @@ export default function SitePayslipPage() {
     [siteRecords],
   )
 
-  const [period, setPeriod] = useState(payslipPeriods[0])
   const [department, setDepartment] = useState('All Departments')
   const [status, setStatus] = useState(statuses[0])
   const [query, setQuery] = useState('')
@@ -99,18 +100,6 @@ export default function SitePayslipPage() {
       </div>
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center">
-        <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-full md:w-44" aria-label="Payroll period">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {payslipPeriods.map((item) => (
-              <SelectItem key={item} value={item}>
-                {item}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <Select value={department} onValueChange={setDepartment}>
           <SelectTrigger className="w-full md:w-48" aria-label="Department">
             <SelectValue />
