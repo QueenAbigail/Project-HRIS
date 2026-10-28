@@ -33,7 +33,7 @@ interface PayslipEmployee {
   otherDeductions: number
   deductions: number
   netPay: number
-  status: 'paid' | 'pending' | 'failed'
+  status: string
 }
 
 interface PayslipDrawerProps {
@@ -43,11 +43,10 @@ interface PayslipDrawerProps {
   period: string
 }
 
-const statusColors: Record<string, { badge: string }> = {
-  paid: { badge: 'bg-green-100 text-green-800' },
-  pending: { badge: 'bg-yellow-100 text-yellow-800' },
-  failed: { badge: 'bg-red-100 text-red-800' },
-}
+  const statusColors: Record<string, { badge: string }> = {
+    sent: { badge: 'bg-green-100 text-green-800' },
+    'not-sent': { badge: 'bg-yellow-100 text-yellow-800' },
+  }
 
 // CSS Print Super Aman - A4 Landscape Half Size Centered
 const landscapePrintStyle = `
@@ -110,7 +109,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
 
   if (!employee) return null
 
-  const statusStyle = statusColors[employee.status]
+  const statusStyle = statusColors[employee.status] ?? { badge: 'bg-muted text-muted-foreground' }
   const totalGross = employee.baseSalary + employee.overtime + employee.bonus + employee.allowances
   const takeHomePercentage = ((employee.netPay / totalGross) * 100).toFixed(1)
 
@@ -239,7 +238,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
                     </div>
                   </div>
                   <Badge className={`${statusStyle.badge} text-xs py-0.5 px-2 h-fit flex-shrink-0 shadow-sm border-none`}>
-                    {employee.status.toUpperCase()}
+                    {employee.status === 'sent' ? 'SENT' : employee.status === 'not-sent' ? 'NOT SENT' : employee.status.toUpperCase()}
                   </Badge>
                 </div>
 
