@@ -105,28 +105,28 @@ export default function SitePayslipPage() {
             ))}
           </SelectContent>
         </Select>
-        <div className="relative md:ml-auto md:w-72">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search employee name or ID"
-            aria-label="Search payslips"
-            className="pl-9"
-          />
-        </div>
       </div>
 
       <PayslipSummary records={filtered} />
 
       <Card className="bg-card border-border">
-        <CardHeader>
+        <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>
             {site.name} Payslips - {period}
           </CardTitle>
+          <div className="relative w-full sm:w-72">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search employee name or ID"
+              aria-label="Search payslips"
+              className="pl-9"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {filtered.length === 0 ? (
