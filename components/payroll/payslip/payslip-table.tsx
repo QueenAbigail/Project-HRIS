@@ -10,8 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { formatCurrency } from '@/lib/currency'
-import type { PayslipRecord } from './payslip-data'
+import { formatPayslipAmount, getGross, type PayslipRecord } from './payslip-data'
 
 const statusStyles: Record<PayslipRecord['status'], string> = {
   paid: 'bg-success/10 text-success border-success/20',
@@ -59,12 +58,12 @@ export function PayslipTable({ records, onView }: PayslipTableProps) {
                   </div>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{record.department}</TableCell>
-                <TableCell className="text-right font-mono text-sm">{formatCurrency(gross)}</TableCell>
+                <TableCell className="text-right font-mono text-sm">{formatPayslipAmount(gross)}</TableCell>
                 <TableCell className="text-right font-mono text-sm text-destructive">
-                  -{formatCurrency(record.deductions)}
+                  -{formatPayslipAmount(record.deductions)}
                 </TableCell>
                 <TableCell className="text-right font-mono text-sm font-semibold">
-                  {formatCurrency(record.netPay)}
+                  {formatPayslipAmount(record.netPay)}
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className={statusStyles[record.status]}>

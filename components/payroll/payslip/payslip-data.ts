@@ -43,6 +43,11 @@ export function getGross(record: Pick<PayslipRecord, 'baseSalary' | 'overtime' |
   return record.baseSalary + record.overtime + record.bonus + record.allowances
 }
 
+/** Payslip sample values are stored in thousands of rupiah; display them as millions. */
+export function formatPayslipAmount(amount: number) {
+  return `Rp ${(amount / 1000).toLocaleString('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} jt`
+}
+
 function build(raw: RawPayslip): PayslipRecord {
   const deductions = raw.taxDeduction + raw.insuranceDeduction + raw.otherDeductions
   return { ...raw, deductions, netPay: getGross(raw) - deductions }

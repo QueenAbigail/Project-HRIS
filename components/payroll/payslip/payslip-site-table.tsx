@@ -10,8 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { formatCurrency } from '@/lib/currency'
-import { getGross, type PayslipRecord, type PayslipSite } from './payslip-data'
+import { formatPayslipAmount, getGross, type PayslipRecord, type PayslipSite } from './payslip-data'
 
 interface PayslipSiteTableProps {
   sites: PayslipSite[]
@@ -71,11 +70,11 @@ export function PayslipSiteTable({ sites, records, onOpen }: PayslipSiteTablePro
                   </div>
                 </TableCell>
                 <TableCell className="text-center text-sm">{siteRecords.length}</TableCell>
-                <TableCell className="text-right font-mono text-sm">{formatCurrency(gross)}</TableCell>
+                <TableCell className="text-right font-mono text-sm">{formatPayslipAmount(gross)}</TableCell>
                 <TableCell className="text-right font-mono text-sm text-destructive">
-                  -{formatCurrency(deductions)}
+                  -{formatPayslipAmount(deductions)}
                 </TableCell>
-                <TableCell className="text-right font-mono text-sm font-semibold">{formatCurrency(net)}</TableCell>
+                <TableCell className="text-right font-mono text-sm font-semibold">{formatPayslipAmount(net)}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Progress value={percent} className="h-1.5" aria-label={`${site.name} payment progress`} />
