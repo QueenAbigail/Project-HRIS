@@ -92,14 +92,14 @@ export function PayrollHeader() {
       </div>
 
       <Drawer open={openTrendDrawer} onOpenChange={setOpenTrendDrawer}>
-        <DrawerContent>
+        <DrawerContent className="flex max-h-[calc(100vh-1rem)] flex-col overflow-hidden">
           <DrawerHeader>
             <DrawerTitle>Payroll Trend</DrawerTitle>
             <DrawerDescription>
               Monthly payroll expenses and trends over the last 6 months
             </DrawerDescription>
           </DrawerHeader>
-          <div className="p-6">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-5 sm:px-6 sm:pb-6">
             <PayrollChart />
           </div>
         </DrawerContent>

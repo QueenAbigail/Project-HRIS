@@ -35,7 +35,7 @@ function TrendValue({ value, suffix = '' }: { value: string; suffix?: string }) 
 export function PayrollChart() {
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
         <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Current payroll</p><p className="mt-1 text-xl font-semibold">{formatCurrency(current.total)}</p><p className="mt-1 text-xs"><TrendValue value={changePercent} suffix=" vs last month" /></p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Six-month average</p><p className="mt-1 text-xl font-semibold">{formatCurrency(average)}</p><p className="mt-1 text-xs text-muted-foreground">Monthly payroll spend</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Highest month</p><p className="mt-1 text-xl font-semibold">{formatCurrency(highest.total)}</p><p className="mt-1 text-xs text-muted-foreground">{highest.month} 2026</p></CardContent></Card>
@@ -46,7 +46,7 @@ export function PayrollChart() {
         <Card>
           <CardHeader><CardTitle>Payroll movement</CardTitle><CardDescription>Total payroll across the last six months</CardDescription></CardHeader>
           <CardContent>
-            <div className="h-[300px]">
+            <div className="h-[220px] sm:h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyData} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="3 3" />
