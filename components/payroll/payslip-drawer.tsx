@@ -94,8 +94,6 @@ const landscapePrintStyle = `
 `
 
 export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipDrawerProps) {
-  if (!employee) return null
-
   useEffect(() => {
     // Load html2pdf library from CDN when component mounts
     if (typeof (window as any).html2pdf === 'undefined') {
@@ -109,6 +107,8 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
       document.head.appendChild(script)
     }
   }, [])
+
+  if (!employee) return null
 
   const statusStyle = statusColors[employee.status]
   const totalGross = employee.baseSalary + employee.overtime + employee.bonus + employee.allowances

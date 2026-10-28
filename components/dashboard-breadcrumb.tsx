@@ -23,6 +23,7 @@ export function DashboardBreadcrumb() {
     '/dashboard/shifts': 'Shift Schedule',
     '/payroll': 'Payroll',
     '/payroll/management': 'Management',
+    '/payroll/payslip': 'Payslip',
     '/payroll/salary': 'Salary',
     '/payroll/overtime': 'Overtime',
     '/payroll/deduction': 'Deduction',

@@ -29,6 +29,7 @@ import {
   Bell,
   Loader2,
   Wrench,
+  Receipt,
 } from 'lucide-react'
 
 import {
@@ -154,6 +155,11 @@ const payrollNavItems = [
     title: 'Payroll Management',
     url: '/payroll/management',
     icon: Wallet,
+  },
+  {
+    title: 'Manage Payslip',
+    url: '/payroll/payslip',
+    icon: Receipt,
   },
   {
     title: 'Monthly Recap',
