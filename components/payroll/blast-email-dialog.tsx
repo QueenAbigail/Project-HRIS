@@ -35,15 +35,8 @@ import { defaultEmailTemplates } from '@/lib/email-templates'
 interface BlastEmailDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  siteName: string
 }
-
-const sites = [
-  { id: 'all', label: 'All Sites' },
-  { id: 'jakarta', label: 'Jakarta HQ' },
-  { id: 'bandung', label: 'Bandung Branch' },
-  { id: 'surabaya', label: 'Surabaya Branch' },
-  { id: 'medan', label: 'Medan Branch' },
-]
 
 // Mock employee data
 const mockEmployees = [
@@ -61,10 +54,9 @@ const mockEmployees = [
   { id: 12, name: 'Nina Patel', email: 'nina.patel@company.com', site: 'medan', status: 'Pending', payslipSentThisMonth: false },
 ]
 
-export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) {
+export function BlastEmailDialog({ open, onOpenChange, siteName }: BlastEmailDialogProps) {
   const payslipTemplate = defaultEmailTemplates.find(t => t.id === 'payslip')!
   
-  const [selectedSite, setSelectedSite] = useState('all')
   const [selectedTemplate, setSelectedTemplate] = useState('payslip')
   const [subject, setSubject] = useState(payslipTemplate.subject)
   const [message, setMessage] = useState(payslipTemplate.message)
@@ -85,12 +77,9 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
     }
   }
 
-  const getEmployeesBySite = () => {
-    if (selectedSite === 'all') {
-      return mockEmployees
-    }
-    return mockEmployees.filter(emp => emp.site === selectedSite)
-  }
+  const currentSiteId = siteName.toLowerCase().includes('head') ? 'jakarta' : siteName.toLowerCase().includes('regional') ? 'surabaya' : 'bandung'
+
+  const getEmployeesBySite = () => mockEmployees.filter(emp => emp.site === currentSiteId)
 
   const employees = getEmployeesBySite()
 
@@ -134,7 +123,6 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
     setSelectedTemplate('payslip')
     setSubject(payslipTemplate.subject)
     setMessage(payslipTemplate.message)
-    setSelectedSite('all')
     setSelectedEmployees(mockEmployees.filter(emp => !emp.payslipSentThisMonth).map(emp => emp.id))
     setSearchQuery('')
   }
@@ -158,10 +146,10 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="size-5" />
-            Blast Email to Employees
+            Send Payslips to Employees
           </DialogTitle>
           <DialogDescription>
-            Send payroll-related emails to employees. Select recipients and compose your message.
+            Send unsent payslips for this site. Select recipients and compose your message.
           </DialogDescription>
         </DialogHeader>
 
@@ -170,19 +158,10 @@ export function BlastEmailDialog({ open, onOpenChange }: BlastEmailDialogProps) 
           <div className="space-y-4">
             {/* Recipients */}
             <div className="space-y-2">
-              <Label htmlFor="site">Recipients</Label>
-              <Select value={selectedSite} onValueChange={setSelectedSite}>
-                <SelectTrigger id="site">
-                  <SelectValue placeholder="Select site" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sites.map((site) => (
-                    <SelectItem key={site.id} value={site.id}>
-                      {site.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Recipients</Label>
+              <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm font-medium">
+                {siteName}
+              </div>
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Users className="size-3" />
                 <span>{getRecipientCount()} employee(s) will receive this email</span>
