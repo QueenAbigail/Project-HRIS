@@ -44,7 +44,6 @@ export default function ManagePayslipPage() {
   const totalGross = payslipRecords.reduce((sum, record) => sum + getGross(record), 0)
   const totalDeductions = payslipRecords.reduce((sum, record) => sum + record.deductions, 0)
   const totalNet = payslipRecords.reduce((sum, record) => sum + record.netPay, 0)
-  const paidCount = payslipRecords.filter((record) => record.status === 'paid').length
 
   return (
     <div className="space-y-6 p-6">
@@ -61,12 +60,6 @@ export default function ManagePayslipPage() {
       </div>
 
       <PayslipSummary records={payslipRecords} />
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Latest gross payroll</p><p className="mt-1 text-lg font-semibold">{formatPayslipAmount(totalGross)}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Latest deductions</p><p className="mt-1 text-lg font-semibold text-destructive">{formatPayslipAmount(totalDeductions)}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Latest net payroll</p><p className="mt-1 text-lg font-semibold text-success">{formatPayslipAmount(totalNet)}</p></CardContent></Card>
-      </div>
 
       <div className="space-y-3">
         {payslipPeriods.map((period, index) => {

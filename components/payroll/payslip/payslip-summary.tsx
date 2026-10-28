@@ -12,10 +12,10 @@ export function PayslipSummary({ records }: PayslipSummaryProps) {
   const pendingCount = records.filter((record) => record.status !== 'paid').length
 
   const items = [
-    { label: 'Payslips', value: String(records.length), hint: 'In selected period', icon: FileText },
-    { label: 'Total Net Pay', value: formatPayslipAmount(totalNetPay), hint: 'After deductions', icon: Wallet },
-    { label: 'Paid', value: String(paidCount), hint: 'Ready to distribute', icon: CheckCircle2 },
-    { label: 'Pending', value: String(pendingCount), hint: 'Awaiting payment', icon: Clock },
+    { label: 'Payslips', value: String(records.length), hint: 'Latest finalized month', icon: FileText },
+    { label: 'Total Net Pay', value: formatPayslipAmount(totalNetPay), hint: 'Latest finalized month', icon: Wallet },
+    { label: 'Paid', value: String(paidCount), hint: 'Latest finalized month', icon: CheckCircle2 },
+    { label: 'Pending', value: String(pendingCount), hint: 'Latest finalized month', icon: Clock },
   ]
 
   return (
