@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, MapPin, Search } from 'lucide-react'
+import { ArrowLeft, Mail, MapPin, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { BlastEmailDialog } from '@/components/payroll/blast-email-dialog'
 import { PayslipDrawer } from '@/components/payroll/payslip-drawer'
 import { PayslipSummary } from '@/components/payroll/payslip/payslip-summary'
 import { PayslipTable } from '@/components/payroll/payslip/payslip-table'
@@ -37,6 +38,7 @@ export default function SitePayslipPage() {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<PayslipRecord | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [blastEmailOpen, setBlastEmailOpen] = useState(false)
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase()
@@ -111,9 +113,15 @@ export default function SitePayslipPage() {
 
       <Card className="bg-card border-border">
         <CardHeader className="gap-4">
-          <CardTitle>
-            {site.name} Payslips - {period}
-          </CardTitle>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle>
+              {site.name} Payslips - {period}
+            </CardTitle>
+            <Button className="gap-2" onClick={() => setBlastEmailOpen(true)}>
+              <Mail className="size-4" aria-hidden="true" />
+              Send Not Sent Payslips
+            </Button>
+          </div>
           <div className="relative w-full">
             <Search
               className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -141,6 +149,7 @@ export default function SitePayslipPage() {
       </Card>
 
       <PayslipDrawer open={drawerOpen} onOpenChange={setDrawerOpen} employee={selected} period={period} />
+      <BlastEmailDialog open={blastEmailOpen} onOpenChange={setBlastEmailOpen} />
     </div>
   )
 }
