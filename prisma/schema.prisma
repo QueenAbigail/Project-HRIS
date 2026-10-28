@@ -632,8 +632,8 @@ model Notification {
   type      NotificationType @default(SYSTEM)
   isRead    Boolean          @default(false)
   metadata  Json? // Store extra details like request_id, entity_type, link_id, etc.
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  createdAt DateTime         @default(now()) @db.Timestamptz()
+  updatedAt DateTime         @updatedAt @db.Timestamptz()
 
   @@index([userId])
   @@index([isRead])
