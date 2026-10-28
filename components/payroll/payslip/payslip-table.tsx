@@ -13,9 +13,8 @@ import {
 import { formatPayslipAmount, getGross, type PayslipRecord } from './payslip-data'
 
 const statusStyles: Record<PayslipRecord['status'], string> = {
-  paid: 'bg-success/10 text-success border-success/20',
-  pending: 'bg-warning/10 text-warning border-warning/20',
-  failed: 'bg-destructive/10 text-destructive border-destructive/20',
+  sent: 'bg-success/10 text-success border-success/20',
+  'not-sent': 'bg-warning/10 text-warning border-warning/20',
 }
 
 interface PayslipTableProps {
@@ -67,7 +66,7 @@ export function PayslipTable({ records, onView }: PayslipTableProps) {
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className={statusStyles[record.status]}>
-                    {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                    {record.status === 'sent' ? 'Sent' : 'Not Sent'}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">

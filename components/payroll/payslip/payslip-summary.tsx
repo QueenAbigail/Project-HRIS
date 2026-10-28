@@ -8,14 +8,14 @@ interface PayslipSummaryProps {
 
 export function PayslipSummary({ records }: PayslipSummaryProps) {
   const totalNetPay = records.reduce((sum, record) => sum + record.netPay, 0)
-  const paidCount = records.filter((record) => record.status === 'paid').length
-  const pendingCount = records.filter((record) => record.status !== 'paid').length
+  const sentCount = records.filter((record) => record.status === 'sent').length
+  const notSentCount = records.filter((record) => record.status !== 'sent').length
 
   const items = [
     { label: 'Payslips', value: String(records.length), hint: 'Latest finalized month', icon: FileText },
     { label: 'Total Net Pay', value: formatPayslipAmount(totalNetPay), hint: 'Latest finalized month', icon: Wallet },
-    { label: 'Paid', value: String(paidCount), hint: 'Latest finalized month', icon: CheckCircle2 },
-    { label: 'Pending', value: String(pendingCount), hint: 'Latest finalized month', icon: Clock },
+    { label: 'Sent', value: String(sentCount), hint: 'Payslip delivery status', icon: CheckCircle2 },
+    { label: 'Not Sent', value: String(notSentCount), hint: 'Payslip delivery status', icon: Clock },
   ]
 
   return (

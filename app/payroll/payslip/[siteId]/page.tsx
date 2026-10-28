@@ -23,7 +23,7 @@ import {
   type PayslipRecord,
 } from '@/components/payroll/payslip/payslip-data'
 
-const statuses = ['All Status', 'paid', 'pending', 'failed']
+const statuses = ['All Status', 'sent', 'not-sent']
 
 export default function SitePayslipPage() {
   const router = useRouter()
@@ -94,14 +94,14 @@ export default function SitePayslipPage() {
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center">
         <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="w-full capitalize md:w-40" aria-label="Payment status">
+          <SelectTrigger className="w-full md:w-40" aria-label="Payslip delivery status">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {statuses.map((item) => (
-              <SelectItem key={item} value={item} className="capitalize">
-                {item}
-              </SelectItem>
+<SelectItem key={item} value={item}>
+                              {item === 'not-sent' ? 'Not Sent' : item === 'sent' ? 'Sent' : item}
+                            </SelectItem>
             ))}
           </SelectContent>
         </Select>

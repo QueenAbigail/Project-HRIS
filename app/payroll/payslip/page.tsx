@@ -17,10 +17,10 @@ import {
   payslipSites,
 } from '@/components/payroll/payslip/payslip-data'
 
-function getSiteStatus(paid: number, total: number) {
-  if (paid === total) return { label: 'Published', className: 'bg-success/10 text-success border-success/20' }
-  if (paid === 0) return { label: 'Ready to Publish', className: 'bg-muted text-muted-foreground border-border' }
-  return { label: 'Partially Published', className: 'bg-warning/10 text-warning border-warning/20' }
+function getSiteStatus(sent: number, total: number) {
+  if (sent === total) return { label: 'All Sent', className: 'bg-success/10 text-success border-success/20' }
+  if (sent === 0) return { label: 'Not Sent', className: 'bg-muted text-muted-foreground border-border' }
+  return { label: 'Partially Sent', className: 'bg-warning/10 text-warning border-warning/20' }
 }
 
 export default function ManagePayslipPage() {
@@ -88,18 +88,18 @@ export default function ManagePayslipPage() {
                   </div>
                   <div className="overflow-x-auto rounded-lg border">
                     <table className="w-full min-w-[780px] text-sm">
-                      <thead className="border-b bg-muted/20"><tr className="text-left"><th className="p-3 font-medium">Site</th><th className="p-3 text-right font-medium">Payslips</th><th className="p-3 text-right font-medium">Net Pay</th><th className="p-3 font-medium">Publication</th><th className="p-3 text-right font-medium">Action</th></tr></thead>
+                      <thead className="border-b bg-muted/20"><tr className="text-left"><th className="p-3 font-medium">Site</th><th className="p-3 text-right font-medium">Payslips</th><th className="p-3 text-right font-medium">Net Pay</th><th className="p-3 font-medium">Delivery</th><th className="p-3 text-right font-medium">Action</th></tr></thead>
                       <tbody>
                         {sites.map((site) => {
                           const siteRecords = payslipRecords.filter((record) => record.siteId === site.id)
-                          const paid = siteRecords.filter((record) => record.status === 'paid').length
-                          const status = getSiteStatus(paid, siteRecords.length)
+const sent = siteRecords.filter((record) => record.status === 'sent').length
+            const status = getSiteStatus(sent, siteRecords.length)
                           return (
                             <tr key={`${period}-${site.id}`} className="border-b last:border-0">
                               <td className="p-3"><p className="font-medium">{site.name}</p><p className="text-xs text-muted-foreground">{site.location}</p></td>
                               <td className="p-3 text-right">{siteRecords.length}</td>
                               <td className="p-3 text-right font-medium">{formatPayslipAmount(siteRecords.reduce((sum, record) => sum + record.netPay, 0))}</td>
-                              <td className="p-3"><div className="flex items-center gap-2"><Progress value={siteRecords.length ? (paid / siteRecords.length) * 100 : 0} className="h-1.5 max-w-24" /><span className="text-xs text-muted-foreground">{paid}/{siteRecords.length}</span><Badge variant="outline" className={status.className}>{status.label}</Badge></div></td>
+                              <td className="p-3"><div className="flex items-center gap-2"><Progress value={siteRecords.length ? (sent / siteRecords.length) * 100 : 0} className="h-1.5 max-w-24" /><span className="text-xs text-muted-foreground">{sent}/{siteRecords.length}</span><Badge variant="outline" className={status.className}>{status.label}</Badge></div></td>
                               <td className="p-3 text-right"><Button variant="outline" size="sm" onClick={() => router.push(`/payroll/payslip/${site.id}?period=${encodeURIComponent(period)}`)}>View Payslips</Button></td>
                             </tr>
                           )
@@ -107,7 +107,7 @@ export default function ManagePayslipPage() {
                       </tbody>
                     </table>
                   </div>
-                  <p className="text-xs text-muted-foreground">{isLatest ? 'Publish becomes available after payroll is locked and approved.' : 'Archived period: payslips are read-only for audit, printing, and download.'}</p>
+                  <p className="text-xs text-muted-foreground">{isLatest ? 'Send becomes available after payroll is locked and approved.' : 'Archived period: payslips are read-only for audit, printing, and download.'}</p>
                 </CardContent>
               )}
             </Card>
