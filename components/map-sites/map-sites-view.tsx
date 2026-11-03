@@ -37,12 +37,14 @@ export default function MapSitesView() {
   useEffect(() => {
     async function fetchSites() {
       try {
-        const [sitesResponse, attendanceResponse] = await Promise.all([
+        const [sitesResponse, attendanceResponse, siteAttendanceResponse] = await Promise.all([
           fetch('/api/companies'),
           fetch('/api/attendance/stats?siteId=all'),
+          fetch('/api/map-sites'),
         ])
         const companies = await sitesResponse.json()
         const attendance = await attendanceResponse.json()
+        const siteAttendance = siteAttendanceResponse.ok ? await siteAttendanceResponse.json() : {}
 
         if (attendanceResponse.ok) {
           setAttendanceStats({
@@ -67,10 +69,13 @@ export default function MapSitesView() {
                   latitude: parseFloat(site.latitude),
                   longitude: parseFloat(site.longitude),
                 },
-                totalStaff: 0, // Placeholder - would need additional query
-                presentCount: 0,
-                lateCount: 0,
-                absentCount: 0,
+                totalStaff: siteAttendance[site.id]?.totalStaff ?? 0,
+                presentCount: siteAttendance[site.id]?.presentCount ?? 0,
+                lateCount: siteAttendance[site.id]?.lateCount ?? 0,
+                absentCount: Math.max(
+                  (siteAttendance[site.id]?.totalStaff ?? 0) - (siteAttendance[site.id]?.presentCount ?? 0),
+                  0,
+                ),
                 notCheckedInCount: 0,
               })
             }
