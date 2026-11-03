@@ -118,12 +118,46 @@ export default function MapSitesView() {
   }
 
   if (typeof window === 'undefined' || loading) {
-    return <div className="h-96 bg-muted rounded-lg flex items-center justify-center">Loading map...</div>
+    return (
+      <div className="flex min-h-[360px] flex-1 items-center justify-center rounded-lg bg-muted text-sm text-muted-foreground">
+        Loading map...
+      </div>
+    )
   }
 
+  const totalStaff = locationStats.reduce((sum, loc) => sum + loc.totalStaff, 0)
+  const totalPresent = locationStats.reduce((sum, loc) => sum + loc.presentCount, 0)
+  const totalAbsent = locationStats.reduce((sum, loc) => sum + loc.absentCount, 0)
+
+  const summaryStats = [
+    { label: 'Total Sites', value: locationStats.length, className: 'text-foreground' },
+    { label: 'Total Staff', value: totalStaff, className: 'text-foreground' },
+    { label: 'Present Today', value: totalPresent, className: 'text-green-500' },
+    { label: 'Absent', value: totalAbsent, className: 'text-red-500' },
+  ]
+
+  const legendItems = [
+    { label: '80% - 100%', color: '#22c55e' },
+    { label: '60% - 80%', color: '#eab308' },
+    { label: '40% - 60%', color: '#f97316' },
+    { label: '0% - 40%', color: '#ef4444' },
+  ]
+
   return (
-    <div className="w-full space-y-4">
-      <div className="h-96 md:h-[600px] rounded-lg overflow-hidden border border-border">
+    <div className="flex min-h-0 w-full flex-1 flex-col gap-3">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+        {summaryStats.map((stat) => (
+          <div
+            key={stat.label}
+            className="flex items-baseline justify-between rounded-lg border border-border bg-card px-3 py-2"
+          >
+            <span className="text-xs text-muted-foreground">{stat.label}</span>
+            <span className={`text-lg font-bold leading-none ${stat.className}`}>{stat.value}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="relative min-h-[360px] flex-1 overflow-hidden rounded-lg border border-border">
         <MapContainer 
           center={mapCenter} 
           zoom={7}
@@ -164,48 +198,23 @@ export default function MapSitesView() {
             </Marker>
           ))}
         </MapContainer>
-      </div>
 
-      {/* Legend */}
-      <div className="bg-muted/50 p-4 rounded-lg">
-        <h3 className="font-semibold text-sm mb-3">Occupancy Rate Legend</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full" style={{ backgroundColor: '#22c55e' }} />
-            <span className="text-xs">80% - 100%</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full" style={{ backgroundColor: '#eab308' }} />
-            <span className="text-xs">60% - 80%</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full" style={{ backgroundColor: '#f97316' }} />
-            <span className="text-xs">40% - 60%</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full" style={{ backgroundColor: '#ef4444' }} />
-            <span className="text-xs">0% - 40%</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Site Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-card p-4 rounded-lg border border-border">
-          <p className="text-sm text-muted-foreground">Total Sites</p>
-          <p className="text-2xl font-bold">{locationStats.length}</p>
-        </div>
-        <div className="bg-card p-4 rounded-lg border border-border">
-          <p className="text-sm text-muted-foreground">Total Staff</p>
-          <p className="text-2xl font-bold">{locationStats.reduce((sum, loc) => sum + loc.totalStaff, 0)}</p>
-        </div>
-        <div className="bg-card p-4 rounded-lg border border-border">
-          <p className="text-sm text-muted-foreground">Present Today</p>
-          <p className="text-2xl font-bold text-green-600">{locationStats.reduce((sum, loc) => sum + loc.presentCount, 0)}</p>
-        </div>
-        <div className="bg-card p-4 rounded-lg border border-border">
-          <p className="text-sm text-muted-foreground">Absent</p>
-          <p className="text-2xl font-bold text-red-600">{locationStats.reduce((sum, loc) => sum + loc.absentCount, 0)}</p>
+        <div
+          className="absolute bottom-6 left-3 z-[1000] rounded-lg border border-border bg-background/90 px-3 py-2 shadow-md backdrop-blur"
+          role="group"
+          aria-label="Occupancy rate legend"
+        >
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Occupancy Rate
+          </p>
+          <ul className="flex flex-col gap-1">
+            {legendItems.map((item) => (
+              <li key={item.label} className="flex items-center gap-2 text-xs text-foreground">
+                <span className="size-3 rounded-full" style={{ backgroundColor: item.color }} aria-hidden="true" />
+                {item.label}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>

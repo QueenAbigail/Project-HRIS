@@ -1,20 +1,15 @@
 'use client'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import MapSitesView from '@/components/map-sites/map-sites-view'
 
 export default function MapSitesPage() {
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>All Sites Map View</CardTitle>
-          <CardDescription>Pinpoint locations of all security company sites</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <MapSitesView />
-        </CardContent>
-      </Card>
+    <div className="flex min-h-[560px] flex-col gap-3 p-4 md:h-[calc(100dvh-6rem)] md:p-6">
+      <div className="flex flex-col gap-0.5">
+        <h1 className="text-lg font-semibold leading-tight text-foreground">All Sites Map View</h1>
+        <p className="text-sm text-muted-foreground">Pinpoint locations of all security company sites</p>
+      </div>
+      <MapSitesView />
     </div>
   )
 }
