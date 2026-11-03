@@ -1,5 +1,7 @@
 'use client'
 
+// OLD PAGE: superseded by app/payroll/overtime. Do not modify until the owner decides to delete or reuse it.
+
 import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'

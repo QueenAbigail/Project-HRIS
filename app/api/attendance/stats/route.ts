@@ -60,6 +60,10 @@ export async function GET(request: NextRequest) {
       select: { employeeId: true, scheduleDate: true },
     })
 
+    const totalEmployeeWhere = { ...employeeWhere }
+    delete totalEmployeeWhere.status
+    const totalEmployeeCountPromise = prisma.user.count({ where: totalEmployeeWhere })
+
     const approvedLeavesPromise = prisma.leave.findMany({
       where: {
         status: 'Approved',
@@ -97,10 +101,11 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const [attendance, bkoCount, scheduledEmployees, approvedLeaves] = await Promise.all([
+    const [attendance, bkoCount, scheduledEmployees, activeEmployeeCount, approvedLeaves] = await Promise.all([
       attendancePromise,
       bkoPromise,
       scheduledEmployeesPromise,
+      totalEmployeeCountPromise,
       approvedLeavesPromise,
     ])
 
@@ -128,8 +133,8 @@ export async function GET(request: NextRequest) {
     }
     const dayOff = 0
     const onLeave = leaveKeys.size
-    const totalEmployees = scheduledKeys.size
-    const expectedToWork = Math.max(totalEmployees - onLeave, 0)
+    const totalEmployees = activeEmployeeCount
+    const expectedToWork = Math.max(scheduledKeys.size - onLeave, 0)
 
     // Calculate stats using the shared canonical tally (single source of truth)
     const tally = tallyAttendance(attendance)

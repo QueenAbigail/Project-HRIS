@@ -13,7 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
 import {
   Dialog,
   DialogContent,
@@ -49,11 +49,11 @@ import {
   Users,
   DollarSign,
   AlertTriangle,
-  Edit,
   MapPin,
   TrendingUp,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import { KpiCard } from '@/components/payroll/kpi-card'
 
 interface SitePayroll {
   siteId: string
@@ -238,77 +238,17 @@ export default function PayrollManagementPage() {
       </div>
 
       {/* Overall Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-5">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Users className="size-4" />
-              Total Employees
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{totalEmployees}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <DollarSign className="size-4" />
-              Gross Payroll
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{formatCurrency(totalGrossPayroll)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="size-4" />
-              Bonus
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-success">{formatCurrency(totalBonus)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <AlertCircle className="size-4" />
-              Deductions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-destructive">{formatCurrency(totalDeductions)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Check className="size-4" />
-              Net Payroll
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-success">{formatCurrency(totalNetPayroll)}</p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] gap-4">
+        <KpiCard label="Total Employees" value={String(totalEmployees)} icon={Users} />
+        <KpiCard label="Gross Payroll" value={formatCurrency(totalGrossPayroll)} icon={DollarSign} />
+        <KpiCard label="Bonus" value={formatCurrency(totalBonus)} icon={TrendingUp} tone="success" />
+        <KpiCard label="Deductions" value={formatCurrency(totalDeductions)} icon={AlertCircle} tone="destructive" />
+        <KpiCard label="Net Payroll" value={formatCurrency(totalNetPayroll)} icon={Check} tone="success" />
       </div>
 
-      {/* Site Selection and Management */}
+      {/* Site Overview */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Site Overview</TabsTrigger>
-          <TabsTrigger value="details">Site Details</TabsTrigger>
-          <TabsTrigger value="validation">Issues & Validation</TabsTrigger>
-        </TabsList>
-
-        {/* Site Overview Tab */}
+        {/* Site Overview Content */}
         <TabsContent value="overview" className="space-y-4">
           <Card>
             <CardHeader>
@@ -316,37 +256,37 @@ export default function PayrollManagementPage() {
               <CardDescription>Click on a site to view details and manage payroll adjustments</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border overflow-x-auto">
-                <Table>
+              <div className="overflow-x-auto rounded-lg border">
+                <Table className="min-w-[1120px]">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Site Name</TableHead>
-                      <TableHead className="text-right">Location</TableHead>
-                      <TableHead className="text-right">Employees</TableHead>
-                      <TableHead className="text-right">Gross Payroll</TableHead>
-                      <TableHead className="text-right">Bonus</TableHead>
-                      <TableHead className="text-right">Deductions</TableHead>
-                      <TableHead className="text-right">Net Payroll</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
+                      <TableHead className="text-center">Site Name</TableHead>
+                      <TableHead className="text-center">Location</TableHead>
+                      <TableHead className="text-center">Employees</TableHead>
+                      <TableHead className="text-center">Gross Payroll</TableHead>
+                      <TableHead className="text-center">Bonus</TableHead>
+                      <TableHead className="text-center">Deductions</TableHead>
+                      <TableHead className="text-center">Net Payroll</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                      <TableHead className="text-center">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {sitePayrolls.map((site) => (
                       <TableRow key={site.siteId} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">{site.siteName}</TableCell>
-                        <TableCell className="text-right text-sm">{site.location}</TableCell>
-                        <TableCell className="text-right text-sm">{site.employees}</TableCell>
+                        <TableCell className="text-center font-medium">{site.siteName}</TableCell>
+                        <TableCell className="text-center text-sm">{site.location}</TableCell>
+                        <TableCell className="text-center text-sm">{site.employees}</TableCell>
                         <TableCell className="text-right text-sm">{formatCurrency(site.grossPayroll)}</TableCell>
                         <TableCell className="text-right text-sm text-success">{formatCurrency(site.bonusAmount)}</TableCell>
                         <TableCell className="text-right text-sm text-destructive">{formatCurrency(site.deductionsAmount)}</TableCell>
                         <TableCell className="text-right text-sm font-medium text-success">{formatCurrency(site.netPayroll)}</TableCell>
-                        <TableCell>
+                        <TableCell className="text-center">
                           <Badge variant="outline" className={statusStyles[site.status]}>
                             {site.status.charAt(0).toUpperCase() + site.status.slice(1)}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="whitespace-nowrap text-center">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -383,11 +323,9 @@ export default function PayrollManagementPage() {
                         </CardDescription>
                       </div>
                     </div>
-                    <div className="flex gap-2">
                       <Badge variant="outline" className={statusStyles[selectedSite.status]}>
                         {selectedSite.status.charAt(0).toUpperCase() + selectedSite.status.slice(1)}
                       </Badge>
-                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -436,26 +374,12 @@ export default function PayrollManagementPage() {
                       Last updated: {selectedSite.lastUpdated}
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                      {selectedSite.status === 'draft' && (
-                        <>
-                          <Button variant="outline">
-                            <Edit className="size-4 mr-2" />
-                            Edit Payroll
-                          </Button>
-                          <Button onClick={() => setLockOpen(true)}>
-                            <Lock className="size-4 mr-2" />
-                            Lock Site
-                          </Button>
-                        </>
-                      )}
-                      {selectedSite.status === 'processing' && (
-                        <Button disabled>
-                          Processing...
-                        </Button>
-                      )}
+                      <p className="max-w-md text-sm text-muted-foreground">
+                        Read-only overview. Manage payroll from the Site Overview tab.
+                      </p>
                       <Button variant="outline">
-                        <Download className="size-4 mr-2" />
-                        Export
+                        <Download className="mr-2 size-4" />
+                        Export Overview
                       </Button>
                     </div>
                   </div>
@@ -475,10 +399,9 @@ export default function PayrollManagementPage() {
                         <TableRow>
                           <TableHead>Employee</TableHead>
                           <TableHead>Type</TableHead>
-                          <TableHead>Amount</TableHead>
+                          <TableHead className="text-right">Amount</TableHead>
                           <TableHead>Reason</TableHead>
                           <TableHead>Date</TableHead>
-                          <TableHead>Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -493,17 +416,14 @@ export default function PayrollManagementPage() {
                             <TableCell className="font-medium text-right">{formatCurrency(adj.amount)}</TableCell>
                             <TableCell className="text-sm">{adj.reason}</TableCell>
                             <TableCell className="text-sm">{adj.date}</TableCell>
-                            <TableCell>
-                              <Button variant="ghost" size="sm">Edit</Button>
-                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
                   </div>
-                  <Button className="mt-4" variant="outline">
-                    Add Adjustment
-                  </Button>
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    Adjustments are managed from the Manage Payroll workspace.
+                  </p>
                 </CardContent>
               </Card>
             </div>

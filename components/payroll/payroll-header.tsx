@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Send, TrendingUp, DollarSign, Mail } from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -19,15 +19,9 @@ import {
 } from '@/components/ui/drawer'
 import { Badge } from '@/components/ui/badge'
 import { PayrollChart } from './payroll-chart'
-import { PayrollPayRateDialog } from './payroll-pay-rate-dialog'
-import { EmployeeDebtDialog } from './employee-debt-dialog'
-import { BlastEmailDialog } from './blast-email-dialog'
 
 export function PayrollHeader() {
   const [openTrendDrawer, setOpenTrendDrawer] = useState(false)
-  const [openPayRateDialog, setOpenPayRateDialog] = useState(false)
-  const [openDebtDialog, setOpenDebtDialog] = useState(false)
-  const [openBlastEmailDialog, setOpenBlastEmailDialog] = useState(false)
   // In production, this would come from your database/backend
   const lastCalculatedTime = new Date(2026, 2, 17, 0, 0, 0).toLocaleDateString('en-US', { 
     month: 'short', 
@@ -47,14 +41,6 @@ export function PayrollHeader() {
           <p className="text-xs text-muted-foreground mt-1">
             Last calculated: {lastCalculatedTime} (Auto-calculated daily at midnight)
           </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button 
-            onClick={() => setOpenPayRateDialog(true)}
-          >
-            <Send className="mr-2 size-4" />
-            Payroll Pay Rate
-          </Button>
         </div>
       </div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -86,22 +72,6 @@ export function PayrollHeader() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
           <Button 
             variant="outline"
-            onClick={() => setOpenDebtDialog(true)}
-            className="w-full sm:w-auto gap-2"
-          >
-            <DollarSign className="size-4" />
-            Manage Debts
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={() => setOpenBlastEmailDialog(true)}
-            className="w-full sm:w-auto gap-2"
-          >
-            <Mail className="size-4" />
-            Blast Email
-          </Button>
-          <Button 
-            variant="outline"
             onClick={() => setOpenTrendDrawer(true)}
             className="w-full sm:w-auto"
           >
@@ -112,33 +82,19 @@ export function PayrollHeader() {
       </div>
 
       <Drawer open={openTrendDrawer} onOpenChange={setOpenTrendDrawer}>
-        <DrawerContent>
+        <DrawerContent className="flex max-h-[calc(100vh-1rem)] flex-col overflow-hidden">
           <DrawerHeader>
             <DrawerTitle>Payroll Trend</DrawerTitle>
             <DrawerDescription>
               Monthly payroll expenses and trends over the last 6 months
             </DrawerDescription>
           </DrawerHeader>
-          <div className="p-6">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-5 sm:px-6 sm:pb-6">
             <PayrollChart />
           </div>
         </DrawerContent>
       </Drawer>
 
-      <PayrollPayRateDialog 
-        open={openPayRateDialog}
-        onOpenChange={setOpenPayRateDialog}
-      />
-
-      <EmployeeDebtDialog 
-        open={openDebtDialog}
-        onOpenChange={setOpenDebtDialog}
-      />
-
-      <BlastEmailDialog 
-        open={openBlastEmailDialog}
-        onOpenChange={setOpenBlastEmailDialog}
-      />
     </div>
   )
 }

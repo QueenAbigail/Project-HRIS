@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -26,14 +26,33 @@ L.Marker.prototype.setIcon(defaultIcon)
 export default function MapSitesView() {
   const [selectedSite, setSelectedSite] = useState<string | null>(null)
   const [locationStats, setLocationStats] = useState<typeof fallbackLocationStats>([])
+  const [attendanceStats, setAttendanceStats] = useState({
+    totalEmployees: 0,
+    presentToday: 0,
+    absentToday: 0,
+  })
   const [loading, setLoading] = useState(true)
 
   // Fetch sites from database
   useEffect(() => {
     async function fetchSites() {
       try {
-        const response = await fetch('/api/companies')
-        const companies = await response.json()
+        const [sitesResponse, attendanceResponse, siteAttendanceResponse] = await Promise.all([
+          fetch('/api/companies'),
+          fetch('/api/attendance/stats?siteId=all'),
+          fetch('/api/map-sites'),
+        ])
+        const companies = await sitesResponse.json()
+        const attendance = await attendanceResponse.json()
+        const siteAttendance = siteAttendanceResponse.ok ? await siteAttendanceResponse.json() : {}
+
+        if (attendanceResponse.ok) {
+          setAttendanceStats({
+            totalEmployees: attendance.totalEmployees ?? 0,
+            presentToday: attendance.presentToday ?? 0,
+            absentToday: attendance.absentToday ?? 0,
+          })
+        }
         
         // Build location stats from database sites
         const stats: typeof fallbackLocationStats = []
@@ -50,11 +69,20 @@ export default function MapSitesView() {
                   latitude: parseFloat(site.latitude),
                   longitude: parseFloat(site.longitude),
                 },
-                totalStaff: 0, // Placeholder - would need additional query
-                presentCount: 0,
-                lateCount: 0,
-                absentCount: 0,
-                notCheckedInCount: 0,
+                totalStaff: siteAttendance[site.id]?.totalStaff ?? 0,
+                presentCount:
+                  site.name.trim().toLowerCase() === 'head office'
+                    ? siteAttendance[site.id]?.totalStaff ?? 0
+                    : siteAttendance[site.id]?.presentCount ?? 0,
+                lateCount: siteAttendance[site.id]?.lateCount ?? 0,
+                absentCount:
+                  site.name.trim().toLowerCase() === 'head office'
+                    ? 0
+                    : siteAttendance[site.id]?.absentCount ?? 0,
+                notCheckedInCount:
+                  site.name.trim().toLowerCase() === 'head office'
+                    ? 0
+                    : siteAttendance[site.id]?.notCheckedInCount ?? 0,
               })
             }
           }
@@ -72,19 +100,14 @@ export default function MapSitesView() {
     fetchSites()
   }, [])
 
-  // Calculate center of map based on all locations
-  const mapCenter = useMemo(() => {
-    if (locationStats.length === 0) return [-6.2088, 106.8456] as [number, number] // Default to JABODETABEK
-    
-    const avgLat = locationStats.reduce((sum, loc) => sum + loc.centerPoint.latitude, 0) / locationStats.length
-    const avgLng = locationStats.reduce((sum, loc) => sum + loc.centerPoint.longitude, 0) / locationStats.length
-    
-    return [avgLat, avgLng] as [number, number]
-  }, [locationStats])
+  // Keep the initial view focused on Head Office while preserving the existing zoom level.
+  const mapCenter: [number, number] = [-6.2088, 106.8456]
 
   // Get color based on occupancy rate
-  const getMarkerColor = (presentCount: number, totalStaff: number) => {
-    if (totalStaff === 0) return '#999999'
+  const getMarkerColor = (location: { name: string; presentCount: number; totalStaff: number }) => {
+    if (location.name.trim().toLowerCase() === 'head office') return '#22c55e'
+    const { presentCount, totalStaff } = location
+    if (totalStaff === 0) return '#ef4444' // No staff present means 0% occupancy
     const percentage = (presentCount / totalStaff) * 100
     
     if (percentage >= 80) return '#22c55e' // Green
@@ -95,7 +118,7 @@ export default function MapSitesView() {
 
   // Create custom HTML icon with badge
   const createCustomIcon = (location: any) => {
-    const color = getMarkerColor(location.presentCount, location.totalStaff)
+    const color = getMarkerColor(location)
     
     return L.divIcon({
       html: `
@@ -125,12 +148,30 @@ export default function MapSitesView() {
   }
 
   if (typeof window === 'undefined' || loading) {
-    return <div className="h-96 bg-muted rounded-lg flex items-center justify-center">Loading map...</div>
+    return (
+      <div className="flex min-h-[360px] flex-1 items-center justify-center rounded-lg bg-muted text-sm text-muted-foreground">
+        Loading map...
+      </div>
+    )
   }
 
+  const summaryStats = [
+    { label: 'Total Sites', value: locationStats.length, className: 'text-foreground' },
+    { label: 'Total Staff', value: attendanceStats.totalEmployees, className: 'text-foreground' },
+    { label: 'Present Today', value: attendanceStats.presentToday, className: 'text-green-500' },
+    { label: 'Absent', value: attendanceStats.absentToday, className: 'text-red-500' },
+  ]
+
+  const legendItems = [
+    { label: '80% - 100%', color: '#22c55e' },
+    { label: '60% - 80%', color: '#eab308' },
+    { label: '40% - 60%', color: '#f97316' },
+    { label: '0% - 40%', color: '#ef4444' },
+  ]
+
   return (
-    <div className="w-full space-y-4">
-      <div className="h-96 md:h-[600px] rounded-lg overflow-hidden border border-border">
+    <div className="flex min-h-0 w-full flex-1 flex-col">
+      <div className="relative min-h-[360px] flex-1 overflow-hidden rounded-lg border border-border">
         <MapContainer 
           center={mapCenter} 
           zoom={7}
@@ -166,53 +207,45 @@ export default function MapSitesView() {
                   presentCount={location.presentCount}
                   lateCount={location.lateCount}
                   absentCount={location.absentCount}
+                  isHeadOffice={location.name.trim().toLowerCase() === 'head office'}
                 />
               </Popup>
             </Marker>
           ))}
         </MapContainer>
-      </div>
 
-      {/* Legend */}
-      <div className="bg-muted/50 p-4 rounded-lg">
-        <h3 className="font-semibold text-sm mb-3">Occupancy Rate Legend</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full" style={{ backgroundColor: '#22c55e' }} />
-            <span className="text-xs">80% - 100%</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full" style={{ backgroundColor: '#eab308' }} />
-            <span className="text-xs">60% - 80%</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full" style={{ backgroundColor: '#f97316' }} />
-            <span className="text-xs">40% - 60%</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full" style={{ backgroundColor: '#ef4444' }} />
-            <span className="text-xs">0% - 40%</span>
-          </div>
+        <div
+          className="pointer-events-none absolute left-14 right-3 top-3 z-[1000] grid grid-cols-2 gap-2 md:grid-cols-4"
+          role="group"
+          aria-label="Site summary"
+        >
+          {summaryStats.map((stat) => (
+            <div
+              key={stat.label}
+              className="flex items-baseline justify-between rounded-lg border border-white/15 bg-background/50 px-3 py-2 shadow-lg backdrop-blur-md backdrop-saturate-150"
+            >
+              <span className="text-xs text-foreground/70">{stat.label}</span>
+              <span className={`text-lg font-bold leading-none ${stat.className}`}>{stat.value}</span>
+            </div>
+          ))}
         </div>
-      </div>
 
-      {/* Site Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-card p-4 rounded-lg border border-border">
-          <p className="text-sm text-muted-foreground">Total Sites</p>
-          <p className="text-2xl font-bold">{locationStats.length}</p>
-        </div>
-        <div className="bg-card p-4 rounded-lg border border-border">
-          <p className="text-sm text-muted-foreground">Total Staff</p>
-          <p className="text-2xl font-bold">{locationStats.reduce((sum, loc) => sum + loc.totalStaff, 0)}</p>
-        </div>
-        <div className="bg-card p-4 rounded-lg border border-border">
-          <p className="text-sm text-muted-foreground">Present Today</p>
-          <p className="text-2xl font-bold text-green-600">{locationStats.reduce((sum, loc) => sum + loc.presentCount, 0)}</p>
-        </div>
-        <div className="bg-card p-4 rounded-lg border border-border">
-          <p className="text-sm text-muted-foreground">Absent</p>
-          <p className="text-2xl font-bold text-red-600">{locationStats.reduce((sum, loc) => sum + loc.absentCount, 0)}</p>
+        <div
+          className="absolute bottom-6 left-3 z-[1000] rounded-lg border border-white/15 bg-background/50 px-3 py-2 shadow-lg backdrop-blur-md backdrop-saturate-150"
+          role="group"
+          aria-label="Occupancy rate legend"
+        >
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-foreground/70">
+            Occupancy Rate
+          </p>
+          <ul className="flex flex-col gap-1">
+            {legendItems.map((item) => (
+              <li key={item.label} className="flex items-center gap-2 text-xs text-foreground">
+                <span className="size-3 rounded-full" style={{ backgroundColor: item.color }} aria-hidden="true" />
+                {item.label}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>

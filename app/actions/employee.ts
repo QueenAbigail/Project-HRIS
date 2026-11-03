@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { resolveEmployeePosition } from '@/lib/position-resolver'
 import { revalidatePath } from 'next/cache'
 
 function friendlyEmployeeError(error: unknown): string {
@@ -69,8 +70,8 @@ function friendlyEmployeeError(error: unknown): string {
     return 'Some employee information is already in use. Please check the Employee Code and identification numbers.'
   }
 
-  if (/Foreign key constraint failed|site/i.test(message)) {
-    return 'This employee could not be found. Please refresh the page and try again.'
+  if (/Record to update not found|No User record was found|P2025/i.test(message)) {
+    return 'This employee is no longer available. Please refresh the employee list and try again.'
   }
 
   if (/INVALID_SITE_COMPANY/i.test(message)) {
@@ -81,7 +82,7 @@ function friendlyEmployeeError(error: unknown): string {
     return 'The selected location is no longer available. Please choose another location.'
   }
 
-  if (/Foreign key constraint failed|site/i.test(message)) {
+  if (/Foreign key constraint failed/i.test(message)) {
     return 'The selected location or company is no longer available. Please choose another location.'
   }
 
@@ -169,6 +170,15 @@ export async function updateEmployeeAction(userId: string, formData: any) {
       }
     }
 
+    if (updateData.position !== undefined || formData.positionId) {
+      const resolved = await resolveEmployeePosition({
+        positionId: formData.positionId,
+        position: updateData.position,
+      })
+      if (resolved.position) updateData.position = resolved.position
+      updateData.positionId = resolved.positionId
+    }
+
     // 3. Handle location/siteId and auto-update companyId
     if (formData.location && formData.location !== '') {
       updateData.siteId = formData.location
@@ -239,6 +249,11 @@ export async function createEmployeeAction(formData: any) {
     if (authError) throw new Error("Gagal bikin kunci akses (Auth): " + authError.message)
     authUserId = authData.user.id; // Simpen ID-nya
 
+    const resolvedPosition = await resolveEmployeePosition({
+      positionId: formData.positionId,
+      position: formData.position,
+    })
+
     // 3. Masukin Data ke Prisma
     await prisma.user.create({
       data: {
@@ -248,7 +263,10 @@ export async function createEmployeeAction(formData: any) {
         email: hrisEmail, 
         personalEmail: formData.personalEmail,
         department: formData.department,
-        position: formData.position,
+        position: resolvedPosition.position,
+        ...(resolvedPosition.positionId
+          ? { positionRef: { connect: { id: resolvedPosition.positionId } } }
+          : {}),
         role: formData.systemRole, // Pastikan dari frontend ngirim string yang match sama Enum lu
         
         // Relasi ke lokasi (site)

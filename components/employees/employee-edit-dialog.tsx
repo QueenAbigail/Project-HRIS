@@ -23,7 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
 import type { Employee } from './employee-profile-sheet'
-import { Camera, Eye, EyeOff } from 'lucide-react'
+import { Camera, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { updateEmployeeAction } from '@/app/actions/employee'
 import { toast } from 'sonner'
 
@@ -141,6 +141,7 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
   const [bloodTypes, setBloodTypes] = useState<MasterDataItem[]>([])
   const [employees, setEmployees] = useState<Array<{id: string; name: string}>>([])
   const [loadingData, setLoadingData] = useState(false)
+  const [saving, setSaving] = useState(false)
   const dataFetchedRef = useRef(false)
 
   // This effect intentionally resets the editable form when the selected employee or sites change.
@@ -257,6 +258,8 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
   }
 
   const handleSave = async () => {
+    if (saving) return
+    setSaving(true)
     try {
       // Send formData directly - location is already siteId, no transformation needed
       const result = await updateEmployeeAction(employee!.id, formData)
@@ -289,6 +292,8 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
       toast.error('Connection error', {
         description: 'Unable to save changes. Please check your connection and try again.'
       })
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -626,12 +631,12 @@ export function EmployeeEditDialog({ employee, open, onOpenChange, onSave, curre
 
         {/* === FOOTER FIXED (TOMBOL SAVE) === */}
         <DialogFooter className="px-6 py-4 border-t shrink-0 flex justify-end gap-2 bg-background">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave}>
-            Save Changes
-          </Button>
+  <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+  Cancel
+  </Button>
+  <Button onClick={handleSave} disabled={saving}>
+  {saving ? <><Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />Saving changes...</> : 'Save Changes'}
+  </Button>
         </DialogFooter>
 
       </DialogContent>

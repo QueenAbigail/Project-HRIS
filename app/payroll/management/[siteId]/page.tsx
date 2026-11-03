@@ -21,8 +21,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -42,9 +40,6 @@ import {
 import {
   ArrowLeft,
   MapPin,
-  Users,
-  DollarSign,
-  TrendingUp,
   Edit,
   Trash2,
   Check,
@@ -54,6 +49,9 @@ import {
   AlertCircle,
   Calendar,
   Upload,
+  ChevronRight,
+  Clock3,
+  ReceiptText,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
@@ -63,8 +61,12 @@ interface SiteEmployee {
   position: string
   baseSalary: number
   overtime: number
+  overtimeHours?: number
+  overtimeRule?: string
   bonus: number
+  allowanceSource?: string
   deductions: number
+  deductionSource?: string
   netPay: number
   status: 'draft' | 'processing' | 'finalized'
 }
@@ -115,7 +117,7 @@ const mockSiteDetails = {
 // Mock employees by site
 const mockSiteEmployees: Record<string, SiteEmployee[]> = {
   'S1': [
-    { employeeId: 'E001', name: 'Michael Chen', position: 'Security Head', baseSalary: 12000000, overtime: 1500000, bonus: 500000, deductions: 2500000, netPay: 10000000, status: 'draft' },
+    { employeeId: 'E001', name: 'Michael Chen', position: 'Security Head', baseSalary: 12000000, overtime: 1500000, overtimeHours: 5, overtimeRule: 'Fixed OT rate · Rp 300.000/hour', bonus: 500000, allowanceSource: 'Attendance allowance · 5 qualifying days', deductions: 2500000, deductionSource: 'BPJS and loan deduction rules', netPay: 10000000, status: 'draft' },
     { employeeId: 'E002', name: 'Sarah Williams', position: 'Guard', baseSalary: 11000000, overtime: 800000, bonus: 400000, deductions: 2200000, netPay: 8700000, status: 'draft' },
     { employeeId: 'E003', name: 'David Rodriguez', position: 'Guard', baseSalary: 10500000, overtime: 1200000, bonus: 300000, deductions: 2100000, netPay: 8700000, status: 'draft' },
     { employeeId: 'E004', name: 'Emily Johnson', position: 'Guard', baseSalary: 9800000, overtime: 0, bonus: 200000, deductions: 1800000, netPay: 7200000, status: 'draft' },
@@ -161,11 +163,14 @@ export default function SiteManagementPage() {
   
   const siteInfo = mockSiteDetails[siteId as keyof typeof mockSiteDetails]
   const siteEmployees = mockSiteEmployees[siteId as keyof typeof mockSiteEmployees] || []
-  const adjustments = mockAdjustments[siteId as keyof typeof mockAdjustments] || []
+  const [adjustments, setAdjustments] = useState<SitePayrollAdjustment[]>(mockAdjustments[siteId as keyof typeof mockAdjustments] || [])
+  const [addAdjustmentOpen, setAddAdjustmentOpen] = useState(false)
+  const [newAdjustment, setNewAdjustment] = useState({ employee: '', type: 'bonus', reason: '', amount: '', date: '2026-03-31' })
   
   const [employees, setEmployees] = useState<SiteEmployee[]>(siteEmployees)
   const [editingEmployee, setEditingEmployee] = useState<SiteEmployee | null>(null)
   const [editOpen, setEditOpen] = useState(false)
+  const [payrollDetail, setPayrollDetail] = useState<'overtime' | 'deductions' | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [lockOpen, setLockOpen] = useState(false)
@@ -177,14 +182,24 @@ export default function SiteManagementPage() {
 
   const handleEditEmployee = (employee: SiteEmployee) => {
     setEditingEmployee(employee)
+    setPayrollDetail(null)
     setEditOpen(true)
   }
 
-  const handleSaveEmployee = () => {
-    if (!editingEmployee) return
-    setEmployees(prev => prev.map(e => e.employeeId === editingEmployee.employeeId ? editingEmployee : e))
-    setEditOpen(false)
-    setEditingEmployee(null)
+
+  const handleAddAdjustment = () => {
+    const amount = Number(newAdjustment.amount)
+    if (!newAdjustment.employee || !newAdjustment.reason || !Number.isFinite(amount) || amount <= 0) return
+    setAdjustments((current) => [...current, {
+      id: `adj-${Date.now()}`,
+      employee: newAdjustment.employee,
+      type: newAdjustment.type as SitePayrollAdjustment['type'],
+      amount,
+      reason: newAdjustment.reason,
+      date: newAdjustment.date,
+    }])
+    setNewAdjustment({ employee: '', type: 'bonus', reason: '', amount: '', date: '2026-03-31' })
+    setAddAdjustmentOpen(false)
   }
 
   const handleDeleteAdjustment = (adjId: string) => {
@@ -285,70 +300,80 @@ export default function SiteManagementPage() {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-5">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Total Employees
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{siteInfo.employees}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Gross Payroll
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{formatCurrency(siteInfo.grossPayroll)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Bonus
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-success">{formatCurrency(siteInfo.bonusAmount)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Deductions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-destructive">{formatCurrency(siteInfo.deductionsAmount)}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Net Payroll</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-success">{formatCurrency(siteInfo.netPayroll)}</p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Tabs */}
-      <Tabs defaultValue="employees" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="summary" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="summary">Site Summary</TabsTrigger>
           <TabsTrigger value="employees">Employee Payroll</TabsTrigger>
           <TabsTrigger value="adjustments">Adjustments</TabsTrigger>
+          <TabsTrigger value="validation">Issues & Validation</TabsTrigger>
           <TabsTrigger value="finalize">Finalize & Lock</TabsTrigger>
         </TabsList>
+
+        {/* Site Summary Tab */}
+        <TabsContent value="summary" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>{siteInfo.siteName} Payroll Summary</CardTitle>
+              <CardDescription>
+                Read-only overview for {siteInfo.location} during the {`March 2026`} payroll period.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Gross Payroll</p>
+                <p className="mt-2 text-xl font-bold tabular-nums">{formatCurrency(siteInfo.grossPayroll)}</p>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Allowance</p>
+                <p className="mt-2 text-xl font-bold tabular-nums text-success">{formatCurrency(siteInfo.bonusAmount)}</p>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Deductions</p>
+                <p className="mt-2 text-xl font-bold tabular-nums text-destructive">{formatCurrency(siteInfo.deductionsAmount)}</p>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="text-sm text-muted-foreground">Net Payroll</p>
+                <p className="mt-2 text-xl font-bold tabular-nums text-success">{formatCurrency(siteInfo.netPayroll)}</p>
+              </div>
+              <div className="rounded-lg border p-4 lg:col-span-2">
+                <p className="text-sm text-muted-foreground">Payroll status</p>
+                <Badge variant="outline" className="mt-2 bg-slate-100 text-slate-700">{siteInfo.status.charAt(0).toUpperCase() + siteInfo.status.slice(1)}</Badge>
+              </div>
+              <div className="rounded-lg border p-4 lg:col-span-2">
+                <p className="text-sm text-muted-foreground">Last updated</p>
+                <p className="mt-2 font-medium">March 31, 2026 at 2:30 PM</p>
+              </div>
+
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Validation Tab */}
+        <TabsContent value="validation" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-600" />
+                Issues & Validation
+              </CardTitle>
+              <CardDescription>Resolve these items before finalizing {siteInfo.siteName} payroll.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                Validation checks are shown here for this site only. Payroll cannot be safely finalized until blocking issues are resolved.
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="font-medium">Missing attendance records</p>
+                <p className="mt-1 text-sm text-muted-foreground">Review attendance and timesheet data for 2 employees.</p>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="font-medium">Budget review</p>
+                <p className="mt-1 text-sm text-muted-foreground">Confirm the Field Security budget variance before locking.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Employee Payroll Tab */}
         <TabsContent value="employees" className="space-y-4">
@@ -375,7 +400,7 @@ export default function SiteManagementPage() {
                       <TableHead>Position</TableHead>
                       <TableHead className="text-right">Base Salary</TableHead>
                       <TableHead className="text-right">Overtime</TableHead>
-                      <TableHead className="text-right">Bonus</TableHead>
+                      <TableHead className="text-right">Allowance</TableHead>
                       <TableHead className="text-right">Deductions</TableHead>
                       <TableHead className="text-right">Net Pay</TableHead>
                       <TableHead>Status</TableHead>
@@ -419,7 +444,7 @@ export default function SiteManagementPage() {
         <TabsContent value="adjustments" className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Payroll Adjustments</h3>
-            <Button>
+            <Button onClick={() => setAddAdjustmentOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Adjustment
             </Button>
@@ -479,7 +504,7 @@ export default function SiteManagementPage() {
 
         {/* Finalize & Lock Tab */}
         <TabsContent value="finalize" className="space-y-4">
-          <Card className="border-amber-200 bg-amber-50">
+          <Card className="border-amber-500/30 bg-amber-500/10">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-amber-600" />
@@ -490,7 +515,7 @@ export default function SiteManagementPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-white rounded-lg p-4 space-y-2 border">
+              <div className="rounded-lg border border-amber-500/30 bg-background/70 p-4 space-y-2">
                 <p className="text-sm font-medium">Payroll Summary</p>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
@@ -513,8 +538,8 @@ export default function SiteManagementPage() {
               </div>
               <Button
                 onClick={() => setLockOpen(true)}
-                className="w-full"
-              >
+  className="w-full text-primary-foreground"
+  >
                 <Lock className="h-4 w-4 mr-2" />
                 Lock and Finalize Payroll
               </Button>
@@ -523,76 +548,154 @@ export default function SiteManagementPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Edit Employee Dialog */}
+      {/* Employee Payroll Details Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Employee Payroll</DialogTitle>
+        <DialogContent className="max-h-[calc(100vh-1rem)] w-[calc(100vw-1rem)] max-w-none gap-0 overflow-hidden p-0 sm:w-[calc(100vw-4rem)] sm:max-w-[1600px] lg:w-[calc(100vw-8rem)]">
+          <DialogHeader className="border-b px-5 py-3">
+            {payrollDetail ? (
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="icon" aria-label="Back to payroll overview" onClick={() => setPayrollDetail(null)}>
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <div>
+                  <DialogTitle>{payrollDetail === 'overtime' ? 'Overtime Calculation' : 'Deduction Calculation'}</DialogTitle>
+                  <DialogDescription>Detailed read-only breakdown for {editingEmployee?.name}.</DialogDescription>
+                </div>
+              </div>
+            ) : (
+              <>
+                <DialogTitle>Employee Payroll Details</DialogTitle>
+                <DialogDescription>Read-only calculation breakdown for the {`March 2026`} payroll period.</DialogDescription>
+              </>
+            )}
           </DialogHeader>
           {editingEmployee && (
-            <div className="space-y-4">
-              <div>
-                <Label>Employee</Label>
-                <Input value={editingEmployee.name} disabled />
+            <div className="max-h-[calc(100vh-6rem)] overflow-y-auto px-5 py-3">
+              {payrollDetail ? (
+                <div className="space-y-2">
+                  <div className="rounded-lg border bg-muted/30 p-5">
+                    <p className="text-sm text-muted-foreground">{payrollDetail === 'overtime' ? 'Calculated overtime' : 'Calculated deductions'}</p>
+                    <p className={`mt-2 text-3xl font-bold tabular-nums ${payrollDetail === 'overtime' ? 'text-success' : 'text-destructive'}`}>
+                      {formatCurrency(payrollDetail === 'overtime' ? editingEmployee.overtime : editingEmployee.deductions)}
+                    </p>
+                  </div>
+                  {payrollDetail === 'overtime' ? (
+                    <div className="space-y-3">
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Overtime days</p><p className="mt-1 text-xl font-semibold">2 days</p></div>
+                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Total hours</p><p className="mt-1 text-xl font-semibold">{editingEmployee.overtimeHours || 0} hours</p></div>
+                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Hours per day</p><p className="mt-1 text-xl font-semibold">2.5 hours</p></div>
+                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Rate per hour</p><p className="mt-1 text-xl font-semibold tabular-nums">Rp 300.000</p></div>
+                      </div>
+                      <div className="rounded-lg border p-4 text-sm">
+                        <div className="flex items-center justify-between gap-4"><h3 className="font-semibold">Daily overtime breakdown</h3><span className="text-xs text-muted-foreground">Mockup data</span></div>
+                        <div className="mt-3 overflow-x-auto">
+                          <table className="w-full min-w-[520px] text-left">
+                            <thead className="border-b text-xs text-muted-foreground"><tr><th className="pb-2 font-medium">Date · day type</th><th className="pb-2 font-medium">Total hours</th><th className="pb-2 font-medium">Applied rule</th><th className="pb-2 text-right font-medium">Daily amount</th></tr></thead>
+                            <tbody className="divide-y">
+                              <tr><td className="py-3"><span className="block font-medium">March 14, 2026</span><span className="text-xs text-muted-foreground">Regular workday</span></td><td className="py-3">3 hours</td><td className="py-3"><div><p className="text-sm text-muted-foreground">Calculation details</p><div className="mt-2 space-y-1 text-xs text-muted-foreground"><p>1 hr × Rp 300.000 × 1.5 = Rp 450.000</p><p>2 hrs × Rp 300.000 × 2.0 = Rp 600.000</p></div></div></td><td className="py-3 text-right font-medium tabular-nums">Rp 1.050.000</td></tr>
+                              <tr className="bg-amber-500/5"><td className="py-3"><span className="block font-medium">March 21, 2026</span><span className="text-xs text-muted-foreground">National holiday</span></td><td className="py-3">2 hours</td><td className="py-3"><div><p className="text-sm text-amber-600">Calculation details</p><div className="mt-2 space-y-1 text-xs text-muted-foreground"><p>1 hr × Rp 300.000 × 2.0 = Rp 600.000</p><p>1 hr × Rp 300.000 × 2.5 = Rp 750.000</p></div></div></td><td className="py-3 text-right font-medium tabular-nums">Rp 1.350.000</td></tr>
+                            </tbody>
+                            <tfoot className="border-t"><tr><td colSpan={3} className="pt-3 font-semibold">Total calculated overtime</td><td className="pt-3 text-right font-bold text-success tabular-nums">Rp 2.400.000</td></tr></tfoot>
+                          </table>
+                        </div>
+                      </div>
+                                          </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Deduction items</p><p className="mt-1 text-xl font-semibold">2 items</p></div>
+                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Payroll period</p><p className="mt-1 text-xl font-semibold">March 2026</p></div>
+                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Total deductions</p><p className="mt-1 text-xl font-semibold tabular-nums text-destructive">{formatCurrency(editingEmployee.deductions)}</p></div>
+                      </div>
+                      <div className="rounded-lg border p-4 text-sm">
+                        <div className="flex items-center justify-between gap-4"><h3 className="font-semibold">Deduction breakdown</h3><span className="text-xs text-muted-foreground">Mockup data</span></div>
+                        <div className="mt-3 overflow-x-auto">
+                          <table className="w-full min-w-[620px] text-left">
+                            <thead className="border-b text-xs text-muted-foreground"><tr><th className="pb-2 font-medium">Deduction</th><th className="pb-2 font-medium">Category</th><th className="pb-2 font-medium">Calculation basis</th><th className="pb-2 text-right font-medium">Amount</th></tr></thead>
+                            <tbody className="divide-y"><tr><td className="py-3 font-medium">BPJS Ketenagakerjaan</td><td className="py-3 text-muted-foreground">Social security</td><td className="py-3 text-muted-foreground">2% × Rp 12.000.000 salary</td><td className="py-3 text-right font-medium tabular-nums">Rp 240.000</td></tr><tr><td className="py-3 font-medium">Employee loan repayment</td><td className="py-3 text-muted-foreground">Loan</td><td className="py-3 text-muted-foreground">Monthly installment · fixed</td><td className="py-3 text-right font-medium tabular-nums">Rp 2.260.000</td></tr></tbody>
+                            <tfoot className="border-t"><tr><td colSpan={3} className="pt-3 font-semibold">Total deductions</td><td className="pt-3 text-right font-bold text-destructive tabular-nums">Rp 2.500.000</td></tr></tfoot>
+                          </table>
+                        </div>
+                      </div>
+                                          </div>
+                  )}
+                  <p className="rounded-lg bg-muted/40 p-4 text-sm text-muted-foreground">This value is calculated from payroll rules and approved records. It is read-only here; exceptional changes must be managed from the Adjustments tab.</p>
+                  <div className="flex justify-end"><Button variant="outline" onClick={() => setPayrollDetail(null)}>Back to overview</Button></div>
+                </div>
+              ) : (
+              <div className="space-y-2">
+                <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr]">
+                <div className="rounded-xl border bg-muted/30 p-3 lg:col-span-3">
+                  <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Employee payroll</p>
+                      <h2 className="mt-1 text-2xl font-bold tracking-tight">{editingEmployee.name}</h2>
+                      <p className="mt-1 text-sm text-muted-foreground">{editingEmployee.position} · {siteInfo.siteName}</p>
+                    </div>
+                    <div className="flex items-center justify-between gap-4 sm:justify-end">
+                      <div className="text-left sm:text-right">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Payroll period</p>
+                        <p className="mt-1 text-sm text-muted-foreground"><strong className="font-semibold text-foreground">March 2026</strong> · Read-only view</p>
+                      </div>
+                      <Badge variant="secondary">Draft</Badge>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:col-span-3">
+                  <div className="rounded-lg border p-4">
+                    <p className="text-sm text-muted-foreground">Base salary</p>
+                    <p className="mt-1 text-lg font-semibold tabular-nums">{formatCurrency(editingEmployee.baseSalary)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">From salary setup · read-only</p>
+                  </div>
+                  <div className="rounded-lg border p-4">
+                    <p className="text-sm text-muted-foreground">Calculated net pay</p>
+                    <p className="mt-1 text-lg font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.baseSalary + editingEmployee.overtime + editingEmployee.bonus - editingEmployee.deductions)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Base salary + allowance + overtime − deductions</p>
+                  </div>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Base Salary</Label>
-                  <Input
-                    type="number"
-                    value={editingEmployee.baseSalary}
-                    onChange={(e) => setEditingEmployee({
-                      ...editingEmployee,
-                      baseSalary: Number(e.target.value)
-                    })}
-                  />
-                </div>
-                <div>
-                  <Label>Overtime</Label>
-                  <Input
-                    type="number"
-                    value={editingEmployee.overtime}
-                    onChange={(e) => setEditingEmployee({
-                      ...editingEmployee,
-                      overtime: Number(e.target.value)
-                    })}
-                  />
-                </div>
-                <div>
-                  <Label>Bonus</Label>
-                  <Input
-                    type="number"
-                    value={editingEmployee.bonus}
-                    onChange={(e) => setEditingEmployee({
-                      ...editingEmployee,
-                      bonus: Number(e.target.value)
-                    })}
-                  />
-                </div>
-                <div>
-                  <Label>Deductions</Label>
-                  <Input
-                    type="number"
-                    value={editingEmployee.deductions}
-                    onChange={(e) => setEditingEmployee({
-                      ...editingEmployee,
-                      deductions: Number(e.target.value)
-                    })}
-                  />
-                </div>
+
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <button type="button" className="group flex w-full items-center gap-4 rounded-xl border p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40" onClick={() => setPayrollDetail('overtime')}>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success"><Clock3 className="h-5 w-5" /></span>
+                <span className="min-w-0 flex-1"><span className="block font-medium">Overtime calculation</span><span className="mt-1 block text-sm text-muted-foreground">{editingEmployee.overtimeHours || 0} approved hours · View applied rule</span></span>
+                <span className="flex items-center gap-2"><span className="font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.overtime)}</span><ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" /></span>
+              </button>
+
+              <div className="flex items-center gap-4 rounded-xl border bg-muted/20 p-4">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success">+</span>
+                <span className="min-w-0 flex-1"><span className="block font-medium">Allowance</span><span className="mt-1 block text-sm text-muted-foreground">{editingEmployee.allowanceSource || 'Eligible allowance records'}</span></span>
+                <span className="font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.bonus)}</span>
               </div>
-              <div className="bg-slate-100 p-3 rounded-lg">
-                <p className="text-sm text-muted-foreground">Calculated Net Pay</p>
-                <p className="text-2xl font-bold">
-                  {formatCurrency(editingEmployee.baseSalary + editingEmployee.overtime + editingEmployee.bonus - editingEmployee.deductions)}
-                </p>
+
+              <button type="button" className="group flex w-full items-center gap-4 rounded-xl border p-3 text-left transition-colors hover:border-destructive/40 hover:bg-muted/40" onClick={() => setPayrollDetail('deductions')}>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive"><ReceiptText className="h-5 w-5" /></span>
+                <span className="min-w-0 flex-1"><span className="block font-medium">Deduction calculation</span><span className="mt-1 block text-sm text-muted-foreground">View applied rules and deductions</span></span>
+                <span className="flex items-center gap-2"><span className="font-semibold tabular-nums text-destructive">{formatCurrency(editingEmployee.deductions)}</span><ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" /></span>
+              </button>
               </div>
-              <div className="flex gap-3 justify-end">
-                <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
-                <Button onClick={handleSaveEmployee}>Save Changes</Button>
+
+              <div className="flex justify-end pt-2">
+                <Button variant="outline" onClick={() => setEditOpen(false)}>Close</Button>
               </div>
             </div>
+              )}
+            </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={addAdjustmentOpen} onOpenChange={setAddAdjustmentOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader><DialogTitle>Add Payroll Adjustment</DialogTitle><DialogDescription>Add a one-time payroll adjustment for this site.</DialogDescription></DialogHeader>
+          <div className="grid gap-4 py-2">
+            <label className="grid gap-2 text-sm font-medium">Employee<select className="h-10 rounded-md border bg-background px-3" value={newAdjustment.employee} onChange={(event) => setNewAdjustment((current) => ({ ...current, employee: event.target.value }))}><option value="">Select employee</option>{employees.map((employee) => <option key={employee.employeeId} value={employee.name}>{employee.name}</option>)}</select></label>
+            <div className="grid gap-4 sm:grid-cols-2"><label className="grid gap-2 text-sm font-medium">Type<select className="h-10 rounded-md border bg-background px-3" value={newAdjustment.type} onChange={(event) => setNewAdjustment((current) => ({ ...current, type: event.target.value }))}><option value="bonus">Bonus</option><option value="overtime">Overtime</option><option value="deduction">Deduction</option></select></label><label className="grid gap-2 text-sm font-medium">Amount<input type="number" min="1" className="h-10 rounded-md border bg-background px-3" placeholder="1500000" value={newAdjustment.amount} onChange={(event) => setNewAdjustment((current) => ({ ...current, amount: event.target.value }))} /></label></div>
+            <label className="grid gap-2 text-sm font-medium">Reason<input className="h-10 rounded-md border bg-background px-3" placeholder="Performance bonus" value={newAdjustment.reason} onChange={(event) => setNewAdjustment((current) => ({ ...current, reason: event.target.value }))} /></label>
+            <label className="grid gap-2 text-sm font-medium">Date<input type="date" className="h-10 rounded-md border bg-background px-3" value={newAdjustment.date} onChange={(event) => setNewAdjustment((current) => ({ ...current, date: event.target.value }))} /></label>
+          </div>
+          <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setAddAdjustmentOpen(false)}>Cancel</Button><Button onClick={handleAddAdjustment}>Save Adjustment</Button></div>
         </DialogContent>
       </Dialog>
 
@@ -639,10 +742,10 @@ export default function SiteManagementPage() {
           <DialogHeader>
             <DialogTitle>Import Timesheet</DialogTitle>
             <DialogDescription>
-              Upload a timesheet file containing employee duty days, overtime hours, and bonus information. The system will automatically calculate payroll based on the imported data.
+              Upload a timesheet file containing employee duty days and overtime hours. Allowance information is calculated separately from eligible allowance records.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-2">
             {/* File Upload Area */}
             <div className="border-2 border-dashed rounded-lg p-6 text-center">
               <input
@@ -672,7 +775,7 @@ export default function SiteManagementPage() {
                 <li>Employee ID or Name</li>
                 <li>Duty Days (working days)</li>
                 <li>Overtime Hours</li>
-                <li>Bonus Amount (optional)</li>
+                <li>Allowance eligibility reference (optional)</li>
               </ul>
             </div>
 

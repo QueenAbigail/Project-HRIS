@@ -19,7 +19,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Download, Eye, Loader2, TrendingUp, TrendingDown, ChevronDown, ChevronRight } from 'lucide-react'
+import {
+  Building2,
+  ChevronDown,
+  ChevronRight,
+  Download,
+  Eye,
+  Loader2,
+  Users,
+} from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
 interface SiteDetail {
@@ -230,19 +238,7 @@ export default function MonthlyRecapPage() {
   const [siteLoading, setSiteLoading] = useState(false)
   const [siteEmployees, setSiteEmployees] = useState<DetailedRecord[]>([])
 
-  const latestRecord = mockMonthlyRecords[0]
-  const previousRecord = mockMonthlyRecords[1]
-  
-  const payrollTrend = latestRecord.totalPayroll - previousRecord.totalPayroll
-  const payrollTrendPercent = ((payrollTrend / previousRecord.totalPayroll) * 100).toFixed(1)
-  
-  const bonusTrend = latestRecord.totalBonus - previousRecord.totalBonus
-  const bonusTrendPercent = previousRecord.totalBonus > 0 
-    ? ((bonusTrend / previousRecord.totalBonus) * 100).toFixed(1)
-    : '0'
-  
-  const netPayrollTrend = latestRecord.netPayroll - previousRecord.netPayroll
-  const netPayrollTrendPercent = ((netPayrollTrend / previousRecord.netPayroll) * 100).toFixed(1)
+
 
   useEffect(() => {
     if (selectedRecord) {
@@ -301,124 +297,6 @@ export default function MonthlyRecapPage() {
         </Button>
       </div>
 
-      {/* Current Month Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-5">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Current Payroll</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{formatCurrency(latestRecord.totalPayroll)}</p>
-            <p className="text-xs text-muted-foreground mt-1">{latestRecord.totalEmployees} employees</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Bonus</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-success">{formatCurrency(latestRecord.totalBonus)}</p>
-            <p className="text-xs text-muted-foreground mt-1">{latestRecord.month}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Deductions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-destructive">{formatCurrency(latestRecord.totalDeductions)}</p>
-            <p className="text-xs text-muted-foreground mt-1">{((latestRecord.totalDeductions / latestRecord.totalPayroll) * 100).toFixed(1)}% of payroll</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Net Payroll</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-success">{formatCurrency(latestRecord.netPayroll)}</p>
-            <p className="text-xs text-muted-foreground mt-1">After deductions</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Avg Per Employee</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{formatCurrency(latestRecord.averagePerEmployee)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Net average</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Trend Indicators */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Payroll Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              {payrollTrend >= 0 ? (
-                <TrendingUp className="size-5 text-success" />
-              ) : (
-                <TrendingDown className="size-5 text-destructive" />
-              )}
-              <span className={`text-lg font-semibold ${payrollTrend >= 0 ? 'text-success' : 'text-destructive'}`}>
-                {payrollTrend >= 0 ? '+' : ''}{payrollTrendPercent}%
-              </span>
-              <span className="text-sm text-muted-foreground">vs {previousRecord.month}</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">{formatCurrency(Math.abs(payrollTrend))} difference</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Bonus Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              {bonusTrend > 0 ? (
-                <TrendingUp className="size-5 text-success" />
-              ) : bonusTrend < 0 ? (
-                <TrendingDown className="size-5 text-destructive" />
-              ) : (
-                <span className="text-muted-foreground">-</span>
-              )}
-              <span className={`text-lg font-semibold ${bonusTrend > 0 ? 'text-success' : bonusTrend < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                {bonusTrend >= 0 ? '+' : ''}{bonusTrendPercent}%
-              </span>
-              <span className="text-sm text-muted-foreground">vs {previousRecord.month}</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">{formatCurrency(Math.abs(bonusTrend))} difference</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Net Payroll Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              {netPayrollTrend >= 0 ? (
-                <TrendingUp className="size-5 text-success" />
-              ) : (
-                <TrendingDown className="size-5 text-destructive" />
-              )}
-              <span className={`text-lg font-semibold ${netPayrollTrend >= 0 ? 'text-success' : 'text-destructive'}`}>
-                {netPayrollTrend >= 0 ? '+' : ''}{netPayrollTrendPercent}%
-              </span>
-              <span className="text-sm text-muted-foreground">vs {previousRecord.month}</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">{formatCurrency(Math.abs(netPayrollTrend))} difference</p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Monthly History with Expandable Details */}
       <div className="space-y-3">
         {mockMonthlyRecords.map((record) => {
@@ -459,7 +337,7 @@ export default function MonthlyRecapPage() {
                       <p className="text-lg font-semibold">{formatCurrency(record.totalPayroll)}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Bonus</p>
+                      <p className="text-xs text-muted-foreground">Allowance</p>
                       <p className="text-lg font-semibold text-success">{formatCurrency(record.totalBonus)}</p>
                     </div>
                     <div>
@@ -480,29 +358,26 @@ export default function MonthlyRecapPage() {
                         <TableHeader>
                           <TableRow>
                             <TableHead>Site</TableHead>
-                            <TableHead className="text-right">Location</TableHead>
-                            <TableHead className="text-right">Employees</TableHead>
+                                                      <TableHead className="text-right">Employees</TableHead>
                             <TableHead className="text-right">Payroll</TableHead>
-                            <TableHead className="text-right">Bonus</TableHead>
+                            <TableHead className="text-right">Allowance</TableHead>
                             <TableHead className="text-right">Deductions</TableHead>
-                            <TableHead className="text-right">Net Payroll</TableHead>
-                          </TableRow>
+  <TableHead className="text-right">Net Payroll</TableHead>
+  <TableHead className="text-right">Payroll Detail</TableHead>
+  </TableRow>
                         </TableHeader>
                         <TableBody>
                           {record.sites?.map((site) => (
-                            <TableRow 
-                              key={site.siteId}
-                              className="cursor-pointer hover:bg-muted/50 transition-colors"
-                              onClick={() => handleSiteClick(site, record)}
-                            >
+  <TableRow key={site.siteId}>
                               <TableCell className="font-medium text-sm">{site.siteName}</TableCell>
                               <TableCell className="text-right text-sm">{site.location}</TableCell>
                               <TableCell className="text-right text-sm">{site.employees}</TableCell>
                               <TableCell className="text-right text-sm">{formatCurrency(site.payroll)}</TableCell>
                               <TableCell className="text-right text-sm text-success">{formatCurrency(site.bonus)}</TableCell>
                               <TableCell className="text-right text-sm text-destructive">{formatCurrency(site.deductions)}</TableCell>
-                              <TableCell className="text-right text-sm font-medium text-success">{formatCurrency(site.netPayroll)}</TableCell>
-                            </TableRow>
+  <TableCell className="text-right text-sm font-medium text-success">{formatCurrency(site.netPayroll)}</TableCell>
+  <TableCell className="text-right"><Button variant="outline" size="sm" onClick={() => handleSiteClick(site, record)}>Payroll Detail</Button></TableCell>
+  </TableRow>
                           ))}
                         </TableBody>
                       </Table>
@@ -540,7 +415,7 @@ export default function MonthlyRecapPage() {
                   <p className="text-2xl font-bold mt-2">{formatCurrency(selectedRecord.totalTax + selectedRecord.totalInsurance)}</p>
                 </div>
                 <div className="p-4 border rounded-lg">
-                  <p className="text-sm text-muted-foreground">Bonus Paid</p>
+                  <p className="text-sm text-muted-foreground">Allowance Paid</p>
                   <p className="text-2xl font-bold text-success mt-2">{formatCurrency(selectedRecord.totalBonus)}</p>
                 </div>
                 <div className="p-4 border rounded-lg">
@@ -562,8 +437,8 @@ export default function MonthlyRecapPage() {
                         <TableRow>
                           <TableHead>Employee</TableHead>
                           <TableHead className="text-right">Base Pay</TableHead>
+                          <TableHead className="text-right">Allowance</TableHead>
                           <TableHead className="text-right">Overtime</TableHead>
-                          <TableHead className="text-right">Bonus</TableHead>
                           <TableHead className="text-right">Deductions</TableHead>
                           <TableHead className="text-right">Tax</TableHead>
                           <TableHead className="text-right">Net Pay</TableHead>
@@ -574,8 +449,8 @@ export default function MonthlyRecapPage() {
                           <TableRow key={record.employeeId}>
                             <TableCell className="font-medium">{record.employeeName}</TableCell>
                             <TableCell className="text-right text-sm">{formatCurrency(record.basePay)}</TableCell>
-                            <TableCell className="text-right text-sm text-success">{formatCurrency(record.overtime)}</TableCell>
                             <TableCell className="text-right text-sm text-success">{formatCurrency(record.bonus)}</TableCell>
+                            <TableCell className="text-right text-sm text-success">{formatCurrency(record.overtime)}</TableCell>
                             <TableCell className="text-right text-sm text-destructive">{formatCurrency(record.deductions)}</TableCell>
                             <TableCell className="text-right text-sm">{formatCurrency(record.tax)}</TableCell>
                             <TableCell className="text-right text-sm font-medium">{formatCurrency(record.netPay)}</TableCell>
@@ -597,79 +472,132 @@ export default function MonthlyRecapPage() {
 
       {/* Site Employee Details Dialog */}
       <Dialog open={siteDetailsOpen} onOpenChange={setSiteDetailsOpen}>
-        <DialogContent className="!w-fit !max-w-fit max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Site Payroll Details</DialogTitle>
-            <DialogDescription>
-              {selectedMonth?.month} • {selectedSite?.siteName} ({selectedSite?.location})
-            </DialogDescription>
+        <DialogContent className="flex max-h-[90vh] w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-6xl">
+          <DialogHeader className="gap-0 border-b bg-muted/30 px-6 py-5 pr-14">
+            <div className="flex items-center gap-4">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Building2 className="size-5" />
+              </div>
+              <div className="min-w-0 space-y-1">
+                <DialogTitle className="text-xl leading-tight">
+                  {selectedSite?.siteName ?? 'Site Payroll Details'}
+                </DialogTitle>
+                <DialogDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span>{selectedSite?.location}</span>
+                  <span aria-hidden="true" className="text-muted-foreground/50">•</span>
+                  <span>{selectedMonth?.month}</span>
+                  <span aria-hidden="true" className="text-muted-foreground/50">•</span>
+                  <span className="inline-flex items-center gap-1">
+                    <Users className="size-3.5" />
+                    {selectedSite?.employees} employees
+                  </span>
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
           {selectedSite && selectedMonth && (
-            <div className="space-y-6">
-              {/* Site Summary */}
-              <div className="grid gap-4 md:grid-cols-4">
-                <div className="p-4 border rounded-lg">
-                  <p className="text-sm text-muted-foreground">Total Payroll</p>
-                  <p className="text-2xl font-bold mt-2">{formatCurrency(selectedSite.payroll)}</p>
-                </div>
-                <div className="p-4 border rounded-lg">
-                  <p className="text-sm text-muted-foreground">Bonus</p>
-                  <p className="text-2xl font-bold text-success mt-2">{formatCurrency(selectedSite.bonus)}</p>
-                </div>
-                <div className="p-4 border rounded-lg">
-                  <p className="text-sm text-muted-foreground">Deductions</p>
-                  <p className="text-2xl font-bold text-destructive mt-2">{formatCurrency(selectedSite.deductions)}</p>
-                </div>
-                <div className="p-4 border rounded-lg">
-                  <p className="text-sm text-muted-foreground">Net Payroll</p>
-                  <p className="text-2xl font-bold text-success mt-2">{formatCurrency(selectedSite.netPayroll)}</p>
-                </div>
+            <>
+              <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
+
+                {/* Employee Details Table */}
+                <section aria-labelledby="site-employees-heading" className="space-y-3">
+                  <h3 id="site-employees-heading" className="text-base font-semibold">
+                    Employee Payroll Details
+                  </h3>
+                  {siteLoading ? (
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-16 text-sm text-muted-foreground">
+                      <Loader2 className="size-6 animate-spin" />
+                      Loading employee payroll...
+                    </div>
+                  ) : siteEmployees.length === 0 ? (
+                    <div className="rounded-xl border border-dashed py-16 text-center text-sm text-muted-foreground">
+                      No employee payroll records for this site.
+                    </div>
+                  ) : (
+                    <div className="max-h-[45vh] overflow-auto rounded-xl border">
+                      <Table className="min-w-[860px] whitespace-nowrap">
+                        <TableHeader className="sticky top-0 z-10 bg-muted [&_tr]:border-b">
+                          <TableRow className="hover:bg-muted">
+                            <TableHead className="h-10 text-xs font-medium uppercase tracking-wide">Employee</TableHead>
+                            <TableHead className="h-10 text-center text-xs font-medium uppercase tracking-wide">Days</TableHead>
+                            <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Base Pay</TableHead>
+                            <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Allowance</TableHead>
+                            <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Overtime</TableHead>
+                            <TableHead className="h-10 text-right text-xs font-medium uppercase tracking-wide">Deductions</TableHead>
+                            <TableHead className="h-10 pr-4 text-right text-xs font-medium uppercase tracking-wide">Net Pay</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {siteEmployees.map((employee) => {
+                            const initials = employee.employeeName
+                              .split(' ')
+                              .map((part) => part[0])
+                              .slice(0, 2)
+                              .join('')
+                              .toUpperCase()
+                            const overtimeHours = (employee.overtime / 100000).toFixed(1)
+                            return (
+                              <TableRow key={employee.employeeId} className="text-sm">
+                                <TableCell className="py-3">
+                                  <div className="flex items-center gap-3">
+                                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+                                      {initials}
+                                    </span>
+                                    <span className="font-medium">{employee.employeeName}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="py-3 text-center tabular-nums text-muted-foreground">22/22</TableCell>
+                                <TableCell className="py-3 text-right tabular-nums">{formatCurrency(employee.basePay)}</TableCell>
+                                <TableCell className="py-3 text-right tabular-nums">
+                                  {employee.bonus > 0 ? (
+                                    <span className="text-success">{formatCurrency(employee.bonus)}</span>
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-3 text-right">
+                                  {employee.overtime > 0 ? (
+                                    <div className="leading-tight">
+                                      <p className="tabular-nums text-success">{formatCurrency(employee.overtime)}</p>
+                                      <p className="text-xs tabular-nums text-muted-foreground">{overtimeHours}h</p>
+                                    </div>
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-3 text-right tabular-nums">
+                                  {employee.deductions > 0 ? (
+                                    <span className="text-destructive">{formatCurrency(employee.deductions)}</span>
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="py-3 pr-4 text-right font-semibold tabular-nums">
+                                  {formatCurrency(employee.netPay)}
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </section>
               </div>
 
-              {/* Employee Details Table */}
-              <div>
-                <h3 className="font-semibold mb-4">Employee Payroll Details ({selectedSite.employees} employees)</h3>
-                {siteLoading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="size-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  <div className="rounded-lg border overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Employee</TableHead>
-                          <TableHead className="text-right">Days</TableHead>
-                          <TableHead className="text-right">Base Pay</TableHead>
-                          <TableHead className="text-right">OT Hours</TableHead>
-                          <TableHead className="text-right">OT Amount</TableHead>
-                          <TableHead className="text-right">Bonus</TableHead>
-                          <TableHead className="text-right">Deductions</TableHead>
-                          <TableHead className="text-right">Tax</TableHead>
-                          <TableHead className="text-right">Net Pay</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {siteEmployees.map((employee, idx) => (
-                          <TableRow key={employee.employeeId}>
-                            <TableCell className="font-medium text-sm">{employee.employeeName}</TableCell>
-                            <TableCell className="text-right text-sm">22/22</TableCell>
-                            <TableCell className="text-right text-sm">{formatCurrency(employee.basePay)}</TableCell>
-                            <TableCell className="text-right text-sm text-success">{(employee.overtime / 100000).toFixed(1)}h</TableCell>
-                            <TableCell className="text-right text-sm text-success">{formatCurrency(employee.overtime)}</TableCell>
-                            <TableCell className="text-right text-sm text-success">{formatCurrency(employee.bonus)}</TableCell>
-                            <TableCell className="text-right text-sm text-destructive">{formatCurrency(employee.deductions)}</TableCell>
-                            <TableCell className="text-right text-sm">{formatCurrency(employee.tax)}</TableCell>
-                            <TableCell className="text-right text-sm font-medium text-success">{formatCurrency(employee.netPay)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
+              <div className="flex items-center justify-between gap-4 border-t bg-muted/30 px-6 py-3 text-sm">
+                <p className="text-muted-foreground">
+                  {siteEmployees.length} of {selectedSite.employees} employees
+                </p>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">Total net pay</span>
+                  <span className="text-base font-semibold tabular-nums text-success">
+                    {formatCurrency(siteEmployees.reduce((sum, employee) => sum + employee.netPay, 0))}
+                  </span>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </DialogContent>
       </Dialog>

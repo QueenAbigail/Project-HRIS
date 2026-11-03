@@ -124,6 +124,8 @@ model Site {
   shiftSwaps               ShiftSwap[]
   employeeShiftAssignments EmployeeShiftAssignment[]
   announcements            Announcement[]            @relation("SiteAnnouncements")
+  deductionAssignments     DeductionRuleSiteAssignment[]
+  salaryBases              SalaryBase[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -171,6 +173,8 @@ model User {
   avatar                   String?
   department               String?
   position                 String?
+  positionId               String?
+  positionRef              MasterData?                 @relation("UserPosition", fields: [positionId], references: [id], onDelete: SetNull)
   role                     Role                        @default(STAFF)
   companyId                String?
   company                  Company?                    @relation(fields: [companyId], references: [id], onDelete: SetNull)
@@ -226,6 +230,7 @@ model User {
   @@index([companyId])
   @@index([supervisorId])
   @@index([email])
+  @@index([positionId])
   @@map("users")
 }
 
@@ -320,6 +325,7 @@ model MasterData {
   category String
   value    String
   isActive Boolean @default(true)
+  users    User[]  @relation("UserPosition")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -626,8 +632,8 @@ model Notification {
   type      NotificationType @default(SYSTEM)
   isRead    Boolean          @default(false)
   metadata  Json? // Store extra details like request_id, entity_type, link_id, etc.
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  createdAt DateTime         @default(now()) @db.Timestamptz()
+  updatedAt DateTime         @updatedAt @db.Timestamptz()
 
   @@index([userId])
   @@index([isRead])
@@ -702,11 +708,29 @@ enum OvertimeHoursStatus {
   rejected
 }
 
+// Salary Base - Regional minimum wage (UMK/UMP) per site, effective-dated so a raise can be scheduled ahead
+model SalaryBase {
+  id            String   @id @default(cuid())
+  siteId        String
+  site          Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  minimumWage   Decimal  @db.Decimal(15, 2)
+  effectiveDate DateTime @db.Date // First day of the month this wage starts to apply
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  salaryRules   SalaryRule[]
+
+  @@unique([siteId, effectiveDate])
+  @@index([siteId])
+  @@map("salary_base")
+}
+
 // TABLE 1: Salary Rules - Store salary configuration by position + site
 model SalaryRule {
   id                String    @id @default(cuid())
-  positionId        String // References position/job title
+  positionId        String // References master_data.id (category = 'position')
   siteId            String // References site ID
+  salaryBaseId      String? // Minimum wage record this rule was calculated from
+  salaryBase        SalaryBase? @relation(fields: [salaryBaseId], references: [id], onDelete: SetNull)
   baseSalary        Decimal   @db.Decimal(15, 2) // Monthly base salary
   positionAllowance Decimal   @db.Decimal(15, 2) // Position-specific allowance (e.g., risk allowance)
   minimumWage       Decimal   @db.Decimal(15, 2) // Government minimum wage baseline
@@ -716,8 +740,9 @@ model SalaryRule {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  @@unique([positionId, siteId])
+  @@unique([positionId, siteId, effectiveDate])
   @@index([siteId])
+  @@index([salaryBaseId])
   @@index([status])
   @@map("salary_rules")
 }
@@ -726,6 +751,7 @@ model SalaryRule {
 model OvertimeRule {
   id               String           @id @default(cuid())
   type             OvertimeRuleType // regular_backup, national_holiday, overtime_weekly
+  hour             Int              @default(1) // Overtime hour tier (1 = first hour, 2 = second hour, ...)
   description      String // e.g., "National Holiday Duty"
   multiplier       Decimal          @db.Decimal(3, 2) // e.g., 1.5, 2.0, 2.5
   maxHoursPerMonth Int? // e.g., 20 hours max per month
@@ -733,31 +759,44 @@ model OvertimeRule {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 
+  @@unique([type, hour])
   @@index([status])
   @@map("overtime_rules")
 }
 
-// TABLE 3: Deduction Rules - Store deduction rates by position + site
+// TABLE 3: Deduction Rules - Reusable deduction definitions
 model DeductionRule {
-  id                String                   @id @default(cuid())
-  positionId        String // Position/job title
-  siteId            String // References site ID
-  name              String // e.g., "Income Tax", "Health Insurance"
-  type              DeductionType // tax, insurance, health, pension, special
-  deductionType     DeductionCalculationType // percentage or fixed_amount
-  value             Decimal                  @db.Decimal(8, 4) // % or fixed amount
-  isApplicableToAll Boolean                  @default(true) // Applies to all employees in this position/site
-  riskLevel         String? // low, medium, high - for health/insurance variations
-  effectiveDate     DateTime                 @db.Date
-  endDate           DateTime?                @db.Date
-  status            String                   @default("active") // active / inactive
-  createdAt         DateTime                 @default(now())
-  updatedAt         DateTime                 @updatedAt
+  id            String                   @id @default(cuid())
+  name          String
+  type          DeductionType
+  deductionType DeductionCalculationType
+  value         Decimal                  @db.Decimal(8, 4)
+  status        String                   @default("active")
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
 
-  @@unique([positionId, siteId, type, riskLevel])
-  @@index([siteId])
+  assignments   DeductionRuleSiteAssignment[]
+  applied       PayrollDeductionsApplied[]
+
+  @@unique([name, type])
   @@index([status])
   @@map("deduction_rules")
+}
+
+// TABLE 3b: Assign reusable deduction rules to the sites that use them
+model DeductionRuleSiteAssignment {
+  id              String        @id @default(cuid())
+  deductionRuleId String
+  siteId          String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  deductionRule DeductionRule @relation(fields: [deductionRuleId], references: [id], onDelete: Cascade)
+  site          Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([deductionRuleId, siteId])
+  @@index([siteId])
+  @@map("deduction_rule_site_assignments")
 }
 
 // TABLE 4: Payroll Periods - Define payroll periods and approval workflow
@@ -860,6 +899,7 @@ model PayrollDeductionsApplied {
   payrollPeriodId String // References payroll period
   payrollPeriod   PayrollPeriod @relation("PeriodDeductionsApplied", fields: [payrollPeriodId], references: [id], onDelete: Cascade)
   deductionRuleId String // References deduction rule
+  deductionRule   DeductionRule @relation(fields: [deductionRuleId], references: [id], onDelete: Restrict)
 
   baseSalary       Decimal                  @db.Decimal(15, 2) // Used for percentage calculations
   deductionType    String // Stores type for reference

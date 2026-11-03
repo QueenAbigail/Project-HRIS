@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+import { getSite } from '@/components/payroll/payslip/payslip-data'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -23,6 +24,7 @@ export function DashboardBreadcrumb() {
     '/dashboard/shifts': 'Shift Schedule',
     '/payroll': 'Payroll',
     '/payroll/management': 'Management',
+    '/payroll/payslip': 'Payslip',
     '/payroll/salary': 'Salary',
     '/payroll/overtime': 'Overtime',
     '/payroll/deduction': 'Deduction',
@@ -60,7 +62,11 @@ export function DashboardBreadcrumb() {
       // Skip if it's dashboard (already added)
       if (currentPath === '/dashboard') continue
 
-      const label = pathNames[currentPath]
+      const label =
+        pathNames[currentPath] ??
+        (segments[0] === 'payroll' && segments[1] === 'payslip' && i === 2
+          ? getSite(segments[2])?.name
+          : undefined)
       if (label) {
         breadcrumbs.push({
           href: currentPath,
