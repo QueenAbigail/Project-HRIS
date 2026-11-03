@@ -17,7 +17,7 @@ export async function GET() {
   try {
     const [employees, attendance] = await Promise.all([
       prisma.user.findMany({
-        where: { role: 'STAFF' },
+        where: {},
         select: { siteId: true },
       }),
       prisma.attendance.findMany({
@@ -38,7 +38,7 @@ export async function GET() {
     const lateBySite = new Map<string, number>()
     const employeeSiteById = new Map<string, string>()
     const employeeRows = await prisma.user.findMany({
-      where: { role: 'STAFF' },
+      where: {},
       select: { id: true, siteId: true },
     })
     for (const employee of employeeRows) employeeSiteById.set(employee.id, employee.siteId)
