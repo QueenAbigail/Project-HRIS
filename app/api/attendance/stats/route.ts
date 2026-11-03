@@ -60,7 +60,9 @@ export async function GET(request: NextRequest) {
       select: { employeeId: true, scheduleDate: true },
     })
 
-    const activeEmployeeCountPromise = prisma.user.count({ where: employeeWhere })
+    const totalEmployeeWhere = { ...employeeWhere }
+    delete totalEmployeeWhere.status
+    const totalEmployeeCountPromise = prisma.user.count({ where: totalEmployeeWhere })
 
     const approvedLeavesPromise = prisma.leave.findMany({
       where: {
@@ -103,7 +105,7 @@ export async function GET(request: NextRequest) {
       attendancePromise,
       bkoPromise,
       scheduledEmployeesPromise,
-      activeEmployeeCountPromise,
+      totalEmployeeCountPromise,
       approvedLeavesPromise,
     ])
 
