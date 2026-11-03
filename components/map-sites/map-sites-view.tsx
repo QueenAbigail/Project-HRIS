@@ -98,7 +98,9 @@ export default function MapSitesView() {
   const mapCenter: [number, number] = [-6.2088, 106.8456]
 
   // Get color based on occupancy rate
-  const getMarkerColor = (presentCount: number, totalStaff: number) => {
+  const getMarkerColor = (location: { name: string; presentCount: number; totalStaff: number }) => {
+    if (location.name.trim().toLowerCase() === 'head office') return '#22c55e'
+    const { presentCount, totalStaff } = location
     if (totalStaff === 0) return '#ef4444' // No staff present means 0% occupancy
     const percentage = (presentCount / totalStaff) * 100
     
@@ -110,7 +112,7 @@ export default function MapSitesView() {
 
   // Create custom HTML icon with badge
   const createCustomIcon = (location: any) => {
-    const color = getMarkerColor(location.presentCount, location.totalStaff)
+    const color = getMarkerColor(location)
     
     return L.divIcon({
       html: `
@@ -199,6 +201,7 @@ export default function MapSitesView() {
                   presentCount={location.presentCount}
                   lateCount={location.lateCount}
                   absentCount={location.absentCount}
+                  isHeadOffice={location.name.trim().toLowerCase() === 'head office'}
                 />
               </Popup>
             </Marker>

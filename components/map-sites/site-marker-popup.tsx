@@ -11,6 +11,7 @@ interface SiteMarkerPopupProps {
   presentCount: number
   lateCount: number
   absentCount: number
+  isHeadOffice?: boolean
 }
 
 export function SiteMarkerPopup({
@@ -22,8 +23,9 @@ export function SiteMarkerPopup({
   presentCount,
   lateCount,
   absentCount,
+  isHeadOffice = false,
 }: SiteMarkerPopupProps) {
-  const occupancyRate = totalStaff > 0 ? Math.round((presentCount / totalStaff) * 100) : 0
+  const occupancyRate = isHeadOffice ? 100 : totalStaff > 0 ? Math.round((presentCount / totalStaff) * 100) : 0
 
   const handleOpenStreetView = () => {
     const streetViewUrl = `https://www.google.com/maps/@${latitude},${longitude},3a,75y,0h,90t/data=!3m4!1e1!3m2!1s!2e0!7i13312!8i6656`
