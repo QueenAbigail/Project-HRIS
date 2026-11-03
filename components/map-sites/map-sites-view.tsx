@@ -78,12 +78,11 @@ export default function MapSitesView() {
                 absentCount:
                   site.name.trim().toLowerCase() === 'head office'
                     ? 0
-                    : Math.max(
-                        (siteAttendance[site.id]?.totalStaff ?? 0) -
-                          (siteAttendance[site.id]?.presentCount ?? 0),
-                        0,
-                      ),
-                notCheckedInCount: 0,
+                    : siteAttendance[site.id]?.absentCount ?? 0,
+                notCheckedInCount:
+                  site.name.trim().toLowerCase() === 'head office'
+                    ? 0
+                    : siteAttendance[site.id]?.notCheckedInCount ?? 0,
               })
             }
           }

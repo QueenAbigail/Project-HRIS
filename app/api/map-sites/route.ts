@@ -49,14 +49,18 @@ export async function GET() {
     }
 
     const siteIds = new Set([...totalBySite.keys(), ...recordsBySite.keys()])
-    const result: Record<string, { totalStaff: number; presentCount: number; lateCount: number }> = {}
+    const result: Record<string, { totalStaff: number; presentCount: number; lateCount: number; absentCount: number; notCheckedInCount: number }> = {}
 
     for (const siteId of siteIds) {
       const tally = tallyAttendance(recordsBySite.get(siteId) ?? [])
+      const totalStaff = totalBySite.get(siteId) ?? 0
+      const presentCount = tally.present + tally.late
       result[siteId] = {
-        totalStaff: totalBySite.get(siteId) ?? 0,
-        presentCount: tally.present + tally.late,
+        totalStaff,
+        presentCount,
         lateCount: tally.late,
+        absentCount: tally.absent,
+        notCheckedInCount: Math.max(totalStaff - presentCount - tally.absent - tally.onLeave, 0),
       }
     }
 
