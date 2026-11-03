@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -72,15 +72,8 @@ export default function MapSitesView() {
     fetchSites()
   }, [])
 
-  // Calculate center of map based on all locations
-  const mapCenter = useMemo(() => {
-    if (locationStats.length === 0) return [-6.2088, 106.8456] as [number, number] // Default to JABODETABEK
-    
-    const avgLat = locationStats.reduce((sum, loc) => sum + loc.centerPoint.latitude, 0) / locationStats.length
-    const avgLng = locationStats.reduce((sum, loc) => sum + loc.centerPoint.longitude, 0) / locationStats.length
-    
-    return [avgLat, avgLng] as [number, number]
-  }, [locationStats])
+  // Keep the initial view focused on Head Office while preserving the existing zoom level.
+  const mapCenter: [number, number] = [-6.2088, 106.8456]
 
   // Get color based on occupancy rate
   const getMarkerColor = (presentCount: number, totalStaff: number) => {
