@@ -26,14 +26,31 @@ L.Marker.prototype.setIcon(defaultIcon)
 export default function MapSitesView() {
   const [selectedSite, setSelectedSite] = useState<string | null>(null)
   const [locationStats, setLocationStats] = useState<typeof fallbackLocationStats>([])
+  const [attendanceStats, setAttendanceStats] = useState({
+    totalEmployees: 0,
+    presentToday: 0,
+    absentToday: 0,
+  })
   const [loading, setLoading] = useState(true)
 
   // Fetch sites from database
   useEffect(() => {
     async function fetchSites() {
       try {
-        const response = await fetch('/api/companies')
-        const companies = await response.json()
+        const [sitesResponse, attendanceResponse] = await Promise.all([
+          fetch('/api/companies'),
+          fetch('/api/attendance/stats?siteId=all'),
+        ])
+        const companies = await sitesResponse.json()
+        const attendance = await attendanceResponse.json()
+
+        if (attendanceResponse.ok) {
+          setAttendanceStats({
+            totalEmployees: attendance.totalEmployees ?? 0,
+            presentToday: attendance.presentToday ?? 0,
+            absentToday: attendance.absentToday ?? 0,
+          })
+        }
         
         // Build location stats from database sites
         const stats: typeof fallbackLocationStats = []
@@ -125,15 +142,11 @@ export default function MapSitesView() {
     )
   }
 
-  const totalStaff = locationStats.reduce((sum, loc) => sum + loc.totalStaff, 0)
-  const totalPresent = locationStats.reduce((sum, loc) => sum + loc.presentCount, 0)
-  const totalAbsent = locationStats.reduce((sum, loc) => sum + loc.absentCount, 0)
-
   const summaryStats = [
     { label: 'Total Sites', value: locationStats.length, className: 'text-foreground' },
-    { label: 'Total Staff', value: totalStaff, className: 'text-foreground' },
-    { label: 'Present Today', value: totalPresent, className: 'text-green-500' },
-    { label: 'Absent', value: totalAbsent, className: 'text-red-500' },
+    { label: 'Total Staff', value: attendanceStats.totalEmployees, className: 'text-foreground' },
+    { label: 'Present Today', value: attendanceStats.presentToday, className: 'text-green-500' },
+    { label: 'Absent', value: attendanceStats.absentToday, className: 'text-red-500' },
   ]
 
   const legendItems = [
