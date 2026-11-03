@@ -144,19 +144,7 @@ export default function MapSitesView() {
   ]
 
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col gap-3">
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-        {summaryStats.map((stat) => (
-          <div
-            key={stat.label}
-            className="flex items-baseline justify-between rounded-lg border border-border bg-card px-3 py-2"
-          >
-            <span className="text-xs text-muted-foreground">{stat.label}</span>
-            <span className={`text-lg font-bold leading-none ${stat.className}`}>{stat.value}</span>
-          </div>
-        ))}
-      </div>
-
+    <div className="flex min-h-0 w-full flex-1 flex-col">
       <div className="relative min-h-[360px] flex-1 overflow-hidden rounded-lg border border-border">
         <MapContainer 
           center={mapCenter} 
@@ -200,11 +188,27 @@ export default function MapSitesView() {
         </MapContainer>
 
         <div
-          className="absolute bottom-6 left-3 z-[1000] rounded-lg border border-border bg-background/90 px-3 py-2 shadow-md backdrop-blur"
+          className="pointer-events-none absolute left-14 right-3 top-3 z-[1000] grid grid-cols-2 gap-2 md:grid-cols-4"
+          role="group"
+          aria-label="Site summary"
+        >
+          {summaryStats.map((stat) => (
+            <div
+              key={stat.label}
+              className="flex items-baseline justify-between rounded-lg border border-white/15 bg-background/50 px-3 py-2 shadow-lg backdrop-blur-md backdrop-saturate-150"
+            >
+              <span className="text-xs text-foreground/70">{stat.label}</span>
+              <span className={`text-lg font-bold leading-none ${stat.className}`}>{stat.value}</span>
+            </div>
+          ))}
+        </div>
+
+        <div
+          className="absolute bottom-6 left-3 z-[1000] rounded-lg border border-white/15 bg-background/50 px-3 py-2 shadow-lg backdrop-blur-md backdrop-saturate-150"
           role="group"
           aria-label="Occupancy rate legend"
         >
-          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-foreground/70">
             Occupancy Rate
           </p>
           <ul className="flex flex-col gap-1">
