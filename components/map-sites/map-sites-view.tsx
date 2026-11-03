@@ -70,12 +70,19 @@ export default function MapSitesView() {
                   longitude: parseFloat(site.longitude),
                 },
                 totalStaff: siteAttendance[site.id]?.totalStaff ?? 0,
-                presentCount: siteAttendance[site.id]?.presentCount ?? 0,
+                presentCount:
+                  site.name.trim().toLowerCase() === 'head office'
+                    ? siteAttendance[site.id]?.totalStaff ?? 0
+                    : siteAttendance[site.id]?.presentCount ?? 0,
                 lateCount: siteAttendance[site.id]?.lateCount ?? 0,
-                absentCount: Math.max(
-                  (siteAttendance[site.id]?.totalStaff ?? 0) - (siteAttendance[site.id]?.presentCount ?? 0),
-                  0,
-                ),
+                absentCount:
+                  site.name.trim().toLowerCase() === 'head office'
+                    ? 0
+                    : Math.max(
+                        (siteAttendance[site.id]?.totalStaff ?? 0) -
+                          (siteAttendance[site.id]?.presentCount ?? 0),
+                        0,
+                      ),
                 notCheckedInCount: 0,
               })
             }
