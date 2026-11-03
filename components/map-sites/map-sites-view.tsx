@@ -94,7 +94,7 @@ export default function MapSitesView() {
 
   // Get color based on occupancy rate
   const getMarkerColor = (presentCount: number, totalStaff: number) => {
-    if (totalStaff === 0) return '#999999'
+    if (totalStaff === 0) return '#ef4444' // No staff present means 0% occupancy
     const percentage = (presentCount / totalStaff) * 100
     
     if (percentage >= 80) return '#22c55e' // Green
