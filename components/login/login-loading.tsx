@@ -4,7 +4,12 @@ import { motion, type Variants } from 'framer-motion'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 
-export function LoginLoading() {
+interface LoginLoadingProps {
+  logoUrl?: string | null
+  appName?: string | null
+}
+
+export function LoginLoading({ logoUrl, appName }: LoginLoadingProps) {
   const { theme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
@@ -38,15 +43,15 @@ export function LoginLoading() {
             }`}
         >
           <img
-            src="/koperasi_icon.png"
-            alt="ProMaximA"
-            className="h-20 w-20 object-contain"
+            src={logoUrl || '/koperasi_icon.png'}
+            alt={appName || 'App logo'}
+            className="h-auto w-auto max-h-20 max-w-[140px] object-contain"
           />
         </motion.div>
 
         {/* Loading Text */}
         <div className="flex flex-col items-center gap-2">
-          <p className="text-sm font-medium text-foreground">Pro Maxima Rajawali</p>
+          <p className="text-sm font-medium text-foreground">{appName || 'Loading'}</p>
           <div className="flex gap-1">
             <motion.div
               className="h-1.5 w-1.5 rounded-full bg-accent"
