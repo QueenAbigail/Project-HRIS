@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Shield, Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react'
 import { login } from '@/lib/auth'
@@ -22,10 +22,29 @@ export function LoginForm({ branding }: { branding: LoginBranding }) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
+  const [showSplash, setShowSplash] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(false)
+
+  useEffect(() => {
+    const minimumSplash = new Promise<void>((resolve) => setTimeout(resolve, 1200))
+    const logoReady = new Promise<void>((resolve) => {
+      const img = new window.Image()
+      img.onload = () => resolve()
+      img.onerror = () => resolve()
+      img.src = branding.logoUrl || '/koperasi_icon.png'
+    })
+
+    let cancelled = false
+    Promise.all([minimumSplash, logoReady]).then(() => {
+      if (!cancelled) setShowSplash(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [branding.logoUrl])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,7 +97,7 @@ export function LoginForm({ branding }: { branding: LoginBranding }) {
     }
   }
 
-  if (isRedirecting) {
+  if (showSplash) {
     return <LoginLoading logoUrl={branding.logoUrl} appName={branding.appName} />
   }
 
@@ -184,10 +203,10 @@ export function LoginForm({ branding }: { branding: LoginBranding }) {
             {/* Login Button */}
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isRedirecting}
               className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-lg shadow-primary/20 transition-all hover:shadow-primary/30"
             >
-              {isLoading ? (
+              {isLoading || isRedirecting ? (
                 <div className="flex items-center gap-2">
                   <div className="size-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                   <span>Signing in...</span>
