@@ -8,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Download, Printer } from 'lucide-react'
 import { formatCurrency } from '@/lib/currency'
 import { useEffect, useState } from 'react'
@@ -40,18 +39,23 @@ interface PayslipDrawerProps {
   onOpenChange: (open: boolean) => void
   employee: PayslipEmployee | null
   period: string
+  siteName?: string
 }
+
+interface LineItem {
+  label: string
+  amount: number
+}
+
+const COMPANY_NAME = 'PT. ProMaxima Rajawali'
+const COMPANY_ADDRESS = 'Jl. Niaga No. 24 Nanggewer Cibinong Bogor Jawa Barat'
+const SIGNING_CITY = 'Bogor'
 
 // Payslip page size: A5 portrait. Text stays legible when the PDF is fit to a phone screen.
 const PAGE_WIDTH_MM = 148
 const PAGE_MIN_HEIGHT_MM = 210
 const PX_PER_MM = 96 / 25.4
 const PAGE_WIDTH_PX = PAGE_WIDTH_MM * PX_PER_MM
-
-const statusStyles: Record<string, { label: string; className: string }> = {
-  sent: { label: 'SENT', className: 'bg-green-100 text-green-800' },
-  'not-sent': { label: 'NOT SENT', className: 'bg-yellow-100 text-yellow-800' },
-}
 
 // Ctrl+P on the page prints only the payslip, at its natural A5 portrait size.
 const portraitPrintStyle = `
@@ -129,43 +133,67 @@ function flattenModernColors(clonedDoc: Document, root: HTMLElement) {
   }
 }
 
-function Row({
-  label,
-  value,
-  tone = 'default',
-}: {
-  label: string
-  value: string
-  tone?: 'default' | 'positive' | 'negative'
-}) {
-  const toneClass =
-    tone === 'positive' ? 'text-green-700' : tone === 'negative' ? 'text-red-600' : 'text-slate-900'
-  return (
-    <div className="flex items-baseline justify-between gap-3 py-[5px]">
-      <span className="text-[12px] text-slate-600">{label}</span>
-      <span className={`font-mono text-[12px] font-semibold tabular-nums ${toneClass}`}>{value}</span>
-    </div>
-  )
+const MONTHS: Record<string, number> = {
+  january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+  july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className="mb-1 border-b border-slate-300 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-      {children}
-    </h3>
-  )
+function pad(value: number) {
+  return String(value).padStart(2, '0')
 }
 
-function InfoCell({ label, value }: { label: string; value: string }) {
+function formatDate(date: Date) {
+  return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()}`
+}
+
+// "March 2026" -> "01-03-2026 - 31-03-2026". Falls back to the raw label for any other format.
+function formatPeriodRange(period: string) {
+  const [monthName, year] = period.trim().split(/\s+/)
+  const month = MONTHS[monthName?.toLowerCase() ?? '']
+  const yearNumber = Number(year)
+  if (month === undefined || !Number.isFinite(yearNumber)) return period
+  return `${formatDate(new Date(yearNumber, month, 1))} - ${formatDate(new Date(yearNumber, month + 1, 0))}`
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
-      <p className="break-words text-[12px] font-semibold leading-tight text-slate-900">{value}</p>
+      <p className="text-[8px] font-semibold uppercase tracking-[0.14em] text-slate-400">{label}</p>
+      <p className="break-words text-[11px] font-semibold leading-tight text-slate-900">{value}</p>
     </div>
   )
 }
 
-export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipDrawerProps) {
+function Amount({ value }: { value: number }) {
+  return (
+    <span
+      className={`shrink-0 font-mono text-[10.5px] tabular-nums ${
+        value === 0 ? 'text-slate-300' : 'font-semibold text-slate-900'
+      }`}
+    >
+      {formatCurrency(value)}
+    </span>
+  )
+}
+
+function LineCell({ item, divider }: { item?: LineItem; divider?: boolean }) {
+  return (
+    <div
+      className={`flex min-h-[6.2mm] items-center justify-between gap-2 border-b border-slate-100 py-[3px] ${
+        divider ? 'border-l pl-3' : 'pr-3'
+      }`}
+    >
+      {item && (
+        <>
+          <span className="text-[10.5px] text-slate-600">{item.label}</span>
+          <Amount value={item.amount} />
+        </>
+      )}
+    </div>
+  )
+}
+
+export function PayslipDrawer({ open, onOpenChange, employee, period, siteName }: PayslipDrawerProps) {
   const [previewContainer, setPreviewContainer] = useState<HTMLDivElement | null>(null)
   const [previewZoom, setPreviewZoom] = useState(1)
 
@@ -193,12 +221,34 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
 
   if (!employee) return null
 
-  const statusStyle = statusStyles[employee.status] ?? {
-    label: employee.status.toUpperCase(),
-    className: 'bg-slate-100 text-slate-700',
-  }
-  const totalGross = employee.baseSalary + employee.overtime + employee.bonus + employee.allowances
-  const takeHomePercentage = totalGross > 0 ? ((employee.netPay / totalGross) * 100).toFixed(1) : '0.0'
+  // Only some of these exist in the payroll data yet; the rest print as Rp 0 until HR records them.
+  const earnings: LineItem[] = [
+    { label: 'Gaji Pokok', amount: employee.baseSalary },
+    { label: 'Tunj. Kompetensi', amount: employee.allowances },
+    { label: 'Kesehatan', amount: 0 },
+    { label: 'Kehadiran', amount: 0 },
+    { label: 'Lembur', amount: employee.overtime },
+    { label: 'Lembur Ganti', amount: 0 },
+    { label: 'Bonus', amount: employee.bonus },
+    { label: 'Rapel', amount: 0 },
+    { label: 'Tunj. PPh', amount: 0 },
+    { label: 'Housing', amount: 0 },
+    { label: 'Meal', amount: 0 },
+    { label: 'Transport', amount: 0 },
+    { label: 'Perdiem', amount: 0 },
+  ]
+  const deductions: LineItem[] = [
+    { label: 'PPh 21', amount: employee.taxDeduction },
+    { label: 'BPJS Kes & TK', amount: employee.insuranceDeduction },
+    { label: 'Lainnya', amount: employee.otherDeductions },
+    { label: 'Penalti', amount: 0 },
+    { label: 'PKWT', amount: 0 },
+  ]
+  const rowCount = Math.max(earnings.length, deductions.length)
+  const totalEarnings = earnings.reduce((sum, item) => sum + item.amount, 0)
+  const totalDeductions = employee.deductions
+  const periodRange = formatPeriodRange(period)
+  const issuedOn = formatDate(new Date())
 
   const handlePrint = () => {
     const printContent = document.getElementById('payslip-print-zone')
@@ -210,7 +260,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
     printWindow.document.write(`
       <html>
         <head>
-          <title>Payslip - ${employee.name}</title>
+          <title>Slip Gaji - ${employee.name}</title>
           <script src="https://cdn.tailwindcss.com"><\/script>
           <style>
             @page {
@@ -292,7 +342,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="flex max-h-[92vh] max-w-[95vw] flex-col gap-0 overflow-hidden border-none bg-white p-0 shadow-2xl sm:max-w-[640px] print:border-none print:shadow-none">
           <DialogHeader className="sr-only print:hidden">
-            <DialogTitle>Pay Slip</DialogTitle>
+            <DialogTitle>Slip Gaji Karyawan</DialogTitle>
             <DialogDescription>
               {period} • {employee.name}
             </DialogDescription>
@@ -310,136 +360,101 @@ export function PayslipDrawer({ open, onOpenChange, employee, period }: PayslipD
               {/* A5 portrait payslip */}
               <div
                 id="payslip-print-zone"
-                className="relative flex flex-col overflow-hidden bg-white text-slate-900 shadow-md print:shadow-none"
+                className="flex flex-col bg-white text-slate-900 shadow-md print:shadow-none"
                 style={{
                   width: `${PAGE_WIDTH_MM}mm`,
                   minHeight: `${PAGE_MIN_HEIGHT_MM}mm`,
-                  padding: '9mm 9mm 8mm',
+                  padding: '10mm 9mm 9mm',
                 }}
               >
-                <div
-                  className="pointer-events-none absolute inset-0 z-0"
-                  style={{
-                    backgroundImage: 'url(/logo/company-logo.webp)',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundSize: '280px 280px',
-                    opacity: 0.06,
-                    filter: 'grayscale(100%)',
-                  }}
-                />
-
-                <div className="relative z-10 flex flex-1 flex-col">
-                  {/* Header */}
-                  <header className="flex items-start justify-between gap-3 border-b-2 border-slate-900 pb-3">
-                    <div className="min-w-0">
-                      <h1 className="text-[15px] font-black leading-tight text-slate-900">
-                        PT Pro Maxima Rajawali
-                      </h1>
-                      <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
-                        Pay Slip
-                      </p>
-                      <p className="text-[12px] font-semibold text-slate-900">{period}</p>
-                    </div>
-                    <span
-                      className={`shrink-0 rounded px-2 py-0.5 text-[9px] font-bold tracking-wider ${statusStyle.className}`}
-                    >
-                      {statusStyle.label}
-                    </span>
-                  </header>
-
-                  {/* Employee */}
-                  <section className="mt-3 flex items-center gap-3 rounded-md bg-slate-50 p-3">
-                    <Avatar className="size-12 shrink-0 border bg-white">
-                      <AvatarImage src={`/avatars/${employee.id}.jpg`} alt={employee.name} />
-                      <AvatarFallback className="bg-slate-100 text-[12px] font-bold text-slate-700">
-                        {employee.initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="grid min-w-0 flex-1 grid-cols-2 gap-x-3 gap-y-2">
-                      <InfoCell label="Employee Name" value={employee.name} />
-                      <InfoCell label="Employee ID" value={employee.id} />
-                      <InfoCell label="Department" value={employee.department} />
-                      <InfoCell label="Days Worked" value={`${employee.daysWorked} / ${employee.totalDays}`} />
-                    </div>
-                  </section>
-
-                  {/* Earnings */}
-                  <section className="mt-4">
-                    <SectionTitle>Earnings</SectionTitle>
-                    <Row label="Base Salary" value={formatCurrency(employee.baseSalary)} />
-                    {employee.overtimeHours > 0 && (
-                      <Row
-                        label={`Overtime (${employee.overtimeHours}h)`}
-                        value={`+${formatCurrency(employee.overtime)}`}
-                        tone="positive"
-                      />
-                    )}
-                    {employee.bonus > 0 && (
-                      <Row label="Bonus" value={`+${formatCurrency(employee.bonus)}`} tone="positive" />
-                    )}
-                    {employee.allowances > 0 && (
-                      <Row label="Allowances" value={`+${formatCurrency(employee.allowances)}`} tone="positive" />
-                    )}
-                    <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-slate-300 pt-2">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-900">
-                        Total Gross
-                      </span>
-                      <span className="font-mono text-[13px] font-bold tabular-nums text-green-700">
-                        {formatCurrency(totalGross)}
-                      </span>
-                    </div>
-                  </section>
-
-                  {/* Deductions */}
-                  <section className="mt-4">
-                    <SectionTitle>Deductions</SectionTitle>
-                    {employee.taxDeduction > 0 && (
-                      <Row label="Income Tax" value={`-${formatCurrency(employee.taxDeduction)}`} tone="negative" />
-                    )}
-                    {employee.insuranceDeduction > 0 && (
-                      <Row
-                        label="Insurance"
-                        value={`-${formatCurrency(employee.insuranceDeduction)}`}
-                        tone="negative"
-                      />
-                    )}
-                    {employee.otherDeductions > 0 && (
-                      <Row
-                        label="Other Deductions"
-                        value={`-${formatCurrency(employee.otherDeductions)}`}
-                        tone="negative"
-                      />
-                    )}
-                    {employee.deductions === 0 && <Row label="No deductions" value={formatCurrency(0)} />}
-                    <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-slate-300 pt-2">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-900">
-                        Total Deductions
-                      </span>
-                      <span className="font-mono text-[13px] font-bold tabular-nums text-red-700">
-                        -{formatCurrency(employee.deductions)}
-                      </span>
-                    </div>
-                  </section>
-
-                  {/* Take home pay, pinned toward the bottom of the page */}
-                  <div className="mt-auto pt-5">
-                    <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-600">
-                        Take Home Pay
-                      </p>
-                      <p className="mt-1 font-mono text-[24px] font-black leading-none tabular-nums text-green-700">
-                        {formatCurrency(employee.netPay)}
-                      </p>
-                      <p className="mt-1.5 text-[10px] font-semibold text-green-700">
-                        {takeHomePercentage}% of gross salary
-                      </p>
-                    </div>
-                    <p className="mt-4 text-center text-[9px] leading-snug text-slate-400">
-                      This is an automated pay slip. Please contact HR for discrepancies.
-                    </p>
+                {/* Company */}
+                <header className="flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/logo/company-logo.webp" alt="" className="h-10 w-10 shrink-0 object-contain" />
+                  <div className="min-w-0">
+                    <h1 className="text-[13px] font-bold leading-tight text-slate-900">{COMPANY_NAME}</h1>
+                    <p className="mt-0.5 text-[9px] leading-snug text-slate-500">{COMPANY_ADDRESS}</p>
                   </div>
+                </header>
+
+                <div className="mt-4 flex items-baseline justify-between gap-3 border-t border-slate-900 pt-2.5">
+                  <h2 className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-900">
+                    Slip Gaji Karyawan
+                  </h2>
+                  <p className="text-[9px] font-medium text-slate-500">{period}</p>
                 </div>
+
+                {/* Employee */}
+                <section className="mt-3 grid grid-cols-2 gap-x-5 gap-y-2.5">
+                  <InfoRow label="Nama" value={employee.name} />
+                  <InfoRow label="Jabatan" value={employee.department} />
+                  <InfoRow label="NIK" value={employee.id} />
+                  <InfoRow label="Hari Kerja" value={`${employee.daysWorked} / ${employee.totalDays}`} />
+                  <InfoRow label="Lokasi" value={siteName ?? '-'} />
+                  <InfoRow label="Periode Remunerasi" value={periodRange} />
+                </section>
+
+                {/* Penerimaan / Potongan */}
+                <section className="mt-5">
+                  <div className="grid grid-cols-2 border-b-2 border-green-700 pb-1.5">
+                    <h3 className="pr-3 text-[9px] font-bold uppercase tracking-[0.2em] text-green-700">
+                      Penerimaan
+                    </h3>
+                    <h3 className="border-l border-transparent pl-3 text-[9px] font-bold uppercase tracking-[0.2em] text-green-700">
+                      Potongan
+                    </h3>
+                  </div>
+
+                  {Array.from({ length: rowCount }, (_, index) => (
+                    <div key={index} className="grid grid-cols-2">
+                      <LineCell item={earnings[index]} />
+                      <LineCell item={deductions[index]} divider />
+                    </div>
+                  ))}
+
+                  <div className="grid grid-cols-2 border-t border-slate-900">
+                    <div className="flex items-center justify-between gap-2 py-2 pr-3">
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-slate-900">
+                        Total Penerimaan
+                      </span>
+                      <span className="font-mono text-[10.5px] font-bold tabular-nums text-slate-900">
+                        {formatCurrency(totalEarnings)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 border-l border-slate-100 py-2 pl-3">
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-slate-900">
+                        Total Potongan
+                      </span>
+                      <span className="font-mono text-[10.5px] font-bold tabular-nums text-slate-900">
+                        {formatCurrency(totalDeductions)}
+                      </span>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Take home pay */}
+                <div className="mt-3 flex items-center justify-between gap-3 rounded-md bg-green-50 px-4 py-3">
+                  <div>
+                    <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-green-800">Gaji Bersih</p>
+                    <p className="text-[9px] text-green-700">Penerimaan - Potongan</p>
+                  </div>
+                  <p className="font-mono text-[18px] font-bold leading-none tabular-nums text-green-800">
+                    {formatCurrency(employee.netPay)}
+                  </p>
+                </div>
+
+                {/* Sign-off, pinned toward the bottom of the page */}
+                <footer className="mt-auto flex items-end justify-between gap-4 pt-8">
+                  <p className="max-w-[55mm] text-[8px] leading-snug text-slate-400">
+                    Dokumen ini dibuat otomatis. Hubungi HRD jika terdapat ketidaksesuaian.
+                  </p>
+                  <div className="text-center">
+                    <p className="text-[10px] text-slate-600">
+                      {SIGNING_CITY}, {issuedOn}
+                    </p>
+                    <p className="mt-10 text-[10px] font-bold text-slate-900">Bag. HRD</p>
+                  </div>
+                </footer>
               </div>
             </div>
           </div>
