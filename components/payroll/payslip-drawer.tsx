@@ -458,8 +458,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period, siteName }
                 <div className="mt-3 flex items-center justify-between gap-3 rounded-md bg-green-50 px-4 py-3">
                   <div>
                     <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-green-800">Gaji Bersih</p>
-                    <p className="text-[9px] text-green-700">Penerimaan - Potongan</p>
-                  </div>
+                              </div>
                   <p className="font-mono text-[18px] font-bold leading-none tabular-nums text-green-800">
                     {formatCurrency(employee.netPay)}
                   </p>
