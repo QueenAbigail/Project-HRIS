@@ -126,7 +126,7 @@ export default function LoginPage() {
         <CardHeader className="space-y-4 text-center pb-2">
           {/* Logo */}
           <div className="flex justify-center">
-            <img src={settings.logoUrl || '/koperasi_icon.png'} alt="App Logo" className="max-w-xs h-auto shadow-lg shadow-primary/10" />
+            <img src={settings.logoUrl || '/koperasi_icon.png'} alt="App Logo" className="h-auto w-auto max-h-24 max-w-[168px] object-contain shadow-lg shadow-primary/10" />
           </div>
           
           <div className="space-y-1.5">
