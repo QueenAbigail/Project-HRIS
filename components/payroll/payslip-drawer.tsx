@@ -27,8 +27,10 @@ interface PayslipEmployee {
   overtime: number
   bonus: number
   allowances: number
+  extraFooding: number
   taxDeduction: number
-  insuranceDeduction: number
+  bpjsKesDeduction: number
+  bpjsTkDeduction: number
   otherDeductions: number
   deductions: number
   netPay: number
@@ -236,24 +238,21 @@ export function PayslipDrawer({ open, onOpenChange, employee, period, siteName }
   const earnings: LineItem[] = [
     { label: 'Gaji Pokok', amount: employee.baseSalary },
     { label: 'Tunj. Kompetensi', amount: employee.allowances },
-    { label: 'Kesehatan', amount: 0 },
-    { label: 'Kehadiran', amount: 0 },
     { label: 'Lembur', amount: employee.overtime },
     { label: 'Lembur Ganti', amount: 0 },
     { label: 'Bonus', amount: employee.bonus },
     { label: 'Rapel', amount: 0 },
     { label: 'Tunj. PPh', amount: 0 },
-    { label: 'Housing', amount: 0 },
     { label: 'Meal', amount: 0 },
     { label: 'Transport', amount: 0 },
-    { label: 'Perdiem', amount: 0 },
+    { label: 'Ekstra Fooding', amount: employee.extraFooding },
   ]
   const deductions: LineItem[] = [
     { label: 'PPh 21', amount: employee.taxDeduction },
-    { label: 'BPJS Kes & TK', amount: employee.insuranceDeduction },
+    { label: 'BPJS Kesehatan', amount: employee.bpjsKesDeduction },
+    { label: 'BPJS TK', amount: employee.bpjsTkDeduction },
     { label: 'Lainnya', amount: employee.otherDeductions },
     { label: 'Penalti', amount: 0 },
-    { label: 'PKWT', amount: 0 },
   ]
   const rowCount = Math.max(earnings.length, deductions.length)
   const totalEarnings = earnings.reduce((sum, item) => sum + item.amount, 0)
