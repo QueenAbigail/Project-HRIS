@@ -11,6 +11,7 @@ import {
 import { Download, Printer } from 'lucide-react'
 import { formatCurrency } from '@/lib/currency'
 import { useEffect, useState } from 'react'
+import useSWR from 'swr'
 
 interface PayslipEmployee {
   id: string
@@ -45,6 +46,14 @@ interface PayslipDrawerProps {
 interface LineItem {
   label: string
   amount: number
+}
+
+const FALLBACK_LOGO = '/logo/company-logo.webp'
+
+const fetchBranding = async (url: string): Promise<{ logoUrl: string | null }> => {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error('Failed to load branding')
+  return response.json()
 }
 
 const COMPANY_NAME = 'PT. ProMaxima Rajawali'
@@ -196,6 +205,8 @@ function LineCell({ item, divider }: { item?: LineItem; divider?: boolean }) {
 export function PayslipDrawer({ open, onOpenChange, employee, period, siteName }: PayslipDrawerProps) {
   const [previewContainer, setPreviewContainer] = useState<HTMLDivElement | null>(null)
   const [previewZoom, setPreviewZoom] = useState(1)
+  const { data: branding } = useSWR('/api/system-settings', fetchBranding)
+  const logoSrc = branding?.logoUrl || FALLBACK_LOGO
 
   useEffect(() => {
     if (typeof (window as any).html2pdf === 'undefined') {
@@ -370,7 +381,12 @@ export function PayslipDrawer({ open, onOpenChange, employee, period, siteName }
                 {/* Company */}
                 <header className="flex items-center gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/logo/company-logo.webp" alt="" className="h-10 w-10 shrink-0 object-contain" />
+                  <img
+                    src={logoSrc}
+                    alt=""
+                    crossOrigin="anonymous"
+                    className="h-10 w-10 shrink-0 object-contain"
+                  />
                   <div className="min-w-0">
                     <h1 className="text-[13px] font-bold leading-tight text-slate-900">{COMPANY_NAME}</h1>
                     <p className="mt-0.5 text-[9px] leading-snug text-slate-500">{COMPANY_ADDRESS}</p>
