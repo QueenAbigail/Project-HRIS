@@ -18,6 +18,7 @@ interface PayslipEmployee {
   name: string
   initials: string
   department: string
+  joinDate?: string
   daysWorked: number
   totalDays: number
   dailyRate: number
@@ -157,13 +158,19 @@ function formatDate(date: Date) {
   return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()}`
 }
 
-// "March 2026" -> "01-03-2026 - 31-03-2026". Falls back to the raw label for any other format.
+// "March 2026" -> "01-03-2026 s/d 31-03-2026". Falls back to the raw label for any other format.
 function formatPeriodRange(period: string) {
   const [monthName, year] = period.trim().split(/\s+/)
   const month = MONTHS[monthName?.toLowerCase() ?? '']
   const yearNumber = Number(year)
   if (month === undefined || !Number.isFinite(yearNumber)) return period
-  return `${formatDate(new Date(yearNumber, month, 1))} - ${formatDate(new Date(yearNumber, month + 1, 0))}`
+  return `${formatDate(new Date(yearNumber, month, 1))} s/d ${formatDate(new Date(yearNumber, month + 1, 0))}`
+}
+
+// "2021-03-15" -> "15-03-2021". Split by hand so the timezone cannot shift the day.
+function formatJoinDate(joinDate?: string) {
+  const match = joinDate?.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  return match ? `${match[3]}-${match[2]}-${match[1]}` : '-'
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -249,8 +256,8 @@ export function PayslipDrawer({ open, onOpenChange, employee, period, siteName }
   ]
   const deductions: LineItem[] = [
     { label: 'PPh 21', amount: employee.taxDeduction },
-    { label: 'BPJS Kesehatan', amount: employee.bpjsKesDeduction },
-    { label: 'BPJS TK', amount: employee.bpjsTkDeduction },
+    { label: 'BPJS Kesehatan', amount: employee.bpjsKesDeduction ?? 0 },
+    { label: 'BPJS TK', amount: employee.bpjsTkDeduction ?? 0 },
     { label: 'Lainnya', amount: employee.otherDeductions },
     { label: 'Penalti', amount: 0 },
   ]
@@ -404,7 +411,7 @@ export function PayslipDrawer({ open, onOpenChange, employee, period, siteName }
                   <InfoRow label="Nama" value={employee.name} />
                   <InfoRow label="Jabatan" value={employee.department} />
                   <InfoRow label="NIK" value={employee.id} />
-                  <InfoRow label="Hari Kerja" value={`${employee.daysWorked} / ${employee.totalDays}`} />
+                  <InfoRow label="TMT" value={formatJoinDate(employee.joinDate)} />
                   <InfoRow label="Lokasi" value={siteName ?? '-'} />
                   <InfoRow label="Periode Remunerasi" value={periodRange} />
                 </section>

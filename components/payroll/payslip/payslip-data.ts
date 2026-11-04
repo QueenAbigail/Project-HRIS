@@ -12,6 +12,8 @@ export interface PayslipRecord {
   name: string
   initials: string
   department: string
+  /** Employee join date (yyyy-mm-dd), printed as TMT on the payslip. */
+  joinDate: string
   daysWorked: number
   totalDays: number
   dailyRate: number
@@ -31,7 +33,19 @@ export interface PayslipRecord {
   status: PayslipStatus
 }
 
-type RawPayslip = Omit<PayslipRecord, 'deductions' | 'netPay'>
+type RawPayslip = Omit<PayslipRecord, 'deductions' | 'netPay' | 'joinDate'>
+
+const joinDates: Record<string, string> = {
+  EMP001: '2021-03-15',
+  EMP002: '2021-08-02',
+  EMP003: '2022-01-10',
+  EMP004: '2022-06-20',
+  EMP005: '2023-02-01',
+  EMP006: '2023-07-17',
+  EMP007: '2024-01-08',
+  EMP008: '2024-05-13',
+  EMP009: '2025-02-03',
+}
 
 export const payslipPeriods = ['March 2026', 'February 2026', 'January 2026']
 
@@ -55,7 +69,7 @@ export function formatPayslipAmount(amount: number) {
 function build(raw: RawPayslip): PayslipRecord {
   const deductions =
     raw.taxDeduction + raw.bpjsKesDeduction + raw.bpjsTkDeduction + raw.otherDeductions
-  return { ...raw, deductions, netPay: getGross(raw) - deductions }
+  return { ...raw, joinDate: joinDates[raw.id] ?? '', deductions, netPay: getGross(raw) - deductions }
 }
 
 const rawRecords: RawPayslip[] = [
