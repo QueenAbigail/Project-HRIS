@@ -89,6 +89,7 @@ enum PatrolStatus {
   IN_PROGRESS
   COMPLETED
   MISSED
+  INCIDENT
 }
 
 enum AnnouncementRecipientType {
@@ -875,7 +876,7 @@ model PayrollOvertimeHours {
   hours       Decimal  @db.Decimal(5, 2) // Hours worked
   hourlyRate  Decimal  @db.Decimal(12, 2) // Base hourly rate calculated from salary
   multiplier  Decimal  @db.Decimal(3, 2) // From overtime rule
-  totalAmount Decimal  @db.Decimal(15, 2) // hours × hourlyRate × multiplier
+  totalAmount Decimal  @db.Decimal(15, 2) // hours �� hourlyRate × multiplier
 
   description String? // e.g., "Backup duty on 2026-07-15"
   approvedBy  String? // FK to User (manager approval)
