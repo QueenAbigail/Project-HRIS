@@ -25,15 +25,29 @@ function limited(key: string) {
   return current.count > MAX_ATTEMPTS
 }
 
+const ALLOWED_KEYS = ['email', 'channel', 'action', 'result', 'deviceId', 'userAgent', 'latitude', 'longitude', 'isMockLocation', 'distance']
+
+function rejected(reason: string) {
+  console.warn('[v0] Mobile activity rejected:', reason)
+  return NextResponse.json({ error: 'Invalid request', reason }, { status: 400 })
+}
+
 export async function POST(request: Request) {
   try {
     const contentLength = Number(request.headers.get('content-length') || 0)
-    if (contentLength > MAX_BODY_BYTES) return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    if (contentLength > MAX_BODY_BYTES) return rejected('body_too_large')
 
-    const body = await request.json() as Record<string, unknown>
-    if (Object.keys(body).some((key) => !['email', 'channel', 'action', 'result', 'deviceId', 'userAgent', 'latitude', 'longitude', 'isMockLocation', 'distance'].includes(key))) {
-      return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    let body: Record<string, unknown>
+    try {
+      const parsed: unknown = await request.json()
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return rejected('body_must_be_json_object')
+      body = parsed as Record<string, unknown>
+    } catch {
+      return rejected('body_is_not_valid_json')
     }
+
+    const unknownKeys = Object.keys(body).filter((key) => !ALLOWED_KEYS.includes(key))
+    if (unknownKeys.length > 0) return rejected(`unknown_fields: ${unknownKeys.join(', ')}`)
 
     const email = text(body.email, 320)?.toLowerCase()
     const channel = body.channel === 'MOBILE' ? 'MOBILE' : null
@@ -49,9 +63,15 @@ export async function POST(request: Request) {
     const userAgent = text(body.userAgent, 1000)
     const ipAddress = requestIp(request)
 
-    if (!email || !channel || !result || !deviceId || !userAgent || (attendanceResults.includes(result as typeof attendanceResults[number]) && !action) || (result === 'FAILED_OUT_OF_RADIUS' && distance === null) || (result === 'FAILED_FAKE_GPS' && isMockLocation !== true) || (result === 'SUCCESS' && !/^Bearer\s+/i.test(request.headers.get('authorization')?.trim() || ''))) {
-      return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
-    }
+    if (!email) return rejected('email_missing_or_invalid')
+    if (!channel) return rejected('channel_must_be_MOBILE')
+    if (!result) return rejected(`result_not_supported: ${String(body.result).slice(0, 50)}`)
+    if (!deviceId) return rejected('deviceId_missing_or_too_long')
+    if (!userAgent) return rejected('userAgent_missing_or_too_long')
+    if (attendanceResults.includes(result as typeof attendanceResults[number]) && !action) return rejected('action_required_for_attendance_failures')
+    if (result === 'FAILED_OUT_OF_RADIUS' && distance === null) return rejected('distance_required_for_FAILED_OUT_OF_RADIUS')
+    if (result === 'FAILED_FAKE_GPS' && isMockLocation !== true) return rejected('isMockLocation_must_be_true_for_FAILED_FAKE_GPS')
+    if (result === 'SUCCESS' && !/^Bearer\s+/i.test(request.headers.get('authorization')?.trim() || '')) return rejected('authorization_bearer_required_for_SUCCESS')
     if (result === 'FAILED_INVALID_CREDENTIALS' && limited(`${ipAddress || 'unknown'}:${email}`)) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
     }

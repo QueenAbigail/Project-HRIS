@@ -1,7 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { revalidatePath, revalidateTag } from 'next/cache'
+import { revalidatePath, updateTag } from 'next/cache'
 import { getSwappedScheduleIfExists } from '@/lib/shift-swap-handler'
 import { createAdminClient } from '@/lib/auth'
 import { SYSTEM_SETTINGS_TAG } from '@/lib/system-settings'
@@ -24,111 +24,103 @@ async function requireSuperAdmin() {
   return user
 }
 
-export async function updateSettings(formData: FormData) {
+export type SettingsActionResult = { success: boolean; message: string }
+
+// Update the row readers actually see (findFirst) so a save can never land on a
+// different row than the one the sidebar and Information page display.
+async function saveSystemSettings(data: {
+  appName?: string
+  appDescription?: string
+  logoUrl?: string
+  appVersions?: string
+}) {
+  const existing = await prisma.systemSettings.findFirst({ select: { id: true } })
+
+  if (existing) {
+    await prisma.systemSettings.update({ where: { id: existing.id }, data })
+    return
+  }
+
+  await prisma.systemSettings.create({ data: { id: 'default', ...data } })
+}
+
+export async function updateSettings(formData: FormData): Promise<SettingsActionResult> {
   await requireSuperAdmin()
 
-  // 1. Call Supabase Admin Client (for file upload with full permissions)
-  const supabase = await createAdminClient()
+  const appName = String(formData.get('appName') ?? '').trim()
+  const appDescription = String(formData.get('appDescription') ?? '').trim()
+
+  // Never persist blanks: an empty name/description would erase the sidebar branding.
+  if (!appName) return { success: false, message: 'App Name is required.' }
+  if (!appDescription) return { success: false, message: 'App Description is required.' }
 
   const file = formData.get('logo') as File | null
-  let logoUrl = null
+  let logoUrl: string | undefined
 
-  // 2. If file exists, validate it before uploading to Supabase Storage
+  // Only touch storage when a new logo was actually chosen.
   if (file && file.size > 0) {
     const fileExt = ALLOWED_LOGO_TYPES.get(file.type)
 
-    if (!fileExt) {
-      throw new Error('Logo must be a PNG, JPEG, or WebP image')
+    if (!fileExt) return { success: false, message: 'Logo must be a PNG, JPEG, or WebP image.' }
+    if (file.size > MAX_LOGO_SIZE_BYTES) return { success: false, message: 'Logo must be smaller than 5 MB.' }
+
+    try {
+      const supabase = await createAdminClient()
+      const filePath = `logos/${Date.now()}.${fileExt}`
+
+      const { error } = await supabase.storage
+        .from('logos')
+        .upload(filePath, await file.arrayBuffer(), {
+          contentType: file.type,
+          cacheControl: '3600',
+          upsert: true,
+        })
+
+      if (error) {
+        console.error('[v0] Logo upload failed:', { message: error.message })
+        return { success: false, message: `Logo upload failed: ${error.message}` }
+      }
+
+      logoUrl = supabase.storage.from('logos').getPublicUrl(filePath).data.publicUrl
+    } catch (error) {
+      console.error('[v0] Logo upload error:', error)
+      return { success: false, message: 'Logo upload failed. Please try again.' }
     }
-
-    if (file.size > MAX_LOGO_SIZE_BYTES) {
-      throw new Error('Logo must be smaller than 5 MB')
-    }
-
-    console.log('[v0] Uploading logo file:', { fileName: file.name, size: file.size })
-
-    const fileName = `${Date.now()}.${fileExt}`
-    const filePath = `logos/${fileName}`
-
-    // Convert File to ArrayBuffer for Supabase
-    const arrayBuffer = await file.arrayBuffer()
-    
-    console.log('[v0] Uploading to path:', filePath)
-    
-    const { data, error } = await supabase.storage
-      .from('logos')
-      .upload(filePath, arrayBuffer, {
-        contentType: file.type,
-        cacheControl: '3600',
-        upsert: true,
-      })
-
-    if (error) {
-      console.error('[v0] Upload error details:', {
-        message: error.message,
-        status: error.status,
-      })
-      throw new Error(`Logo upload failed: ${error.message}`)
-    }
-
-    console.log('[v0] Upload successful:', data)
-
-    const { data: publicUrlData } = supabase.storage
-      .from('logos')
-      .getPublicUrl(filePath)
-      
-    logoUrl = publicUrlData.publicUrl
-    console.log('[v0] Logo URL:', logoUrl)
   }
 
-  // 3. Get text from form
-  const appName = formData.get('appName') as string
-  const appDescription = formData.get('appDescription') as string
+  try {
+    await saveSystemSettings({ appName, appDescription, ...(logoUrl && { logoUrl }) })
+  } catch (error) {
+    console.error('[v0] Failed to save branding:', error)
+    return { success: false, message: 'Unable to save branding. Please try again.' }
+  }
 
-  // 4. Save global branding only. Mobile version has its own lightweight action.
-  await prisma.systemSettings.upsert({
-    where: { id: 'default' },
-    update: {
-      appName,
-      appDescription,
-      ...(logoUrl && { logoUrl }), // Only update logoUrl if a new one was uploaded
-    },
-    create: {
-      id: 'default',
-      appName,
-      appDescription,
-      logoUrl,
-    }
-  })
-
-  // 5. Rebuild the cached system settings so the new logo/name/version appears immediately
-  revalidateTag(SYSTEM_SETTINGS_TAG, 'max')
-  revalidatePath('/dashboard', 'layout')
-  revalidatePath('/superadmin', 'layout')
+  // updateTag gives read-your-writes, so the very next render sees the new values.
+  updateTag(SYSTEM_SETTINGS_TAG)
   revalidatePath('/', 'layout')
+
+  return { success: true, message: 'Branding saved.' }
 }
 
-export async function updateMobileAppVersion(formData: FormData) {
+export async function updateMobileAppVersion(formData: FormData): Promise<SettingsActionResult> {
   await requireSuperAdmin()
 
   const appVersions = String(formData.get('appVersions') ?? '').trim()
 
   if (!/^\d+\.\d+\.\d+$/.test(appVersions)) {
-    throw new Error('App version must use the format x.y.z, for example 1.1.0')
+    return { success: false, message: 'Version must use the format x.y.z, for example 1.1.0.' }
   }
 
-  await prisma.systemSettings.upsert({
-    where: { id: 'default' },
-    update: { appVersions },
-    create: {
-      id: 'default',
-      appVersions,
-    },
-  })
+  try {
+    await saveSystemSettings({ appVersions })
+  } catch (error) {
+    console.error('[v0] Failed to save mobile app version:', error)
+    return { success: false, message: 'Unable to save the mobile app version. Please try again.' }
+  }
 
-  // Refresh only the shared settings cache; mobile version changes do not
-  // require broad layout/page revalidation.
-  revalidateTag(SYSTEM_SETTINGS_TAG, 'max')
+  updateTag(SYSTEM_SETTINGS_TAG)
+
+  return { success: true, message: `Mobile app version set to ${appVersions}.` }
 }
 
 export async function getShifts() {

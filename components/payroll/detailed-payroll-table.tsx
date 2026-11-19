@@ -29,8 +29,10 @@ interface DetailedPayrollEmployee {
   overtime: number
   bonus: number
   allowances: number
+  extraFooding: number
   taxDeduction: number
-  insuranceDeduction: number
+  bpjsKesDeduction: number
+  bpjsTkDeduction: number
   otherDeductions: number
   deductions: number
   netPay: number
@@ -52,8 +54,10 @@ const detailedPayrollData: DetailedPayrollEmployee[] = [
     overtime: 450,
     bonus: 0,
     allowances: 150,
+    extraFooding: 0,
     taxDeduction: 150,
-    insuranceDeduction: 80,
+    bpjsKesDeduction: 20,
+    bpjsTkDeduction: 60,
     otherDeductions: 50,
     deductions: 280,
     netPay: 2970,
@@ -73,8 +77,10 @@ const detailedPayrollData: DetailedPayrollEmployee[] = [
     overtime: 320,
     bonus: 100,
     allowances: 100,
+    extraFooding: 0,
     taxDeduction: 140,
-    insuranceDeduction: 80,
+    bpjsKesDeduction: 20,
+    bpjsTkDeduction: 60,
     otherDeductions: 40,
     deductions: 260,
     netPay: 2660,
@@ -94,8 +100,10 @@ const detailedPayrollData: DetailedPayrollEmployee[] = [
     overtime: 580,
     bonus: 200,
     allowances: 200,
+    extraFooding: 0,
     taxDeduction: 160,
-    insuranceDeduction: 100,
+    bpjsKesDeduction: 25,
+    bpjsTkDeduction: 75,
     otherDeductions: 60,
     deductions: 320,
     netPay: 3460,
@@ -115,8 +123,10 @@ const detailedPayrollData: DetailedPayrollEmployee[] = [
     overtime: 0,
     bonus: 300,
     allowances: 200,
+    extraFooding: 0,
     taxDeduction: 175,
-    insuranceDeduction: 100,
+    bpjsKesDeduction: 25,
+    bpjsTkDeduction: 75,
     otherDeductions: 75,
     deductions: 350,
     netPay: 3150,
@@ -136,8 +146,10 @@ const detailedPayrollData: DetailedPayrollEmployee[] = [
     overtime: 380,
     bonus: 50,
     allowances: 100,
+    extraFooding: 0,
     taxDeduction: 120,
-    insuranceDeduction: 80,
+    bpjsKesDeduction: 20,
+    bpjsTkDeduction: 60,
     otherDeductions: 40,
     deductions: 240,
     netPay: 2540,
@@ -157,8 +169,10 @@ const detailedPayrollData: DetailedPayrollEmployee[] = [
     overtime: 0,
     bonus: 0,
     allowances: 80,
+    extraFooding: 0,
     taxDeduction: 110,
-    insuranceDeduction: 80,
+    bpjsKesDeduction: 20,
+    bpjsTkDeduction: 60,
     otherDeductions: 30,
     deductions: 220,
     netPay: 1980,
@@ -252,7 +266,7 @@ export function DetailedPayrollTable() {
                     -{formatCurrency(record.taxDeduction)}
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs text-red-600">
-                    -{formatCurrency(record.insuranceDeduction)}
+                    -{formatCurrency(record.bpjsKesDeduction + record.bpjsTkDeduction)}
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs text-red-600">
                     -{formatCurrency(record.otherDeductions)}

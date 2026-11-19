@@ -408,10 +408,10 @@ export function AppSidebar({ user, systemSettings: propSystemSettings }: Props) 
           <SidebarMenuItem className="w-full px-2 overflow-visible">
             <SidebarMenuButton size="lg" asChild className="flex-1 overflow-visible">
               <Link href="/dashboard" className="min-w-0 overflow-visible">
-                <LogoIcon src={systemSettings.logoUrl || '/koperasi_icon.png'} alt={systemSettings.appName} className="flex h-8 items-center justify-center flex-shrink-0" />
+                <LogoIcon src={systemSettings.logoUrl || '/koperasi_icon.png'} alt={systemSettings.appName || 'SecureGuard'} className="flex h-8 items-center justify-center flex-shrink-0" />
                 <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
-                  <span className="truncate font-semibold">{systemSettings.appName}</span>
-                  <span className="truncate text-xs text-muted-foreground">{systemSettings.appDescription}</span>
+                  <span className="truncate font-semibold">{systemSettings.appName || 'SecureGuard'}</span>
+                  <span className="truncate text-xs text-muted-foreground">{systemSettings.appDescription || 'HR Administration'}</span>
                 </div>
               </Link>
             </SidebarMenuButton>

@@ -148,7 +148,13 @@ export default function SitePayslipPage() {
         </CardContent>
       </Card>
 
-      <PayslipDrawer open={drawerOpen} onOpenChange={setDrawerOpen} employee={selected} period={period} />
+      <PayslipDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        employee={selected}
+        period={period}
+        siteName={`${site.name} - ${site.location}`}
+      />
       <BlastEmailDialog open={blastEmailOpen} onOpenChange={setBlastEmailOpen} siteName={site.name} />
     </div>
   )
