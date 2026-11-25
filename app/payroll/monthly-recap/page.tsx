@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,7 +24,6 @@ import {
   ChevronDown,
   ChevronRight,
   Download,
-  Eye,
   Loader2,
   Users,
 } from 'lucide-react'
@@ -33,7 +32,7 @@ import { formatCurrency } from '@/lib/utils'
 interface SiteDetail {
   siteId: string
   siteName: string
-  location: string
+  cutoffDate: string
   employees: number
   payroll: number
   bonus: number
@@ -69,27 +68,27 @@ interface DetailedRecord {
   netPay: number
 }
 
-// Mock site data for each month
+// Mock site data for each month (each site has its own cut-off date range)
 const mockSiteDetails: Record<string, SiteDetail[]> = {
   '1': [
-    { siteId: 'S1', siteName: 'Head Office', location: 'Jakarta', employees: 18, payroll: 245000000, bonus: 12000000, deductions: 55000000, netPayroll: 190000000 },
-    { siteId: 'S2', siteName: 'Regional Office', location: 'Surabaya', employees: 15, payroll: 185000000, bonus: 9000000, deductions: 42000000, netPayroll: 143000000 },
-    { siteId: 'S3', siteName: 'Branch Office', location: 'Bandung', employees: 12, payroll: 112890000, bonus: 7000000, deductions: 28000000, netPayroll: 84890000 },
+    { siteId: 'S1', siteName: 'PPLI - Nambo', cutoffDate: '21/02/2026 - 20/03/2026', employees: 18, payroll: 245000000, bonus: 12000000, deductions: 55000000, netPayroll: 190000000 },
+    { siteId: 'S2', siteName: 'HM Sampoerna - Sukorejo', cutoffDate: '26/02/2026 - 25/03/2026', employees: 15, payroll: 185000000, bonus: 9000000, deductions: 42000000, netPayroll: 143000000 },
+    { siteId: 'S3', siteName: 'Astra - Sunter', cutoffDate: '01/03/2026 - 31/03/2026', employees: 12, payroll: 112890000, bonus: 7000000, deductions: 28000000, netPayroll: 84890000 },
   ],
   '2': [
-    { siteId: 'S1', siteName: 'Head Office', location: 'Jakarta', employees: 18, payroll: 235000000, bonus: 0, deductions: 52000000, netPayroll: 183000000 },
-    { siteId: 'S2', siteName: 'Regional Office', location: 'Surabaya', employees: 15, payroll: 175000000, bonus: 0, deductions: 40000000, netPayroll: 135000000 },
-    { siteId: 'S3', siteName: 'Branch Office', location: 'Bandung', employees: 12, payroll: 108000000, bonus: 0, deductions: 27000000, netPayroll: 81000000 },
+    { siteId: 'S1', siteName: 'PPLI - Nambo', cutoffDate: '21/01/2026 - 20/02/2026', employees: 18, payroll: 235000000, bonus: 0, deductions: 52000000, netPayroll: 183000000 },
+    { siteId: 'S2', siteName: 'HM Sampoerna - Sukorejo', cutoffDate: '26/01/2026 - 25/02/2026', employees: 15, payroll: 175000000, bonus: 0, deductions: 40000000, netPayroll: 135000000 },
+    { siteId: 'S3', siteName: 'Astra - Sunter', cutoffDate: '01/02/2026 - 28/02/2026', employees: 12, payroll: 108000000, bonus: 0, deductions: 27000000, netPayroll: 81000000 },
   ],
   '3': [
-    { siteId: 'S1', siteName: 'Head Office', location: 'Jakarta', employees: 18, payroll: 240000000, bonus: 15000000, deductions: 53000000, netPayroll: 187000000 },
-    { siteId: 'S2', siteName: 'Regional Office', location: 'Surabaya', employees: 15, payroll: 180000000, bonus: 12000000, deductions: 41000000, netPayroll: 139000000 },
-    { siteId: 'S3', siteName: 'Branch Office', location: 'Bandung', employees: 11, payroll: 105000000, bonus: 8000000, deductions: 28000000, netPayroll: 77000000 },
+    { siteId: 'S1', siteName: 'PPLI - Nambo', cutoffDate: '21/12/2025 - 20/01/2026', employees: 18, payroll: 240000000, bonus: 15000000, deductions: 53000000, netPayroll: 187000000 },
+    { siteId: 'S2', siteName: 'HM Sampoerna - Sukorejo', cutoffDate: '26/12/2025 - 25/01/2026', employees: 15, payroll: 180000000, bonus: 12000000, deductions: 41000000, netPayroll: 139000000 },
+    { siteId: 'S3', siteName: 'Astra - Sunter', cutoffDate: '01/01/2026 - 31/01/2026', employees: 11, payroll: 105000000, bonus: 8000000, deductions: 28000000, netPayroll: 77000000 },
   ],
   '4': [
-    { siteId: 'S1', siteName: 'Head Office', location: 'Jakarta', employees: 18, payroll: 280000000, bonus: 22000000, deductions: 62000000, netPayroll: 218000000 },
-    { siteId: 'S2', siteName: 'Regional Office', location: 'Surabaya', employees: 15, payroll: 210000000, bonus: 18000000, deductions: 47000000, netPayroll: 163000000 },
-    { siteId: 'S3', siteName: 'Branch Office', location: 'Bandung', employees: 11, payroll: 122000000, bonus: 10000000, deductions: 33000000, netPayroll: 89000000 },
+    { siteId: 'S1', siteName: 'PPLI - Nambo', cutoffDate: '21/11/2025 - 20/12/2025', employees: 18, payroll: 280000000, bonus: 22000000, deductions: 62000000, netPayroll: 218000000 },
+    { siteId: 'S2', siteName: 'HM Sampoerna - Sukorejo', cutoffDate: '26/11/2025 - 25/12/2025', employees: 15, payroll: 210000000, bonus: 18000000, deductions: 47000000, netPayroll: 163000000 },
+    { siteId: 'S3', siteName: 'Astra - Sunter', cutoffDate: '01/12/2025 - 31/12/2025', employees: 11, payroll: 122000000, bonus: 10000000, deductions: 33000000, netPayroll: 89000000 },
   ],
 }
 
@@ -240,16 +239,6 @@ export default function MonthlyRecapPage() {
 
 
 
-  useEffect(() => {
-    if (selectedRecord) {
-      setLoading(true)
-      setTimeout(() => {
-        setDetailedRecords(mockDetailedRecords[selectedRecord.id] || [])
-        setLoading(false)
-      }, 500)
-    }
-  }, [selectedRecord])
-
   const statusStyles = {
     completed: 'bg-success/10 text-success border-success/20',
     pending: 'bg-warning/10 text-warning border-warning/20',
@@ -266,6 +255,11 @@ export default function MonthlyRecapPage() {
 
   const handleViewDetails = (record: MonthlyRecord) => {
     setSelectedRecord(record)
+    setLoading(true)
+    setTimeout(() => {
+      setDetailedRecords(mockDetailedRecords[record.id] || [])
+      setLoading(false)
+    }, 500)
     setDetailsOpen(true)
   }
 
@@ -358,26 +352,27 @@ export default function MonthlyRecapPage() {
                         <TableHeader>
                           <TableRow>
                             <TableHead>Site</TableHead>
-                                                      <TableHead className="text-right">Employees</TableHead>
-                            <TableHead className="text-right">Payroll</TableHead>
-                            <TableHead className="text-right">Allowance</TableHead>
-                            <TableHead className="text-right">Deductions</TableHead>
-  <TableHead className="text-right">Net Payroll</TableHead>
-  <TableHead className="text-right">Payroll Detail</TableHead>
-  </TableRow>
+                            <TableHead className="text-right">Employees</TableHead>
+                            <TableHead>Cut-Off Date</TableHead>
+                            <TableHead className="text-right">Total Net Pay</TableHead>
+                            <TableHead className="text-right">Payroll Detail</TableHead>
+                          </TableRow>
                         </TableHeader>
                         <TableBody>
                           {record.sites?.map((site) => (
-  <TableRow key={site.siteId}>
+                            <TableRow key={site.siteId}>
                               <TableCell className="font-medium text-sm">{site.siteName}</TableCell>
-                              <TableCell className="text-right text-sm">{site.location}</TableCell>
-                              <TableCell className="text-right text-sm">{site.employees}</TableCell>
-                              <TableCell className="text-right text-sm">{formatCurrency(site.payroll)}</TableCell>
-                              <TableCell className="text-right text-sm text-success">{formatCurrency(site.bonus)}</TableCell>
-                              <TableCell className="text-right text-sm text-destructive">{formatCurrency(site.deductions)}</TableCell>
-  <TableCell className="text-right text-sm font-medium text-success">{formatCurrency(site.netPayroll)}</TableCell>
-  <TableCell className="text-right"><Button variant="outline" size="sm" onClick={() => handleSiteClick(site, record)}>Payroll Detail</Button></TableCell>
-  </TableRow>
+                              <TableCell className="text-right text-sm tabular-nums">{site.employees}</TableCell>
+                              <TableCell className="text-sm tabular-nums text-muted-foreground">{site.cutoffDate}</TableCell>
+                              <TableCell className="text-right text-sm font-medium tabular-nums text-success">
+                                {formatCurrency(site.netPayroll)}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button variant="outline" size="sm" onClick={() => handleSiteClick(site, record)}>
+                                  Payroll Detail
+                                </Button>
+                              </TableCell>
+                            </TableRow>
                           ))}
                         </TableBody>
                       </Table>
@@ -483,9 +478,9 @@ export default function MonthlyRecapPage() {
                   {selectedSite?.siteName ?? 'Site Payroll Details'}
                 </DialogTitle>
                 <DialogDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span>{selectedSite?.location}</span>
-                  <span aria-hidden="true" className="text-muted-foreground/50">•</span>
                   <span>{selectedMonth?.month}</span>
+                  <span aria-hidden="true" className="text-muted-foreground/50">•</span>
+                  <span className="tabular-nums">Cut-off {selectedSite?.cutoffDate}</span>
                   <span aria-hidden="true" className="text-muted-foreground/50">•</span>
                   <span className="inline-flex items-center gap-1">
                     <Users className="size-3.5" />
