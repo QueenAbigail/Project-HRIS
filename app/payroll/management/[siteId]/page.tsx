@@ -18,9 +18,11 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -52,8 +54,57 @@ import {
   ChevronRight,
   Clock3,
   ReceiptText,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+
+type CutoffOption = '15' | '20' | '25' | 'eom'
+
+const cutoffChoices: { value: CutoffOption; label: string }[] = [
+  { value: '15', label: 'Tanggal 15 (16 bulan lalu - 15 bulan ini)' },
+  { value: '20', label: 'Tanggal 20 (21 bulan lalu - 20 bulan ini)' },
+  { value: '25', label: 'Tanggal 25 (26 bulan lalu - 25 bulan ini)' },
+  { value: 'eom', label: 'Akhir Bulan (1 - akhir bulan)' },
+]
+
+function computeCutoffSummary(cutoffDay: CutoffOption) {
+  // Using 2026-03-27 as mockup reference date consistent with Payroll Management
+  const refYear = 2026
+  const refMonth = 2 // March
+  const refDay = 27
+
+  let targetYear = refYear
+  let targetMonth = refMonth
+
+  if (cutoffDay !== 'eom' && refDay > Number(cutoffDay)) {
+    targetMonth += 1
+  }
+
+  let startDate: Date
+  let endDate: Date
+  if (cutoffDay === 'eom') {
+    startDate = new Date(targetYear, targetMonth, 1)
+    endDate = new Date(targetYear, targetMonth + 1, 0)
+  } else {
+    const cutoffNumber = Number(cutoffDay)
+    const daysInTarget = new Date(targetYear, targetMonth + 1, 0).getDate()
+    endDate = new Date(targetYear, targetMonth, Math.min(cutoffNumber, daysInTarget))
+    startDate = new Date(targetYear, targetMonth - 1, cutoffNumber + 1)
+  }
+
+  const fmt = (d: Date) =>
+    `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+  const periodLabel = new Date(targetYear, targetMonth, 1).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  })
+
+  return {
+    periodLabel,
+    cutoffRange: `${fmt(startDate)} - ${fmt(endDate)}`,
+    cutoffLabel: cutoffDay === 'eom' ? 'Akhir Bulan' : `Tanggal ${cutoffDay}`,
+  }
+}
 
 interface SiteEmployee {
   employeeId: string
@@ -83,28 +134,31 @@ interface SitePayrollAdjustment {
 // Mock site details
 const mockSiteDetails = {
   'S1': {
-    siteName: 'Head Office',
-    location: 'Jakarta',
+    siteName: 'PPLI - Nambo',
+    location: 'Bogor',
+    cutoffDay: '20' as CutoffOption,
     employees: 18,
     grossPayroll: 245000000,
     bonusAmount: 12000000,
     deductionsAmount: 55000000,
     netPayroll: 190000000,
-    status: 'draft',
+    status: 'ongoing',
   },
   'S2': {
-    siteName: 'Regional Office',
-    location: 'Surabaya',
+    siteName: 'HM Sampoerna - Sukorejo',
+    location: 'Pasuruan',
+    cutoffDay: '25' as CutoffOption,
     employees: 15,
     grossPayroll: 185000000,
     bonusAmount: 9000000,
     deductionsAmount: 42000000,
     netPayroll: 143000000,
-    status: 'draft',
+    status: 'ongoing',
   },
   'S3': {
-    siteName: 'Branch Office',
-    location: 'Bandung',
+    siteName: 'Astra - Sunter',
+    location: 'Jakarta',
+    cutoffDay: 'eom' as CutoffOption,
     employees: 12,
     grossPayroll: 112890000,
     bonusAmount: 7000000,
@@ -179,6 +233,11 @@ export default function SiteManagementPage() {
   const [importFile, setImportFile] = useState<File | null>(null)
   const [importLoading, setImportLoading] = useState(false)
   const [importMessage, setImportMessage] = useState('')
+  const [cutoffDay, setCutoffDay] = useState<CutoffOption>(siteInfo?.cutoffDay ?? 'eom')
+  const [cutoffDialogOpen, setCutoffDialogOpen] = useState(false)
+  const [draftCutoff, setDraftCutoff] = useState<CutoffOption>(siteInfo?.cutoffDay ?? 'eom')
+
+  const cutoffSummary = computeCutoffSummary(cutoffDay)
 
   const handleEditEmployee = (employee: SiteEmployee) => {
     setEditingEmployee(employee)
@@ -284,20 +343,32 @@ export default function SiteManagementPage() {
   return (
     <div className="space-y-6">
       {/* Header with back button */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.back()}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{siteInfo.siteName} - Payroll Management</h1>
-          <p className="text-muted-foreground">
-            March 2026 • {siteInfo.location}
-          </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{siteInfo.siteName} - Payroll Management</h1>
+            <p className="text-muted-foreground">
+              {cutoffSummary.periodLabel} • Cut-off {cutoffSummary.cutoffLabel} ({cutoffSummary.cutoffRange})
+            </p>
+          </div>
         </div>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setDraftCutoff(cutoffDay)
+            setCutoffDialogOpen(true)
+          }}
+        >
+          <SlidersHorizontal className="mr-2 h-4 w-4" />
+          Set Cut-Off
+        </Button>
       </div>
 
       {/* Tabs */}
@@ -821,6 +892,49 @@ export default function SiteManagementPage() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Set Cut-Off Date Dialog for This Site */}
+      <Dialog open={cutoffDialogOpen} onOpenChange={setCutoffDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Set Cut-Off Date</DialogTitle>
+            <DialogDescription>
+              Atur tanggal tutup buku bulanan khusus untuk {siteInfo.siteName}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="site-cutoff-select">Jadwal Cut-Off Bulanan</Label>
+            <Select
+              value={draftCutoff}
+              onValueChange={(value: CutoffOption) => setDraftCutoff(value)}
+            >
+              <SelectTrigger id="site-cutoff-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {cutoffChoices.map((choice) => (
+                  <SelectItem key={choice.value} value={choice.value}>
+                    {choice.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCutoffDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setCutoffDay(draftCutoff)
+                setCutoffDialogOpen(false)
+              }}
+            >
+              Save Cut-Off
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

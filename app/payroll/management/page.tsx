@@ -13,23 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Calendar, Download, SlidersHorizontal } from 'lucide-react'
+import { Calendar, Download } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
 type CutoffOption = '15' | '20' | '25' | 'eom'
@@ -103,13 +87,6 @@ const simulatedDates: { key: SimulatedDateKey; label: string; description: strin
     label: '27 Apr 2026',
     description: 'April sudah bergeser naik, PPLI & Sampoerna masuk buku baru Mei di tabel bawah.',
   },
-]
-
-const cutoffChoices: { value: CutoffOption; label: string }[] = [
-  { value: '15', label: 'Tanggal 15 (16 bulan lalu - 15 bulan ini)' },
-  { value: '20', label: 'Tanggal 20 (21 bulan lalu - 20 bulan ini)' },
-  { value: '25', label: 'Tanggal 25 (26 bulan lalu - 25 bulan ini)' },
-  { value: 'eom', label: 'Akhir Bulan (1 - akhir bulan)' },
 ]
 
 const statusMeta: Record<PayrollStatus, { label: string; className: string }> = {
@@ -191,10 +168,7 @@ function computeSiteCycle(site: SiteConfig, refDate: Date): SiteCycleRow {
 
 export default function PayrollManagementPage() {
   const router = useRouter()
-  const [sites, setSites] = useState<SiteConfig[]>(initialSites)
   const [simulatedDateKey, setSimulatedDateKey] = useState<SimulatedDateKey>('2026-03-27')
-  const [cutoffDialogOpen, setCutoffDialogOpen] = useState(false)
-  const [draftCutoffs, setDraftCutoffs] = useState<Record<string, CutoffOption>>({})
 
   const activeSimulation = simulatedDates.find((item) => item.key === simulatedDateKey) ?? simulatedDates[0]
 
@@ -202,7 +176,7 @@ export default function PayrollManagementPage() {
     const refDate = new Date(`${simulatedDateKey}T00:00:00`)
     const grouped = new Map<string, { monthKey: string; monthLabel: string; sites: SiteCycleRow[] }>()
 
-    for (const site of sites) {
+    for (const site of initialSites) {
       const row = computeSiteCycle(site, refDate)
       const existing = grouped.get(row.monthKey)
       if (existing) {
@@ -217,26 +191,7 @@ export default function PayrollManagementPage() {
     }
 
     return Array.from(grouped.values()).sort((a, b) => a.monthKey.localeCompare(b.monthKey))
-  }, [sites, simulatedDateKey])
-
-  const openCutoffDialog = () => {
-    const initialDraft: Record<string, CutoffOption> = {}
-    for (const site of sites) {
-      initialDraft[site.siteId] = site.cutoffDay
-    }
-    setDraftCutoffs(initialDraft)
-    setCutoffDialogOpen(true)
-  }
-
-  const saveCutoffs = () => {
-    setSites((current) =>
-      current.map((site) => ({
-        ...site,
-        cutoffDay: draftCutoffs[site.siteId] ?? site.cutoffDay,
-      }))
-    )
-    setCutoffDialogOpen(false)
-  }
+  }, [simulatedDateKey])
 
   return (
     <div className="space-y-6">
@@ -248,16 +203,10 @@ export default function PayrollManagementPage() {
             Kelola payroll aktif per site sesuai jadwal cut-off masing-masing site
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={openCutoffDialog}>
-            <SlidersHorizontal className="mr-2 size-4" />
-            Set Cut-Off
-          </Button>
-          <Button variant="outline">
-            <Download className="mr-2 size-4" />
-            Export All Sites
-          </Button>
-        </div>
+        <Button variant="outline">
+          <Download className="mr-2 size-4" />
+          Export All Sites
+        </Button>
       </div>
 
       {/* Interactive Mockup Date Switcher */}
@@ -384,48 +333,6 @@ export default function PayrollManagementPage() {
           )
         })}
       </div>
-
-      {/* Set Cut-Off Dates per Site Dialog */}
-      <Dialog open={cutoffDialogOpen} onOpenChange={setCutoffDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Set Cut-Off Date per Site</DialogTitle>
-            <DialogDescription>
-              Atur tanggal tutup buku bulanan masing-masing site. Perubahan ini langsung memperbarui periode aktif di tabel.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            {sites.map((site) => (
-              <div key={site.siteId} className="space-y-1.5">
-                <Label htmlFor={`cutoff-${site.siteId}`}>{site.siteName}</Label>
-                <Select
-                  value={draftCutoffs[site.siteId] ?? site.cutoffDay}
-                  onValueChange={(value: CutoffOption) =>
-                    setDraftCutoffs((prev) => ({ ...prev, [site.siteId]: value }))
-                  }
-                >
-                  <SelectTrigger id={`cutoff-${site.siteId}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cutoffChoices.map((choice) => (
-                      <SelectItem key={choice.value} value={choice.value}>
-                        {choice.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCutoffDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={saveCutoffs}>Save Cut-Off</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
