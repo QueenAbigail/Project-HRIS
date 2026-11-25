@@ -528,8 +528,8 @@ model EmployeeShiftAssignment {
 model BulkImportLog {
   id                String   @id @default(cuid())
   fileName          String // Original file name (e.g., "employees_patterns_2024.xlsx")
-  importedBy        String // Admin user ID who performed import
-  importedByUser    User     @relation("BulkImports", fields: [importedBy], references: [id], onDelete: SetNull)
+  importedBy        String? // Admin user ID who performed import
+  importedByUser    User?    @relation("BulkImports", fields: [importedBy], references: [id], onDelete: SetNull)
   totalRows         Int // Total rows processed from file
   successCount      Int // Successfully imported rows
   errorCount        Int // Failed rows
@@ -808,7 +808,7 @@ model DeductionRule {
   name          String
   type          DeductionType
   deductionType DeductionCalculationType
-  value         Decimal                  @db.Decimal(8, 4)
+  value         Decimal                  @db.Decimal(15, 4)
   status        String                   @default("active")
   createdAt     DateTime                 @default(now())
   updatedAt     DateTime                 @updatedAt
@@ -943,7 +943,7 @@ model PayrollDeductionsApplied {
   deductionType    String // Stores type for reference
   deductionName    String // e.g., "Income Tax"
   calculationType  DeductionCalculationType // percentage or fixed_amount
-  baseValue        Decimal                  @db.Decimal(8, 4) // % or fixed amount
+  baseValue        Decimal                  @db.Decimal(15, 4) // % or fixed amount
   calculatedAmount Decimal                  @db.Decimal(15, 2) // Actual deduction amount
 
   specialNotes String? // e.g., "Company debt payment"

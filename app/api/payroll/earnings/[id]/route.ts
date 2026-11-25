@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
 import { canManagePayroll } from '@/lib/authorization'
-import { fromDbDate, todayInJakarta, toDbDate } from '@/lib/salary-base'
+import { todayInJakarta, toDbDate } from '@/lib/salary-base'
 import { buildEarningGroupKey, payrollEarningStatusSchema } from '@/lib/payroll-earnings'
 
 async function access() {
@@ -59,14 +59,20 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
   const { id } = await params
   try {
-    const row = await prisma.payrollEarning.findUnique({ where: { id } })
-    if (!row) return NextResponse.json({ error: 'Earning rule not found' }, { status: 404 })
+    const todayDate = toDbDate(todayInJakarta())
+    const deleted = await prisma.payrollEarning.deleteMany({
+      where: {
+        id,
+        effectiveFrom: { gt: todayDate },
+      },
+    })
 
-    if (fromDbDate(row.effectiveFrom) <= todayInJakarta()) {
+    if (deleted.count === 0) {
+      const existing = await prisma.payrollEarning.findUnique({ where: { id }, select: { id: true } })
+      if (!existing) return NextResponse.json({ error: 'Earning rule not found' }, { status: 404 })
       return NextResponse.json({ error: 'Only a scheduled change can be cancelled' }, { status: 400 })
     }
 
-    await prisma.payrollEarning.delete({ where: { id } })
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('[v0] Failed to cancel scheduled earning:', error)

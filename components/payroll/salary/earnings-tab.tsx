@@ -371,8 +371,10 @@ export function EarningsTab() {
                             <Button
                               size="sm"
                               variant="ghost"
+                              disabled={isInactive}
                               onClick={() => setDialogState({ mode: 'edit', row })}
                               aria-label={`Edit ${row.name}`}
+                              title={isInactive ? 'Reactivate this rule before editing' : `Edit ${row.name}`}
                             >
                               <Edit2 className="h-4 w-4" />
                             </Button>
