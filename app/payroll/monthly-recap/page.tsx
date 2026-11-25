@@ -352,22 +352,22 @@ export default function MonthlyRecapPage() {
                         <TableHeader>
                           <TableRow>
                             <TableHead>Site</TableHead>
-                            <TableHead className="text-right">Employees</TableHead>
-                            <TableHead>Cut-Off Date</TableHead>
-                            <TableHead className="text-right">Total Net Pay</TableHead>
-                            <TableHead className="text-right">Payroll Detail</TableHead>
+                            <TableHead className="text-center">Employees</TableHead>
+                            <TableHead className="text-center">Cut-Off Date</TableHead>
+                            <TableHead className="text-center">Total Net Pay</TableHead>
+                            <TableHead className="text-center">Payroll Detail</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {record.sites?.map((site) => (
                             <TableRow key={site.siteId}>
                               <TableCell className="font-medium text-sm">{site.siteName}</TableCell>
-                              <TableCell className="text-right text-sm tabular-nums">{site.employees}</TableCell>
-                              <TableCell className="text-sm tabular-nums text-muted-foreground">{site.cutoffDate}</TableCell>
-                              <TableCell className="text-right text-sm font-medium tabular-nums text-success">
+                              <TableCell className="text-center text-sm tabular-nums">{site.employees}</TableCell>
+                              <TableCell className="text-center text-sm tabular-nums text-muted-foreground">{site.cutoffDate}</TableCell>
+                              <TableCell className="text-center text-sm font-medium tabular-nums text-success">
                                 {formatCurrency(site.netPayroll)}
                               </TableCell>
-                              <TableCell className="text-right">
+                              <TableCell className="text-center">
                                 <Button variant="outline" size="sm" onClick={() => handleSiteClick(site, record)}>
                                   Payroll Detail
                                 </Button>
