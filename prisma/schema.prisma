@@ -127,6 +127,7 @@ model Site {
   announcements            Announcement[]            @relation("SiteAnnouncements")
   deductionAssignments     DeductionRuleSiteAssignment[]
   salaryBases              SalaryBase[]
+  payrollEarnings          PayrollEarning[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -136,12 +137,13 @@ model Site {
 
 // Company model (clients)
 model Company {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  sites     Site[]
-  users     User[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String           @id @default(cuid())
+  name            String           @unique
+  sites           Site[]
+  users           User[]
+  payrollEarnings PayrollEarning[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   @@map("companies")
 }
@@ -322,11 +324,12 @@ model SystemSettings {
 }
 
 model MasterData {
-  id       String  @id @default(cuid())
-  category String
-  value    String
-  isActive Boolean @default(true)
-  users    User[]  @relation("UserPosition")
+  id              String           @id @default(cuid())
+  category        String
+  value           String
+  isActive        Boolean          @default(true)
+  users           User[]           @relation("UserPosition")
+  payrollEarnings PayrollEarning[] @relation("EarningPosition")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -678,6 +681,13 @@ enum DeductionCalculationType {
   fixed_amount
 }
 
+// Enum for recurring earning calculation type
+enum EarningCalculationType {
+  fixed_monthly
+  per_attendance_day
+  per_shift
+}
+
 // Enum for payroll calculation status
 enum PayrollCalculationStatus {
   calculated
@@ -746,6 +756,33 @@ model SalaryRule {
   @@index([salaryBaseId])
   @@index([status])
   @@map("salary_rules")
+}
+
+// TABLE 1b: Payroll Earnings - Recurring client-specific earning components (e.g., Meal, Transport, Extra Fooding)
+model PayrollEarning {
+  id              String                 @id @default(cuid())
+  companyId       String
+  company         Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  siteId          String?
+  site            Site?                  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  positionId      String?
+  position        MasterData?            @relation("EarningPosition", fields: [positionId], references: [id], onDelete: SetNull)
+  name            String
+  calculationType EarningCalculationType
+  amount          Decimal                @db.Decimal(15, 2)
+  isTaxable       Boolean                @default(true)
+  effectiveFrom   DateTime               @db.Date
+  effectiveTo     DateTime?              @db.Date
+  status          String                 @default("active") // active / inactive
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  @@index([companyId])
+  @@index([siteId])
+  @@index([positionId])
+  @@index([status])
+  @@index([effectiveFrom])
+  @@map("payroll_earnings")
 }
 
 // TABLE 2: Overtime Rules - Store overtime multiplier configurations
