@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -13,15 +13,14 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent } from '@/components/ui/tabs'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -30,487 +29,403 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import {
-  Calendar,
-  Check,
-  Lock,
-  Loader2,
-  AlertCircle,
-  Download,
-  Users,
-  DollarSign,
-  AlertTriangle,
-  MapPin,
-  TrendingUp,
-} from 'lucide-react'
+import { Calendar, Download, SlidersHorizontal } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
-import { KpiCard } from '@/components/payroll/kpi-card'
 
-interface SitePayroll {
+type CutoffOption = '15' | '20' | '25' | 'eom'
+type PayrollStatus = 'ongoing' | 'draft' | 'approved'
+type SimulatedDateKey = '2026-03-27' | '2026-04-15' | '2026-04-27'
+
+interface SiteConfig {
   siteId: string
   siteName: string
-  location: string
-  status: 'draft' | 'processing' | 'approved' | 'finalized'
+  cutoffDay: CutoffOption
   employees: number
   grossPayroll: number
-  bonusAmount: number
+  allowanceAmount: number
   deductionsAmount: number
   netPayroll: number
-  lastUpdated: string
 }
 
-interface SitePayrollAdjustment {
-  id: string
-  employee: string
-  type: 'overtime' | 'bonus' | 'deduction'
-  amount: number
-  reason: string
-  date: string
+interface SiteCycleRow extends SiteConfig {
+  monthKey: string
+  monthLabel: string
+  cutoffRange: string
+  status: PayrollStatus
 }
 
-interface SiteValidationIssue {
-  siteId: string
-  severity: 'error' | 'warning'
-  message: string
-  affectedEmployees?: number
-}
-
-// Mock current payroll period
-const currentPayrollMonth = 'March 2026'
-const cutoffStartDate = '2026-03-01'
-const cutoffEndDate = '2026-03-31'
-
-// Mock data - payroll by site
-const mockSitePayrolls: SitePayroll[] = [
+const initialSites: SiteConfig[] = [
   {
     siteId: 'S1',
-    siteName: 'Head Office',
-    location: 'Jakarta',
-    status: 'draft',
+    siteName: 'PPLI - Nambo',
+    cutoffDay: '20',
     employees: 18,
     grossPayroll: 245000000,
-    bonusAmount: 12000000,
+    allowanceAmount: 12000000,
     deductionsAmount: 55000000,
     netPayroll: 190000000,
-    lastUpdated: '2026-03-31 14:30 PM',
   },
   {
     siteId: 'S2',
-    siteName: 'Regional Office',
-    location: 'Surabaya',
-    status: 'draft',
+    siteName: 'HM Sampoerna - Sukorejo',
+    cutoffDay: '25',
     employees: 15,
     grossPayroll: 185000000,
-    bonusAmount: 9000000,
+    allowanceAmount: 9000000,
     deductionsAmount: 42000000,
     netPayroll: 143000000,
-    lastUpdated: '2026-03-31 14:30 PM',
   },
   {
     siteId: 'S3',
-    siteName: 'Branch Office',
-    location: 'Bandung',
-    status: 'draft',
+    siteName: 'Astra - Sunter',
+    cutoffDay: 'eom',
     employees: 12,
     grossPayroll: 112890000,
-    bonusAmount: 7000000,
+    allowanceAmount: 7000000,
     deductionsAmount: 28000000,
     netPayroll: 84890000,
-    lastUpdated: '2026-03-31 14:30 PM',
   },
 ]
 
-// Mock adjustments per site
-const mockSiteAdjustments: Record<string, SitePayrollAdjustment[]> = {
-  'S1': [
-    { id: 'adj1', employee: 'Michael Chen', type: 'overtime', amount: 1500000, reason: 'Fixed OT - 5 hours', date: '2026-03-31' },
-    { id: 'adj2', employee: 'Sarah Williams', type: 'bonus', amount: 2000000, reason: 'Performance Bonus', date: '2026-03-30' },
-    { id: 'adj3', employee: 'David Rodriguez', type: 'overtime', amount: 2500000, reason: 'National Holiday OT - 8 hours', date: '2026-03-29' },
-    { id: 'adj4', employee: 'Emily Johnson', type: 'deduction', amount: 500000, reason: 'Loan Deduction', date: '2026-03-28' },
-  ],
-  'S2': [
-    { id: 'adj5', employee: 'Nina Williamson', type: 'overtime', amount: 1200000, reason: 'Fixed OT - 4 hours', date: '2026-03-31' },
-    { id: 'adj6', employee: 'Oscar Brown', type: 'bonus', amount: 1500000, reason: 'Attendance Bonus', date: '2026-03-30' },
-    { id: 'adj7', employee: 'Patricia Davis', type: 'overtime', amount: 1800000, reason: 'BKO - Replacement Duty', date: '2026-03-29' },
-  ],
-  'S3': [
-    { id: 'adj8', employee: 'Carlos Wright', type: 'overtime', amount: 950000, reason: 'Fixed OT - 3 hours', date: '2026-03-31' },
-    { id: 'adj9', employee: 'Diana Turner', type: 'bonus', amount: 1000000, reason: 'Performance Bonus', date: '2026-03-30' },
-  ],
+const simulatedDates: { key: SimulatedDateKey; label: string; description: string }[] = [
+  {
+    key: '2026-03-27',
+    label: '27 Mar 2026',
+    description: 'PPLI & Sampoerna sudah tutup buku Maret dan masuk buku baru April, Astra masih di buku Maret.',
+  },
+  {
+    key: '2026-04-15',
+    label: '15 Apr 2026',
+    description: 'Semua site berada di buku April, sehingga hanya tampil 1 tabel.',
+  },
+  {
+    key: '2026-04-27',
+    label: '27 Apr 2026',
+    description: 'April sudah bergeser naik, PPLI & Sampoerna masuk buku baru Mei di tabel bawah.',
+  },
+]
+
+const cutoffChoices: { value: CutoffOption; label: string }[] = [
+  { value: '15', label: 'Tanggal 15 (16 bulan lalu - 15 bulan ini)' },
+  { value: '20', label: 'Tanggal 20 (21 bulan lalu - 20 bulan ini)' },
+  { value: '25', label: 'Tanggal 25 (26 bulan lalu - 25 bulan ini)' },
+  { value: 'eom', label: 'Akhir Bulan (1 - akhir bulan)' },
+]
+
+const statusMeta: Record<PayrollStatus, { label: string; className: string }> = {
+  ongoing: {
+    label: 'Ongoing',
+    className: 'bg-sky-500/10 text-sky-700 border-sky-200 dark:text-sky-300 dark:border-sky-800',
+  },
+  draft: {
+    label: 'Draft',
+    className: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+  },
+  approved: {
+    label: 'Approved',
+    className: 'bg-amber-500/10 text-amber-700 border-amber-200 dark:text-amber-300 dark:border-amber-800',
+  },
 }
 
-// Mock validation issues per site
-const mockSiteValidationIssues: SiteValidationIssue[] = [
-  { siteId: 'S1', severity: 'error', message: 'Missing attendance records for 2 employees', affectedEmployees: 2 },
-  { siteId: 'S1', severity: 'warning', message: 'Budget exceeded in Field Security by 3%', affectedEmployees: 5 },
-  { siteId: 'S2', severity: 'warning', message: '1 employee has unsigned OT contract', affectedEmployees: 1 },
-  { siteId: 'S3', severity: 'error', message: 'Missing tax documents for 1 employee', affectedEmployees: 1 },
-]
+function pad2(value: number) {
+  return String(value).padStart(2, '0')
+}
+
+function formatDateId(date: Date) {
+  return `${pad2(date.getDate())}/${pad2(date.getMonth() + 1)}/${date.getFullYear()}`
+}
+
+function getMonthLabel(year: number, monthIndex: number) {
+  return new Date(year, monthIndex, 1).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
+function computeSiteCycle(site: SiteConfig, refDate: Date): SiteCycleRow {
+  const refYear = refDate.getFullYear()
+  const refMonth = refDate.getMonth()
+  const refDay = refDate.getDate()
+
+  let targetYear = refYear
+  let targetMonth = refMonth
+
+  if (site.cutoffDay !== 'eom') {
+    const cutoffNumber = Number(site.cutoffDay)
+    // Once the cut-off day passes and the closed cycle is finalized, the site enters next month's book.
+    if (refDay > cutoffNumber) {
+      targetMonth += 1
+      if (targetMonth > 11) {
+        targetMonth = 0
+        targetYear += 1
+      }
+    }
+  }
+
+  let startDate: Date
+  let endDate: Date
+
+  if (site.cutoffDay === 'eom') {
+    startDate = new Date(targetYear, targetMonth, 1)
+    endDate = new Date(targetYear, targetMonth + 1, 0)
+  } else {
+    const cutoffNumber = Number(site.cutoffDay)
+    const daysInTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate()
+    const endDay = Math.min(cutoffNumber, daysInTargetMonth)
+    endDate = new Date(targetYear, targetMonth, endDay)
+    startDate = new Date(targetYear, targetMonth - 1, cutoffNumber + 1)
+  }
+
+  const monthKey = `${targetYear}-${pad2(targetMonth + 1)}`
+  const status: PayrollStatus =
+    site.cutoffDay === 'eom' && refDay >= 27 ? 'draft' : 'ongoing'
+
+  return {
+    ...site,
+    monthKey,
+    monthLabel: getMonthLabel(targetYear, targetMonth),
+    cutoffRange: `${formatDateId(startDate)} - ${formatDateId(endDate)}`,
+    status,
+  }
+}
 
 export default function PayrollManagementPage() {
   const router = useRouter()
-  const [sitePayrolls, setSitePayrolls] = useState<SitePayroll[]>(mockSitePayrolls)
-  const [selectedSite, setSelectedSite] = useState<SitePayroll | null>(mockSitePayrolls[0])
-  const [editOpen, setEditOpen] = useState(false)
-  const [lockOpen, setLockOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [approverName, setApproverName] = useState('')
+  const [sites, setSites] = useState<SiteConfig[]>(initialSites)
+  const [simulatedDateKey, setSimulatedDateKey] = useState<SimulatedDateKey>('2026-03-27')
+  const [cutoffDialogOpen, setCutoffDialogOpen] = useState(false)
+  const [draftCutoffs, setDraftCutoffs] = useState<Record<string, CutoffOption>>({})
 
-  const statusStyles = {
-    draft: 'bg-slate-100 text-slate-700 border-slate-200',
-    processing: 'bg-blue-100 text-blue-700 border-blue-200',
-    approved: 'bg-amber-100 text-amber-700 border-amber-200',
-    finalized: 'bg-green-100 text-green-700 border-green-200',
+  const activeSimulation = simulatedDates.find((item) => item.key === simulatedDateKey) ?? simulatedDates[0]
+
+  const monthGroups = useMemo(() => {
+    const refDate = new Date(`${simulatedDateKey}T00:00:00`)
+    const grouped = new Map<string, { monthKey: string; monthLabel: string; sites: SiteCycleRow[] }>()
+
+    for (const site of sites) {
+      const row = computeSiteCycle(site, refDate)
+      const existing = grouped.get(row.monthKey)
+      if (existing) {
+        existing.sites.push(row)
+      } else {
+        grouped.set(row.monthKey, {
+          monthKey: row.monthKey,
+          monthLabel: row.monthLabel,
+          sites: [row],
+        })
+      }
+    }
+
+    return Array.from(grouped.values()).sort((a, b) => a.monthKey.localeCompare(b.monthKey))
+  }, [sites, simulatedDateKey])
+
+  const openCutoffDialog = () => {
+    const initialDraft: Record<string, CutoffOption> = {}
+    for (const site of sites) {
+      initialDraft[site.siteId] = site.cutoffDay
+    }
+    setDraftCutoffs(initialDraft)
+    setCutoffDialogOpen(true)
   }
 
-  const severityStyles = {
-    error: 'bg-red-100 text-red-700 border-red-200',
-    warning: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  const saveCutoffs = () => {
+    setSites((current) =>
+      current.map((site) => ({
+        ...site,
+        cutoffDay: draftCutoffs[site.siteId] ?? site.cutoffDay,
+      }))
+    )
+    setCutoffDialogOpen(false)
   }
-
-  const adjustmentTypeStyles = {
-    overtime: 'bg-blue-100 text-blue-700',
-    bonus: 'bg-green-100 text-green-700',
-    deduction: 'bg-red-100 text-red-700',
-  }
-
-  const totalGrossPayroll = sitePayrolls.reduce((sum, s) => sum + s.grossPayroll, 0)
-  const totalBonus = sitePayrolls.reduce((sum, s) => sum + s.bonusAmount, 0)
-  const totalDeductions = sitePayrolls.reduce((sum, s) => sum + s.deductionsAmount, 0)
-  const totalNetPayroll = sitePayrolls.reduce((sum, s) => sum + s.netPayroll, 0)
-  const totalEmployees = sitePayrolls.reduce((sum, s) => sum + s.employees, 0)
-
-  const handleLockAllSites = () => {
-    setLoading(true)
-    setTimeout(() => {
-      setSitePayrolls(prev => prev.map(s => ({ ...s, status: 'processing' as const })))
-      setLoading(false)
-      setLockOpen(false)
-    }, 1000)
-  }
-
-  const handleLockSite = () => {
-    if (!selectedSite) return
-    setLoading(true)
-    setTimeout(() => {
-      setSitePayrolls(prev =>
-        prev.map(s =>
-          s.siteId === selectedSite.siteId
-            ? { ...s, status: 'processing' as const, lastUpdated: new Date().toLocaleString() }
-            : s
-        )
-      )
-      setSelectedSite(prev => prev ? { ...prev, status: 'processing', lastUpdated: new Date().toLocaleString() } : null)
-      setLoading(false)
-      setLockOpen(false)
-    }, 1000)
-  }
-
-  const siteValidationIssues = selectedSite
-    ? mockSiteValidationIssues.filter(issue => issue.siteId === selectedSite.siteId)
-    : []
-
-  const siteAdjustments = selectedSite ? (mockSiteAdjustments[selectedSite.siteId] || []) : []
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Payroll Management</h1>
           <p className="text-muted-foreground">
-            Manage current month payroll by site - Cut-off Period: {new Date(cutoffStartDate).toLocaleDateString()} to {new Date(cutoffEndDate).toLocaleDateString()}
+            Kelola payroll aktif per site sesuai jadwal cut-off masing-masing site
           </p>
         </div>
-        <Button variant="outline" className="w-full sm:w-auto">
-          <Download className="size-4 mr-2" />
-          Export All Sites
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={openCutoffDialog}>
+            <SlidersHorizontal className="mr-2 size-4" />
+            Set Cut-Off
+          </Button>
+          <Button variant="outline">
+            <Download className="mr-2 size-4" />
+            Export All Sites
+          </Button>
+        </div>
       </div>
 
-      {/* Overall Summary Cards */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] gap-4">
-        <KpiCard label="Total Employees" value={String(totalEmployees)} icon={Users} />
-        <KpiCard label="Gross Payroll" value={formatCurrency(totalGrossPayroll)} icon={DollarSign} />
-        <KpiCard label="Bonus" value={formatCurrency(totalBonus)} icon={TrendingUp} tone="success" />
-        <KpiCard label="Deductions" value={formatCurrency(totalDeductions)} icon={AlertCircle} tone="destructive" />
-        <KpiCard label="Net Payroll" value={formatCurrency(totalNetPayroll)} icon={Check} tone="success" />
+      {/* Interactive Mockup Date Switcher */}
+      <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-2.5 text-sm">
+          <Calendar className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          <div>
+            <p className="font-medium">Simulasi Tanggal Kalender (Mockup)</p>
+            <p className="text-xs text-muted-foreground">{activeSimulation.description}</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {simulatedDates.map((item) => (
+            <Button
+              key={item.key}
+              type="button"
+              size="sm"
+              variant={simulatedDateKey === item.key ? 'default' : 'outline'}
+              onClick={() => setSimulatedDateKey(item.key)}
+            >
+              {item.label}
+            </Button>
+          ))}
+        </div>
       </div>
 
-      {/* Site Overview */}
-      <Tabs defaultValue="overview" className="space-y-4">
-        {/* Site Overview Content */}
-        <TabsContent value="overview" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>All Sites - Current Month ({currentPayrollMonth})</CardTitle>
-              <CardDescription>Click on a site to view details and manage payroll adjustments</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto rounded-lg border">
-                <Table className="min-w-[1120px]">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-center">Site Name</TableHead>
-                      <TableHead className="text-center">Location</TableHead>
-                      <TableHead className="text-center">Employees</TableHead>
-                      <TableHead className="text-center">Gross Payroll</TableHead>
-                      <TableHead className="text-center">Bonus</TableHead>
-                      <TableHead className="text-center">Deductions</TableHead>
-                      <TableHead className="text-center">Net Payroll</TableHead>
-                      <TableHead className="text-center">Status</TableHead>
-                      <TableHead className="text-center">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sitePayrolls.map((site) => (
-                      <TableRow key={site.siteId} className="hover:bg-muted/50">
-                        <TableCell className="text-center font-medium">{site.siteName}</TableCell>
-                        <TableCell className="text-center text-sm">{site.location}</TableCell>
-                        <TableCell className="text-center text-sm">{site.employees}</TableCell>
-                        <TableCell className="text-right text-sm">{formatCurrency(site.grossPayroll)}</TableCell>
-                        <TableCell className="text-right text-sm text-success">{formatCurrency(site.bonusAmount)}</TableCell>
-                        <TableCell className="text-right text-sm text-destructive">{formatCurrency(site.deductionsAmount)}</TableCell>
-                        <TableCell className="text-right text-sm font-medium text-success">{formatCurrency(site.netPayroll)}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className={statusStyles[site.status]}>
-                            {site.status.charAt(0).toUpperCase() + site.status.slice(1)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.push(`/payroll/management/${site.siteId}`)}
-                          >
-                            Manage Details
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+      {/* Dynamic Month Cycle Cards (1-2 tables depending on active site books) */}
+      <div className="space-y-5">
+        {monthGroups.map((group, index) => {
+          const isNewBook = index > 0
+          const totalEmployees = group.sites.reduce((sum, s) => sum + s.employees, 0)
+          const totalGross = group.sites.reduce((sum, s) => sum + s.grossPayroll, 0)
+          const totalAllowance = group.sites.reduce((sum, s) => sum + s.allowanceAmount, 0)
+          const totalDeductions = group.sites.reduce((sum, s) => sum + s.deductionsAmount, 0)
+          const totalNet = group.sites.reduce((sum, s) => sum + s.netPayroll, 0)
 
-        {/* Site Details Tab */}
-        <TabsContent value="details" className="space-y-4">
-          {selectedSite ? (
-            <div className="space-y-4">
-              {/* Site Header */}
-              <Card className="border-2 border-primary/20">
-                <CardHeader>
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex items-start gap-4">
-                      <div className="rounded-lg bg-primary/10 p-3">
-                        <MapPin className="size-6 text-primary" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-2xl">{selectedSite.siteName}</CardTitle>
-                        <CardDescription className="mt-2">
-                          {selectedSite.location} • {selectedSite.employees} Employees • {currentPayrollMonth}
-                        </CardDescription>
-                      </div>
-                    </div>
-                      <Badge variant="outline" className={statusStyles[selectedSite.status]}>
-                        {selectedSite.status.charAt(0).toUpperCase() + selectedSite.status.slice(1)}
+          return (
+            <Card key={group.monthKey}>
+              <CardHeader className="pb-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2.5">
+                      <CardTitle className="text-lg">{group.monthLabel}</CardTitle>
+                      <Badge variant="outline" className="text-xs">
+                        {isNewBook ? 'New Book' : 'Active Cycle'}
                       </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Site Summary Cards */}
-                  <div className="grid gap-4 md:grid-cols-4">
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium">Gross Payroll</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-2xl font-bold">{formatCurrency(selectedSite.grossPayroll)}</p>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium">Bonus</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-2xl font-bold text-success">{formatCurrency(selectedSite.bonusAmount)}</p>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium">Deductions</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-2xl font-bold text-destructive">{formatCurrency(selectedSite.deductionsAmount)}</p>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium">Net Payroll</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-2xl font-bold text-success">{formatCurrency(selectedSite.netPayroll)}</p>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Site Actions */}
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pt-4 border-t">
-                    <div className="text-sm text-muted-foreground">
-                      Last updated: {selectedSite.lastUpdated}
                     </div>
-                    <div className="flex gap-2 flex-wrap">
-                      <p className="max-w-md text-sm text-muted-foreground">
-                        Read-only overview. Manage payroll from the Site Overview tab.
-                      </p>
-                      <Button variant="outline">
-                        <Download className="mr-2 size-4" />
-                        Export Overview
-                      </Button>
-                    </div>
+                    <CardDescription className="mt-1">
+                      {group.sites.length} {group.sites.length === 1 ? 'site' : 'sites'} • {totalEmployees} employees
+                    </CardDescription>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardHeader>
 
-              {/* Payroll Adjustments */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payroll Adjustments</CardTitle>
-                  <CardDescription>Overtime, bonuses, and deductions for this site</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-lg border overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Employee</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead className="text-right">Amount</TableHead>
-                          <TableHead>Reason</TableHead>
-                          <TableHead>Date</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {siteAdjustments.map((adj) => (
-                          <TableRow key={adj.id}>
-                            <TableCell className="font-medium">{adj.employee}</TableCell>
-                            <TableCell>
-                              <Badge className={adjustmentTypeStyles[adj.type]}>
-                                {adj.type.charAt(0).toUpperCase() + adj.type.slice(1)}
+              <CardContent className="space-y-4">
+                {/* Per-month Summary Strip */}
+                <div className="grid gap-3 rounded-lg bg-muted/30 p-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Payroll</p>
+                    <p className="text-lg font-semibold tabular-nums">{formatCurrency(totalGross)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Allowance</p>
+                    <p className="text-lg font-semibold tabular-nums text-success">{formatCurrency(totalAllowance)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Deductions</p>
+                    <p className="text-lg font-semibold tabular-nums text-destructive">{formatCurrency(totalDeductions)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Net Pay</p>
+                    <p className="text-lg font-semibold tabular-nums text-success">{formatCurrency(totalNet)}</p>
+                  </div>
+                </div>
+
+                {/* 6-Column Site Table */}
+                <div className="overflow-x-auto rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Site</TableHead>
+                        <TableHead className="text-center">Employees</TableHead>
+                        <TableHead className="text-center">Cut-Off Date</TableHead>
+                        <TableHead className="text-center">Total Net Pay</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
+                        <TableHead className="text-center">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {group.sites.map((site) => {
+                        const badge = statusMeta[site.status]
+                        return (
+                          <TableRow key={site.siteId}>
+                            <TableCell className="text-sm font-medium">{site.siteName}</TableCell>
+                            <TableCell className="text-center text-sm tabular-nums">{site.employees}</TableCell>
+                            <TableCell className="text-center text-sm tabular-nums text-muted-foreground">
+                              {site.cutoffRange}
+                            </TableCell>
+                            <TableCell className="text-center text-sm font-medium tabular-nums text-success">
+                              {formatCurrency(site.netPayroll)}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant="outline" className={badge.className}>
+                                {badge.label}
                               </Badge>
                             </TableCell>
-                            <TableCell className="font-medium text-right">{formatCurrency(adj.amount)}</TableCell>
-                            <TableCell className="text-sm">{adj.reason}</TableCell>
-                            <TableCell className="text-sm">{adj.date}</TableCell>
+                            <TableCell className="text-center">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => router.push(`/payroll/management/${site.siteId}`)}
+                              >
+                                Manage Details
+                              </Button>
+                            </TableCell>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                  <p className="mt-4 text-sm text-muted-foreground">
-                    Adjustments are managed from the Manage Payroll workspace.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="pt-6 text-center text-muted-foreground">
-                Select a site from the Site Overview tab to view details
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
-          )}
-        </TabsContent>
+          )
+        })}
+      </div>
 
-        {/* Validation Issues Tab */}
-        <TabsContent value="validation" className="space-y-4">
-          {selectedSite ? (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="size-5 text-destructive" />
-                  Validation Issues - {selectedSite.siteName}
-                </CardTitle>
-                <CardDescription>Issues that need to be resolved before payroll finalization</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {siteValidationIssues.length === 0 ? (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <Check className="size-8 mx-auto mb-2 text-success" />
-                    No validation issues for this site
-                  </div>
-                ) : (
-                  siteValidationIssues.map((issue) => (
-                    <div
-                      key={`${issue.siteId}-${issue.message}`}
-                      className={`rounded-lg border p-4 ${severityStyles[issue.severity]}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <AlertCircle className="size-5 mt-1 flex-shrink-0" />
-                        <div className="flex-1">
-                          <p className="font-medium">{issue.message}</p>
-                          {issue.affectedEmployees && (
-                            <p className="text-sm mt-1 opacity-90">Affected: {issue.affectedEmployees} employee(s)</p>
-                          )}
-                        </div>
-                        <Button variant="ghost" size="sm">
-                          Resolve
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="pt-6 text-center text-muted-foreground">
-                Select a site from the Site Overview tab to view validation issues
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-      </Tabs>
-
-      {/* Lock Site Dialog */}
-      <AlertDialog open={lockOpen} onOpenChange={setLockOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Lock Site Payroll</AlertDialogTitle>
-            <AlertDialogDescription>
-              You are about to lock the payroll for {selectedSite?.siteName}. Once locked, it cannot be edited further.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Payroll Summary:</p>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>Employees: {selectedSite?.employees}</div>
-              <div>Gross: {formatCurrency(selectedSite?.grossPayroll || 0)}</div>
-              <div>Bonus: {formatCurrency(selectedSite?.bonusAmount || 0)}</div>
-              <div>Deductions: {formatCurrency(selectedSite?.deductionsAmount || 0)}</div>
-            </div>
+      {/* Set Cut-Off Dates per Site Dialog */}
+      <Dialog open={cutoffDialogOpen} onOpenChange={setCutoffDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Set Cut-Off Date per Site</DialogTitle>
+            <DialogDescription>
+              Atur tanggal tutup buku bulanan masing-masing site. Perubahan ini langsung memperbarui periode aktif di tabel.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {sites.map((site) => (
+              <div key={site.siteId} className="space-y-1.5">
+                <Label htmlFor={`cutoff-${site.siteId}`}>{site.siteName}</Label>
+                <Select
+                  value={draftCutoffs[site.siteId] ?? site.cutoffDay}
+                  onValueChange={(value: CutoffOption) =>
+                    setDraftCutoffs((prev) => ({ ...prev, [site.siteId]: value }))
+                  }
+                >
+                  <SelectTrigger id={`cutoff-${site.siteId}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cutoffChoices.map((choice) => (
+                      <SelectItem key={choice.value} value={choice.value}>
+                        {choice.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
           </div>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleLockSite} disabled={loading}>
-            {loading ? <Loader2 className="size-4 mr-2 animate-spin" /> : null}
-            {loading ? 'Locking...' : 'Lock Payroll'}
-          </AlertDialogAction>
-        </AlertDialogContent>
-      </AlertDialog>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCutoffDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={saveCutoffs}>Save Cut-Off</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
