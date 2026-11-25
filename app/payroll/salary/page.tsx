@@ -2,11 +2,13 @@
 
 import { useState } from 'react'
 import { BaseSalaryTab } from '@/components/payroll/salary/base-salary-tab'
+import { EarningsTab } from '@/components/payroll/salary/earnings-tab'
 import { PositionSalaryTab } from '@/components/payroll/salary/position-salary-tab'
 
 const TABS = [
   { id: 'position', label: 'Position Salary' },
   { id: 'base', label: 'Manage Base Salary' },
+  { id: 'earnings', label: 'Earnings' },
 ] as const
 
 export default function ManageSalaryPage() {
@@ -17,7 +19,7 @@ export default function ManageSalaryPage() {
       <div>
         <h1 className="text-3xl font-bold">Manage Salary</h1>
         <p className="mt-2 text-muted-foreground">
-          Configure base salary by position for each site. All positions start with minimum wage plus position allowance.
+          Configure base salary by position, site minimum wages, and recurring client earnings.
         </p>
       </div>
 
@@ -41,7 +43,9 @@ export default function ManageSalaryPage() {
         ))}
       </div>
 
-      {view === 'position' ? <PositionSalaryTab /> : <BaseSalaryTab />}
+      {view === 'position' && <PositionSalaryTab />}
+      {view === 'base' && <BaseSalaryTab />}
+      {view === 'earnings' && <EarningsTab />}
     </div>
   )
 }

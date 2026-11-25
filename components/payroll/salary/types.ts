@@ -47,6 +47,53 @@ export interface PositionSalaryResponse {
   positions: { id: string; name: string }[]
 }
 
+export type EarningCalculationType = 'fixed_monthly' | 'per_attendance_day' | 'per_shift'
+
+export interface EarningVersion {
+  id: string
+  calculationType: EarningCalculationType
+  amount: number
+  isTaxable: boolean
+  effectiveFrom: string
+  effectiveTo: string | null
+  status: 'active' | 'inactive'
+}
+
+export interface EarningGroupRow {
+  key: string
+  representativeId: string
+  companyId: string
+  siteId: string | null
+  siteName: string | null
+  siteCode: string | null
+  positionId: string | null
+  positionName: string | null
+  name: string
+  status: 'active' | 'inactive'
+  current: EarningVersion | null
+  scheduled: EarningVersion | null
+  pendingEffectiveDate: string
+}
+
+export interface CompanyEarningSite {
+  id: string
+  name: string
+  code: string
+}
+
+export interface CompanyEarnings {
+  companyId: string
+  companyName: string
+  sites: CompanyEarningSite[]
+  rows: EarningGroupRow[]
+}
+
+export interface EarningsResponse {
+  today: string
+  companies: CompanyEarnings[]
+  positions: { id: string; name: string }[]
+}
+
 export function formatRupiah(value: number) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value)
 }
