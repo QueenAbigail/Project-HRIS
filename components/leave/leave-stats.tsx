@@ -82,6 +82,16 @@ export function LeaveStats() {
     },
   ]
 
+  const handleCardClick = (title: string) => {
+    if (title === 'Pending Requests') {
+      window.dispatchEvent(
+        new CustomEvent('leaveFiltersChanged', {
+          detail: { status: 'pending', range: 'all-time', rangeStart: '', rangeEnd: '' },
+        })
+      )
+    }
+  }
+
   return (
     <div className="space-y-2">
       {loadError && (
@@ -93,23 +103,42 @@ export function LeaveStats() {
         </div>
       )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {statConfigs.map((stat) => (
-        <Card key={stat.title} className="bg-card border-border">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className={`rounded-lg p-2.5 ${stat.bgColor}`}>
-              {loading ? (
-                <Loader2 className={`size-5 ${stat.color} animate-spin`} />
-              ) : (
-                <stat.icon className={`size-5 ${stat.color}`} />
-              )}
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{loading || loadError ? '—' : stat.value}</p>
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+      {statConfigs.map((stat) => {
+        const isPendingCard = stat.title === 'Pending Requests'
+        return (
+          <Card
+            key={stat.title}
+            className={`bg-card border-border ${isPendingCard ? 'cursor-pointer transition-colors hover:border-warning/50' : ''}`}
+            onClick={isPendingCard ? () => handleCardClick(stat.title) : undefined}
+            role={isPendingCard ? 'button' : undefined}
+            tabIndex={isPendingCard ? 0 : undefined}
+            onKeyDown={
+              isPendingCard
+                ? (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      handleCardClick(stat.title)
+                    }
+                  }
+                : undefined
+            }
+          >
+            <CardContent className="flex items-center gap-4 p-4">
+              <div className={`rounded-lg p-2.5 ${stat.bgColor}`}>
+                {loading ? (
+                  <Loader2 className={`size-5 ${stat.color} animate-spin`} />
+                ) : (
+                  <stat.icon className={`size-5 ${stat.color}`} />
+                )}
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{loading || loadError ? '—' : stat.value}</p>
+                <p className="text-sm text-muted-foreground">{stat.title}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })}
       </div>
     </div>
   )

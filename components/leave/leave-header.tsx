@@ -78,7 +78,25 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
   const [filtersError, setFiltersError] = useState(false)
   const [customRange, setCustomRange] = useState({ start: '', end: '' })
   const [rangeSelection, setRangeSelection] = useState('this-month')
+  const [statusFilter, setStatusFilter] = useState('all')
   const [rangePopoverOpen, setRangePopoverOpen] = useState(false)
+
+  const formatLocalYmd = (date: Date) => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+
+  useEffect(() => {
+    const syncFilters = (event: Event) => {
+      const detail = (event as CustomEvent<{ status?: string; range?: string }>).detail
+      if (detail?.status) setStatusFilter(detail.status)
+      if (detail?.range) setRangeSelection(detail.range)
+    }
+    window.addEventListener('leaveFiltersChanged', syncFilters)
+    return () => window.removeEventListener('leaveFiltersChanged', syncFilters)
+  }, [])
   const [loadingEmployees, setLoadingEmployees] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [validationInfo, setValidationInfo] = useState<any>(null)
@@ -397,7 +415,15 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
           <Popover open={rangePopoverOpen} onOpenChange={setRangePopoverOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" className="w-full justify-between sm:w-48">
-                {rangeSelection === 'this-month' ? 'This Month' : rangeSelection === '3-months' ? '3 Months' : rangeSelection === '6-months' ? '6 Months' : 'Custom Range'}
+                {rangeSelection === 'this-month'
+                  ? 'This Month'
+                  : rangeSelection === '3-months'
+                    ? '3 Months'
+                    : rangeSelection === '6-months'
+                      ? '6 Months'
+                      : rangeSelection === 'all-time'
+                        ? 'All Time'
+                        : 'Custom Range'}
                 <ChevronsUpDown className="ml-2 size-4 opacity-50" />
               </Button>
             </PopoverTrigger>
@@ -407,15 +433,20 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
                   ['this-month', 'This Month'],
                   ['3-months', '3 Months'],
                   ['6-months', '6 Months'],
+                  ['all-time', 'All Time'],
                 ].map(([value, label]) => (
                   <Button key={value} variant="ghost" className="w-full justify-start" onClick={() => {
+                    setRangeSelection(value)
+                    setRangePopoverOpen(false)
+                    if (value === 'all-time') {
+                      window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { range: 'all-time', rangeStart: '', rangeEnd: '' } }))
+                      return
+                    }
                     const today = new Date()
                     const end = new Date(today.getFullYear(), today.getMonth() + 1, 0)
                     const months = value === '3-months' ? 3 : value === '6-months' ? 6 : 1
                     const start = new Date(today.getFullYear(), today.getMonth() - months + 1, 1)
-                    setRangeSelection(value)
-                    setRangePopoverOpen(false)
-                    window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { range: value, rangeStart: start.toISOString().slice(0, 10), rangeEnd: end.toISOString().slice(0, 10) } }))
+                    window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { range: value, rangeStart: formatLocalYmd(start), rangeEnd: formatLocalYmd(end) } }))
                   }}>{label}</Button>
                 ))}
                 <div className="border-t pt-2">
@@ -438,7 +469,18 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
               </div>
             </PopoverContent>
           </Popover>
-          <Select defaultValue="all" onValueChange={(value) => window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { status: value } }))}>
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value)
+              if (value === 'pending' && rangeSelection === 'this-month') {
+                setRangeSelection('all-time')
+                window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { status: value, range: 'all-time', rangeStart: '', rangeEnd: '' } }))
+              } else {
+                window.dispatchEvent(new CustomEvent('leaveFiltersChanged', { detail: { status: value } }))
+              }
+            }}
+          >
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Status" />
             </SelectTrigger>

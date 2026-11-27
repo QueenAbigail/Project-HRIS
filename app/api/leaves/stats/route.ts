@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getLeaveReadAuthorization, leaveAuthorizationResponse } from '@/lib/leave-authorization'
-import { startOfMonth, endOfMonth } from 'date-fns'
+import { getBusinessDateBounds } from '@/lib/timezone'
 
 export async function GET() {
   try {
@@ -9,8 +9,7 @@ export async function GET() {
     if (!authorization.user) return leaveAuthorizationResponse(authorization.error)
 
     const now = new Date()
-    const monthStart = startOfMonth(now)
-    const monthEnd = endOfMonth(now)
+    const { monthStart, monthEnd } = getBusinessDateBounds(now)
 
     const [pending, approvedThisMonth, rejectedThisMonth, onLeaveToday] = await Promise.all([
       prisma.leave.count({ where: { ...authorization.where, status: 'Pending' } }),
@@ -18,13 +17,14 @@ export async function GET() {
         where: {
           ...authorization.where,
           status: 'Approved',
-          updatedAt: { gte: monthStart, lte: monthEnd },
+          updatedAt: { gte: monthStart, lt: monthEnd },
         },
       }),
       prisma.leave.count({
         where: {
+          ...authorization.where,
           status: 'Rejected',
-          updatedAt: { gte: monthStart, lte: monthEnd },
+          updatedAt: { gte: monthStart, lt: monthEnd },
         },
       }),
       prisma.leave.count({

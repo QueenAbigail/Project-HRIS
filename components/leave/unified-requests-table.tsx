@@ -67,9 +67,15 @@ export function UnifiedRequestsTable() {
   const [selectedSwap, setSelectedSwap] = useState<UnifiedRequest | null>(null)
   const [leaveDetailsOpen, setLeaveDetailsOpen] = useState(false)
   const [swapDetailsOpen, setSwapDetailsOpen] = useState(false)
+  const formatLocalYmd = (date: Date) => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
   const today = new Date()
-  const defaultStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10)
-  const defaultEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10)
+  const defaultStart = formatLocalYmd(new Date(today.getFullYear(), today.getMonth(), 1))
+  const defaultEnd = formatLocalYmd(new Date(today.getFullYear(), today.getMonth() + 1, 0))
   const [filters, setFilters] = useState({ status: 'all', leaveType: 'all-types', department: 'all-dept', range: 'this-month', rangeStart: defaultStart, rangeEnd: defaultEnd })
 
   async function fetchRequests() {
@@ -97,8 +103,13 @@ export function UnifiedRequestsTable() {
         })),
       ]
 
-      // Sort by date descending
-      unifiedRequests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      // Sort Pending requests first, then newest createdAt descending
+      unifiedRequests.sort((a, b) => {
+        const aPending = a.status === 'Pending' ? 0 : 1
+        const bPending = b.status === 'Pending' ? 0 : 1
+        if (aPending !== bPending) return aPending - bPending
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      })
       setRequests(unifiedRequests)
     } catch {
       setLoadError(true)
@@ -162,6 +173,7 @@ export function UnifiedRequestsTable() {
           r.id === swapId && r.type === 'shiftswap' ? { ...r, status: newStatus } : r
         )
       )
+      window.dispatchEvent(new Event('leaveStatusUpdated'))
     } catch {
       toast.error('Shift swap request could not be updated', {
         description: 'The status was not changed. Please try again later.',
@@ -203,14 +215,17 @@ export function UnifiedRequestsTable() {
     const matchesStatus = filters.status === 'all' || request.status.toLowerCase() === filters.status
     const normalizedRequestType = request.leaveType?.toUpperCase().replace(/[\s_-]/g, '')
     const matchesType = filters.leaveType === 'all-types' || (
-      request.type === 'leave' && (
-        (filters.leaveType === 'IZIN' && (normalizedRequestType === 'IZIN' || normalizedRequestType === 'CUTI')) ||
-        (filters.leaveType === 'TUKAR_SHIFT' && normalizedRequestType === 'TUKARSHIFT') ||
-        (filters.leaveType !== 'IZIN' && filters.leaveType !== 'TUKAR_SHIFT' && normalizedRequestType === filters.leaveType.toUpperCase().replace(/[\s_-]/g, ''))
-      )
+      filters.leaveType === 'TUKAR_SHIFT'
+        ? request.type === 'shiftswap' || normalizedRequestType === 'TUKARSHIFT'
+        : request.type === 'leave' && (
+            (filters.leaveType === 'IZIN' && (normalizedRequestType === 'IZIN' || normalizedRequestType === 'CUTI')) ||
+            (filters.leaveType !== 'IZIN' && normalizedRequestType === filters.leaveType.toUpperCase().replace(/[\s_-]/g, ''))
+          )
     )
-    const requestStart = request.startDate.slice(0, 10)
-    const requestEnd = request.endDate.slice(0, 10)
+    const rawStart = request.type === 'leave' ? request.startDate : (request.swapDate || request.createdAt)
+    const rawEnd = request.type === 'leave' ? request.endDate : (request.swapDate || request.createdAt)
+    const requestStart = rawStart.slice(0, 10)
+    const requestEnd = rawEnd.slice(0, 10)
     const matchesRange = !filters.rangeStart || !filters.rangeEnd || (requestStart <= filters.rangeEnd && requestEnd >= filters.rangeStart)
     const matchesDepartment = filters.department === 'all-dept' || (
       request.type === 'leave'
@@ -219,6 +234,12 @@ export function UnifiedRequestsTable() {
     )
     return matchesRange && matchesStatus && matchesType && matchesDepartment
   })
+
+  const hiddenPendingCount = requests.filter((request) => {
+    if (request.status !== 'Pending') return false
+    const alreadyVisible = filteredRequests.some((visible) => visible.id === request.id && visible.type === request.type)
+    return !alreadyVisible
+  }).length
 
   if (loading) {
     return (
@@ -248,8 +269,28 @@ export function UnifiedRequestsTable() {
   return (
     <>
       <Card className="bg-card border-border">
-        <CardHeader>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle>Leave & Shift Swap Requests</CardTitle>
+          {hiddenPendingCount > 0 && (
+            <div className="flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/10 px-3 py-1.5 text-xs text-warning">
+              <span>{hiddenPendingCount} pending request(s) outside current filters</span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-7 border-warning/40 text-xs"
+                onClick={() =>
+                  window.dispatchEvent(
+                    new CustomEvent('leaveFiltersChanged', {
+                      detail: { status: 'pending', range: 'all-time', rangeStart: '', rangeEnd: '' },
+                    })
+                  )
+                }
+              >
+                Show All Pending
+              </Button>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
