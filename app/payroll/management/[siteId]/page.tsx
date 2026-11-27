@@ -174,18 +174,11 @@ export default function SiteManagementPage() {
     const totalDeductions = deductionTotal + adjDeductions
     const netPayroll = grossPayroll + totalAllowance - totalDeductions
 
-    const sourceCounts = {
-      auto: calculatedEmployees.filter((e) => e.source === 'auto').length,
-      edited: calculatedEmployees.filter((e) => e.source === 'edited').length,
-      excel: calculatedEmployees.filter((e) => e.source === 'excel').length,
-    }
-
     return {
       grossPayroll,
       totalAllowance,
       totalDeductions,
       netPayroll,
-      sourceCounts,
     }
   }, [calculatedEmployees, adjustments])
 
@@ -504,7 +497,7 @@ export default function SiteManagementPage() {
             <CardHeader>
               <CardTitle>{siteConfig.siteName} — Payroll Summary</CardTitle>
               <CardDescription>
-                Ringkasan otomatis dari komponen gaji, aturan lembur, potongan, dan sumber data Hybrid.
+                Ringkasan otomatis dari komponen gaji, aturan lembur, dan potongan untuk periode ini.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -524,21 +517,7 @@ export default function SiteManagementPage() {
                 <p className="text-sm text-muted-foreground">Total Net Pay</p>
                 <p className="mt-2 text-xl font-bold tabular-nums text-emerald-700">{formatCurrency(totals.netPayroll)}</p>
               </div>
-              <div className="rounded-lg border p-4 sm:col-span-2">
-                <p className="text-sm text-muted-foreground">Sumber Data Hybrid Aktif</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <Badge variant="outline" className={sourceBadgeMeta.auto.className}>
-                    Auto App: {totals.sourceCounts.auto}
-                  </Badge>
-                  <Badge variant="outline" className={sourceBadgeMeta.edited.className}>
-                    Edited: {totals.sourceCounts.edited}
-                  </Badge>
-                  <Badge variant="outline" className={sourceBadgeMeta.excel.className}>
-                    Excel: {totals.sourceCounts.excel}
-                  </Badge>
-                </div>
-              </div>
-              <div className="rounded-lg border p-4 sm:col-span-2">
+              <div className="rounded-lg border p-4 sm:col-span-2 lg:col-span-4">
                 <p className="text-sm text-muted-foreground">Jadwal Cut-Off & Hari Kerja</p>
                 <p className="mt-2 text-sm font-medium">
                   {cutoffSummary.cutoffLabel} ({cutoffSummary.cutoffRange}) · {defaultEffectiveDays} hari kerja efektif
@@ -548,14 +527,14 @@ export default function SiteManagementPage() {
           </Card>
         </TabsContent>
 
-        {/* 2. Employee Payroll (Hybrid) Tab */}
+        {/* 2. Employee Payroll Tab */}
         <TabsContent value="employees" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle>Employee Payroll (Skema Hybrid)</CardTitle>
+                <CardTitle>Employee Payroll</CardTitle>
                 <CardDescription>
-                  1 sumber aktif per karyawan (Auto App / Edited / Excel). Base Salary tetap utuh kecuali karyawan baru prorate; Alpha masuk ke Deductions.
+                  Base Salary tetap utuh kecuali karyawan baru prorate; hari Alpha otomatis masuk ke Deductions.
                 </CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -662,7 +641,7 @@ export default function SiteManagementPage() {
                                 variant="ghost"
                                 size="icon"
                                 disabled={isFinalized}
-                                aria-label={`Edit hybrid data ${emp.name}`}
+                                aria-label={`Edit payroll data ${emp.name}`}
                                 onClick={() => openEditModal(emp)}
                               >
                                 <Edit className="h-4 w-4" />
@@ -976,11 +955,11 @@ export default function SiteManagementPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog 2: Quick Hybrid Edit */}
+      {/* Dialog 2: Quick Activity Edit */}
       <Dialog open={Boolean(editingRow)} onOpenChange={(open) => !open && setEditingRow(null)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit Aktivitas Hybrid — {editingRow?.name}</DialogTitle>
+            <DialogTitle>Edit Aktivitas Payroll — {editingRow?.name}</DialogTitle>
             <DialogDescription>
               Koreksi hari kerja & jam lembur tanpa merusak absensi asli. Tarif gaji, tunjangan, dan potongan dihitung otomatis oleh sistem.
             </DialogDescription>
