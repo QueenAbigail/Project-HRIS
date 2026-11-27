@@ -52,7 +52,6 @@ import {
   History,
   Lock,
   Plus,
-  RefreshCw,
   ShieldCheck,
   SlidersHorizontal,
   Trash2,
@@ -276,24 +275,6 @@ export default function SiteManagementPage() {
     )
     setFeedbackBanner(`${emp.name} dikembalikan ke perhitungan Auto App.`)
     setEditingRow(null)
-  }
-
-  const handleSyncAutoOnly = () => {
-    if (isFinalized) return
-    const originals = mockSiteEmployeesMap[siteId] ?? []
-    setRawEmployees((prev) =>
-      prev.map((row) => {
-        if (row.source !== 'auto') return row
-        const fresh = originals.find((o) => o.employeeId === row.employeeId)
-        return fresh ? { ...fresh, effectiveDays: defaultEffectiveDays } : row
-      })
-    )
-    appendLog(
-      'SYNC_AUTO',
-      'Auto App Rows',
-      'Refresh data absensi app (baris status Edited & Excel tetap dipertahankan).'
-    )
-    setFeedbackBanner('Data Auto App diperbarui. Baris Edited dan Excel tetap aman tidak tertimpa.')
   }
 
   const excelCandidateEmployees = useMemo(() => {
@@ -530,18 +511,9 @@ export default function SiteManagementPage() {
         {/* 2. Employee Payroll Tab */}
         <TabsContent value="employees" className="space-y-4">
           <Card>
-            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <CardTitle>Employee Payroll</CardTitle>
-                <CardDescription>
-                  Base Salary tetap utuh kecuali karyawan baru prorate; hari Alpha otomatis masuk ke Deductions.
-                </CardDescription>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button variant="outline" size="sm" disabled={isFinalized} onClick={handleSyncAutoOnly}>
-                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-                  Sync Auto
-                </Button>
+            <CardHeader className="flex flex-row items-center justify-between gap-4">
+              <CardTitle>Employee Payroll</CardTitle>
+              <div className="flex shrink-0 items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -562,7 +534,7 @@ export default function SiteManagementPage() {
                   <TableHeader className="bg-muted/40">
                     <TableRow>
                       <TableHead>Employee</TableHead>
-                      <TableHead className="text-center">Source</TableHead>
+                      <TableHead>Position</TableHead>
                       <TableHead className="text-center">Attendance</TableHead>
                       <TableHead className="text-right">Base Salary</TableHead>
                       <TableHead className="text-right">Overtime</TableHead>
@@ -573,84 +545,62 @@ export default function SiteManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {calculatedEmployees.map((emp) => {
-                      const srcMeta = sourceBadgeMeta[emp.source]
-                      return (
-                        <TableRow key={emp.employeeId}>
-                          <TableCell>
-                            <div className="font-medium">{emp.name}</div>
-                            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                              <span>{emp.position}</span>
-                              {emp.isNewHire && (
-                                <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 px-1.5 py-0 text-[10px]">
-                                  New Hire Prorate
-                                </Badge>
-                              )}
-                              {!emp.hasSchedule && (
-                                <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200 px-1.5 py-0 text-[10px]">
-                                  No Schedule · Full Base
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant="outline" className={srcMeta.className}>
-                              {srcMeta.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-center text-sm tabular-nums">
-                            <div>
-                              {emp.presentDays}/{emp.effectiveDays} d
-                            </div>
-                            {emp.alphaDays > 0 && (
-                              <div className="text-xs font-medium text-red-600">
-                                {emp.alphaDays} Alpha
-                              </div>
+                    {calculatedEmployees.map((emp) => (
+                      <TableRow key={emp.employeeId}>
+                        <TableCell>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-medium">{emp.name}</span>
+                            {emp.isNewHire && (
+                              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 px-1.5 py-0 text-[10px]">
+                                New Hire Prorate
+                              </Badge>
                             )}
-                          </TableCell>
-                          <TableCell className="text-right text-sm tabular-nums">
-                            {formatCurrency(emp.baseSalary)}
-                          </TableCell>
-                          <TableCell className="text-right text-sm tabular-nums">
-                            <div className="font-medium text-emerald-700">{formatCurrency(emp.overtime)}</div>
-                            <div className="text-xs text-muted-foreground">{emp.totalOtHours} jam</div>
-                          </TableCell>
-                          <TableCell className="text-right text-sm tabular-nums text-emerald-700">
-                            {formatCurrency(emp.allowance)}
-                          </TableCell>
-                          <TableCell className="text-right text-sm tabular-nums">
-                            <div className="text-red-600">{formatCurrency(emp.deductions)}</div>
-                            {emp.alphaPenalty > 0 && (
-                              <div className="text-[11px] text-red-600">incl. Alpha</div>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right text-sm font-semibold tabular-nums text-emerald-700">
-                            {formatCurrency(emp.netPay)}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="inline-flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                aria-label={`View breakdown ${emp.name}`}
-                                onClick={() => setViewingEmployee(emp)}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                disabled={isFinalized}
-                                aria-label={`Edit payroll data ${emp.name}`}
-                                onClick={() => openEditModal(emp)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {emp.position}
+                        </TableCell>
+                        <TableCell className="text-center text-sm tabular-nums">
+                          {emp.presentDays}/{emp.effectiveDays}
+                        </TableCell>
+                        <TableCell className="text-right text-sm tabular-nums">
+                          {formatCurrency(emp.baseSalary)}
+                        </TableCell>
+                        <TableCell className="text-right text-sm font-medium tabular-nums text-emerald-700">
+                          {formatCurrency(emp.overtime)}
+                        </TableCell>
+                        <TableCell className="text-right text-sm tabular-nums text-emerald-700">
+                          {formatCurrency(emp.allowance)}
+                        </TableCell>
+                        <TableCell className="text-right text-sm tabular-nums text-red-600">
+                          {formatCurrency(emp.deductions)}
+                        </TableCell>
+                        <TableCell className="text-right text-sm font-semibold tabular-nums text-emerald-700">
+                          {formatCurrency(emp.netPay)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="inline-flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={`View breakdown ${emp.name}`}
+                              onClick={() => setViewingEmployee(emp)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              disabled={isFinalized}
+                              aria-label={`Edit payroll data ${emp.name}`}
+                              onClick={() => openEditModal(emp)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
