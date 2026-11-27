@@ -820,47 +820,64 @@ export default function SiteManagementPage() {
 
       {/* Dialog 1: Read-Only Calculation Breakdown */}
       <Dialog open={Boolean(viewingEmployee)} onOpenChange={(open) => !open && setViewingEmployee(null)}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-xl">
+          <DialogHeader className="shrink-0">
             <DialogTitle>Payroll Breakdown — {viewingEmployee?.name}</DialogTitle>
             <DialogDescription>
-              {viewingEmployee?.position} · {cutoffSummary.periodLabel} · Sumber data: {viewingEmployee ? sourceBadgeMeta[viewingEmployee.source].label : ''}
+              {viewingEmployee?.position} · {cutoffSummary.periodLabel}
             </DialogDescription>
           </DialogHeader>
           {viewingEmployee && (
-            <div className="space-y-4 text-sm">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 text-sm">
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-lg border p-3">
+                <div className="rounded-lg border p-3.5">
                   <p className="text-xs text-muted-foreground">Base Salary</p>
                   <p className="mt-1 text-lg font-bold tabular-nums">{formatCurrency(viewingEmployee.baseSalary)}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="mt-0.5 text-xs text-muted-foreground">
                     {viewingEmployee.isNewHire
-                      ? `Prorate karyawan baru (${viewingEmployee.presentDays}/${viewingEmployee.effectiveDays} hari dari ${formatCurrency(viewingEmployee.fullBaseSalary)})`
-                      : 'Utuh sesuai Manage Salary (Alpha tidak memotong Base Salary)'}
+                      ? `Prorate (${viewingEmployee.presentDays}/${viewingEmployee.effectiveDays} hari dari ${formatCurrency(viewingEmployee.fullBaseSalary)})`
+                      : 'Gaji pokok penuh'}
                   </p>
                 </div>
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Net Pay</p>
+                <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/40 p-3.5">
+                  <p className="text-xs text-emerald-800/80">Net Pay</p>
                   <p className="mt-1 text-lg font-bold tabular-nums text-emerald-700">{formatCurrency(viewingEmployee.netPay)}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="mt-0.5 text-xs text-muted-foreground">
                     Base + Overtime + Allowance - Deductions
                   </p>
                 </div>
               </div>
 
-              <div className="rounded-lg border p-3 space-y-2">
-                <p className="font-semibold">Rincian Lembur (Capped Sesuai Jadwal Shift)</p>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Fixed OT (Shift 12j): {viewingEmployee.fixedOtHours} jam</span>
-                  <span className="font-medium tabular-nums">{formatCurrency(viewingEmployee.fixedOtAmount)}</span>
+              <div className="rounded-lg border p-3.5 space-y-2">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <p className="font-semibold">Rincian Lembur</p>
+                  <span className="font-semibold tabular-nums text-emerald-700">
+                    {formatCurrency(viewingEmployee.overtime)}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">National Holiday OT: {viewingEmployee.holidayOtHours} jam</span>
-                  <span className="font-medium tabular-nums">{formatCurrency(viewingEmployee.holidayOtAmount)}</span>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">
+                    Fixed OT (Shift 12j) · {viewingEmployee.fixedOtHours} jam
+                  </span>
+                  <span className={viewingEmployee.fixedOtAmount > 0 ? 'font-medium tabular-nums' : 'tabular-nums text-muted-foreground'}>
+                    {formatCurrency(viewingEmployee.fixedOtAmount)}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">OT Replacement (BKO): {viewingEmployee.bkoOtHours} jam</span>
-                  <span className="font-medium tabular-nums">{formatCurrency(viewingEmployee.bkoOtAmount)}</span>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">
+                    National Holiday OT · {viewingEmployee.holidayOtHours} jam
+                  </span>
+                  <span className={viewingEmployee.holidayOtAmount > 0 ? 'font-medium tabular-nums' : 'tabular-nums text-muted-foreground'}>
+                    {formatCurrency(viewingEmployee.holidayOtAmount)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">
+                    OT Replacement (BKO) · {viewingEmployee.bkoOtHours} jam
+                  </span>
+                  <span className={viewingEmployee.bkoOtAmount > 0 ? 'font-medium tabular-nums' : 'tabular-nums text-muted-foreground'}>
+                    {formatCurrency(viewingEmployee.bkoOtAmount)}
+                  </span>
                 </div>
                 {viewingEmployee.swapHolidayNote && (
                   <p className="rounded bg-blue-50 px-2.5 py-1.5 text-xs text-blue-800">{viewingEmployee.swapHolidayNote}</p>
@@ -870,23 +887,28 @@ export default function SiteManagementPage() {
                 )}
               </div>
 
-              <div className="rounded-lg border p-3 space-y-2">
-                <p className="font-semibold">Rincian Tunjangan & Potongan</p>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    Allowance (Bulanan {formatCurrency(viewingEmployee.monthlyAllowance)} + {viewingEmployee.presentDays}h x {formatCurrency(viewingEmployee.dailyAllowanceRate)})
-                  </span>
-                  <span className="font-medium text-emerald-700 tabular-nums">{formatCurrency(viewingEmployee.allowance)}</span>
+              <div className="rounded-lg border p-3.5 space-y-2.5">
+                <p className="border-b pb-2 font-semibold">Tunjangan & Potongan</p>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-muted-foreground">Allowance</p>
+                    <p className="text-xs text-muted-foreground">
+                      Bulanan {formatCurrency(viewingEmployee.monthlyAllowance)} + {viewingEmployee.presentDays}h × {formatCurrency(viewingEmployee.dailyAllowanceRate)}
+                    </p>
+                  </div>
+                  <span className="shrink-0 font-medium text-emerald-700 tabular-nums">{formatCurrency(viewingEmployee.allowance)}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex items-center justify-between gap-4">
                   <span className="text-muted-foreground">Potongan Tetap (BPJS / Pajak / dll)</span>
-                  <span className="font-medium text-red-600 tabular-nums">{formatCurrency(viewingEmployee.fixedDeductionAmount)}</span>
+                  <span className="shrink-0 font-medium text-red-600 tabular-nums">{formatCurrency(viewingEmployee.fixedDeductionAmount)}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex items-center justify-between gap-4">
                   <span className="text-muted-foreground">
                     Penalty Alpha ({viewingEmployee.alphaDays} hari / {viewingEmployee.effectiveDays} hari kerja)
                   </span>
-                  <span className="font-medium text-red-600 tabular-nums">{formatCurrency(viewingEmployee.alphaPenalty)}</span>
+                  <span className={viewingEmployee.alphaPenalty > 0 ? 'shrink-0 font-medium text-red-600 tabular-nums' : 'shrink-0 tabular-nums text-muted-foreground'}>
+                    {formatCurrency(viewingEmployee.alphaPenalty)}
+                  </span>
                 </div>
               </div>
 
@@ -897,7 +919,7 @@ export default function SiteManagementPage() {
               )}
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="shrink-0 border-t pt-3">
             <Button variant="outline" onClick={() => setViewingEmployee(null)}>
               Close
             </Button>
@@ -907,15 +929,15 @@ export default function SiteManagementPage() {
 
       {/* Dialog 2: Quick Activity Edit */}
       <Dialog open={Boolean(editingRow)} onOpenChange={(open) => !open && setEditingRow(null)}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-lg">
+          <DialogHeader className="shrink-0">
             <DialogTitle>Edit Aktivitas Payroll — {editingRow?.name}</DialogTitle>
             <DialogDescription>
               Koreksi hari kerja & jam lembur tanpa merusak absensi asli. Tarif gaji, tunjangan, dan potongan dihitung otomatis oleh sistem.
             </DialogDescription>
           </DialogHeader>
           {editingRow && (
-            <div className="space-y-4 py-1">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-1 pr-1">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="edit-present">Hari Hadir (dari {editingRow.effectiveDays}h)</Label>
@@ -992,10 +1014,10 @@ export default function SiteManagementPage() {
               )}
             </div>
           )}
-          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
+          <DialogFooter className="shrink-0 flex-col gap-2 border-t pt-3 sm:flex-row sm:justify-between">
             {editingRow && editingRow.source !== 'auto' ? (
               <Button variant="ghost" type="button" onClick={() => handleResetToAuto(editingRow)}>
-                Reset ke Auto App
+                Reset ke Data Absensi
               </Button>
             ) : (
               <span />
@@ -1010,10 +1032,10 @@ export default function SiteManagementPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog 3: Hybrid Excel Import with Conflict Resolution */}
+      {/* Dialog 3: Excel Import with Conflict Resolution */}
       <Dialog open={importOpen} onOpenChange={setImportOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <FileSpreadsheet className="h-5 w-5 text-emerald-700" />
               Import Rekap Excel (Preview & Konflik)
@@ -1022,7 +1044,7 @@ export default function SiteManagementPage() {
               Pilih file rekap dari site, lalu cek apakah ada karyawan yang sebelumnya sudah diedit manual oleh HR.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
             <div className="space-y-1.5">
               <Label htmlFor="mock-excel-file">File Excel Rekap</Label>
               <Input
@@ -1109,7 +1131,7 @@ export default function SiteManagementPage() {
               </Table>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="shrink-0 border-t pt-3">
             <Button variant="outline" onClick={() => setImportOpen(false)}>
               Cancel
             </Button>
