@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/system'
 import { canManagePayroll } from '@/lib/authorization'
@@ -22,32 +23,48 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params
   try {
-    const anchor = await prisma.payrollEarning.findUnique({ where: { id } })
-    if (!anchor) return NextResponse.json({ error: 'Earning rule not found' }, { status: 404 })
-
-    const targetKey = buildEarningGroupKey(anchor.companyId, anchor.siteId, anchor.positionId, anchor.name)
-    const siblings = (
-      await prisma.payrollEarning.findMany({
-        where: {
-          companyId: anchor.companyId,
-          siteId: anchor.siteId,
-          positionId: anchor.positionId,
-        },
-        select: { id: true, companyId: true, siteId: true, positionId: true, name: true },
-      })
-    ).filter((row) => buildEarningGroupKey(row.companyId, row.siteId, row.positionId, row.name) === targetKey)
-
     const todayDate = toDbDate(todayInJakarta())
-    await prisma.payrollEarning.updateMany({
-      where: { id: { in: siblings.map((s) => s.id) } },
-      data: {
-        status: parsed.data.status,
-        effectiveTo: parsed.data.status === 'inactive' ? todayDate : null,
+
+    const found = await prisma.$transaction(
+      async (tx) => {
+        const anchor = await tx.payrollEarning.findUnique({ where: { id } })
+        if (!anchor) return false
+
+        const targetKey = buildEarningGroupKey(anchor.companyId, anchor.siteId, anchor.positionId, anchor.name)
+        const siblings = (
+          await tx.payrollEarning.findMany({
+            where: {
+              companyId: anchor.companyId,
+              siteId: anchor.siteId,
+              positionId: anchor.positionId,
+            },
+            select: { id: true, companyId: true, siteId: true, positionId: true, name: true },
+          })
+        ).filter((row) => buildEarningGroupKey(row.companyId, row.siteId, row.positionId, row.name) === targetKey)
+
+        await tx.payrollEarning.updateMany({
+          where: { id: { in: siblings.map((s) => s.id) } },
+          data: {
+            status: parsed.data.status,
+            effectiveTo: parsed.data.status === 'inactive' ? todayDate : null,
+          },
+        })
+
+        return true
       },
-    })
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    )
+
+    if (!found) return NextResponse.json({ error: 'Earning rule not found' }, { status: 404 })
 
     return NextResponse.json({ ok: true })
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') {
+      return NextResponse.json(
+        { error: 'Concurrent update detected. Please try again.' },
+        { status: 409 },
+      )
+    }
     console.error('[v0] Failed to update earning status:', error)
     return NextResponse.json({ error: 'Failed to update earning status' }, { status: 500 })
   }

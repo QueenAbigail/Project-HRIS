@@ -9,7 +9,7 @@ export async function GET() {
     if (!authorization.user) return leaveAuthorizationResponse(authorization.error)
 
     const now = new Date()
-    const { monthStart, monthEnd } = getBusinessDateBounds(now)
+    const { todayStart, monthStart, monthEnd } = getBusinessDateBounds(now)
 
     const [pending, approvedThisMonth, rejectedThisMonth, onLeaveToday] = await Promise.all([
       prisma.leave.count({ where: { ...authorization.where, status: 'Pending' } }),
@@ -31,8 +31,8 @@ export async function GET() {
         where: {
           ...authorization.where,
           status: 'Approved',
-          startDate: { lte: now },
-          endDate: { gte: now },
+          startDate: { lte: todayStart },
+          endDate: { gte: todayStart },
         },
       }),
     ])

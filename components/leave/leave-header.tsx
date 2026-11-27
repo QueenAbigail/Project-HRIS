@@ -99,7 +99,6 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
   }, [])
   const [loadingEmployees, setLoadingEmployees] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [validationInfo, setValidationInfo] = useState<any>(null)
 
   // Fetch leave types and departments
   useEffect(() => {
@@ -206,7 +205,6 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
           startDate: formData.startDate,
           endDate: formData.endDate,
           reason: formData.reason,
-          status: 'Approved', // Admin can directly approve
         }),
       })
 
@@ -215,11 +213,9 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
         throw new Error(error?.error || error?.message || 'Failed to create leave request')
       }
 
-      const result = await response.json()
-      setValidationInfo(result.validation)
+      await response.json()
       setFormData({ userId: '', leaveType: '', startDate: '', endDate: '', reason: '' })
       setEmployeeSearchValue('')
-      setValidationInfo(null)
       setOpenNewRequest(false)
       toast.success('Leave request submitted', {
         description: 'The leave request is now waiting for approval.',
@@ -378,25 +374,8 @@ export function LeaveHeader({ canCreateLeave = false }: LeaveHeaderProps) {
                 />
               </div>
 
-              {validationInfo && validationInfo.dayBreakdown && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
-                  <div className="font-medium text-blue-900 mb-2">Leave Duration Breakdown</div>
-                  <div className="text-blue-800 space-y-1">
-                    <div>{validationInfo.dayBreakdown.summary}</div>
-                    {validationInfo.dayBreakdown.breakdown && (
-                      <div className="text-xs mt-2 text-blue-700">
-                        {validationInfo.dayBreakdown.breakdown
-                          .filter((d: any) => d.isWorking)
-                          .map((d: any) => `${d.date} (${d.dayOfWeek})`)
-                          .join(', ')}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
               <DialogFooter>
-                <Button variant="outline" onClick={() => setOpenNewRequest(false)} disabled={submitting}>
+                <Button type="button" variant="outline" onClick={() => setOpenNewRequest(false)} disabled={submitting}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={submitting}>

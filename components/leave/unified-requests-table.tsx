@@ -200,12 +200,14 @@ export function UnifiedRequestsTable() {
     : calculateDays(request.startDate, request.endDate),
       }
     } else {
+      const rawSwapDate = request.swapDate || request.createdAt
+      const parsedSwapDate = rawSwapDate ? new Date(rawSwapDate) : null
       return {
         title: `${request.employeeFrom?.name} ↔ ${request.employeeTo?.name}`,
         department: request.employeeFrom?.department || '--',
         typeLabel: 'Shift Swap',
         typeColor: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
-        period: format(new Date(request.swapDate || ''), 'MMM d, yyyy'),
+        period: parsedSwapDate && !Number.isNaN(parsedSwapDate.getTime()) ? format(parsedSwapDate, 'MMM d, yyyy') : '--',
         days: 1,
       }
     }
