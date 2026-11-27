@@ -121,7 +121,7 @@ export default function SiteManagementPage() {
   const [viewingEmployee, setViewingEmployee] = useState<CalculatedEmployeePayroll | null>(null)
 
   // Quick Hybrid Edit dialog
-  const [editingRow, setEditingRow] = useState<SiteEmployeePayroll | null>(null)
+  const [editingRow, setEditingRow] = useState<CalculatedEmployeePayroll | null>(null)
   const [editForm, setEditForm] = useState({
     presentDays: '0',
     alphaDays: '0',
@@ -931,92 +931,219 @@ export default function SiteManagementPage() {
 
       {/* Dialog 2: Quick Activity Edit */}
       <Dialog open={Boolean(editingRow)} onOpenChange={(open) => !open && setEditingRow(null)}>
-        <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-2xl">
+        <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-3xl lg:max-w-4xl">
           <DialogHeader className="shrink-0">
-            <DialogTitle>Edit Aktivitas Payroll — {editingRow?.name}</DialogTitle>
+            <DialogTitle>Edit Payroll — {editingRow?.name}</DialogTitle>
             <DialogDescription>
-              Koreksi hari kerja & jam lembur tanpa merusak absensi asli. Tarif gaji, tunjangan, dan potongan dihitung otomatis oleh sistem.
+              {editingRow?.position} · {cutoffSummary.periodLabel}
             </DialogDescription>
           </DialogHeader>
           {editingRow && (
-            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-1 pr-1">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-present">Hari Hadir (dari {editingRow.effectiveDays}h)</Label>
-                  <Input
-                    id="edit-present"
-                    type="number"
-                    min={0}
-                    max={31}
-                    value={editForm.presentDays}
-                    onChange={(e) => setEditForm((f) => ({ ...f, presentDays: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-alpha">Hari Alpha (Penalty Deduction)</Label>
-                  <Input
-                    id="edit-alpha"
-                    type="number"
-                    min={0}
-                    max={31}
-                    value={editForm.alphaDays}
-                    onChange={(e) => setEditForm((f) => ({ ...f, alphaDays: e.target.value }))}
-                  />
-                </div>
-              </div>
+            <div className="min-h-0 flex-1 overflow-y-auto py-1 pr-1">
+              <div className="grid gap-5 md:grid-cols-12">
+                {/* Left Column: Grouped Form Inputs */}
+                <div className="space-y-4 md:col-span-7">
+                  <div className="rounded-lg border bg-muted/20 p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                        Kehadiran
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        Standar: {editingRow.effectiveDays} hari kerja
+                      </span>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="edit-present" className="text-xs">
+                          Hari Hadir
+                        </Label>
+                        <div className="relative flex items-center">
+                          <Input
+                            id="edit-present"
+                            type="number"
+                            min={0}
+                            max={31}
+                            value={editForm.presentDays}
+                            onChange={(e) => setEditForm((f) => ({ ...f, presentDays: e.target.value }))}
+                            className="bg-background pr-16 font-medium tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          />
+                          <span className="pointer-events-none absolute right-3 text-xs text-muted-foreground">
+                            / {editingRow.effectiveDays} hari
+                          </span>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="edit-alpha" className="text-xs">
+                          Hari Alpha
+                        </Label>
+                        <div className="relative flex items-center">
+                          <Input
+                            id="edit-alpha"
+                            type="number"
+                            min={0}
+                            max={31}
+                            value={editForm.alphaDays}
+                            onChange={(e) => setEditForm((f) => ({ ...f, alphaDays: e.target.value }))}
+                            className="bg-background pr-12 font-medium tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          />
+                          <span className="pointer-events-none absolute right-3 text-xs text-muted-foreground">
+                            hari
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-fixed-ot">Fixed OT (jam)</Label>
-                  <Input
-                    id="edit-fixed-ot"
-                    type="number"
-                    min={0}
-                    value={editForm.fixedOtHours}
-                    onChange={(e) => setEditForm((f) => ({ ...f, fixedOtHours: e.target.value }))}
-                  />
+                  <div className="rounded-lg border bg-muted/20 p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                        Jam Lembur
+                      </span>
+                      <span className="text-xs text-muted-foreground">Tarif dihitung otomatis</span>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="edit-fixed-ot" className="text-xs">
+                          Fixed OT
+                        </Label>
+                        <div className="relative flex items-center">
+                          <Input
+                            id="edit-fixed-ot"
+                            type="number"
+                            min={0}
+                            value={editForm.fixedOtHours}
+                            onChange={(e) => setEditForm((f) => ({ ...f, fixedOtHours: e.target.value }))}
+                            className="bg-background pr-10 font-medium tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          />
+                          <span className="pointer-events-none absolute right-3 text-xs text-muted-foreground">
+                            jam
+                          </span>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="edit-holiday-ot" className="text-xs">
+                          Holiday OT
+                        </Label>
+                        <div className="relative flex items-center">
+                          <Input
+                            id="edit-holiday-ot"
+                            type="number"
+                            min={0}
+                            value={editForm.holidayOtHours}
+                            onChange={(e) => setEditForm((f) => ({ ...f, holidayOtHours: e.target.value }))}
+                            className="bg-background pr-10 font-medium tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          />
+                          <span className="pointer-events-none absolute right-3 text-xs text-muted-foreground">
+                            jam
+                          </span>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="edit-bko-ot" className="text-xs">
+                          BKO OT
+                        </Label>
+                        <div className="relative flex items-center">
+                          <Input
+                            id="edit-bko-ot"
+                            type="number"
+                            min={0}
+                            value={editForm.bkoOtHours}
+                            onChange={(e) => setEditForm((f) => ({ ...f, bkoOtHours: e.target.value }))}
+                            className="bg-background pr-10 font-medium tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          />
+                          <span className="pointer-events-none absolute right-3 text-xs text-muted-foreground">
+                            jam
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-holiday-ot">Holiday OT (jam)</Label>
-                  <Input
-                    id="edit-holiday-ot"
-                    type="number"
-                    min={0}
-                    value={editForm.holidayOtHours}
-                    onChange={(e) => setEditForm((f) => ({ ...f, holidayOtHours: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="edit-bko-ot">BKO OT (jam)</Label>
-                  <Input
-                    id="edit-bko-ot"
-                    type="number"
-                    min={0}
-                    value={editForm.bkoOtHours}
-                    onChange={(e) => setEditForm((f) => ({ ...f, bkoOtHours: e.target.value }))}
-                  />
-                </div>
-              </div>
 
-              {editPreview && (
-                <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Preview Overtime:</span>
-                    <span className="font-medium text-emerald-700 tabular-nums">{formatCurrency(editPreview.overtime)}</span>
+                {/* Right Column: Live Payroll Summary */}
+                {editPreview && (
+                  <div className="flex flex-col justify-between rounded-lg border bg-muted/30 p-4 md:col-span-5">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between border-b pb-2.5">
+                        <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                          Ringkasan Gaji
+                        </span>
+                        {(() => {
+                          const diff = editPreview.netPay - editingRow.netPay
+                          if (diff === 0) {
+                            return (
+                              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                                Nilai saat ini
+                              </span>
+                            )
+                          }
+                          if (diff > 0) {
+                            return (
+                              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 tabular-nums">
+                                +{formatCurrency(diff)}
+                              </span>
+                            )
+                          }
+                          return (
+                            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 tabular-nums">
+                              -{formatCurrency(Math.abs(diff))}
+                            </span>
+                          )
+                        })()}
+                      </div>
+
+                      <div className="space-y-2.5 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Base Salary</span>
+                          <span className="font-medium tabular-nums">{formatCurrency(editPreview.baseSalary)}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Overtime</span>
+                          <span className="font-medium text-emerald-700 tabular-nums">
+                            {formatCurrency(editPreview.overtime)}
+                          </span>
+                        </div>
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-muted-foreground">Allowance</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              Bulanan + {editPreview.presentDays}h hadir
+                            </p>
+                          </div>
+                          <span className="shrink-0 font-medium text-emerald-700 tabular-nums">
+                            {formatCurrency(editPreview.allowance)}
+                          </span>
+                        </div>
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-muted-foreground">Deductions</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {editPreview.alphaDays > 0
+                                ? `Tetap + Alpha (${editPreview.alphaDays}h)`
+                                : 'Potongan tetap'}
+                            </p>
+                          </div>
+                          <span className="shrink-0 font-medium text-red-600 tabular-nums">
+                            -{formatCurrency(editPreview.deductions)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 border-t pt-3">
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-sm font-semibold">Net Pay</span>
+                        <span className="text-xl font-bold text-emerald-700 tabular-nums">
+                          {formatCurrency(editPreview.netPay)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Preview Deductions (incl. Alpha):</span>
-                    <span className="font-medium text-red-600 tabular-nums">{formatCurrency(editPreview.deductions)}</span>
-                  </div>
-                  <div className="flex justify-between border-t pt-1.5">
-                    <span className="font-semibold">Preview Net Pay:</span>
-                    <span className="font-bold text-emerald-700 tabular-nums">{formatCurrency(editPreview.netPay)}</span>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
-          <DialogFooter className="shrink-0 flex-col gap-2 border-t pt-3 sm:flex-row sm:justify-between">
+          <DialogFooter className="shrink-0 flex-col gap-2 border-t pt-3 sm:flex-row sm:items-center sm:justify-between">
             {editingRow && editingRow.source !== 'auto' ? (
               <Button variant="ghost" type="button" onClick={() => handleResetToAuto(editingRow)}>
                 Reset ke Data Absensi
@@ -1028,7 +1155,7 @@ export default function SiteManagementPage() {
               <Button variant="outline" onClick={() => setEditingRow(null)}>
                 Cancel
               </Button>
-              <Button onClick={handleSaveEdit}>Save & Catat Log</Button>
+              <Button onClick={handleSaveEdit}>Save Changes</Button>
             </div>
           </DialogFooter>
         </DialogContent>
