@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -36,301 +37,381 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
+  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import {
-  ArrowLeft,
-  MapPin,
-  Edit,
-  Trash2,
-  Check,
-  Lock,
-  Loader2,
-  Plus,
   AlertCircle,
-  Calendar,
-  Upload,
-  ChevronRight,
-  Clock3,
-  ReceiptText,
+  ArrowLeft,
+  CheckCircle2,
+  Download,
+  Edit,
+  Eye,
+  FileSpreadsheet,
+  History,
+  Lock,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
   SlidersHorizontal,
+  Trash2,
+  Upload,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import {
+  type AuditLogEntry,
+  type CalculatedEmployeePayroll,
+  type CutoffOption,
+  type DataSourceType,
+  type SiteEmployeePayroll,
+  type SitePayrollAdjustment,
+  calculateEmployeePayroll,
+  computeCutoffSummary,
+  cutoffChoices,
+  mockExcelPreviewRows,
+  mockInitialAdjustments,
+  mockInitialAuditLogs,
+  mockSiteConfigs,
+  mockSiteEmployeesMap,
+} from '@/components/payroll/management/site-detail-types'
 
-type CutoffOption = '15' | '20' | '25' | 'eom'
-
-const cutoffChoices: { value: CutoffOption; label: string }[] = [
-  { value: '15', label: 'Tanggal 15 (16 bulan lalu - 15 bulan ini)' },
-  { value: '20', label: 'Tanggal 20 (21 bulan lalu - 20 bulan ini)' },
-  { value: '25', label: 'Tanggal 25 (26 bulan lalu - 25 bulan ini)' },
-  { value: 'eom', label: 'Akhir Bulan (1 - akhir bulan)' },
-]
-
-function computeCutoffSummary(cutoffDay: CutoffOption) {
-  // Using 2026-03-27 as mockup reference date consistent with Payroll Management
-  const refYear = 2026
-  const refMonth = 2 // March
-  const refDay = 27
-
-  let targetYear = refYear
-  let targetMonth = refMonth
-
-  if (cutoffDay !== 'eom' && refDay > Number(cutoffDay)) {
-    targetMonth += 1
-  }
-
-  let startDate: Date
-  let endDate: Date
-  if (cutoffDay === 'eom') {
-    startDate = new Date(targetYear, targetMonth, 1)
-    endDate = new Date(targetYear, targetMonth + 1, 0)
-  } else {
-    const cutoffNumber = Number(cutoffDay)
-    const daysInTarget = new Date(targetYear, targetMonth + 1, 0).getDate()
-    endDate = new Date(targetYear, targetMonth, Math.min(cutoffNumber, daysInTarget))
-    startDate = new Date(targetYear, targetMonth - 1, cutoffNumber + 1)
-  }
-
-  const fmt = (d: Date) =>
-    `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
-  const periodLabel = new Date(targetYear, targetMonth, 1).toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
-  })
-
-  return {
-    periodLabel,
-    cutoffRange: `${fmt(startDate)} - ${fmt(endDate)}`,
-    cutoffLabel: cutoffDay === 'eom' ? 'Akhir Bulan' : `Tanggal ${cutoffDay}`,
-  }
+const sourceBadgeMeta: Record<DataSourceType, { label: string; className: string }> = {
+  auto: { label: 'Auto App', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  edited: { label: 'Edited', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  excel: { label: 'Excel', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
 }
 
-interface SiteEmployee {
-  employeeId: string
-  name: string
-  position: string
-  baseSalary: number
-  overtime: number
-  overtimeHours?: number
-  overtimeRule?: string
-  bonus: number
-  allowanceSource?: string
-  deductions: number
-  deductionSource?: string
-  netPay: number
-  status: 'draft' | 'processing' | 'finalized'
+const auditActionMeta: Record<AuditLogEntry['action'], { label: string; className: string }> = {
+  EDIT_EMPLOYEE: { label: 'Edit Karyawan', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  EXCEL_IMPORT: { label: 'Import Excel', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  SET_CUTOFF: { label: 'Set Cut-Off', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  ADD_ADJUSTMENT: { label: 'Add Adjustment', className: 'bg-slate-100 text-slate-700 border-slate-200' },
+  DELETE_ADJUSTMENT: { label: 'Delete Adjustment', className: 'bg-red-50 text-red-700 border-red-200' },
+  SYNC_AUTO: { label: 'Sync App', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  FINALIZE_LOCK: { label: 'Finalize & Lock', className: 'bg-purple-50 text-purple-700 border-purple-200' },
 }
 
-interface SitePayrollAdjustment {
-  id: string
-  employee: string
-  type: 'overtime' | 'bonus' | 'deduction'
-  amount: number
-  reason: string
-  date: string
-}
-
-// Mock site details
-const mockSiteDetails = {
-  'S1': {
-    siteName: 'PPLI - Nambo',
-    location: 'Bogor',
-    cutoffDay: '20' as CutoffOption,
-    employees: 18,
-    grossPayroll: 245000000,
-    bonusAmount: 12000000,
-    deductionsAmount: 55000000,
-    netPayroll: 190000000,
-    status: 'ongoing',
-  },
-  'S2': {
-    siteName: 'HM Sampoerna - Sukorejo',
-    location: 'Pasuruan',
-    cutoffDay: '25' as CutoffOption,
-    employees: 15,
-    grossPayroll: 185000000,
-    bonusAmount: 9000000,
-    deductionsAmount: 42000000,
-    netPayroll: 143000000,
-    status: 'ongoing',
-  },
-  'S3': {
-    siteName: 'Astra - Sunter',
-    location: 'Jakarta',
-    cutoffDay: 'eom' as CutoffOption,
-    employees: 12,
-    grossPayroll: 112890000,
-    bonusAmount: 7000000,
-    deductionsAmount: 28000000,
-    netPayroll: 84890000,
-    status: 'draft',
-  },
-}
-
-// Mock employees by site
-const mockSiteEmployees: Record<string, SiteEmployee[]> = {
-  'S1': [
-    { employeeId: 'E001', name: 'Michael Chen', position: 'Security Head', baseSalary: 12000000, overtime: 1500000, overtimeHours: 5, overtimeRule: 'Fixed OT rate · Rp 300.000/hour', bonus: 500000, allowanceSource: 'Attendance allowance · 5 qualifying days', deductions: 2500000, deductionSource: 'BPJS and loan deduction rules', netPay: 10000000, status: 'draft' },
-    { employeeId: 'E002', name: 'Sarah Williams', position: 'Guard', baseSalary: 11000000, overtime: 800000, bonus: 400000, deductions: 2200000, netPay: 8700000, status: 'draft' },
-    { employeeId: 'E003', name: 'David Rodriguez', position: 'Guard', baseSalary: 10500000, overtime: 1200000, bonus: 300000, deductions: 2100000, netPay: 8700000, status: 'draft' },
-    { employeeId: 'E004', name: 'Emily Johnson', position: 'Guard', baseSalary: 9800000, overtime: 0, bonus: 200000, deductions: 1800000, netPay: 7200000, status: 'draft' },
-    { employeeId: 'E005', name: 'James Wilson', position: 'Guard', baseSalary: 10200000, overtime: 1200000, bonus: 350000, deductions: 2000000, netPay: 8550000, status: 'draft' },
-    { employeeId: 'E006', name: 'Robert Taylor', position: 'Guard', baseSalary: 9500000, overtime: 0, bonus: 150000, deductions: 1700000, netPay: 7000000, status: 'draft' },
-    { employeeId: 'E007', name: 'Anna Martinez', position: 'Supervisor', baseSalary: 10000000, overtime: 900000, bonus: 300000, deductions: 1900000, netPay: 8200000, status: 'draft' },
-    { employeeId: 'E008', name: 'Chris Anderson', position: 'Guard', baseSalary: 11500000, overtime: 1600000, bonus: 450000, deductions: 2300000, netPay: 9750000, status: 'draft' },
-  ],
-  'S2': [
-    { employeeId: 'E019', name: 'Nina Williamson', position: 'Regional Manager', baseSalary: 10600000, overtime: 1000000, bonus: 350000, deductions: 2050000, netPay: 8650000, status: 'draft' },
-    { employeeId: 'E020', name: 'Oscar Brown', position: 'Guard', baseSalary: 11000000, overtime: 1200000, bonus: 400000, deductions: 2150000, netPay: 9150000, status: 'draft' },
-    { employeeId: 'E021', name: 'Patricia Davis', position: 'Guard', baseSalary: 10200000, overtime: 800000, bonus: 300000, deductions: 1950000, netPay: 8300000, status: 'draft' },
-    { employeeId: 'E022', name: 'Quincy Miller', position: 'Guard', baseSalary: 9800000, overtime: 700000, bonus: 250000, deductions: 1850000, netPay: 7950000, status: 'draft' },
-    { employeeId: 'E023', name: 'Rachel White', position: 'Supervisor', baseSalary: 11300000, overtime: 1300000, bonus: 420000, deductions: 2200000, netPay: 9470000, status: 'draft' },
-  ],
-  'S3': [
-    { employeeId: 'E034', name: 'Carlos Wright', position: 'Branch Manager', baseSalary: 10500000, overtime: 950000, bonus: 340000, deductions: 2020000, netPay: 8560000, status: 'draft' },
-    { employeeId: 'E035', name: 'Diana Turner', position: 'Guard', baseSalary: 10100000, overtime: 800000, bonus: 310000, deductions: 1950000, netPay: 8310000, status: 'draft' },
-    { employeeId: 'E036', name: 'Ethan Scott', position: 'Guard', baseSalary: 11400000, overtime: 1300000, bonus: 430000, deductions: 2200000, netPay: 9580000, status: 'draft' },
-  ],
-}
-
-// Mock adjustments by site
-const mockAdjustments: Record<string, SitePayrollAdjustment[]> = {
-  'S1': [
-    { id: 'adj1', employee: 'Michael Chen', type: 'overtime', amount: 1500000, reason: 'Fixed OT - 5 hours', date: '2026-03-31' },
-    { id: 'adj2', employee: 'Sarah Williams', type: 'bonus', amount: 2000000, reason: 'Performance Bonus', date: '2026-03-30' },
-    { id: 'adj3', employee: 'David Rodriguez', type: 'overtime', amount: 2500000, reason: 'National Holiday OT - 8 hours', date: '2026-03-29' },
-  ],
-  'S2': [
-    { id: 'adj5', employee: 'Nina Williamson', type: 'overtime', amount: 1200000, reason: 'Fixed OT - 4 hours', date: '2026-03-31' },
-    { id: 'adj6', employee: 'Oscar Brown', type: 'bonus', amount: 1500000, reason: 'Attendance Bonus', date: '2026-03-30' },
-  ],
-  'S3': [
-    { id: 'adj8', employee: 'Carlos Wright', type: 'overtime', amount: 950000, reason: 'Fixed OT - 3 hours', date: '2026-03-31' },
-  ],
+function nowTimestamp() {
+  return '27 Mar 2026, ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
 }
 
 export default function SiteManagementPage() {
   const router = useRouter()
   const params = useParams()
   const siteId = params.siteId as string
-  
-  const siteInfo = mockSiteDetails[siteId as keyof typeof mockSiteDetails]
-  const siteEmployees = mockSiteEmployees[siteId as keyof typeof mockSiteEmployees] || []
-  const [adjustments, setAdjustments] = useState<SitePayrollAdjustment[]>(mockAdjustments[siteId as keyof typeof mockAdjustments] || [])
-  const [addAdjustmentOpen, setAddAdjustmentOpen] = useState(false)
-  const [newAdjustment, setNewAdjustment] = useState({ employee: '', type: 'bonus', reason: '', amount: '', date: '2026-03-31' })
-  
-  const [employees, setEmployees] = useState<SiteEmployee[]>(siteEmployees)
-  const [editingEmployee, setEditingEmployee] = useState<SiteEmployee | null>(null)
-  const [editOpen, setEditOpen] = useState(false)
-  const [payrollDetail, setPayrollDetail] = useState<'overtime' | 'deductions' | null>(null)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
-  const [lockOpen, setLockOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [importOpen, setImportOpen] = useState(false)
-  const [importFile, setImportFile] = useState<File | null>(null)
-  const [importLoading, setImportLoading] = useState(false)
-  const [importMessage, setImportMessage] = useState('')
-  const [cutoffDay, setCutoffDay] = useState<CutoffOption>(siteInfo?.cutoffDay ?? 'eom')
+  const siteConfig = mockSiteConfigs[siteId]
+
+  const [cutoffDay, setCutoffDay] = useState<CutoffOption>(siteConfig?.cutoffDay ?? 'eom')
+  const [defaultEffectiveDays, setDefaultEffectiveDays] = useState<number>(siteConfig?.defaultEffectiveDays ?? 22)
   const [cutoffDialogOpen, setCutoffDialogOpen] = useState(false)
-  const [draftCutoff, setDraftCutoff] = useState<CutoffOption>(siteInfo?.cutoffDay ?? 'eom')
+  const [draftCutoff, setDraftCutoff] = useState<CutoffOption>(cutoffDay)
+  const [draftEffectiveDays, setDraftEffectiveDays] = useState<string>(String(defaultEffectiveDays))
+
+  const [rawEmployees, setRawEmployees] = useState<SiteEmployeePayroll[]>(
+    mockSiteEmployeesMap[siteId] ?? []
+  )
+  const [adjustments, setAdjustments] = useState<SitePayrollAdjustment[]>(
+    mockInitialAdjustments[siteId] ?? []
+  )
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(mockInitialAuditLogs)
+  const [isFinalized, setIsFinalized] = useState(false)
+  const [lockOpen, setLockOpen] = useState(false)
+
+  // Breakdown view dialog
+  const [viewingEmployee, setViewingEmployee] = useState<CalculatedEmployeePayroll | null>(null)
+
+  // Quick Hybrid Edit dialog
+  const [editingRow, setEditingRow] = useState<SiteEmployeePayroll | null>(null)
+  const [editForm, setEditForm] = useState({
+    presentDays: '0',
+    alphaDays: '0',
+    fixedOtHours: '0',
+    holidayOtHours: '0',
+    bkoOtHours: '0',
+  })
+
+  // Hybrid Excel Import dialog (with conflict resolution)
+  const [importOpen, setImportOpen] = useState(false)
+  const [excelStrategy, setExcelStrategy] = useState<'keep_edited' | 'overwrite_all'>('keep_edited')
+  const [selectedFileName, setSelectedFileName] = useState<string>('rekap_absensi_site_mar2026.xlsx')
+
+  // Adjustments dialog
+  const [addAdjustmentOpen, setAddAdjustmentOpen] = useState(false)
+  const [newAdjustment, setNewAdjustment] = useState({
+    employee: '',
+    type: 'bonus' as SitePayrollAdjustment['type'],
+    reason: '',
+    amount: '',
+    date: '2026-03-27',
+  })
+  const [deleteTarget, setDeleteTarget] = useState<SitePayrollAdjustment | null>(null)
+
+  const [feedbackBanner, setFeedbackBanner] = useState<string | null>(null)
 
   const cutoffSummary = computeCutoffSummary(cutoffDay)
 
-  const handleEditEmployee = (employee: SiteEmployee) => {
-    setEditingEmployee(employee)
-    setPayrollDetail(null)
-    setEditOpen(true)
+  const calculatedEmployees = useMemo(
+    () => rawEmployees.map((emp) => calculateEmployeePayroll(emp)),
+    [rawEmployees]
+  )
+
+  const totals = useMemo(() => {
+    const baseTotal = calculatedEmployees.reduce((sum, e) => sum + e.baseSalary, 0)
+    const overtimeTotal = calculatedEmployees.reduce((sum, e) => sum + e.overtime, 0)
+    const allowanceTotal = calculatedEmployees.reduce((sum, e) => sum + e.allowance, 0)
+    const deductionTotal = calculatedEmployees.reduce((sum, e) => sum + e.deductions, 0)
+
+    const adjAdditions = adjustments
+      .filter((a) => a.type !== 'deduction')
+      .reduce((sum, a) => sum + a.amount, 0)
+    const adjDeductions = adjustments
+      .filter((a) => a.type === 'deduction')
+      .reduce((sum, a) => sum + a.amount, 0)
+
+    const grossPayroll = baseTotal + overtimeTotal
+    const totalAllowance = allowanceTotal + adjAdditions
+    const totalDeductions = deductionTotal + adjDeductions
+    const netPayroll = grossPayroll + totalAllowance - totalDeductions
+
+    const sourceCounts = {
+      auto: calculatedEmployees.filter((e) => e.source === 'auto').length,
+      edited: calculatedEmployees.filter((e) => e.source === 'edited').length,
+      excel: calculatedEmployees.filter((e) => e.source === 'excel').length,
+    }
+
+    return {
+      grossPayroll,
+      totalAllowance,
+      totalDeductions,
+      netPayroll,
+      sourceCounts,
+    }
+  }, [calculatedEmployees, adjustments])
+
+  const appendLog = (
+    action: AuditLogEntry['action'],
+    target: string,
+    detail: string
+  ) => {
+    setAuditLogs((prev) => [
+      {
+        id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        timestamp: nowTimestamp(),
+        actor: 'Adi Candra (HR)',
+        action,
+        target,
+        detail,
+      },
+      ...prev,
+    ])
   }
 
+  const openEditModal = (emp: CalculatedEmployeePayroll) => {
+    setEditingRow(emp)
+    setEditForm({
+      presentDays: String(emp.presentDays),
+      alphaDays: String(emp.alphaDays),
+      fixedOtHours: String(emp.fixedOtHours),
+      holidayOtHours: String(emp.holidayOtHours),
+      bkoOtHours: String(emp.bkoOtHours),
+    })
+  }
+
+  const editPreview = useMemo(() => {
+    if (!editingRow) return null
+    return calculateEmployeePayroll({
+      ...editingRow,
+      presentDays: Math.max(0, Number(editForm.presentDays) || 0),
+      alphaDays: Math.max(0, Number(editForm.alphaDays) || 0),
+      fixedOtHours: Math.max(0, Number(editForm.fixedOtHours) || 0),
+      holidayOtHours: Math.max(0, Number(editForm.holidayOtHours) || 0),
+      bkoOtHours: Math.max(0, Number(editForm.bkoOtHours) || 0),
+    })
+  }, [editingRow, editForm])
+
+  const handleSaveEdit = () => {
+    if (!editingRow || isFinalized) return
+    const nextPresent = Math.max(0, Number(editForm.presentDays) || 0)
+    const nextAlpha = Math.max(0, Number(editForm.alphaDays) || 0)
+    const nextFixedOt = Math.max(0, Number(editForm.fixedOtHours) || 0)
+    const nextHolidayOt = Math.max(0, Number(editForm.holidayOtHours) || 0)
+    const nextBkoOt = Math.max(0, Number(editForm.bkoOtHours) || 0)
+
+    setRawEmployees((prev) =>
+      prev.map((emp) =>
+        emp.employeeId === editingRow.employeeId
+          ? {
+              ...emp,
+              source: 'edited',
+              presentDays: nextPresent,
+              alphaDays: nextAlpha,
+              fixedOtHours: nextFixedOt,
+              holidayOtHours: nextHolidayOt,
+              bkoOtHours: nextBkoOt,
+            }
+          : emp
+      )
+    )
+
+    appendLog(
+      'EDIT_EMPLOYEE',
+      editingRow.name,
+      `Source -> Edited. Hadir: ${editingRow.presentDays}->${nextPresent}h, Alpha: ${editingRow.alphaDays}->${nextAlpha}h, FixedOT: ${editingRow.fixedOtHours}->${nextFixedOt}j, HolidayOT: ${editingRow.holidayOtHours}->${nextHolidayOt}j, BKO: ${editingRow.bkoOtHours}->${nextBkoOt}j.`
+    )
+    setFeedbackBanner(`Perubahan manual untuk ${editingRow.name} tersimpan dan tercatat di Audit Log.`)
+    setEditingRow(null)
+  }
+
+  const handleResetToAuto = (emp: SiteEmployeePayroll) => {
+    if (isFinalized) return
+    const original = (mockSiteEmployeesMap[siteId] ?? []).find(
+      (item) => item.employeeId === emp.employeeId
+    )
+    if (!original) return
+    setRawEmployees((prev) =>
+      prev.map((row) =>
+        row.employeeId === emp.employeeId
+          ? { ...original, source: 'auto', effectiveDays: defaultEffectiveDays }
+          : row
+      )
+    )
+    appendLog(
+      'SYNC_AUTO',
+      emp.name,
+      'Reset ke data otomatis dari Absensi & Jadwal Aplikasi (Source -> Auto App).'
+    )
+    setFeedbackBanner(`${emp.name} dikembalikan ke perhitungan Auto App.`)
+    setEditingRow(null)
+  }
+
+  const handleSyncAutoOnly = () => {
+    if (isFinalized) return
+    const originals = mockSiteEmployeesMap[siteId] ?? []
+    setRawEmployees((prev) =>
+      prev.map((row) => {
+        if (row.source !== 'auto') return row
+        const fresh = originals.find((o) => o.employeeId === row.employeeId)
+        return fresh ? { ...fresh, effectiveDays: defaultEffectiveDays } : row
+      })
+    )
+    appendLog(
+      'SYNC_AUTO',
+      'Auto App Rows',
+      'Refresh data absensi app (baris status Edited & Excel tetap dipertahankan).'
+    )
+    setFeedbackBanner('Data Auto App diperbarui. Baris Edited dan Excel tetap aman tidak tertimpa.')
+  }
+
+  const excelCandidateEmployees = useMemo(() => {
+    return rawEmployees.filter((emp) => {
+      const baseId = emp.employeeId.replace(/^S[23]-/, '')
+      return Boolean(mockExcelPreviewRows[baseId])
+    })
+  }, [rawEmployees])
+
+  const editedConflictCount = excelCandidateEmployees.filter((e) => e.source === 'edited').length
+
+  const handleApplyExcelImport = () => {
+    if (isFinalized) return
+    let updatedCount = 0
+    let skippedEditedCount = 0
+
+    setRawEmployees((prev) =>
+      prev.map((emp) => {
+        const baseId = emp.employeeId.replace(/^S[23]-/, '')
+        const incoming = mockExcelPreviewRows[baseId]
+        if (!incoming) return emp
+        if (emp.source === 'edited' && excelStrategy === 'keep_edited') {
+          skippedEditedCount += 1
+          return emp
+        }
+        updatedCount += 1
+        return {
+          ...emp,
+          source: 'excel',
+          presentDays: incoming.presentDays,
+          alphaDays: incoming.alphaDays,
+          fixedOtHours: incoming.fixedOtHours,
+          holidayOtHours: incoming.holidayOtHours,
+          bkoOtHours: incoming.bkoOtHours,
+        }
+      })
+    )
+
+    appendLog(
+      'EXCEL_IMPORT',
+      selectedFileName || 'Excel Import',
+      `Mode: ${excelStrategy === 'keep_edited' ? 'Pertahankan Edit Manual' : 'Timpa Semua'}. Diperbarui: ${updatedCount} karyawan, dipertahankan: ${skippedEditedCount} karyawan.`
+    )
+    setFeedbackBanner(
+      `Import Excel selesai: ${updatedCount} karyawan diperbarui (${skippedEditedCount} editan manual dipertahankan).`
+    )
+    setImportOpen(false)
+  }
+
+  const handleSaveCutoff = () => {
+    if (isFinalized) return
+    const nextEff = Math.max(1, Math.min(31, Number(draftEffectiveDays) || 22))
+    setCutoffDay(draftCutoff)
+    setDefaultEffectiveDays(nextEff)
+    setRawEmployees((prev) => prev.map((e) => ({ ...e, effectiveDays: nextEff })))
+    appendLog(
+      'SET_CUTOFF',
+      siteConfig.siteName,
+      `Ubah Cut-Off ke ${draftCutoff === 'eom' ? 'Akhir Bulan' : `Tanggal ${draftCutoff}`} & Default Hari Kerja Efektif: ${nextEff} hari.`
+    )
+    setFeedbackBanner('Pengaturan Cut-Off dan Default Hari Kerja Efektif berhasil diperbarui.')
+    setCutoffDialogOpen(false)
+  }
 
   const handleAddAdjustment = () => {
+    if (isFinalized) return
     const amount = Number(newAdjustment.amount)
     if (!newAdjustment.employee || !newAdjustment.reason || !Number.isFinite(amount) || amount <= 0) return
-    setAdjustments((current) => [...current, {
+    const created: SitePayrollAdjustment = {
       id: `adj-${Date.now()}`,
       employee: newAdjustment.employee,
-      type: newAdjustment.type as SitePayrollAdjustment['type'],
+      type: newAdjustment.type,
       amount,
       reason: newAdjustment.reason,
       date: newAdjustment.date,
-    }])
-    setNewAdjustment({ employee: '', type: 'bonus', reason: '', amount: '', date: '2026-03-31' })
+    }
+    setAdjustments((current) => [...current, created])
+    appendLog(
+      'ADD_ADJUSTMENT',
+      created.employee,
+      `Tambah ${created.type.toUpperCase()} ${formatCurrency(created.amount)} (${created.reason}).`
+    )
+    setNewAdjustment({ employee: '', type: 'bonus', reason: '', amount: '', date: '2026-03-27' })
     setAddAdjustmentOpen(false)
   }
 
-  const handleDeleteAdjustment = (adjId: string) => {
-    setDeleteTarget(adjId)
-    setDeleteDialogOpen(true)
-  }
-
-  const confirmDelete = () => {
-    // Mock delete
-    setDeleteDialogOpen(false)
+  const confirmDeleteAdjustment = () => {
+    if (!deleteTarget || isFinalized) return
+    setAdjustments((current) => current.filter((item) => item.id !== deleteTarget.id))
+    appendLog(
+      'DELETE_ADJUSTMENT',
+      deleteTarget.employee,
+      `Hapus ${deleteTarget.type.toUpperCase()} ${formatCurrency(deleteTarget.amount)} (${deleteTarget.reason}).`
+    )
     setDeleteTarget(null)
   }
 
-  const handleLockPayroll = () => {
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      setLockOpen(false)
-    }, 1000)
+  const handleFinalizeAndLock = () => {
+    setIsFinalized(true)
+    setLockOpen(false)
+    appendLog(
+      'FINALIZE_LOCK',
+      `${siteConfig.siteName} · ${cutoffSummary.periodLabel}`,
+      `Payroll dikunci permanen. Net Pay akhir: ${formatCurrency(totals.netPayroll)}. Anti-backdate aktif.`
+    )
+    setFeedbackBanner('Payroll periode ini sudah Finalized & Locked. Semua edit dan backdate absen dikunci.')
   }
 
-  const handleImportTimesheet = async () => {
-    if (!importFile) {
-      setImportMessage('Please select a file to import')
-      return
-    }
-
-    setImportLoading(true)
-    setImportMessage('Processing timesheet...')
-
-    // Simulate file processing
-    setTimeout(() => {
-      try {
-        // Mock timesheet parsing
-        const mockTimesheetData = [
-          { employeeId: 'E001', dutyDays: 22, overtime: 15, bonus: 500000 },
-          { employeeId: 'E002', dutyDays: 21, overtime: 8, bonus: 400000 },
-          { employeeId: 'E003', dutyDays: 22, overtime: 12, bonus: 300000 },
-        ]
-
-        // Update employees based on timesheet
-        setEmployees(prev => prev.map(emp => {
-          const timesheetRecord = mockTimesheetData.find(t => t.employeeId === emp.employeeId)
-          if (timesheetRecord) {
-            const overtimeAmount = (emp.baseSalary / 22) * (timesheetRecord.overtime / 8) * 1.5
-            return {
-              ...emp,
-              overtime: overtimeAmount,
-              bonus: timesheetRecord.bonus,
-              netPay: emp.baseSalary + overtimeAmount + timesheetRecord.bonus - emp.deductions,
-            }
-          }
-          return emp
-        }))
-
-        setImportMessage('Timesheet imported successfully! Payroll has been calculated.')
-        setImportFile(null)
-        setImportLoading(false)
-        setTimeout(() => {
-          setImportOpen(false)
-          setImportMessage('')
-        }, 2000)
-      } catch (error) {
-        setImportMessage('Error processing timesheet. Please check the file format.')
-        setImportLoading(false)
-      }
-    }, 1500)
-  }
-
-  if (!siteInfo) {
+  if (!siteConfig) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex h-64 items-center justify-center">
         <Card>
           <CardContent className="pt-6">
             <p>Site not found</p>
@@ -342,27 +423,40 @@ export default function SiteManagementPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header with back button */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.back()}
-          >
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-3">
+          <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Back to Payroll Management">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{siteInfo.siteName} - Payroll Management</h1>
-            <p className="text-muted-foreground">
-              {cutoffSummary.periodLabel} • Cut-off {cutoffSummary.cutoffLabel} ({cutoffSummary.cutoffRange})
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                {siteConfig.siteName}
+              </h1>
+              <Badge
+                variant="outline"
+                className={
+                  isFinalized
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-blue-50 text-blue-700 border-blue-200'
+                }
+              >
+                {isFinalized ? 'Finalized & Locked' : 'Draft / Ongoing'}
+              </Badge>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {cutoffSummary.periodLabel} · Cut-Off {cutoffSummary.cutoffLabel} ({cutoffSummary.cutoffRange}) · Default Kerja Efektif {defaultEffectiveDays} hari
             </p>
           </div>
         </div>
+
         <Button
           variant="outline"
+          disabled={isFinalized}
           onClick={() => {
             setDraftCutoff(cutoffDay)
+            setDraftEffectiveDays(String(defaultEffectiveDays))
             setCutoffDialogOpen(true)
           }}
         >
@@ -371,139 +465,213 @@ export default function SiteManagementPage() {
         </Button>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="summary" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+      {/* Lock / Feedback Notice */}
+      {isFinalized && (
+        <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-900">
+          <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-700" />
+          <span>
+            Periode ini sudah <strong>Finalized & Locked</strong>. Perubahan absensi backdate, edit manual, dan import Excel dikunci; koreksi susulan masuk ke periode bulan berikutnya.
+          </span>
+        </div>
+      )}
+
+      {feedbackBanner && !isFinalized && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50/70 px-4 py-2.5 text-sm text-blue-900">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-600" />
+            <span>{feedbackBanner}</span>
+          </div>
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setFeedbackBanner(null)}>
+            Dismiss
+          </Button>
+        </div>
+      )}
+
+      {/* Main 6 Tabs */}
+      <Tabs defaultValue="employees" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 h-auto">
           <TabsTrigger value="summary">Site Summary</TabsTrigger>
           <TabsTrigger value="employees">Employee Payroll</TabsTrigger>
-          <TabsTrigger value="adjustments">Adjustments</TabsTrigger>
+          <TabsTrigger value="adjustments">Adjustments ({adjustments.length})</TabsTrigger>
           <TabsTrigger value="validation">Issues & Validation</TabsTrigger>
+          <TabsTrigger value="audit">Audit Log ({auditLogs.length})</TabsTrigger>
           <TabsTrigger value="finalize">Finalize & Lock</TabsTrigger>
         </TabsList>
 
-        {/* Site Summary Tab */}
+        {/* 1. Site Summary Tab */}
         <TabsContent value="summary" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>{siteInfo.siteName} Payroll Summary</CardTitle>
+              <CardTitle>{siteConfig.siteName} — Payroll Summary</CardTitle>
               <CardDescription>
-                Read-only overview for {siteInfo.location} during the {`March 2026`} payroll period.
+                Ringkasan otomatis dari komponen gaji, aturan lembur, potongan, dan sumber data Hybrid.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-lg border p-4">
-                <p className="text-sm text-muted-foreground">Gross Payroll</p>
-                <p className="mt-2 text-xl font-bold tabular-nums">{formatCurrency(siteInfo.grossPayroll)}</p>
+                <p className="text-sm text-muted-foreground">Gross Payroll (Base + OT)</p>
+                <p className="mt-2 text-xl font-bold tabular-nums">{formatCurrency(totals.grossPayroll)}</p>
               </div>
               <div className="rounded-lg border p-4">
                 <p className="text-sm text-muted-foreground">Allowance</p>
-                <p className="mt-2 text-xl font-bold tabular-nums text-success">{formatCurrency(siteInfo.bonusAmount)}</p>
+                <p className="mt-2 text-xl font-bold tabular-nums text-emerald-700">{formatCurrency(totals.totalAllowance)}</p>
               </div>
               <div className="rounded-lg border p-4">
-                <p className="text-sm text-muted-foreground">Deductions</p>
-                <p className="mt-2 text-xl font-bold tabular-nums text-destructive">{formatCurrency(siteInfo.deductionsAmount)}</p>
+                <p className="text-sm text-muted-foreground">Deductions (incl. Alpha)</p>
+                <p className="mt-2 text-xl font-bold tabular-nums text-red-600">{formatCurrency(totals.totalDeductions)}</p>
               </div>
               <div className="rounded-lg border p-4">
-                <p className="text-sm text-muted-foreground">Net Payroll</p>
-                <p className="mt-2 text-xl font-bold tabular-nums text-success">{formatCurrency(siteInfo.netPayroll)}</p>
+                <p className="text-sm text-muted-foreground">Total Net Pay</p>
+                <p className="mt-2 text-xl font-bold tabular-nums text-emerald-700">{formatCurrency(totals.netPayroll)}</p>
               </div>
-              <div className="rounded-lg border p-4 lg:col-span-2">
-                <p className="text-sm text-muted-foreground">Payroll status</p>
-                <Badge variant="outline" className="mt-2 bg-slate-100 text-slate-700">{siteInfo.status.charAt(0).toUpperCase() + siteInfo.status.slice(1)}</Badge>
+              <div className="rounded-lg border p-4 sm:col-span-2">
+                <p className="text-sm text-muted-foreground">Sumber Data Hybrid Aktif</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Badge variant="outline" className={sourceBadgeMeta.auto.className}>
+                    Auto App: {totals.sourceCounts.auto}
+                  </Badge>
+                  <Badge variant="outline" className={sourceBadgeMeta.edited.className}>
+                    Edited: {totals.sourceCounts.edited}
+                  </Badge>
+                  <Badge variant="outline" className={sourceBadgeMeta.excel.className}>
+                    Excel: {totals.sourceCounts.excel}
+                  </Badge>
+                </div>
               </div>
-              <div className="rounded-lg border p-4 lg:col-span-2">
-                <p className="text-sm text-muted-foreground">Last updated</p>
-                <p className="mt-2 font-medium">March 31, 2026 at 2:30 PM</p>
-              </div>
-
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Validation Tab */}
-        <TabsContent value="validation" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-amber-600" />
-                Issues & Validation
-              </CardTitle>
-              <CardDescription>Resolve these items before finalizing {siteInfo.siteName} payroll.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                Validation checks are shown here for this site only. Payroll cannot be safely finalized until blocking issues are resolved.
-              </div>
-              <div className="rounded-lg border p-4">
-                <p className="font-medium">Missing attendance records</p>
-                <p className="mt-1 text-sm text-muted-foreground">Review attendance and timesheet data for 2 employees.</p>
-              </div>
-              <div className="rounded-lg border p-4">
-                <p className="font-medium">Budget review</p>
-                <p className="mt-1 text-sm text-muted-foreground">Confirm the Field Security budget variance before locking.</p>
+              <div className="rounded-lg border p-4 sm:col-span-2">
+                <p className="text-sm text-muted-foreground">Jadwal Cut-Off & Hari Kerja</p>
+                <p className="mt-2 text-sm font-medium">
+                  {cutoffSummary.cutoffLabel} ({cutoffSummary.cutoffRange}) · {defaultEffectiveDays} hari kerja efektif
+                </p>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Employee Payroll Tab */}
+        {/* 2. Employee Payroll (Hybrid) Tab */}
         <TabsContent value="employees" className="space-y-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle>Employee Payroll Details</CardTitle>
-                <CardDescription>Edit individual employee payroll for {siteInfo.siteName}</CardDescription>
+                <CardTitle>Employee Payroll (Skema Hybrid)</CardTitle>
+                <CardDescription>
+                  1 sumber aktif per karyawan (Auto App / Edited / Excel). Base Salary tetap utuh kecuali karyawan baru prorate; Alpha masuk ke Deductions.
+                </CardDescription>
               </div>
-              <Button
-                onClick={() => setImportOpen(true)}
-                className="gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                Import Timesheet
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" disabled={isFinalized} onClick={handleSyncAutoOnly}>
+                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                  Sync Auto
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFeedbackBanner(`Template Excel untuk ${siteConfig.siteName} (${calculatedEmployees.length} karyawan) siap diunduh.`)}
+                >
+                  <Download className="mr-1.5 h-3.5 w-3.5" />
+                  Download Template
+                </Button>
+                <Button size="sm" disabled={isFinalized} onClick={() => setImportOpen(true)}>
+                  <Upload className="mr-1.5 h-3.5 w-3.5" />
+                  Import Excel
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border overflow-x-auto">
-                <Table>
-                  <TableHeader>
+              <div className="overflow-x-auto rounded-lg border">
+                <Table className="min-w-[920px]">
+                  <TableHeader className="bg-muted/40">
                     <TableRow>
                       <TableHead>Employee</TableHead>
-                      <TableHead>Position</TableHead>
+                      <TableHead className="text-center">Source</TableHead>
+                      <TableHead className="text-center">Attendance</TableHead>
                       <TableHead className="text-right">Base Salary</TableHead>
                       <TableHead className="text-right">Overtime</TableHead>
                       <TableHead className="text-right">Allowance</TableHead>
                       <TableHead className="text-right">Deductions</TableHead>
                       <TableHead className="text-right">Net Pay</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="text-center">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {employees.map((employee) => (
-                      <TableRow key={employee.employeeId}>
-                        <TableCell className="font-medium">{employee.name}</TableCell>
-                        <TableCell className="text-sm">{employee.position}</TableCell>
-                        <TableCell className="text-right text-sm">{formatCurrency(employee.baseSalary)}</TableCell>
-                        <TableCell className="text-right text-sm text-success">{formatCurrency(employee.overtime)}</TableCell>
-                        <TableCell className="text-right text-sm text-success">{formatCurrency(employee.bonus)}</TableCell>
-                        <TableCell className="text-right text-sm text-destructive">{formatCurrency(employee.deductions)}</TableCell>
-                        <TableCell className="text-right text-sm font-medium text-success">{formatCurrency(employee.netPay)}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="bg-slate-100 text-slate-700">
-                            Draft
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditEmployee(employee)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {calculatedEmployees.map((emp) => {
+                      const srcMeta = sourceBadgeMeta[emp.source]
+                      return (
+                        <TableRow key={emp.employeeId}>
+                          <TableCell>
+                            <div className="font-medium">{emp.name}</div>
+                            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                              <span>{emp.position}</span>
+                              {emp.isNewHire && (
+                                <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 px-1.5 py-0 text-[10px]">
+                                  New Hire Prorate
+                                </Badge>
+                              )}
+                              {!emp.hasSchedule && (
+                                <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200 px-1.5 py-0 text-[10px]">
+                                  No Schedule · Full Base
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className={srcMeta.className}>
+                              {srcMeta.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center text-sm tabular-nums">
+                            <div>
+                              {emp.presentDays}/{emp.effectiveDays} d
+                            </div>
+                            {emp.alphaDays > 0 && (
+                              <div className="text-xs font-medium text-red-600">
+                                {emp.alphaDays} Alpha
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right text-sm tabular-nums">
+                            {formatCurrency(emp.baseSalary)}
+                          </TableCell>
+                          <TableCell className="text-right text-sm tabular-nums">
+                            <div className="font-medium text-emerald-700">{formatCurrency(emp.overtime)}</div>
+                            <div className="text-xs text-muted-foreground">{emp.totalOtHours} jam</div>
+                          </TableCell>
+                          <TableCell className="text-right text-sm tabular-nums text-emerald-700">
+                            {formatCurrency(emp.allowance)}
+                          </TableCell>
+                          <TableCell className="text-right text-sm tabular-nums">
+                            <div className="text-red-600">{formatCurrency(emp.deductions)}</div>
+                            {emp.alphaPenalty > 0 && (
+                              <div className="text-[11px] text-red-600">incl. Alpha</div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right text-sm font-semibold tabular-nums text-emerald-700">
+                            {formatCurrency(emp.netPay)}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="inline-flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label={`View breakdown ${emp.name}`}
+                                onClick={() => setViewingEmployee(emp)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                disabled={isFinalized}
+                                aria-label={`Edit hybrid data ${emp.name}`}
+                                onClick={() => openEditModal(emp)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -511,12 +679,17 @@ export default function SiteManagementPage() {
           </Card>
         </TabsContent>
 
-        {/* Adjustments Tab */}
+        {/* 3. Adjustments Tab */}
         <TabsContent value="adjustments" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Payroll Adjustments</h3>
-            <Button onClick={() => setAddAdjustmentOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Payroll Adjustments</h3>
+              <p className="text-sm text-muted-foreground">
+                Tambahan/potongan satu kali (misal rapel koreksi bulan lalu yang sudah Finalized).
+              </p>
+            </div>
+            <Button disabled={isFinalized} onClick={() => setAddAdjustmentOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
               Add Adjustment
             </Button>
           </div>
@@ -524,9 +697,9 @@ export default function SiteManagementPage() {
           <Card>
             <CardContent className="pt-6">
               {adjustments.length === 0 ? (
-                <p className="text-muted-foreground">No adjustments for this site.</p>
+                <p className="text-sm text-muted-foreground">Belum ada adjustment untuk site ini.</p>
               ) : (
-                <div className="rounded-lg border overflow-x-auto">
+                <div className="overflow-x-auto rounded-lg border">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -535,7 +708,7 @@ export default function SiteManagementPage() {
                         <TableHead>Reason</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                         <TableHead>Date</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead className="text-center">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -543,24 +716,31 @@ export default function SiteManagementPage() {
                         <TableRow key={adj.id}>
                           <TableCell className="font-medium">{adj.employee}</TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={
-                              adj.type === 'overtime' ? 'bg-blue-100 text-blue-700' :
-                              adj.type === 'bonus' ? 'bg-green-100 text-green-700' :
-                              'bg-red-100 text-red-700'
-                            }>
+                            <Badge
+                              variant="outline"
+                              className={
+                                adj.type === 'overtime'
+                                  ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                  : adj.type === 'bonus'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    : 'bg-red-50 text-red-700 border-red-200'
+                              }
+                            >
                               {adj.type.charAt(0).toUpperCase() + adj.type.slice(1)}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-sm">{adj.reason}</TableCell>
-                          <TableCell className="text-right font-medium">{formatCurrency(adj.amount)}</TableCell>
-                          <TableCell>{adj.date}</TableCell>
-                          <TableCell>
+                          <TableCell className="text-right font-medium tabular-nums">{formatCurrency(adj.amount)}</TableCell>
+                          <TableCell className="text-sm tabular-nums">{adj.date}</TableCell>
+                          <TableCell className="text-center">
                             <Button
                               variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteAdjustment(adj.id)}
+                              size="icon"
+                              disabled={isFinalized}
+                              aria-label={`Delete adjustment for ${adj.employee}`}
+                              onClick={() => setDeleteTarget(adj)}
                             >
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <Trash2 className="h-4 w-4 text-red-600" />
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -573,370 +753,600 @@ export default function SiteManagementPage() {
           </Card>
         </TabsContent>
 
-        {/* Finalize & Lock Tab */}
-        <TabsContent value="finalize" className="space-y-4">
-          <Card className="border-amber-500/30 bg-amber-500/10">
+        {/* 4. Issues & Validation Tab */}
+        <TabsContent value="validation" className="space-y-4">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-amber-600" />
-                Lock Payroll for {siteInfo.siteName}
+                Issues & Validation
               </CardTitle>
               <CardDescription>
-                Once locked, this site&apos;s payroll will be finalized and no further edits will be allowed
+                Pengecekan otomatis proteksi payroll (non-blocking info vs hal yang perlu dikonfirmasi HR).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-4 text-sm">
+                <p className="font-semibold text-amber-900">1 Karyawan Alpha Otomatis (Dari Schedule)</p>
+                <p className="mt-1 text-amber-800">
+                  <strong>Agus Pratama</strong> terjadwal 22 hari dan tercatat hadir 21 hari tanpa izin/cuti. Penalty Alpha 1/{defaultEffectiveDays} sudah masuk di kolom Deductions (Base Salary tetap utuh).
+                </p>
+              </div>
+              <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-4 text-sm">
+                <p className="font-semibold text-blue-900">Tukar Shift Hari Libur Nasional & Pembatasan Jam (Cap)</p>
+                <p className="mt-1 text-blue-800">
+                  <strong>Dedi Kurniawan</strong> mendapat Full National Holiday OT 12 jam (hasil tukar shift Approved), dan absen tgl 18 yang tercatat 20 jam sudah dibatasi otomatis sesuai shift 12 jam.
+                </p>
+              </div>
+              <div className="rounded-lg border p-4 text-sm">
+                <p className="font-semibold">Info: Karyawan Tanpa Schedule (Tetap Full Base Pay)</p>
+                <p className="mt-1 text-muted-foreground">
+                  <strong>Hendra Wijaya</strong> belum memiliki schedule di aplikasi (hadir tercatat 15 hari). Sesuai aturan aman, Alpha otomatis = 0 sehingga Gaji Pokok tetap utuh kecuali diisi manual/Excel.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 5. Audit Log Tab (NEW) */}
+        <TabsContent value="audit" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <History className="h-5 w-5 text-muted-foreground" />
+                Audit Log — {siteConfig.siteName}
+              </CardTitle>
+              <CardDescription>
+                Rekam jejak seluruh perubahan manual, import Excel, perubahan Cut-Off, adjustment, dan penguncian payroll.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto rounded-lg border">
+                <Table>
+                  <TableHeader className="bg-muted/40">
+                    <TableRow>
+                      <TableHead>Waktu</TableHead>
+                      <TableHead>Actor</TableHead>
+                      <TableHead>Action</TableHead>
+                      <TableHead>Target</TableHead>
+                      <TableHead>Detail Perubahan</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {auditLogs.map((log) => {
+                      const meta = auditActionMeta[log.action]
+                      return (
+                        <TableRow key={log.id}>
+                          <TableCell className="whitespace-nowrap text-xs text-muted-foreground tabular-nums">
+                            {log.timestamp}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-sm font-medium">{log.actor}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={meta.className}>
+                              {meta.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-sm font-medium">{log.target}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{log.detail}</TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 6. Finalize & Lock Tab */}
+        <TabsContent value="finalize" className="space-y-4">
+          <Card className={isFinalized ? 'border-emerald-200 bg-emerald-50/40' : 'border-amber-200 bg-amber-50/40'}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {isFinalized ? (
+                  <ShieldCheck className="h-5 w-5 text-emerald-700" />
+                ) : (
+                  <Lock className="h-5 w-5 text-amber-700" />
+                )}
+                {isFinalized
+                  ? `${siteConfig.siteName} — Finalized & Locked`
+                  : `Finalize & Lock Payroll (${siteConfig.siteName})`}
+              </CardTitle>
+              <CardDescription>
+                {isFinalized
+                  ? 'Snapshot payroll sudah dikunci permanen dan siap diterbitkan ke Manage Payslip serta Monthly Recap.'
+                  : 'Setelah dikunci, seluruh edit manual, import Excel, perubahan cut-off, dan perubahan absen backdate untuk periode ini akan diblokir.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-lg border border-amber-500/30 bg-background/70 p-4 space-y-2">
-                <p className="text-sm font-medium">Payroll Summary</p>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Gross Payroll: </span>
-                    <span className="font-medium">{formatCurrency(siteInfo.grossPayroll)}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Net Payroll: </span>
-                    <span className="font-medium">{formatCurrency(siteInfo.netPayroll)}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Bonus: </span>
-                    <span className="font-medium text-success">{formatCurrency(siteInfo.bonusAmount)}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Deductions: </span>
-                    <span className="font-medium text-destructive">{formatCurrency(siteInfo.deductionsAmount)}</span>
-                  </div>
+              <div className="grid gap-3 rounded-lg border bg-background p-4 sm:grid-cols-2 lg:grid-cols-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Gross Payroll</span>
+                  <p className="mt-1 font-semibold tabular-nums">{formatCurrency(totals.grossPayroll)}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Total Allowance</span>
+                  <p className="mt-1 font-semibold tabular-nums text-emerald-700">{formatCurrency(totals.totalAllowance)}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Total Deductions</span>
+                  <p className="mt-1 font-semibold tabular-nums text-red-600">{formatCurrency(totals.totalDeductions)}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Total Net Pay</span>
+                  <p className="mt-1 font-bold tabular-nums text-emerald-700">{formatCurrency(totals.netPayroll)}</p>
                 </div>
               </div>
-              <Button
-                onClick={() => setLockOpen(true)}
-  className="w-full text-primary-foreground"
-  >
-                <Lock className="h-4 w-4 mr-2" />
-                Lock and Finalize Payroll
-              </Button>
+
+              {!isFinalized && (
+                <Button onClick={() => setLockOpen(true)} className="w-full">
+                  <Lock className="mr-2 h-4 w-4" />
+                  Finalize & Lock Payroll Periode Ini
+                </Button>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      {/* Employee Payroll Details Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-h-[calc(100vh-1rem)] w-[calc(100vw-1rem)] max-w-none gap-0 overflow-hidden p-0 sm:w-[calc(100vw-4rem)] sm:max-w-[1600px] lg:w-[calc(100vw-8rem)]">
-          <DialogHeader className="border-b px-5 py-3">
-            {payrollDetail ? (
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" aria-label="Back to payroll overview" onClick={() => setPayrollDetail(null)}>
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-                <div>
-                  <DialogTitle>{payrollDetail === 'overtime' ? 'Overtime Calculation' : 'Deduction Calculation'}</DialogTitle>
-                  <DialogDescription>Detailed read-only breakdown for {editingEmployee?.name}.</DialogDescription>
-                </div>
-              </div>
-            ) : (
-              <>
-                <DialogTitle>Employee Payroll Details</DialogTitle>
-                <DialogDescription>Read-only calculation breakdown for the {`March 2026`} payroll period.</DialogDescription>
-              </>
-            )}
+      {/* Dialog 1: Read-Only Calculation Breakdown */}
+      <Dialog open={Boolean(viewingEmployee)} onOpenChange={(open) => !open && setViewingEmployee(null)}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Payroll Breakdown — {viewingEmployee?.name}</DialogTitle>
+            <DialogDescription>
+              {viewingEmployee?.position} · {cutoffSummary.periodLabel} · Sumber data: {viewingEmployee ? sourceBadgeMeta[viewingEmployee.source].label : ''}
+            </DialogDescription>
           </DialogHeader>
-          {editingEmployee && (
-            <div className="max-h-[calc(100vh-6rem)] overflow-y-auto px-5 py-3">
-              {payrollDetail ? (
-                <div className="space-y-2">
-                  <div className="rounded-lg border bg-muted/30 p-5">
-                    <p className="text-sm text-muted-foreground">{payrollDetail === 'overtime' ? 'Calculated overtime' : 'Calculated deductions'}</p>
-                    <p className={`mt-2 text-3xl font-bold tabular-nums ${payrollDetail === 'overtime' ? 'text-success' : 'text-destructive'}`}>
-                      {formatCurrency(payrollDetail === 'overtime' ? editingEmployee.overtime : editingEmployee.deductions)}
-                    </p>
-                  </div>
-                  {payrollDetail === 'overtime' ? (
-                    <div className="space-y-3">
-                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Overtime days</p><p className="mt-1 text-xl font-semibold">2 days</p></div>
-                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Total hours</p><p className="mt-1 text-xl font-semibold">{editingEmployee.overtimeHours || 0} hours</p></div>
-                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Hours per day</p><p className="mt-1 text-xl font-semibold">2.5 hours</p></div>
-                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Rate per hour</p><p className="mt-1 text-xl font-semibold tabular-nums">Rp 300.000</p></div>
-                      </div>
-                      <div className="rounded-lg border p-4 text-sm">
-                        <div className="flex items-center justify-between gap-4"><h3 className="font-semibold">Daily overtime breakdown</h3><span className="text-xs text-muted-foreground">Mockup data</span></div>
-                        <div className="mt-3 overflow-x-auto">
-                          <table className="w-full min-w-[520px] text-left">
-                            <thead className="border-b text-xs text-muted-foreground"><tr><th className="pb-2 font-medium">Date · day type</th><th className="pb-2 font-medium">Total hours</th><th className="pb-2 font-medium">Applied rule</th><th className="pb-2 text-right font-medium">Daily amount</th></tr></thead>
-                            <tbody className="divide-y">
-                              <tr><td className="py-3"><span className="block font-medium">March 14, 2026</span><span className="text-xs text-muted-foreground">Regular workday</span></td><td className="py-3">3 hours</td><td className="py-3"><div><p className="text-sm text-muted-foreground">Calculation details</p><div className="mt-2 space-y-1 text-xs text-muted-foreground"><p>1 hr × Rp 300.000 × 1.5 = Rp 450.000</p><p>2 hrs × Rp 300.000 × 2.0 = Rp 600.000</p></div></div></td><td className="py-3 text-right font-medium tabular-nums">Rp 1.050.000</td></tr>
-                              <tr className="bg-amber-500/5"><td className="py-3"><span className="block font-medium">March 21, 2026</span><span className="text-xs text-muted-foreground">National holiday</span></td><td className="py-3">2 hours</td><td className="py-3"><div><p className="text-sm text-amber-600">Calculation details</p><div className="mt-2 space-y-1 text-xs text-muted-foreground"><p>1 hr × Rp 300.000 × 2.0 = Rp 600.000</p><p>1 hr × Rp 300.000 × 2.5 = Rp 750.000</p></div></div></td><td className="py-3 text-right font-medium tabular-nums">Rp 1.350.000</td></tr>
-                            </tbody>
-                            <tfoot className="border-t"><tr><td colSpan={3} className="pt-3 font-semibold">Total calculated overtime</td><td className="pt-3 text-right font-bold text-success tabular-nums">Rp 2.400.000</td></tr></tfoot>
-                          </table>
-                        </div>
-                      </div>
-                                          </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Deduction items</p><p className="mt-1 text-xl font-semibold">2 items</p></div>
-                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Payroll period</p><p className="mt-1 text-xl font-semibold">March 2026</p></div>
-                        <div className="rounded-lg border bg-muted/20 p-3"><p className="text-xs text-muted-foreground">Total deductions</p><p className="mt-1 text-xl font-semibold tabular-nums text-destructive">{formatCurrency(editingEmployee.deductions)}</p></div>
-                      </div>
-                      <div className="rounded-lg border p-4 text-sm">
-                        <div className="flex items-center justify-between gap-4"><h3 className="font-semibold">Deduction breakdown</h3><span className="text-xs text-muted-foreground">Mockup data</span></div>
-                        <div className="mt-3 overflow-x-auto">
-                          <table className="w-full min-w-[620px] text-left">
-                            <thead className="border-b text-xs text-muted-foreground"><tr><th className="pb-2 font-medium">Deduction</th><th className="pb-2 font-medium">Category</th><th className="pb-2 font-medium">Calculation basis</th><th className="pb-2 text-right font-medium">Amount</th></tr></thead>
-                            <tbody className="divide-y"><tr><td className="py-3 font-medium">BPJS Ketenagakerjaan</td><td className="py-3 text-muted-foreground">Social security</td><td className="py-3 text-muted-foreground">2% × Rp 12.000.000 salary</td><td className="py-3 text-right font-medium tabular-nums">Rp 240.000</td></tr><tr><td className="py-3 font-medium">Employee loan repayment</td><td className="py-3 text-muted-foreground">Loan</td><td className="py-3 text-muted-foreground">Monthly installment · fixed</td><td className="py-3 text-right font-medium tabular-nums">Rp 2.260.000</td></tr></tbody>
-                            <tfoot className="border-t"><tr><td colSpan={3} className="pt-3 font-semibold">Total deductions</td><td className="pt-3 text-right font-bold text-destructive tabular-nums">Rp 2.500.000</td></tr></tfoot>
-                          </table>
-                        </div>
-                      </div>
-                                          </div>
-                  )}
-                  <p className="rounded-lg bg-muted/40 p-4 text-sm text-muted-foreground">This value is calculated from payroll rules and approved records. It is read-only here; exceptional changes must be managed from the Adjustments tab.</p>
-                  <div className="flex justify-end"><Button variant="outline" onClick={() => setPayrollDetail(null)}>Back to overview</Button></div>
+          {viewingEmployee && (
+            <div className="space-y-4 text-sm">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Base Salary</p>
+                  <p className="mt-1 text-lg font-bold tabular-nums">{formatCurrency(viewingEmployee.baseSalary)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {viewingEmployee.isNewHire
+                      ? `Prorate karyawan baru (${viewingEmployee.presentDays}/${viewingEmployee.effectiveDays} hari dari ${formatCurrency(viewingEmployee.fullBaseSalary)})`
+                      : 'Utuh sesuai Manage Salary (Alpha tidak memotong Base Salary)'}
+                  </p>
                 </div>
-              ) : (
-              <div className="space-y-2">
-                <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr]">
-                <div className="rounded-xl border bg-muted/30 p-3 lg:col-span-3">
-                  <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Employee payroll</p>
-                      <h2 className="mt-1 text-2xl font-bold tracking-tight">{editingEmployee.name}</h2>
-                      <p className="mt-1 text-sm text-muted-foreground">{editingEmployee.position} · {siteInfo.siteName}</p>
-                    </div>
-                    <div className="flex items-center justify-between gap-4 sm:justify-end">
-                      <div className="text-left sm:text-right">
-                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Payroll period</p>
-                        <p className="mt-1 text-sm text-muted-foreground"><strong className="font-semibold text-foreground">March 2026</strong> · Read-only view</p>
-                      </div>
-                      <Badge variant="secondary">Draft</Badge>
-                    </div>
-                  </div>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2 lg:col-span-3">
-                  <div className="rounded-lg border p-4">
-                    <p className="text-sm text-muted-foreground">Base salary</p>
-                    <p className="mt-1 text-lg font-semibold tabular-nums">{formatCurrency(editingEmployee.baseSalary)}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">From salary setup · read-only</p>
-                  </div>
-                  <div className="rounded-lg border p-4">
-                    <p className="text-sm text-muted-foreground">Calculated net pay</p>
-                    <p className="mt-1 text-lg font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.baseSalary + editingEmployee.overtime + editingEmployee.bonus - editingEmployee.deductions)}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Base salary + allowance + overtime − deductions</p>
-                  </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Net Pay</p>
+                  <p className="mt-1 text-lg font-bold tabular-nums text-emerald-700">{formatCurrency(viewingEmployee.netPay)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Base + Overtime + Allowance - Deductions
+                  </p>
                 </div>
               </div>
 
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <button type="button" className="group flex w-full items-center gap-4 rounded-xl border p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40" onClick={() => setPayrollDetail('overtime')}>
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success"><Clock3 className="h-5 w-5" /></span>
-                <span className="min-w-0 flex-1"><span className="block font-medium">Overtime calculation</span><span className="mt-1 block text-sm text-muted-foreground">{editingEmployee.overtimeHours || 0} approved hours · View applied rule</span></span>
-                <span className="flex items-center gap-2"><span className="font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.overtime)}</span><ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" /></span>
-              </button>
-
-              <div className="flex items-center gap-4 rounded-xl border bg-muted/20 p-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success">+</span>
-                <span className="min-w-0 flex-1"><span className="block font-medium">Allowance</span><span className="mt-1 block text-sm text-muted-foreground">{editingEmployee.allowanceSource || 'Eligible allowance records'}</span></span>
-                <span className="font-semibold tabular-nums text-success">{formatCurrency(editingEmployee.bonus)}</span>
+              <div className="rounded-lg border p-3 space-y-2">
+                <p className="font-semibold">Rincian Lembur (Capped Sesuai Jadwal Shift)</p>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Fixed OT (Shift 12j): {viewingEmployee.fixedOtHours} jam</span>
+                  <span className="font-medium tabular-nums">{formatCurrency(viewingEmployee.fixedOtAmount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">National Holiday OT: {viewingEmployee.holidayOtHours} jam</span>
+                  <span className="font-medium tabular-nums">{formatCurrency(viewingEmployee.holidayOtAmount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">OT Replacement (BKO): {viewingEmployee.bkoOtHours} jam</span>
+                  <span className="font-medium tabular-nums">{formatCurrency(viewingEmployee.bkoOtAmount)}</span>
+                </div>
+                {viewingEmployee.swapHolidayNote && (
+                  <p className="rounded bg-blue-50 px-2.5 py-1.5 text-xs text-blue-800">{viewingEmployee.swapHolidayNote}</p>
+                )}
+                {viewingEmployee.cappedClockNote && (
+                  <p className="rounded bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800">{viewingEmployee.cappedClockNote}</p>
+                )}
               </div>
 
-              <button type="button" className="group flex w-full items-center gap-4 rounded-xl border p-3 text-left transition-colors hover:border-destructive/40 hover:bg-muted/40" onClick={() => setPayrollDetail('deductions')}>
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive"><ReceiptText className="h-5 w-5" /></span>
-                <span className="min-w-0 flex-1"><span className="block font-medium">Deduction calculation</span><span className="mt-1 block text-sm text-muted-foreground">View applied rules and deductions</span></span>
-                <span className="flex items-center gap-2"><span className="font-semibold tabular-nums text-destructive">{formatCurrency(editingEmployee.deductions)}</span><ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" /></span>
-              </button>
+              <div className="rounded-lg border p-3 space-y-2">
+                <p className="font-semibold">Rincian Tunjangan & Potongan</p>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Allowance (Bulanan {formatCurrency(viewingEmployee.monthlyAllowance)} + {viewingEmployee.presentDays}h x {formatCurrency(viewingEmployee.dailyAllowanceRate)})
+                  </span>
+                  <span className="font-medium text-emerald-700 tabular-nums">{formatCurrency(viewingEmployee.allowance)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Potongan Tetap (BPJS / Pajak / dll)</span>
+                  <span className="font-medium text-red-600 tabular-nums">{formatCurrency(viewingEmployee.fixedDeductionAmount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Penalty Alpha ({viewingEmployee.alphaDays} hari / {viewingEmployee.effectiveDays} hari kerja)
+                  </span>
+                  <span className="font-medium text-red-600 tabular-nums">{formatCurrency(viewingEmployee.alphaPenalty)}</span>
+                </div>
               </div>
 
-              <div className="flex justify-end pt-2">
-                <Button variant="outline" onClick={() => setEditOpen(false)}>Close</Button>
-              </div>
-            </div>
+              {viewingEmployee.notes && (
+                <p className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                  {viewingEmployee.notes}
+                </p>
               )}
             </div>
           )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewingEmployee(null)}>
+              Close
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={addAdjustmentOpen} onOpenChange={setAddAdjustmentOpen}>
+      {/* Dialog 2: Quick Hybrid Edit */}
+      <Dialog open={Boolean(editingRow)} onOpenChange={(open) => !open && setEditingRow(null)}>
         <DialogContent className="sm:max-w-lg">
-          <DialogHeader><DialogTitle>Add Payroll Adjustment</DialogTitle><DialogDescription>Add a one-time payroll adjustment for this site.</DialogDescription></DialogHeader>
-          <div className="grid gap-4 py-2">
-            <label className="grid gap-2 text-sm font-medium">Employee<select className="h-10 rounded-md border bg-background px-3" value={newAdjustment.employee} onChange={(event) => setNewAdjustment((current) => ({ ...current, employee: event.target.value }))}><option value="">Select employee</option>{employees.map((employee) => <option key={employee.employeeId} value={employee.name}>{employee.name}</option>)}</select></label>
-            <div className="grid gap-4 sm:grid-cols-2"><label className="grid gap-2 text-sm font-medium">Type<select className="h-10 rounded-md border bg-background px-3" value={newAdjustment.type} onChange={(event) => setNewAdjustment((current) => ({ ...current, type: event.target.value }))}><option value="bonus">Bonus</option><option value="overtime">Overtime</option><option value="deduction">Deduction</option></select></label><label className="grid gap-2 text-sm font-medium">Amount<input type="number" min="1" className="h-10 rounded-md border bg-background px-3" placeholder="1500000" value={newAdjustment.amount} onChange={(event) => setNewAdjustment((current) => ({ ...current, amount: event.target.value }))} /></label></div>
-            <label className="grid gap-2 text-sm font-medium">Reason<input className="h-10 rounded-md border bg-background px-3" placeholder="Performance bonus" value={newAdjustment.reason} onChange={(event) => setNewAdjustment((current) => ({ ...current, reason: event.target.value }))} /></label>
-            <label className="grid gap-2 text-sm font-medium">Date<input type="date" className="h-10 rounded-md border bg-background px-3" value={newAdjustment.date} onChange={(event) => setNewAdjustment((current) => ({ ...current, date: event.target.value }))} /></label>
-          </div>
-          <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setAddAdjustmentOpen(false)}>Cancel</Button><Button onClick={handleAddAdjustment}>Save Adjustment</Button></div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Adjustment</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this adjustment? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex gap-3 justify-end">
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive">
-              Delete
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Lock Payroll Dialog */}
-      <AlertDialog open={lockOpen} onOpenChange={setLockOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Lock Payroll</AlertDialogTitle>
-            <AlertDialogDescription>
-              You are about to lock payroll for {siteInfo.siteName}. This will finalize all payroll data and prevent further edits. Are you sure?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex gap-3 justify-end">
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLockPayroll} disabled={loading}>
-              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              {loading ? 'Locking...' : 'Confirm Lock'}
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Import Timesheet Dialog */}
-      <Dialog open={importOpen} onOpenChange={setImportOpen}>
-        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Import Timesheet</DialogTitle>
+            <DialogTitle>Edit Aktivitas Hybrid — {editingRow?.name}</DialogTitle>
             <DialogDescription>
-              Upload a timesheet file containing employee duty days and overtime hours. Allowance information is calculated separately from eligible allowance records.
+              Koreksi hari kerja & jam lembur tanpa merusak absensi asli. Tarif gaji, tunjangan, dan potongan dihitung otomatis oleh sistem.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
-            {/* File Upload Area */}
-            <div className="border-2 border-dashed rounded-lg p-6 text-center">
-              <input
-                type="file"
-                id="timesheet-file"
-                accept=".csv,.xlsx,.xls"
-                onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                className="hidden"
-              />
-              <label htmlFor="timesheet-file" className="cursor-pointer">
-                <div className="flex flex-col items-center gap-2">
-                  <Upload className="h-8 w-8 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">
-                      {importFile ? importFile.name : 'Click to upload or drag and drop'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">CSV, XLSX, or XLS files supported</p>
+          {editingRow && (
+            <div className="space-y-4 py-1">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-present">Hari Hadir (dari {editingRow.effectiveDays}h)</Label>
+                  <Input
+                    id="edit-present"
+                    type="number"
+                    min={0}
+                    max={31}
+                    value={editForm.presentDays}
+                    onChange={(e) => setEditForm((f) => ({ ...f, presentDays: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-alpha">Hari Alpha (Penalty Deduction)</Label>
+                  <Input
+                    id="edit-alpha"
+                    type="number"
+                    min={0}
+                    max={31}
+                    value={editForm.alphaDays}
+                    onChange={(e) => setEditForm((f) => ({ ...f, alphaDays: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-fixed-ot">Fixed OT (jam)</Label>
+                  <Input
+                    id="edit-fixed-ot"
+                    type="number"
+                    min={0}
+                    value={editForm.fixedOtHours}
+                    onChange={(e) => setEditForm((f) => ({ ...f, fixedOtHours: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-holiday-ot">Holiday OT (jam)</Label>
+                  <Input
+                    id="edit-holiday-ot"
+                    type="number"
+                    min={0}
+                    value={editForm.holidayOtHours}
+                    onChange={(e) => setEditForm((f) => ({ ...f, holidayOtHours: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-bko-ot">BKO OT (jam)</Label>
+                  <Input
+                    id="edit-bko-ot"
+                    type="number"
+                    min={0}
+                    value={editForm.bkoOtHours}
+                    onChange={(e) => setEditForm((f) => ({ ...f, bkoOtHours: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {editPreview && (
+                <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Preview Overtime:</span>
+                    <span className="font-medium text-emerald-700 tabular-nums">{formatCurrency(editPreview.overtime)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Preview Deductions (incl. Alpha):</span>
+                    <span className="font-medium text-red-600 tabular-nums">{formatCurrency(editPreview.deductions)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-1.5">
+                    <span className="font-semibold">Preview Net Pay:</span>
+                    <span className="font-bold text-emerald-700 tabular-nums">{formatCurrency(editPreview.netPay)}</span>
                   </div>
                 </div>
-              </label>
+              )}
+            </div>
+          )}
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
+            {editingRow && editingRow.source !== 'auto' ? (
+              <Button variant="ghost" type="button" onClick={() => handleResetToAuto(editingRow)}>
+                Reset ke Auto App
+              </Button>
+            ) : (
+              <span />
+            )}
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setEditingRow(null)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEdit}>Save & Catat Log</Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog 3: Hybrid Excel Import with Conflict Resolution */}
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5 text-emerald-700" />
+              Import Rekap Excel (Preview & Konflik)
+            </DialogTitle>
+            <DialogDescription>
+              Pilih file rekap dari site, lalu cek apakah ada karyawan yang sebelumnya sudah diedit manual oleh HR.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="mock-excel-file">File Excel Rekap</Label>
+              <Input
+                id="mock-excel-file"
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) setSelectedFileName(f.name)
+                }}
+              />
+              <p className="text-xs text-muted-foreground">
+                Simulasi file aktif: <strong>{selectedFileName}</strong> (mengandung update untuk 3 karyawan).
+              </p>
             </div>
 
-            {/* File Format Info */}
-            <div className="bg-muted p-3 rounded-lg text-sm">
-              <p className="font-medium mb-2">Expected file format:</p>
-              <ul className="text-xs space-y-1 ml-4 list-disc">
-                <li>Employee ID or Name</li>
-                <li>Duty Days (working days)</li>
-                <li>Overtime Hours</li>
-                <li>Allowance eligibility reference (optional)</li>
-              </ul>
-            </div>
-
-            {/* Message */}
-            {importMessage && (
-              <div className={`p-3 rounded-lg text-sm ${
-                importMessage.includes('Error') 
-                  ? 'bg-destructive/10 text-destructive' 
-                  : 'bg-success/10 text-success'
-              }`}>
-                {importMessage}
+            {editedConflictCount > 0 && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-sm space-y-2">
+                <p className="font-semibold text-amber-900">
+                  Terdeteksi {editedConflictCount} karyawan yang sudah pernah di-edit manual:
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={excelStrategy === 'keep_edited' ? 'default' : 'outline'}
+                    onClick={() => setExcelStrategy('keep_edited')}
+                  >
+                    Pertahankan Edit Manual (Aman)
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={excelStrategy === 'overwrite_all' ? 'default' : 'outline'}
+                    onClick={() => setExcelStrategy('overwrite_all')}
+                  >
+                    Timpa Semua dengan Excel
+                  </Button>
+                </div>
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex gap-3 justify-end">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setImportOpen(false)
-                  setImportFile(null)
-                  setImportMessage('')
-                }}
-                disabled={importLoading}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleImportTimesheet}
-                disabled={!importFile || importLoading}
-              >
-                {importLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Import
-                  </>
-                )}
-              </Button>
+            <div className="overflow-x-auto rounded-lg border">
+              <Table>
+                <TableHeader className="bg-muted/40">
+                  <TableRow>
+                    <TableHead>Employee</TableHead>
+                    <TableHead>Status Saat Ini</TableHead>
+                    <TableHead>Data Saat Ini</TableHead>
+                    <TableHead>Data Baru di Excel</TableHead>
+                    <TableHead>Hasil Terapkan</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {excelCandidateEmployees.map((emp) => {
+                    const baseId = emp.employeeId.replace(/^S[23]-/, '')
+                    const incoming = mockExcelPreviewRows[baseId]
+                    const willSkip = emp.source === 'edited' && excelStrategy === 'keep_edited'
+                    return (
+                      <TableRow key={emp.employeeId}>
+                        <TableCell className="font-medium">{emp.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={sourceBadgeMeta[emp.source].className}>
+                            {sourceBadgeMeta[emp.source].label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {emp.presentDays}h hadir, {emp.alphaDays} alpha, {emp.fixedOtHours + emp.bkoOtHours}j OT
+                        </TableCell>
+                        <TableCell className="text-xs font-medium">
+                          {incoming.presentDays}h hadir, {incoming.alphaDays} alpha, {incoming.fixedOtHours + incoming.bkoOtHours}j OT
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {willSkip ? (
+                            <span className="font-medium text-amber-700">Dipertahankan (Edited)</span>
+                          ) : (
+                            <span className="font-medium text-emerald-700">Pakai Excel</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
             </div>
           </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleApplyExcelImport}>Terapkan Import Excel</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Set Cut-Off Date Dialog for This Site */}
+      {/* Dialog 4: Set Cut-Off + Default Effective Days */}
       <Dialog open={cutoffDialogOpen} onOpenChange={setCutoffDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Set Cut-Off Date</DialogTitle>
+            <DialogTitle>Set Cut-Off & Hari Kerja Site</DialogTitle>
             <DialogDescription>
-              Atur tanggal tutup buku bulanan khusus untuk {siteInfo.siteName}.
+              Atur tanggal tutup buku bulanan dan default hari kerja efektif khusus untuk {siteConfig.siteName}.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 py-2">
-            <Label htmlFor="site-cutoff-select">Jadwal Cut-Off Bulanan</Label>
-            <Select
-              value={draftCutoff}
-              onValueChange={(value: CutoffOption) => setDraftCutoff(value)}
-            >
-              <SelectTrigger id="site-cutoff-select">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {cutoffChoices.map((choice) => (
-                  <SelectItem key={choice.value} value={choice.value}>
-                    {choice.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="site-cutoff-select">Jadwal Cut-Off Bulanan</Label>
+              <Select value={draftCutoff} onValueChange={(v: CutoffOption) => setDraftCutoff(v)}>
+                <SelectTrigger id="site-cutoff-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {cutoffChoices.map((choice) => (
+                    <SelectItem key={choice.value} value={choice.value}>
+                      {choice.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="site-effective-days">Default Hari Kerja Efektif (Pembagi Prorate & Alpha)</Label>
+              <Input
+                id="site-effective-days"
+                type="number"
+                min={1}
+                max={31}
+                value={draftEffectiveDays}
+                onChange={(e) => setDraftEffectiveDays(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Dipakai untuk hitung prorate karyawan baru atau penalty jika admin input Alpha manual di site tanpa jadwal.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCutoffDialogOpen(false)}>
               Cancel
             </Button>
-            <Button
-              onClick={() => {
-                setCutoffDay(draftCutoff)
-                setCutoffDialogOpen(false)
-              }}
-            >
-              Save Cut-Off
-            </Button>
+            <Button onClick={handleSaveCutoff}>Save Cut-Off</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog 5: Add Adjustment */}
+      <Dialog open={addAdjustmentOpen} onOpenChange={setAddAdjustmentOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add Payroll Adjustment</DialogTitle>
+            <DialogDescription>Tambahkan penyesuaian satu kali untuk karyawan di site ini.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <label className="grid gap-1.5 text-sm font-medium">
+              Employee
+              <select
+                className="h-10 rounded-md border bg-background px-3"
+                value={newAdjustment.employee}
+                onChange={(e) => setNewAdjustment((c) => ({ ...c, employee: e.target.value }))}
+              >
+                <option value="">Select employee</option>
+                {rawEmployees.map((emp) => (
+                  <option key={emp.employeeId} value={emp.name}>
+                    {emp.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="grid gap-1.5 text-sm font-medium">
+                Type
+                <select
+                  className="h-10 rounded-md border bg-background px-3"
+                  value={newAdjustment.type}
+                  onChange={(e) =>
+                    setNewAdjustment((c) => ({
+                      ...c,
+                      type: e.target.value as SitePayrollAdjustment['type'],
+                    }))
+                  }
+                >
+                  <option value="bonus">Bonus</option>
+                  <option value="overtime">Overtime (Rapel)</option>
+                  <option value="deduction">Deduction</option>
+                </select>
+              </label>
+              <label className="grid gap-1.5 text-sm font-medium">
+                Amount
+                <Input
+                  type="number"
+                  min={1}
+                  placeholder="500000"
+                  value={newAdjustment.amount}
+                  onChange={(e) => setNewAdjustment((c) => ({ ...c, amount: e.target.value }))}
+                />
+              </label>
+            </div>
+            <label className="grid gap-1.5 text-sm font-medium">
+              Reason
+              <Input
+                placeholder="Insentif / Rapel bulan lalu"
+                value={newAdjustment.reason}
+                onChange={(e) => setNewAdjustment((c) => ({ ...c, reason: e.target.value }))}
+              />
+            </label>
+            <label className="grid gap-1.5 text-sm font-medium">
+              Date
+              <Input
+                type="date"
+                value={newAdjustment.date}
+                onChange={(e) => setNewAdjustment((c) => ({ ...c, date: e.target.value }))}
+              />
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddAdjustmentOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddAdjustment}>Save Adjustment</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AlertDialog 6: Delete Adjustment */}
+      <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Adjustment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Adjustment untuk <strong>{deleteTarget?.employee}</strong> ({deleteTarget?.reason}) akan dihapus dan dicatat di Audit Log.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteAdjustment}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* AlertDialog 7: Finalize & Lock */}
+      <AlertDialog open={lockOpen} onOpenChange={setLockOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Finalize & Lock Payroll {siteConfig.siteName}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Total Net Pay <strong>{formatCurrency(totals.netPayroll)}</strong> akan dikunci permanen untuk periode {cutoffSummary.periodLabel}. Edit manual, import Excel, dan backdate absen tidak lagi memengaruhi periode ini.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleFinalizeAndLock}>Ya, Finalize & Lock</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
