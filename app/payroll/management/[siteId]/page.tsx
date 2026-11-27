@@ -820,7 +820,7 @@ export default function SiteManagementPage() {
 
       {/* Dialog 1: Read-Only Calculation Breakdown */}
       <Dialog open={Boolean(viewingEmployee)} onOpenChange={(open) => !open && setViewingEmployee(null)}>
-        <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-xl">
+        <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-3xl lg:max-w-4xl">
           <DialogHeader className="shrink-0">
             <DialogTitle>Payroll Breakdown — {viewingEmployee?.name}</DialogTitle>
             <DialogDescription>
@@ -830,7 +830,7 @@ export default function SiteManagementPage() {
           {viewingEmployee && (
             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 text-sm">
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-lg border p-3.5">
+                <div className="rounded-lg border p-3">
                   <p className="text-xs text-muted-foreground">Base Salary</p>
                   <p className="mt-1 text-lg font-bold tabular-nums">{formatCurrency(viewingEmployee.baseSalary)}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
@@ -839,7 +839,7 @@ export default function SiteManagementPage() {
                       : 'Gaji pokok penuh'}
                   </p>
                 </div>
-                <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/40 p-3.5">
+                <div className="rounded-lg border border-emerald-200/80 bg-emerald-50/40 p-3">
                   <p className="text-xs text-emerald-800/80">Net Pay</p>
                   <p className="mt-1 text-lg font-bold tabular-nums text-emerald-700">{formatCurrency(viewingEmployee.netPay)}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
@@ -848,67 +848,69 @@ export default function SiteManagementPage() {
                 </div>
               </div>
 
-              <div className="rounded-lg border p-3.5 space-y-2">
-                <div className="flex items-center justify-between border-b pb-2">
-                  <p className="font-semibold">Rincian Lembur</p>
-                  <span className="font-semibold tabular-nums text-emerald-700">
-                    {formatCurrency(viewingEmployee.overtime)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-muted-foreground">
-                    Fixed OT (Shift 12j) · {viewingEmployee.fixedOtHours} jam
-                  </span>
-                  <span className={viewingEmployee.fixedOtAmount > 0 ? 'font-medium tabular-nums' : 'tabular-nums text-muted-foreground'}>
-                    {formatCurrency(viewingEmployee.fixedOtAmount)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-muted-foreground">
-                    National Holiday OT · {viewingEmployee.holidayOtHours} jam
-                  </span>
-                  <span className={viewingEmployee.holidayOtAmount > 0 ? 'font-medium tabular-nums' : 'tabular-nums text-muted-foreground'}>
-                    {formatCurrency(viewingEmployee.holidayOtAmount)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-muted-foreground">
-                    OT Replacement (BKO) · {viewingEmployee.bkoOtHours} jam
-                  </span>
-                  <span className={viewingEmployee.bkoOtAmount > 0 ? 'font-medium tabular-nums' : 'tabular-nums text-muted-foreground'}>
-                    {formatCurrency(viewingEmployee.bkoOtAmount)}
-                  </span>
-                </div>
-                {viewingEmployee.swapHolidayNote && (
-                  <p className="rounded bg-blue-50 px-2.5 py-1.5 text-xs text-blue-800">{viewingEmployee.swapHolidayNote}</p>
-                )}
-                {viewingEmployee.cappedClockNote && (
-                  <p className="rounded bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800">{viewingEmployee.cappedClockNote}</p>
-                )}
-              </div>
-
-              <div className="rounded-lg border p-3.5 space-y-2.5">
-                <p className="border-b pb-2 font-semibold">Tunjangan & Potongan</p>
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-muted-foreground">Allowance</p>
-                    <p className="text-xs text-muted-foreground">
-                      Bulanan {formatCurrency(viewingEmployee.monthlyAllowance)} + {viewingEmployee.presentDays}h × {formatCurrency(viewingEmployee.dailyAllowanceRate)}
-                    </p>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-lg border p-3.5 space-y-2.5">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <p className="font-semibold">Rincian Lembur</p>
+                    <span className="font-semibold tabular-nums text-emerald-700">
+                      {formatCurrency(viewingEmployee.overtime)}
+                    </span>
                   </div>
-                  <span className="shrink-0 font-medium text-emerald-700 tabular-nums">{formatCurrency(viewingEmployee.allowance)}</span>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">
+                      Fixed OT (Shift 12j) · {viewingEmployee.fixedOtHours} jam
+                    </span>
+                    <span className={viewingEmployee.fixedOtAmount > 0 ? 'font-medium tabular-nums' : 'tabular-nums text-muted-foreground'}>
+                      {formatCurrency(viewingEmployee.fixedOtAmount)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">
+                      National Holiday OT · {viewingEmployee.holidayOtHours} jam
+                    </span>
+                    <span className={viewingEmployee.holidayOtAmount > 0 ? 'font-medium tabular-nums' : 'tabular-nums text-muted-foreground'}>
+                      {formatCurrency(viewingEmployee.holidayOtAmount)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">
+                      OT Replacement (BKO) · {viewingEmployee.bkoOtHours} jam
+                    </span>
+                    <span className={viewingEmployee.bkoOtAmount > 0 ? 'font-medium tabular-nums' : 'tabular-nums text-muted-foreground'}>
+                      {formatCurrency(viewingEmployee.bkoOtAmount)}
+                    </span>
+                  </div>
+                  {viewingEmployee.swapHolidayNote && (
+                    <p className="rounded bg-blue-50 px-2.5 py-1.5 text-xs text-blue-800">{viewingEmployee.swapHolidayNote}</p>
+                  )}
+                  {viewingEmployee.cappedClockNote && (
+                    <p className="rounded bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800">{viewingEmployee.cappedClockNote}</p>
+                  )}
                 </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-muted-foreground">Potongan Tetap (BPJS / Pajak / dll)</span>
-                  <span className="shrink-0 font-medium text-red-600 tabular-nums">{formatCurrency(viewingEmployee.fixedDeductionAmount)}</span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-muted-foreground">
-                    Penalty Alpha ({viewingEmployee.alphaDays} hari / {viewingEmployee.effectiveDays} hari kerja)
-                  </span>
-                  <span className={viewingEmployee.alphaPenalty > 0 ? 'shrink-0 font-medium text-red-600 tabular-nums' : 'shrink-0 tabular-nums text-muted-foreground'}>
-                    {formatCurrency(viewingEmployee.alphaPenalty)}
-                  </span>
+
+                <div className="rounded-lg border p-3.5 space-y-2.5">
+                  <p className="border-b pb-2 font-semibold">Tunjangan & Potongan</p>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-muted-foreground">Allowance</p>
+                      <p className="text-xs text-muted-foreground">
+                        Bulanan {formatCurrency(viewingEmployee.monthlyAllowance)} + {viewingEmployee.presentDays}h × {formatCurrency(viewingEmployee.dailyAllowanceRate)}
+                      </p>
+                    </div>
+                    <span className="shrink-0 font-medium text-emerald-700 tabular-nums">{formatCurrency(viewingEmployee.allowance)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">Potongan Tetap (BPJS / Pajak / dll)</span>
+                    <span className="shrink-0 font-medium text-red-600 tabular-nums">{formatCurrency(viewingEmployee.fixedDeductionAmount)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-muted-foreground">
+                      Penalty Alpha ({viewingEmployee.alphaDays} hari / {viewingEmployee.effectiveDays} hari kerja)
+                    </span>
+                    <span className={viewingEmployee.alphaPenalty > 0 ? 'shrink-0 font-medium text-red-600 tabular-nums' : 'shrink-0 tabular-nums text-muted-foreground'}>
+                      {formatCurrency(viewingEmployee.alphaPenalty)}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -929,7 +931,7 @@ export default function SiteManagementPage() {
 
       {/* Dialog 2: Quick Activity Edit */}
       <Dialog open={Boolean(editingRow)} onOpenChange={(open) => !open && setEditingRow(null)}>
-        <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-lg">
+        <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-2xl">
           <DialogHeader className="shrink-0">
             <DialogTitle>Edit Aktivitas Payroll — {editingRow?.name}</DialogTitle>
             <DialogDescription>
@@ -1034,7 +1036,7 @@ export default function SiteManagementPage() {
 
       {/* Dialog 3: Excel Import with Conflict Resolution */}
       <Dialog open={importOpen} onOpenChange={setImportOpen}>
-        <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl">
+        <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-3xl lg:max-w-4xl">
           <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <FileSpreadsheet className="h-5 w-5 text-emerald-700" />
